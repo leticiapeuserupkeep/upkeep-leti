@@ -95,7 +95,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   function getActions() {
     if (isWorkflows) {
       return (
-        <Button variant="primary" size="sm" type="button">
+        <Button variant="primary" size="md" type="button">
           New Automation
         </Button>
       )
