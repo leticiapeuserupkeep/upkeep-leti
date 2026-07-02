@@ -554,7 +554,7 @@ export default function AgentsPage() {
             </div>
             {/* Title */}
             <div className="flex items-center px-4 gap-4 flex-1 h-full">
-              <h1 className="text-[20px] font-bold leading-8 text-[#1C2024]">Nova</h1>
+              <h1 className="text-[length:var(--font-size-md)] font-semibold text-[var(--color-neutral-12)] whitespace-nowrap">Nova</h1>
             </div>
             {/* Trailing actions */}
             <div className="flex items-center gap-4 px-4 shrink-0">

@@ -40,6 +40,22 @@ function CustomAppsIcon({ size = 16 }: { size?: number }) {
   )
 }
 
+function NovaIcon({ size = 16 }: { size?: number }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden>
+      <g clipPath="url(#nova-clip)">
+        <path fillRule="evenodd" clipRule="evenodd" d="M1.16675 5.99999C4.52323 5.99999 6.00008 4.52314 6.00008 1.16666C6.00008 4.52314 7.47693 5.99999 10.8334 5.99999C7.47693 5.99999 6.00008 7.47684 6.00008 10.8333C6.00008 7.47684 4.52323 5.99999 1.16675 5.99999Z" stroke="currentColor" strokeWidth="1.2" strokeLinejoin="round"/>
+        <path fillRule="evenodd" clipRule="evenodd" d="M8.50008 11.6667C10.6992 11.6667 11.6667 10.6991 11.6667 8.49999C11.6667 10.6991 12.6343 11.6667 14.8334 11.6667C12.6343 11.6667 11.6667 12.6342 11.6667 14.8333C11.6667 12.6342 10.6992 11.6667 8.50008 11.6667Z" stroke="currentColor" strokeWidth="1.2" strokeLinejoin="round"/>
+      </g>
+      <defs>
+        <clipPath id="nova-clip">
+          <rect width="16" height="16" fill="white"/>
+        </clipPath>
+      </defs>
+    </svg>
+  )
+}
+
 function AutomationsIcon({ size = 16 }: { size?: number }) {
   return (
     <svg width={size} height={size} viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden>
@@ -77,11 +93,11 @@ const sections: NavSection[] = [
     ],
   },
   {
-    title: 'NOVA',
+    title: 'AI TOOLS',
     badge: 'NEW',
     items: [
-      { label: 'Chat', icon: MessageCircle, href: '/agents' },
-      { label: 'Automations', icon: AutomationsIcon, href: '/workflows' },
+      { label: 'Nova', icon: NovaIcon, href: '/agents' },
+      { label: 'Workflows', icon: AutomationsIcon, href: '/workflows' },
       { label: 'Custom Apps', icon: CustomAppsIcon, href: '/studio', dot: true },
     ],
   },
