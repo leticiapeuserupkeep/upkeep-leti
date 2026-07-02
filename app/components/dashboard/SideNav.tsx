@@ -77,12 +77,13 @@ const sections: NavSection[] = [
     ],
   },
   {
-    title: 'NOVA',
+    title: 'Intelligence',
     badge: 'NEW',
     items: [
-      { label: 'Chat', icon: MessageCircle, href: '/agents' },
-      { label: 'Automations', icon: AutomationsIcon, href: '/workflows' },
-      { label: 'Custom Apps', icon: CustomAppsIcon, href: '/studio', dot: true },
+      { label: 'Nova', icon: MessageCircle, href: '/agents' },
+      { label: 'Scheduled Tasks', icon: AutomationsIcon, href: '/workflows' },
+      { label: 'Apps', icon: CustomAppsIcon, href: '/studio', dot: true },
+      { label: 'Create New App', icon: Wand2, href: '/studio/create' },
     ],
   },
   {

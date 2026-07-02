@@ -21,8 +21,8 @@ function getPageTitle(pathname: string): string {
   if (pathname.startsWith('/billing')) return 'Billing & Usage'
   if (pathname.startsWith('/studio/create')) return 'New App'
   if (pathname.startsWith('/studio/agents')) return 'My Agents'
-  if (pathname.startsWith('/studio/browse')) return 'Custom Apps'
-  if (pathname.startsWith('/studio')) return 'Custom Apps'
+  if (pathname.startsWith('/studio/browse')) return 'Apps'
+  if (pathname.startsWith('/studio')) return 'Apps'
   if (pathname.startsWith('/edge/runtime')) return 'Runtime'
   if (pathname.startsWith('/edge/sensors')) return 'Sensors'
   if (pathname.startsWith('/edge/gateways')) return 'Gateways'
@@ -32,7 +32,7 @@ function getPageTitle(pathname: string): string {
   if (pathname.startsWith('/command-center')) return 'Command Center'
   if (pathname.startsWith('/intelligence')) return 'Intelligence'
   if (pathname.startsWith('/supernova/staging')) return 'SuperNova Staging'
-  if (pathname.startsWith('/workflows')) return 'Automations'
+  if (pathname.startsWith('/workflows')) return 'Scheduled Tasks'
   if (pathname.startsWith('/aimates')) return 'Agents'
   return 'Dashboard'
 }
@@ -96,7 +96,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
     if (isWorkflows) {
       return (
         <Button variant="primary" size="md" type="button">
-          New Automation
+          New Scheduled Task
         </Button>
       )
     }
@@ -114,11 +114,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
       )
     }
     if (isStudioSection) {
-      return (
-        <Button variant="primary" size="md" asChild>
-          <Link href="/studio/create">New App</Link>
-        </Button>
-      )
+      return undefined
     }
     if (isRuntimeList) {
       return undefined
