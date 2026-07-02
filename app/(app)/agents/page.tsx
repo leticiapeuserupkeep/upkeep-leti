@@ -50,10 +50,10 @@ const TEAM_CHAT = {
 }
 
 const CHAT_CHIPS = [
-  { label: 'Analyze my reactive work', icon: null, prompt: 'I need help analyzing my reactive maintenance patterns and identifying trends' },
-  { label: 'Increase my PM coverage', icon: null, prompt: 'Help me increase preventive maintenance coverage and reduce reactive work' },
-  { label: 'Triage my requests', icon: null, prompt: 'I need help classifying and prioritizing incoming work orders automatically' },
-  { label: 'Clean up work order data', icon: null, prompt: 'Help me find and fix duplicates, missing fields, and inconsistencies in my work order data' },
+  { label: 'Analyze my reactive work', icon: undefined, prompt: 'I need help analyzing my reactive maintenance patterns and identifying trends' },
+  { label: 'Increase my PM coverage', icon: undefined, prompt: 'Help me increase preventive maintenance coverage and reduce reactive work' },
+  { label: 'Triage my requests', icon: undefined, prompt: 'I need help classifying and prioritizing incoming work orders automatically' },
+  { label: 'Clean up work order data', icon: undefined, prompt: 'Help me find and fix duplicates, missing fields, and inconsistencies in my work order data' },
 ]
 
 const CONNECT_TOOLS = [
