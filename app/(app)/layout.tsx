@@ -30,8 +30,9 @@ function getPageTitle(pathname: string): string {
   if (pathname.startsWith('/edge/settings')) return 'Settings'
   if (pathname.startsWith('/scheduler')) return 'Scheduler'
   if (pathname.startsWith('/command-center')) return 'Command Center'
+  if (pathname.startsWith('/intelligence')) return 'Intelligence'
   if (pathname.startsWith('/supernova/staging')) return 'SuperNova Staging'
-  if (pathname.startsWith('/workflows')) return 'Workflows'
+  if (pathname.startsWith('/workflows')) return 'Automations'
   if (pathname.startsWith('/aimates')) return 'Agents'
   return 'Dashboard'
 }
@@ -74,8 +75,10 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   const isWorkOrders = pathname.startsWith('/work-orders')
   const isFleetDetail = /^\/fleet\/vehicles\/[^/]+/.test(pathname)
   const isScheduler = pathname.startsWith('/scheduler')
+  const isIntelligence = pathname.startsWith('/intelligence')
   const isCommandCenter = pathname.startsWith('/command-center')
   const isEdgeSensors = pathname === '/edge/sensors'
+  const isWorkflows = pathname.startsWith('/workflows')
 
   const exportSensorReadings = useCallback(() => {
     const blob = new Blob([JSON.stringify(runtimeSensors, null, 2)], {
@@ -90,6 +93,13 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   }, [])
 
   function getActions() {
+    if (isWorkflows) {
+      return (
+        <Button variant="primary" size="sm" type="button">
+          New Automation
+        </Button>
+      )
+    }
     if (isEdgeSensors) {
       return (
         <Button variant="primary" size="sm" type="button" onClick={() => setShowAddRuntime(true)}>
@@ -183,7 +193,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
             onTimeRangeChange={setTimeRange}
             onToggleSidebar={() => setSidebarCollapsed((prev) => !prev)}
             sites={sites}
-            minimal={isEdge || isStudioSection || pathname.startsWith('/exports') || pathname.startsWith('/files') || isWorkOrders || pathname.startsWith('/scheduler')}
+            minimal={isEdge || isStudioSection || pathname.startsWith('/exports') || pathname.startsWith('/files') || isWorkOrders || pathname.startsWith('/scheduler') || isIntelligence || isWorkflows}
             backHref={isRuntimeDetail ? '/edge/runtime' : undefined}
             afterTitle={isEdgeSensors ? (
               <Button

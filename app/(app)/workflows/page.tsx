@@ -168,25 +168,6 @@ export default function WorkflowsPage() {
         <main className="flex-1 overflow-y-auto">
           <div className="w-full px-[var(--space-2xl)] py-[var(--space-xl)]">
 
-            {/* Stats */}
-            <div
-              className="grid grid-cols-3 gap-4 mb-6 opacity-0"
-              style={{ animation: 'fadeInUp 0.35s var(--ease-default) 0.02s forwards' }}
-            >
-              <div className="rounded-[var(--radius-lg)] border border-[var(--border-default)] bg-[var(--surface-primary)] p-4">
-                <p className="text-[12px] font-medium text-[var(--color-neutral-8)] mb-1">Total Workflows</p>
-                <p className="text-[24px] font-semibold text-[var(--color-neutral-12)]">{workflows.length}</p>
-              </div>
-              <div className="rounded-[var(--radius-lg)] border border-[var(--border-default)] bg-[var(--surface-primary)] p-4">
-                <p className="text-[12px] font-medium text-[var(--color-neutral-8)] mb-1">Active</p>
-                <p className="text-[24px] font-semibold text-emerald-600">{activeCount}</p>
-              </div>
-              <div className="rounded-[var(--radius-lg)] border border-[var(--border-default)] bg-[var(--surface-primary)] p-4">
-                <p className="text-[12px] font-medium text-[var(--color-neutral-8)] mb-1">Total Runs</p>
-                <p className="text-[24px] font-semibold text-[var(--color-neutral-12)]">{totalRuns.toLocaleString()}</p>
-              </div>
-            </div>
-
             {/* Table */}
             <div
               className="bg-[var(--surface-primary)] rounded-[var(--widget-radius)] border border-[var(--widget-border)] overflow-hidden opacity-0"
@@ -204,13 +185,9 @@ export default function WorkflowsPage() {
                     type="text"
                     value={search}
                     onChange={(e) => setSearch(e.target.value)}
-                    placeholder="Search workflows…"
+                    placeholder="Search automations…"
                     className="h-8 px-3 text-[13px] rounded-[var(--radius-md)] border border-[var(--border-default)] bg-[var(--surface-primary)] text-[var(--color-neutral-12)] placeholder:text-[var(--color-neutral-6)] focus:outline-none focus:border-[var(--color-accent-8)] transition-colors w-[200px]"
                   />
-                  <Button variant="primary" size="sm" className="gap-1.5">
-                    <Plus size={14} />
-                    Create Workflow
-                  </Button>
                 </div>
               </div>
 

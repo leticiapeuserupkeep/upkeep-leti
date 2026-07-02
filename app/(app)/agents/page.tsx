@@ -5,8 +5,15 @@ import {
   Search, Plus, Settings, Send, Mic, ChevronRight,
   PanelLeft, Users, Sparkles, ArrowRight,
   MoreHorizontal, Star, Pencil, Archive, Copy, Square,
+  Clock, BookOpen,
 } from 'lucide-react'
 import { Button } from '@/app/components/ui/Button'
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/app/components/ui/DropdownMenu'
 import {
   TEAMMATES, EXISTING_AGENTS, AVAILABLE_AGENTS, DEFAULT_CHIPS, BUILDER_CHIPS,
   suggestTeammate, getTeammateGreeting, getTeammateWelcomeActions,
@@ -38,9 +45,24 @@ type OnboardingStep =
 
 const TEAM_CHAT = {
   id: 'team',
-  name: 'Multi Agent',
+  name: 'New Chat',
   subtitle: 'All your Agents',
 }
+
+const CHAT_CHIPS = [
+  { label: 'Analyze my reactive work', icon: null, prompt: 'I need help analyzing my reactive maintenance patterns and identifying trends' },
+  { label: 'Increase my PM coverage', icon: null, prompt: 'Help me increase preventive maintenance coverage and reduce reactive work' },
+  { label: 'Triage my requests', icon: null, prompt: 'I need help classifying and prioritizing incoming work orders automatically' },
+  { label: 'Clean up work order data', icon: null, prompt: 'Help me find and fix duplicates, missing fields, and inconsistencies in my work order data' },
+]
+
+const CONNECT_TOOLS = [
+  { name: 'Gmail', logo: '/images/integrations/gmail.svg' },
+  { name: 'Outlook', logo: '/images/integrations/outlook.svg' },
+  { name: 'Google Sheets', logo: '/images/integrations/google-sheets.svg' },
+  { name: 'Slack', logo: '/images/integrations/slack.svg' },
+  { name: 'Teams', logo: '/images/integrations/teams.svg' },
+]
 
 /* ── Main page ── */
 
@@ -429,47 +451,10 @@ export default function AgentsPage() {
 
   return (
     <div className="flex h-screen overflow-hidden bg-[var(--surface-canvas)]">
-      {/* ── Roster Panel ── */}
-      <div className="w-[300px] shrink-0 border-r border-[var(--border-default)] bg-[var(--surface-primary)] flex flex-col overflow-hidden">
-        {/* Roster header */}
-        <div className="flex items-center gap-[var(--space-sm)] px-[var(--space-md)] h-12 border-b border-[var(--border-default)] shrink-0">
-          <button
-            onClick={() => window.dispatchEvent(new Event('toggle-sidebar'))}
-            className="flex items-center justify-center w-8 h-8 rounded-[var(--radius-lg)] hover:bg-[var(--color-neutral-3)] cursor-pointer transition-colors duration-[var(--duration-fast)]"
-            aria-label="Toggle sidebar"
-          >
-            <PanelLeft size={20} className="text-[color:var(--color-neutral-7)]" />
-          </button>
-          <h1 className="text-[length:var(--font-size-lg)] font-semibold text-[var(--color-neutral-12)]">Agents</h1>
-        </div>
-          {/* Search */}
-          <div className="px-4 pt-4 pb-2">
-            <div className="relative">
-              <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--color-neutral-6)]" />
-              <input
-                type="text"
-                placeholder="Search"
-                value={rosterSearch}
-                onChange={(e) => setRosterSearch(e.target.value)}
-                className="w-full pl-9 pr-3 py-2 text-[length:var(--font-size-sm)] rounded-[var(--radius-lg)] border border-[var(--border-default)] bg-[var(--surface-primary)] text-[var(--color-neutral-12)] placeholder:text-[var(--color-neutral-6)] focus:outline-none focus:border-[var(--color-accent-8)] transition-colors"
-              />
-            </div>
-          </div>
-
-          {/* New Assistant button */}
-          <div className="px-4 pb-3">
-            <Button
-              variant="primary"
-              size="md"
-              className="w-full justify-center"
-              onClick={() => { setSelectedId('new'); resetToWelcome() }}
-            >
-              New Agent
-            </Button>
-          </div>
-
+      {/* ── Roster Panel (collapsed) ── */}
+      <div className="hidden">
           {/* Roster list */}
-          <div className="flex-1 overflow-y-auto px-2">
+          <div className="flex-1 overflow-y-auto px-2 hidden">
             {/* Favorites */}
             {filteredTeammates.filter(t => favorites.has(t.id)).length > 0 && (
               <>
@@ -556,13 +541,48 @@ export default function AgentsPage() {
         {/* ── Chat Panel ── */}
         <div className="flex-1 flex flex-col min-w-0" style={{ background: 'linear-gradient(357.14deg, #F0F4FF 4.64%, #FFFFFF 97.57%)' }}>
           {/* Chat panel header */}
-          <div className="flex items-center justify-between px-[var(--space-lg)] h-12 border-b border-[var(--border-default)] bg-[var(--surface-primary)] shrink-0">
-            <span className="text-[length:var(--font-size-sm)] font-medium text-[var(--color-neutral-9)]">
-              {chatHeaderName}
-            </span>
-            <button className="flex items-center justify-center w-8 h-8 rounded-[var(--radius-lg)] hover:bg-[var(--color-neutral-3)] cursor-pointer transition-colors">
-              <Settings size={16} className="text-[var(--color-neutral-7)]" />
-            </button>
+          <div className="flex items-center h-[60px] border-b border-[#E0E1E6] bg-white shrink-0">
+            {/* Leading: sidebar toggle */}
+            <div className="flex items-center justify-center w-[60px] h-[60px] border-r border-[#E0E1E6] shrink-0">
+              <button
+                onClick={() => window.dispatchEvent(new Event('toggle-sidebar'))}
+                className="flex items-center justify-center w-8 h-8 rounded-[12px] hover:bg-[var(--color-neutral-3)] cursor-pointer transition-colors duration-[var(--duration-fast)]"
+                aria-label="Toggle sidebar"
+              >
+                <PanelLeft size={20} className="text-[#8B8D98]" />
+              </button>
+            </div>
+            {/* Title */}
+            <div className="flex items-center px-4 gap-4 flex-1 h-full">
+              <h1 className="text-[20px] font-bold leading-8 text-[#1C2024]">Nova</h1>
+            </div>
+            {/* Trailing actions */}
+            <div className="flex items-center gap-4 px-4 shrink-0">
+              <button
+                className="inline-flex items-center gap-2 px-3 py-1.5 rounded-[8px] text-[14px] font-medium text-white cursor-pointer transition-opacity hover:opacity-90"
+                style={{ background: '#1F2D5C' }}
+              >
+                <Sparkles size={16} className="shrink-0" aria-hidden />
+                Try Supernova
+              </button>
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <button className="flex items-center justify-center w-8 h-8 rounded-[8px] border border-[#E0E1E6] hover:bg-[var(--color-neutral-2)] cursor-pointer transition-colors">
+                    <MoreHorizontal size={16} className="text-[#1C2024]" />
+                  </button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" sideOffset={8} minWidth="180px">
+                  <DropdownMenuItem textValue="Knowledge Base">
+                    <BookOpen size={14} className="shrink-0 text-[var(--color-neutral-8)]" aria-hidden />
+                    <span className="min-w-0 flex-1 text-left">Knowledge Base</span>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem textValue="Settings">
+                    <Settings size={14} className="shrink-0 text-[var(--color-neutral-8)]" aria-hidden />
+                    <span className="min-w-0 flex-1 text-left">Settings</span>
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </div>
           </div>
 
           {/* Welcome screen */}
@@ -587,35 +607,16 @@ export default function AgentsPage() {
                   </div>
                 </>
               ) : (
-                <>
-                  {/* Multi Assistant: overlapping avatars */}
-                  <div className="flex items-center -space-x-4">
-                    {EXISTING_AGENTS.map((t) => (
-                      <img
-                        key={t.id}
-                        src={t.photo}
-                        alt={t.firstName}
-                        className="w-16 h-16 rounded-full object-cover border-3 border-white shadow-[var(--shadow-sm)]"
-                      />
-                    ))}
-                  </div>
-
-                  <div className="flex flex-col items-center gap-1">
-                    <h2 className="text-[length:var(--font-size-2xl)] font-bold text-[var(--color-neutral-12)]">
-                      Good Morning, Leti
-                    </h2>
-                    <p className="text-[length:var(--font-size-base)] text-[var(--color-neutral-8)]">
-                      Your team is ready to work with you today!
-                    </p>
-                  </div>
-                </>
+                <h2 className="text-[length:var(--font-size-2xl)] font-bold text-[var(--color-neutral-12)]">
+                  Hi Leti. How can I help?
+                </h2>
               )}
 
               {/* Chat input */}
-              <div className="w-full max-w-[560px]">
+              <div className="w-full max-w-[660px]">
                 <div
                   onClick={() => inputRef.current?.focus()}
-                  className="relative rounded-2xl border border-[var(--border-default)] bg-[var(--surface-primary)] shadow-[var(--shadow-sm)] focus-within:border-[var(--color-accent-8)] focus-within:shadow-[0_0_0_3px_rgba(59,91,219,0.12)] transition-all duration-[var(--duration-normal)] cursor-text"
+                  className="rounded-2xl border border-[var(--border-default)] bg-[var(--surface-primary)] shadow-[var(--shadow-sm)] focus-within:border-[var(--color-accent-8)] focus-within:shadow-[0_0_0_3px_rgba(59,91,219,0.12)] transition-all duration-[var(--duration-normal)] cursor-text overflow-hidden"
                 >
                   <textarea
                     ref={inputRef}
@@ -623,16 +624,23 @@ export default function AgentsPage() {
                     onChange={(e) => setChatInput(e.target.value)}
                     onKeyDown={handleKeyDown}
                     rows={2}
-                    placeholder={isNewAgent ? 'What should this agent help you with?' : 'What would you like the team to focus on?'}
-                    className="w-full resize-none bg-transparent px-4 pt-4 pb-0 text-[length:var(--font-size-base)] text-[var(--color-neutral-12)] placeholder:text-[var(--color-neutral-7)] outline-none! ring-0! shadow-none! leading-relaxed"
+                    placeholder={isNewAgent ? 'What should this agent help you with?' : 'Ask anything'}
+                    className="w-full resize-none bg-transparent px-4 pt-4 pb-2 text-[length:var(--font-size-base)] text-[var(--color-neutral-12)] placeholder:text-[var(--color-neutral-7)] outline-none! ring-0! shadow-none! leading-relaxed"
                   />
-                  <div className="flex items-center justify-end px-3 pb-2.5 pt-1 gap-1">
+                  <div className="flex items-center px-3 pb-3 pt-1 gap-1.5">
                     <button
                       onClick={(e) => e.stopPropagation()}
-                      className="flex items-center justify-center w-7 h-7 rounded-full hover:bg-[var(--color-neutral-3)] cursor-pointer transition-colors"
+                      className="flex items-center justify-center w-7 h-7 rounded-full border border-[var(--border-default)] hover:bg-[var(--color-neutral-3)] cursor-pointer transition-colors"
                     >
-                      <Plus size={16} className="text-[var(--color-neutral-7)]" />
+                      <Plus size={14} className="text-[var(--color-neutral-7)]" />
                     </button>
+                    <button
+                      onClick={(e) => e.stopPropagation()}
+                      className="flex items-center justify-center w-7 h-7 rounded-full border border-[var(--border-default)] hover:bg-[var(--color-neutral-3)] cursor-pointer transition-colors"
+                    >
+                      <Clock size={14} className="text-[var(--color-neutral-7)]" />
+                    </button>
+                    <div className="flex-1" />
                     <button
                       onClick={(e) => e.stopPropagation()}
                       className="flex items-center justify-center w-7 h-7 rounded-full hover:bg-[var(--color-neutral-3)] cursor-pointer transition-colors"
@@ -645,24 +653,34 @@ export default function AgentsPage() {
                       className={`flex items-center justify-center w-8 h-8 rounded-full cursor-pointer transition-colors ${
                         chatInput.trim()
                           ? 'bg-[var(--color-accent-9)] text-white hover:bg-[var(--color-accent-10)]'
-                          : 'bg-[var(--color-neutral-3)] text-[var(--color-neutral-7)] opacity-40'
+                          : 'bg-[var(--color-accent-9)] text-white opacity-60'
                       }`}
                     >
                       <Send size={14} />
                     </button>
                   </div>
+                  {isTeamChat && (
+                    <div className="flex items-center gap-2 px-4 py-2.5 border-t border-[var(--border-default)] bg-[var(--color-neutral-1)]">
+                      <span className="text-[length:var(--font-size-xs)] text-[var(--color-neutral-7)] shrink-0">Connect your tools to Nova</span>
+                      <div className="flex items-center gap-1.5 ml-auto">
+                        {CONNECT_TOOLS.map((tool) => (
+                          <img key={tool.name} src={tool.logo} alt={tool.name} title={tool.name} className="w-4 h-4 rounded-[2px] object-contain" />
+                        ))}
+                      </div>
+                      <ChevronRight size={14} className="text-[var(--color-neutral-6)] shrink-0" />
+                    </div>
+                  )}
                 </div>
               </div>
 
               {/* Suggested chips */}
               <div className="flex items-center gap-2 flex-wrap justify-center">
-                {(isNewAgent ? BUILDER_CHIPS : DEFAULT_CHIPS).map((chip) => (
+                {(isNewAgent ? BUILDER_CHIPS : CHAT_CHIPS).map((chip) => (
                   <button
                     key={chip.label}
                     onClick={() => handleChipClick(chip)}
                     className="inline-flex items-center gap-1.5 px-4 py-2 rounded-full border border-[var(--border-default)] bg-[var(--surface-primary)] text-[length:var(--font-size-sm)] text-[var(--color-neutral-9)] font-medium hover:bg-[var(--color-neutral-2)] hover:border-[var(--color-neutral-5)] cursor-pointer transition-all duration-[var(--duration-fast)]"
                   >
-                    {chip.icon && (() => { const Icon = chip.icon; return <Icon size={14} className="text-[var(--color-neutral-7)]" /> })()}
                     {chip.label}
                   </button>
                 ))}

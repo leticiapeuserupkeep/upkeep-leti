@@ -32,7 +32,7 @@ export const navSections: NavSection[] = [
     items: [
       { label: 'Work Orders', icon: ClipboardList, href: '/work-orders' },
       { label: 'Preventive Maintenance', icon: CalendarClock },
-      { label: 'Intelligence', icon: Sparkles, dot: true },
+      { label: 'Intelligence', icon: Sparkles, href: '/intelligence', dot: true },
       { label: 'Scheduler', icon: CalendarClock },
       { label: 'Requests', icon: Inbox },
     ],
