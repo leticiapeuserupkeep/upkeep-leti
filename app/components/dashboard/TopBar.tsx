@@ -36,15 +36,18 @@ export function TopBar({
   sites, actions, afterTitle, minimal = false, backHref,
 }: TopBarProps) {
   return (
-      <header className="sticky top-0 z-[var(--z-sticky)] flex items-center gap-[var(--space-sm)] h-[60px] px-[var(--space-md)] bg-[var(--surface-primary)] border-b border-[rgba(33,37,41,0.15)]">
-        <button
-          onClick={onToggleSidebar}
-          className="flex items-center justify-center w-8 h-8 rounded-[var(--radius-lg)] hover:bg-[var(--color-neutral-3)] cursor-pointer transition-colors duration-[var(--duration-fast)]"
-          aria-label="Toggle sidebar"
-        >
-          <PanelLeft size={20} className="text-[color:var(--color-neutral-7)]" />
-        </button>
+      <header className="sticky top-0 z-[var(--z-sticky)] flex items-center gap-[var(--space-sm)] h-[60px] bg-[var(--surface-primary)] border-b border-[rgba(33,37,41,0.15)]">
+        <div className="flex items-center justify-center w-[60px] h-full border-r border-[#E0E1E6] shrink-0">
+          <button
+            onClick={onToggleSidebar}
+            className="flex items-center justify-center w-8 h-8 rounded-[var(--radius-lg)] hover:bg-[var(--color-neutral-3)] cursor-pointer transition-colors duration-[var(--duration-fast)]"
+            aria-label="Toggle sidebar"
+          >
+            <PanelLeft size={20} className="text-[color:var(--color-neutral-7)]" />
+          </button>
+        </div>
 
+        <div className="flex flex-1 items-center gap-[var(--space-sm)] pr-[var(--space-md)] min-w-0">
         {backHref && (
           <Link
             href={backHref}
@@ -113,7 +116,9 @@ export function TopBar({
           </div>
         )}
 
-        {actions && <div className="flex items-center gap-[var(--space-sm)]">{actions}</div>}
+        </div>
+
+        {actions && <div className="flex items-center gap-[var(--space-sm)] pr-[var(--space-md)]">{actions}</div>}
       </header>
   )
 }

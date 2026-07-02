@@ -4,7 +4,7 @@ import {
   Box, MapPin, Users, ListChecks, FileText, FileDown,
   Car, AlertTriangle, Plug,
   Receipt, Building2,
-  Gem, Download, Command, Wand2, Bot,
+  Gem, Download, Command, Wand2,
   LayoutGrid, CircleHelp, MessageCircle, Settings,
   Signal, Radio, Siren, Timer, Settings2, Warehouse, ScrollText,
   ClipboardCheck, FileClock,
