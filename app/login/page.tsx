@@ -84,6 +84,7 @@ interface FieldProps {
   label?: string
   id: string
   type?: string
+  inputMode?: React.HTMLAttributes<HTMLInputElement>['inputMode']
   placeholder?: string
   required?: boolean
   suffix?: React.ReactNode
@@ -95,7 +96,7 @@ interface FieldProps {
   hasError?: boolean
 }
 
-function InputField({ label, id, type = 'text', placeholder, required, suffix, value, onChange, onBlur, onFocus, error, hasError }: FieldProps) {
+function InputField({ label, id, type = 'text', inputMode, placeholder, required, suffix, value, onChange, onBlur, onFocus, error, hasError }: FieldProps) {
   const borderClass = hasError
     ? 'border-[#E5484D] focus-within:border-[#E5484D]'
     : 'border-[#E0E1E6] focus-within:border-[#4B7BF5]'
@@ -112,6 +113,7 @@ function InputField({ label, id, type = 'text', placeholder, required, suffix, v
         <input
           id={id}
           type={type}
+          inputMode={inputMode}
           placeholder={placeholder}
           value={value}
           onChange={onChange}
@@ -246,10 +248,11 @@ function SignInForm({ tab, setTab }: TabsProps) {
           id="email"
           label="Email"
           type="email"
+          inputMode="email"
           placeholder="Email"
           required
           value={email}
-          onChange={e => { setEmail(e.target.value); if (emailTouched && isValidEmail(e.target.value)) setEmailError('') }}
+          onChange={e => { const v = e.target.value.replace(/[^a-zA-Z0-9._+\-@]/g, ''); setEmail(v); if (emailTouched && isValidEmail(v)) setEmailError('') }}
           onBlur={handleEmailBlur}
           hasError={!!emailError}
           error={emailError}
@@ -353,10 +356,11 @@ function SignUpForm({ tab, setTab }: TabsProps) {
           id="signup-email"
           label="Email"
           type="email"
+          inputMode="email"
           placeholder="Email"
           required
           value={email}
-          onChange={e => { setEmail(e.target.value); if (emailTouched && isValidEmail(e.target.value)) setEmailError('') }}
+          onChange={e => { const v = e.target.value.replace(/[^a-zA-Z0-9._+\-@]/g, ''); setEmail(v); if (emailTouched && isValidEmail(v)) setEmailError('') }}
           onBlur={handleEmailBlur}
           hasError={!!emailError}
           error={emailError}
