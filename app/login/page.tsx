@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useId } from 'react'
+import { useState, useEffect, useId } from 'react'
 import Image from 'next/image'
 import { Eye, EyeOff, Info, Check, X } from 'lucide-react'
 import { Button } from '@/app/components/ui/Button'
@@ -438,66 +438,126 @@ function SignUpForm({ tab, setTab }: TabsProps) {
   )
 }
 
+/* ── Rotating background slides ── */
+
+const SLIDES = [
+  {
+    gradient: 'linear-gradient(160deg, #050D1F 0%, #0A1830 45%, #071223 100%)',
+    mesh: 'radial-gradient(ellipse 80% 60% at 15% 85%, rgba(30,80,160,0.4) 0%, transparent 60%), radial-gradient(ellipse 60% 50% at 85% 15%, rgba(20,50,120,0.3) 0%, transparent 60%)',
+    wave: '#3B82F6',
+    phrase: 'Trusted by thousands of maintenance teams.',
+  },
+  {
+    gradient: 'linear-gradient(160deg, #1A0340 0%, #5B0EA6 45%, #9333EA 100%)',
+    mesh: 'radial-gradient(ellipse 80% 60% at 85% 15%, rgba(192,64,255,0.5) 0%, transparent 60%), radial-gradient(ellipse 60% 50% at 15% 85%, rgba(130,0,200,0.3) 0%, transparent 60%)',
+    wave: '#A855F7',
+    phrase: 'Keep work orders, assets, and teams in sync.',
+  },
+  {
+    gradient: 'linear-gradient(160deg, #05101A 0%, #0C2A45 45%, #0E4272 100%)',
+    mesh: 'radial-gradient(ellipse 80% 60% at 20% 75%, rgba(14,66,114,0.5) 0%, transparent 60%), radial-gradient(ellipse 60% 50% at 80% 20%, rgba(12,42,69,0.4) 0%, transparent 60%)',
+    wave: '#60A5FA',
+    phrase: 'Trusted by thousands of maintenance professionals.',
+  },
+]
+
 /* ── Page ── */
 
 export default function LoginPage() {
   const [tab, setTab] = useState<'signin' | 'signup'>('signin')
-  const isSignIn = tab === 'signin'
+  const [slide, setSlide] = useState(0)
+
+  useEffect(() => {
+    const id = setInterval(() => setSlide(s => (s + 1) % SLIDES.length), 8000)
+    return () => clearInterval(id)
+  }, [])
 
   return (
-    <div
-      className="min-h-screen flex items-center p-20 relative overflow-hidden"
-      style={{
-        background: isSignIn
-          ? 'linear-gradient(160deg, #050D1F 0%, #0A1830 45%, #071223 100%)'
-          : 'linear-gradient(160deg, #1A0340 0%, #5B0EA6 45%, #9333EA 100%)',
-        transition: 'background 0.4s ease',
-      }}
-    >
-      {/* Mesh overlay */}
-      <div
-        className="absolute inset-0 pointer-events-none transition-all duration-500"
-        style={{
-          backgroundImage: isSignIn
-            ? 'radial-gradient(ellipse 80% 60% at 15% 85%, rgba(30,80,160,0.4) 0%, transparent 60%), radial-gradient(ellipse 60% 50% at 85% 15%, rgba(20,50,120,0.3) 0%, transparent 60%)'
-            : 'radial-gradient(ellipse 80% 60% at 85% 15%, rgba(192,64,255,0.5) 0%, transparent 60%), radial-gradient(ellipse 60% 50% at 15% 85%, rgba(130,0,200,0.3) 0%, transparent 60%)',
-        }}
-      />
-
-      {/* Wave lines */}
-      <svg className="absolute inset-0 w-full h-full pointer-events-none opacity-20" viewBox="0 0 1311 852" preserveAspectRatio="xMidYMid slice" aria-hidden>
-        {Array.from({ length: 12 }).map((_, i) => (
-          <path
+    <div className="min-h-screen flex items-center p-20 relative overflow-hidden">
+      {/* Background layers — crossfade independently of tab */}
+      <div className="absolute inset-0 pointer-events-none">
+        {SLIDES.map((s, i) => (
+          <div
             key={i}
-            d={`M${-200 + i * 40},${200 + i * 50} Q${400 + i * 30},${100 + i * 40} ${800 + i * 20},${300 + i * 60} T${1600},${200 + i * 50}`}
-            stroke={isSignIn ? '#3B82F6' : '#A855F7'}
-            strokeWidth="1"
-            fill="none"
+            className="absolute inset-0"
+            style={{
+              background: s.gradient,
+              opacity: i === slide ? 1 : 0,
+              transition: 'opacity 1.5s ease',
+            }}
           />
         ))}
+        {SLIDES.map((s, i) => (
+          <div
+            key={`mesh-${i}`}
+            className="absolute inset-0"
+            style={{
+              backgroundImage: s.mesh,
+              opacity: i === slide ? 1 : 0,
+              transition: 'opacity 1.5s ease',
+            }}
+          />
+        ))}
+      </div>
+
+      {/* Wave lines */}
+      <svg className="absolute inset-0 w-full h-full pointer-events-none" viewBox="0 0 1311 852" preserveAspectRatio="xMidYMid slice" aria-hidden>
+        {SLIDES.map((s, si) =>
+          Array.from({ length: 12 }).map((_, i) => (
+            <path
+              key={`${si}-${i}`}
+              d={`M${-200 + i * 40},${200 + i * 50} Q${400 + i * 30},${100 + i * 40} ${800 + i * 20},${300 + i * 60} T${1600},${200 + i * 50}`}
+              stroke={s.wave}
+              strokeWidth="1"
+              fill="none"
+              style={{
+                opacity: si === slide ? 0.2 : 0,
+                transition: 'opacity 1.5s ease',
+              }}
+            />
+          ))
+        )}
       </svg>
 
-      {/* Left panel */}
+      {/* Left panel — phrase rotates with slide */}
       <div className="flex flex-1 flex-col gap-10 items-start min-w-0 px-6 relative z-10">
         <div className="relative h-[39px] w-[156px] shrink-0">
           <Image src="/images/logo-upkeep.svg" alt="UpKeep" fill className="object-contain object-left brightness-0 invert" priority />
         </div>
-        <p className="text-white font-extrabold text-[48px] leading-[52px] max-w-[400px]">
-          {isSignIn ? 'Trusted by thousands of maintenance teams.' : 'Trusted by thousands of maintenance professionals.'}
+        <p
+          key={slide}
+          className="text-white font-extrabold text-[48px] leading-[52px] max-w-[400px]"
+          style={{ animation: 'phraseIn 0.7s ease forwards' }}
+        >
+          {SLIDES[slide].phrase}
         </p>
       </div>
 
-      {/* Card */}
-      <div className="bg-white flex flex-col items-center gap-4 px-[54px] py-[60px] rounded-[32px] w-[626px] shrink-0 relative z-10 shadow-2xl">
-        {isSignIn
-          ? <SignInForm tab={tab} setTab={setTab} />
-          : <SignUpForm tab={tab} setTab={setTab} />
-        }
+      {/* Card — only content animates on tab switch, card shell stays */}
+      <div className="bg-white flex flex-col items-center px-[54px] py-[60px] rounded-[32px] w-[626px] shrink-0 relative z-10 shadow-2xl overflow-hidden">
+        <div
+          key={tab}
+          className="flex flex-col items-center gap-4 w-full"
+          style={{ animation: 'cardIn 0.5s ease forwards' }}
+        >
+          {tab === 'signin'
+            ? <SignInForm tab={tab} setTab={setTab} />
+            : <SignUpForm tab={tab} setTab={setTab} />
+          }
+        </div>
       </div>
 
       <style>{`
         @keyframes fadeIn {
           from { opacity: 0; transform: translateY(-4px); }
+          to   { opacity: 1; transform: translateY(0); }
+        }
+        @keyframes phraseIn {
+          from { opacity: 0; transform: translateY(2px); }
+          to   { opacity: 1; transform: translateY(0); }
+        }
+        @keyframes cardIn {
+          from { opacity: 0; transform: translateY(8px); }
           to   { opacity: 1; transform: translateY(0); }
         }
       `}</style>
