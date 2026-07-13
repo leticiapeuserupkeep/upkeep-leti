@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useId } from 'react'
 import Image from 'next/image'
-import { Eye, EyeOff, Info, Check, X } from 'lucide-react'
+import { Eye, EyeOff, Info, Check, X, ChevronDown } from 'lucide-react'
 import { Button } from '@/app/components/ui/Button'
 
 /* ── Helpers ── */
@@ -394,9 +394,13 @@ function SignUpForm({ tab, setTab }: TabsProps) {
         </div>
 
         <div className={`flex items-center border rounded-[12px] bg-white overflow-hidden transition-colors ${!phone && passwordTouched ? 'border-[#E5484D]' : 'border-[#E0E1E6] focus-within:border-[#4B7BF5]'}`}>
-          <div className="flex items-center pl-3 gap-2 shrink-0">
+          <button
+            type="button"
+            className="flex items-center gap-1.5 px-3 py-4 shrink-0 border-r border-[#E0E1E6] cursor-pointer hover:bg-[#F9F9FB] transition-colors"
+          >
             <FlagIcon />
-          </div>
+            <ChevronDown size={14} className="text-[#8B8D98]" />
+          </button>
           <input
             id="phone"
             type="tel"
