@@ -398,7 +398,7 @@ function SignUpForm({ tab, setTab }: TabsProps) {
             type="tel"
             placeholder="Mobile Number *"
             value={phone}
-            onChange={e => setPhone(e.target.value)}
+            onChange={e => setPhone(e.target.value.replace(/\D/g, ''))}
             className="flex-1 px-3 py-4 text-[16px] text-[#1D222B] placeholder:text-[#8B8D98] outline-none bg-transparent"
           />
         </div>
