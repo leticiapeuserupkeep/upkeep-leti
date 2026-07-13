@@ -21,20 +21,108 @@ function isValidPassword(password: string) {
   return PW_RULES.every(r => r.test(password))
 }
 
-/* ── Decorative SVGs ── */
+/* ── Country selector ── */
 
-function FlagIcon() {
+const COUNTRIES = [
+  { code: 'US', name: 'United States', dial: '+1', flag: '🇺🇸' },
+  { code: 'GB', name: 'United Kingdom', dial: '+44', flag: '🇬🇧' },
+  { code: 'CA', name: 'Canada', dial: '+1', flag: '🇨🇦' },
+  { code: 'AU', name: 'Australia', dial: '+61', flag: '🇦🇺' },
+  { code: 'DE', name: 'Germany', dial: '+49', flag: '🇩🇪' },
+  { code: 'FR', name: 'France', dial: '+33', flag: '🇫🇷' },
+  { code: 'ES', name: 'Spain', dial: '+34', flag: '🇪🇸' },
+  { code: 'IT', name: 'Italy', dial: '+39', flag: '🇮🇹' },
+  { code: 'PT', name: 'Portugal', dial: '+351', flag: '🇵🇹' },
+  { code: 'MX', name: 'Mexico', dial: '+52', flag: '🇲🇽' },
+  { code: 'BR', name: 'Brazil', dial: '+55', flag: '🇧🇷' },
+  { code: 'AR', name: 'Argentina', dial: '+54', flag: '🇦🇷' },
+  { code: 'CL', name: 'Chile', dial: '+56', flag: '🇨🇱' },
+  { code: 'CO', name: 'Colombia', dial: '+57', flag: '🇨🇴' },
+  { code: 'IN', name: 'India', dial: '+91', flag: '🇮🇳' },
+  { code: 'JP', name: 'Japan', dial: '+81', flag: '🇯🇵' },
+  { code: 'KR', name: 'South Korea', dial: '+82', flag: '🇰🇷' },
+  { code: 'CN', name: 'China', dial: '+86', flag: '🇨🇳' },
+  { code: 'SG', name: 'Singapore', dial: '+65', flag: '🇸🇬' },
+  { code: 'AE', name: 'UAE', dial: '+971', flag: '🇦🇪' },
+  { code: 'SA', name: 'Saudi Arabia', dial: '+966', flag: '🇸🇦' },
+  { code: 'ZA', name: 'South Africa', dial: '+27', flag: '🇿🇦' },
+  { code: 'NG', name: 'Nigeria', dial: '+234', flag: '🇳🇬' },
+  { code: 'NL', name: 'Netherlands', dial: '+31', flag: '🇳🇱' },
+  { code: 'SE', name: 'Sweden', dial: '+46', flag: '🇸🇪' },
+  { code: 'NO', name: 'Norway', dial: '+47', flag: '🇳🇴' },
+  { code: 'DK', name: 'Denmark', dial: '+45', flag: '🇩🇰' },
+  { code: 'CH', name: 'Switzerland', dial: '+41', flag: '🇨🇭' },
+  { code: 'PL', name: 'Poland', dial: '+48', flag: '🇵🇱' },
+  { code: 'NZ', name: 'New Zealand', dial: '+64', flag: '🇳🇿' },
+]
+
+interface Country { code: string; name: string; dial: string; flag: string }
+
+function CountrySelector({ selected, onSelect }: { selected: Country; onSelect: (c: Country) => void }) {
+  const [open, setOpen] = useState(false)
+  const [search, setSearch] = useState('')
+
+  useEffect(() => {
+    if (!open) return
+    function close(e: MouseEvent) {
+      const el = document.getElementById('country-dropdown-root')
+      if (el && !el.contains(e.target as Node)) setOpen(false)
+    }
+    document.addEventListener('mousedown', close)
+    return () => document.removeEventListener('mousedown', close)
+  }, [open])
+
+  const filtered = COUNTRIES.filter(c =>
+    c.name.toLowerCase().includes(search.toLowerCase()) ||
+    c.dial.includes(search) ||
+    c.code.toLowerCase().includes(search.toLowerCase())
+  )
+
   return (
-    <svg width="20" height="20" viewBox="0 0 20 20" fill="none" aria-hidden>
-      <rect width="20" height="20" rx="2" fill="#B22234" />
-      <rect y="1.54" width="20" height="1.54" fill="white" />
-      <rect y="4.62" width="20" height="1.54" fill="white" />
-      <rect y="7.69" width="20" height="1.54" fill="white" />
-      <rect y="10.77" width="20" height="1.54" fill="white" />
-      <rect y="13.85" width="20" height="1.54" fill="white" />
-      <rect y="16.92" width="20" height="1.54" fill="white" />
-      <rect width="8" height="10.77" fill="#3C3B6E" />
-    </svg>
+    <div id="country-dropdown-root" className="relative shrink-0">
+      <button
+        type="button"
+        onClick={() => setOpen(o => !o)}
+        className="flex items-center gap-1.5 px-3 py-4 border-r border-[#E0E1E6] cursor-pointer hover:bg-[#F9F9FB] transition-colors h-full"
+      >
+        <span className="text-[18px] leading-none">{selected.flag}</span>
+        <span className="text-[13px] font-medium text-[#60646C]">{selected.dial}</span>
+        <ChevronDown size={13} className={`text-[#8B8D98] transition-transform duration-150 ${open ? 'rotate-180' : ''}`} />
+      </button>
+
+      {open && (
+        <div className="absolute top-full left-0 mt-1 w-[280px] bg-white border border-[#E0E1E6] rounded-[12px] shadow-xl z-50 overflow-hidden">
+          <div className="p-2 border-b border-[#F0F0F3]">
+            <input
+              autoFocus
+              type="text"
+              placeholder="Search country or code…"
+              value={search}
+              onChange={e => setSearch(e.target.value)}
+              className="w-full px-3 py-2 text-[14px] bg-[#F9F9FB] rounded-[8px] outline-none placeholder:text-[#8B8D98] text-[#1D222B]"
+            />
+          </div>
+          <ul className="max-h-[240px] overflow-y-auto py-1">
+            {filtered.length === 0 && (
+              <li className="px-4 py-3 text-[13px] text-[#8B8D98]">No results</li>
+            )}
+            {filtered.map(c => (
+              <li key={c.code}>
+                <button
+                  type="button"
+                  onClick={() => { onSelect(c); setOpen(false); setSearch('') }}
+                  className={`flex items-center gap-3 w-full px-4 py-2.5 text-left hover:bg-[#F5F5FF] transition-colors ${c.code === selected.code ? 'bg-[#F0F0FF]' : ''}`}
+                >
+                  <span className="text-[18px] leading-none w-6 shrink-0">{c.flag}</span>
+                  <span className="flex-1 text-[14px] text-[#1D222B] truncate">{c.name}</span>
+                  <span className="text-[13px] text-[#8B8D98] shrink-0">{c.dial}</span>
+                </button>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+    </div>
   )
 }
 
@@ -318,6 +406,7 @@ function SignUpForm({ tab, setTab }: TabsProps) {
   const [password, setPassword] = useState('')
   const [phone, setPhone] = useState('')
   const [company, setCompany] = useState('')
+  const [country, setCountry] = useState<Country>(COUNTRIES[0])
   const [emailError, setEmailError] = useState('')
   const [passwordError, setPasswordError] = useState('')
   const [emailTouched, setEmailTouched] = useState(false)
@@ -393,17 +482,12 @@ function SignUpForm({ tab, setTab }: TabsProps) {
           {pwFocused && <PasswordRequirements password={password} />}
         </div>
 
-        <div className={`flex items-center border rounded-[12px] bg-white overflow-hidden transition-colors ${!phone && passwordTouched ? 'border-[#E5484D]' : 'border-[#E0E1E6] focus-within:border-[#4B7BF5]'}`}>
-          <button
-            type="button"
-            className="flex items-center gap-1.5 px-3 py-4 shrink-0 border-r border-[#E0E1E6] cursor-pointer hover:bg-[#F9F9FB] transition-colors"
-          >
-            <FlagIcon />
-            <ChevronDown size={14} className="text-[#8B8D98]" />
-          </button>
+        <div className={`flex items-center border rounded-[12px] bg-white transition-colors ${!phone && passwordTouched ? 'border-[#E5484D]' : 'border-[#E0E1E6] focus-within:border-[#4B7BF5]'}`}>
+          <CountrySelector selected={country} onSelect={setCountry} />
           <input
             id="phone"
             type="tel"
+            inputMode="numeric"
             placeholder="Mobile Number *"
             value={phone}
             onChange={e => setPhone(e.target.value.replace(/\D/g, ''))}
