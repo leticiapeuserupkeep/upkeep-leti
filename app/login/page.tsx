@@ -482,21 +482,27 @@ function SignUpForm({ tab, setTab }: TabsProps) {
           {pwFocused && <PasswordRequirements password={password} />}
         </div>
 
-        <div className={`flex items-center border rounded-[12px] bg-white transition-colors ${!phone && passwordTouched ? 'border-[#E5484D]' : 'border-[#E0E1E6] focus-within:border-[#4B7BF5]'}`}>
-          <CountrySelector selected={country} onSelect={setCountry} />
-          <input
-            id="phone"
-            type="tel"
-            inputMode="numeric"
-            placeholder="Mobile Number *"
-            value={phone}
-            onChange={e => setPhone(e.target.value.replace(/\D/g, ''))}
-            className="flex-1 px-3 py-4 text-[16px] text-[#1D222B] placeholder:text-[#8B8D98] outline-none bg-transparent"
-          />
+        <div className="flex flex-col gap-1.5 w-full">
+          <label htmlFor="phone" className="text-[14px] font-semibold text-[#1D222B]">
+            Mobile Number <span className="text-[#CC4E00]">*</span>
+          </label>
+          <div className={`flex items-center border rounded-[12px] bg-white transition-colors ${!phone && passwordTouched ? 'border-[#E5484D]' : 'border-[#E0E1E6] focus-within:border-[#4B7BF5]'}`}>
+            <CountrySelector selected={country} onSelect={setCountry} />
+            <input
+              id="phone"
+              type="tel"
+              inputMode="numeric"
+              placeholder="Mobile Number"
+              value={phone}
+              onChange={e => setPhone(e.target.value.replace(/\D/g, ''))}
+              className="flex-1 px-3 py-4 text-[16px] text-[#1D222B] placeholder:text-[#8B8D98] outline-none bg-transparent"
+            />
+          </div>
         </div>
 
         <InputField
           id="company"
+          label="Company Name"
           type="text"
           placeholder="Company Name"
           value={company}
@@ -529,24 +535,12 @@ function SignUpForm({ tab, setTab }: TabsProps) {
 /* ── Rotating background slides ── */
 
 const SLIDES = [
-  {
-    gradient: 'linear-gradient(160deg, #050D1F 0%, #0A1830 45%, #071223 100%)',
-    mesh: 'radial-gradient(ellipse 80% 60% at 15% 85%, rgba(30,80,160,0.4) 0%, transparent 60%), radial-gradient(ellipse 60% 50% at 85% 15%, rgba(20,50,120,0.3) 0%, transparent 60%)',
-    wave: '#3B82F6',
-    phrase: 'Trusted by thousands of maintenance teams.',
-  },
-  {
-    gradient: 'linear-gradient(160deg, #1A0340 0%, #5B0EA6 45%, #9333EA 100%)',
-    mesh: 'radial-gradient(ellipse 80% 60% at 85% 15%, rgba(192,64,255,0.5) 0%, transparent 60%), radial-gradient(ellipse 60% 50% at 15% 85%, rgba(130,0,200,0.3) 0%, transparent 60%)',
-    wave: '#A855F7',
-    phrase: 'Keep work orders, assets, and teams in sync.',
-  },
-  {
-    gradient: 'linear-gradient(160deg, #05101A 0%, #0C2A45 45%, #0E4272 100%)',
-    mesh: 'radial-gradient(ellipse 80% 60% at 20% 75%, rgba(14,66,114,0.5) 0%, transparent 60%), radial-gradient(ellipse 60% 50% at 80% 20%, rgba(12,42,69,0.4) 0%, transparent 60%)',
-    wave: '#60A5FA',
-    phrase: 'Trusted by thousands of maintenance professionals.',
-  },
+  { img: '/images/login/bg1.png', phrase: 'Trusted by thousands of maintenance teams.' },
+  { img: '/images/login/bg2.png', phrase: 'Keep work orders, assets, and teams in sync.' },
+  { img: '/images/login/bg3.png', phrase: 'Manage maintenance and operations in one place.' },
+  { img: '/images/login/bg4.png', phrase: 'Built for the teams that keep work moving.' },
+  { img: '/images/login/bg5.png', phrase: 'Keep maintenance running without the chaos.' },
+  { img: '/images/login/bg6.png', phrase: 'Trusted by thousands of maintenance professionals.' },
 ]
 
 /* ── Page ── */
@@ -562,50 +556,20 @@ export default function LoginPage() {
 
   return (
     <div className="min-h-screen flex items-center p-20 relative overflow-hidden">
-      {/* Background layers — crossfade independently of tab */}
+      {/* Background image layers — crossfade independently of tab */}
       <div className="absolute inset-0 pointer-events-none">
         {SLIDES.map((s, i) => (
           <div
             key={i}
-            className="absolute inset-0"
+            className="absolute inset-0 bg-cover bg-center"
             style={{
-              background: s.gradient,
-              opacity: i === slide ? 1 : 0,
-              transition: 'opacity 1.5s ease',
-            }}
-          />
-        ))}
-        {SLIDES.map((s, i) => (
-          <div
-            key={`mesh-${i}`}
-            className="absolute inset-0"
-            style={{
-              backgroundImage: s.mesh,
+              backgroundImage: `url('${s.img}')`,
               opacity: i === slide ? 1 : 0,
               transition: 'opacity 1.5s ease',
             }}
           />
         ))}
       </div>
-
-      {/* Wave lines */}
-      <svg className="absolute inset-0 w-full h-full pointer-events-none" viewBox="0 0 1311 852" preserveAspectRatio="xMidYMid slice" aria-hidden>
-        {SLIDES.map((s, si) =>
-          Array.from({ length: 12 }).map((_, i) => (
-            <path
-              key={`${si}-${i}`}
-              d={`M${-200 + i * 40},${200 + i * 50} Q${400 + i * 30},${100 + i * 40} ${800 + i * 20},${300 + i * 60} T${1600},${200 + i * 50}`}
-              stroke={s.wave}
-              strokeWidth="1"
-              fill="none"
-              style={{
-                opacity: si === slide ? 0.2 : 0,
-                transition: 'opacity 1.5s ease',
-              }}
-            />
-          ))
-        )}
-      </svg>
 
       {/* Left panel — phrase rotates with slide */}
       <div className="flex flex-1 flex-col gap-10 items-start min-w-0 px-6 relative z-10">
