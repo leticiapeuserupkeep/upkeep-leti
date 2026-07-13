@@ -246,27 +246,32 @@ function PasswordRequirements({ password }: { password: string }) {
   )
 }
 
-/* ── Magic Link button with tooltip ── */
+/* ── Secondary action button with hover info tooltip ── */
 
-function MagicLinkButton() {
-  const [showIcon, setShowIcon] = useState(false)
+function SecondaryActionButton({ label, tooltip }: { label: string; tooltip: string }) {
+  const [hovered, setHovered] = useState(false)
   const [showTooltip, setShowTooltip] = useState(false)
 
   return (
     <div className="relative w-full">
       <button
         type="button"
-        onMouseEnter={() => setShowIcon(true)}
-        onMouseLeave={() => { setShowIcon(false); setShowTooltip(false) }}
-        className="flex items-center justify-center gap-2 w-full bg-[#F9F9FB] border border-[#8B8D98] rounded-[12px] py-4 text-[16px] font-medium text-[#1C2024] hover:bg-[#F0F0F3] transition-colors cursor-pointer"
+        onMouseEnter={() => setHovered(true)}
+        onMouseLeave={() => { setHovered(false); setShowTooltip(false) }}
+        className="flex items-center justify-center gap-2 w-full border rounded-[12px] py-4 text-[16px] font-medium text-[#1C2024] transition-all duration-200 cursor-pointer"
+        style={{
+          background: hovered ? '#F9F9FB' : '#ffffff',
+          borderColor: hovered ? '#C1C2CC' : '#E0E1E6',
+        }}
       >
-        Send me a Magic Link
+        {label}
         <span
-          className={`transition-all duration-150 ${showIcon ? 'opacity-100 w-4' : 'opacity-0 w-0 overflow-hidden'}`}
+          className="flex items-center shrink-0 overflow-hidden transition-all duration-200"
+          style={{ opacity: hovered ? 1 : 0, width: hovered ? '18px' : '0px' }}
           onMouseEnter={() => setShowTooltip(true)}
           onMouseLeave={() => setShowTooltip(false)}
         >
-          <Info size={16} className="text-[#8B8D98] hover:text-[#4B7BF5] transition-colors shrink-0" />
+          <Info size={16} className="text-[#8B8D98] hover:text-[#4B7BF5] transition-colors" />
         </span>
       </button>
 
@@ -275,11 +280,20 @@ function MagicLinkButton() {
           role="tooltip"
           className="absolute bottom-[calc(100%+8px)] left-1/2 -translate-x-1/2 z-50 w-[260px] bg-[#1D222B] text-white text-[13px] leading-[1.5] font-medium px-3 py-2.5 rounded-[8px] shadow-lg pointer-events-none"
         >
-          We&apos;ll send a secure link to your inbox so you can sign in without a password.
+          {tooltip}
           <div className="absolute top-full left-1/2 -translate-x-1/2 border-[6px] border-transparent border-t-[#1D222B]" />
         </div>
       )}
     </div>
+  )
+}
+
+function MagicLinkButton() {
+  return (
+    <SecondaryActionButton
+      label="Send me a Magic Link"
+      tooltip="We'll send a secure link to your inbox so you can sign in without a password."
+    />
   )
 }
 
@@ -386,12 +400,10 @@ function SignInForm({ tab, setTab }: TabsProps) {
 
       <div className="flex flex-col gap-2 w-full">
         <MagicLinkButton />
-        <button
-          type="button"
-          className="flex items-center justify-center w-full border border-[#E0E1E6] rounded-[12px] py-4 text-[16px] font-medium text-[#1C2024] hover:bg-[#F9F9FB] transition-colors cursor-pointer"
-        >
-          Continue with SSO
-        </button>
+        <SecondaryActionButton
+          label="Continue with SSO"
+          tooltip="Sign in using your organization's single sign-on provider."
+        />
       </div>
     </>
   )
