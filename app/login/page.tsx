@@ -1,20 +1,27 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useId } from 'react'
 import Image from 'next/image'
-import { Eye, EyeOff, Info } from 'lucide-react'
+import { Eye, EyeOff, Info, Check, X } from 'lucide-react'
 import { Button } from '@/app/components/ui/Button'
 
-function GoogleLogo() {
-  return (
-    <svg width="20" height="20" viewBox="0 0 24 24" aria-hidden>
-      <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" />
-      <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" />
-      <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" />
-      <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" />
-    </svg>
-  )
+/* ── Helpers ── */
+
+function isValidEmail(email: string) {
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)
 }
+
+const PW_RULES = [
+  { label: 'At least 8 characters', test: (p: string) => p.length >= 8 },
+  { label: 'One uppercase letter', test: (p: string) => /[A-Z]/.test(p) },
+  { label: 'One number', test: (p: string) => /\d/.test(p) },
+]
+
+function isValidPassword(password: string) {
+  return PW_RULES.every(r => r.test(password))
+}
+
+/* ── Decorative SVGs ── */
 
 function FlagIcon() {
   return (
@@ -31,9 +38,11 @@ function FlagIcon() {
   )
 }
 
+/* ── Shared UI pieces ── */
+
 function Divider() {
   return (
-    <div className="flex items-center gap-3 w-full py-5">
+    <div className="flex items-center gap-3 w-full py-4">
       <div className="flex-1 h-px bg-[#E0E1E6]" />
       <span className="text-[14px] font-medium text-[#1D222B] whitespace-nowrap">Or</span>
       <div className="flex-1 h-px bg-[#E0E1E6]" />
@@ -51,16 +60,16 @@ function TabSwitcher({ tab, setTab }: TabsProps) {
     <div className="flex items-center bg-[#E6EDFE] px-[10px] py-[8px] rounded-[36px] shrink-0">
       <button
         onClick={() => setTab('signup')}
-        className={`px-10 py-2 rounded-full text-[14px] transition-colors cursor-pointer ${
-          tab === 'signup' ? 'bg-white font-semibold text-black' : 'font-normal text-black'
+        className={`px-10 py-2 rounded-full text-[14px] transition-all cursor-pointer ${
+          tab === 'signup' ? 'bg-white font-semibold text-black shadow-sm' : 'font-normal text-black/70'
         }`}
       >
         Sign Up
       </button>
       <button
         onClick={() => setTab('signin')}
-        className={`px-10 py-2 rounded-full text-[14px] transition-colors cursor-pointer ${
-          tab === 'signin' ? 'bg-white font-semibold text-black' : 'font-normal text-black'
+        className={`px-10 py-2 rounded-full text-[14px] transition-all cursor-pointer ${
+          tab === 'signin' ? 'bg-white font-semibold text-black shadow-sm' : 'font-normal text-black/70'
         }`}
       >
         Sign In
@@ -69,62 +78,170 @@ function TabSwitcher({ tab, setTab }: TabsProps) {
   )
 }
 
-function InputField({
-  label,
-  id,
-  type = 'text',
-  placeholder,
-  required,
-  suffix,
-  value,
-  onChange,
-}: {
+/* ── Validated input field ── */
+
+interface FieldProps {
   label?: string
   id: string
   type?: string
   placeholder?: string
   required?: boolean
   suffix?: React.ReactNode
-  value?: string
-  onChange?: (e: React.ChangeEvent<HTMLInputElement>) => void
-}) {
+  value: string
+  onChange: (e: React.ChangeEvent<HTMLInputElement>) => void
+  onBlur?: () => void
+  onFocus?: () => void
+  error?: string
+  hasError?: boolean
+}
+
+function InputField({ label, id, type = 'text', placeholder, required, suffix, value, onChange, onBlur, onFocus, error, hasError }: FieldProps) {
+  const borderClass = hasError
+    ? 'border-[#E5484D] focus-within:border-[#E5484D]'
+    : 'border-[#E0E1E6] focus-within:border-[#4B7BF5]'
+
   return (
-    <div className="flex flex-col gap-1 w-full">
+    <div className="flex flex-col gap-1.5 w-full">
       {label && (
         <label htmlFor={id} className="text-[14px] font-semibold text-[#1D222B]">
-          {label}{required && <span className="text-[#CC4E00] ml-0.5">*</span>}
+          {label}
+          {required && <span className="text-[#CC4E00] ml-0.5">*</span>}
         </label>
       )}
-      <div className="flex items-center border border-[#E0E1E6] rounded-[12px] bg-white overflow-hidden focus-within:border-[#4B7BF5] transition-colors">
+      <div className={`flex items-center border rounded-[12px] bg-white overflow-hidden transition-colors ${borderClass}`}>
         <input
           id={id}
           type={type}
           placeholder={placeholder}
           value={value}
           onChange={onChange}
+          onBlur={onBlur}
+          onFocus={onFocus}
+          aria-invalid={hasError}
+          aria-describedby={error ? `${id}-error` : undefined}
           className="flex-1 px-4 py-4 text-[16px] text-[#1D222B] placeholder:text-[#8B8D98] outline-none bg-transparent"
         />
         {suffix}
       </div>
+      {error && (
+        <p id={`${id}-error`} role="alert" className="flex items-center gap-1.5 text-[13px] text-[#E5484D] font-medium animate-[fadeIn_0.15s_ease]">
+          <X size={13} className="shrink-0" />
+          {error}
+        </p>
+      )}
     </div>
   )
 }
 
+/* ── Password requirements checklist ── */
+
+function PasswordRequirements({ password }: { password: string }) {
+  return (
+    <div className="flex flex-col gap-1.5 bg-[#F9F9FB] border border-[#E0E1E6] rounded-[10px] px-3 py-3 text-[13px]">
+      <p className="font-semibold text-[#1D222B] mb-0.5">Password requirements:</p>
+      {PW_RULES.map(rule => {
+        const ok = rule.test(password)
+        return (
+          <div key={rule.label} className="flex items-center gap-2">
+            <span className={`flex items-center justify-center w-4 h-4 rounded-full shrink-0 transition-colors ${ok ? 'bg-[#30A46C]' : 'bg-[#E0E1E6]'}`}>
+              <Check size={10} className="text-white" />
+            </span>
+            <span className={`transition-colors ${ok ? 'text-[#30A46C] font-medium' : 'text-[#8B8D98]'}`}>
+              {rule.label}
+            </span>
+          </div>
+        )
+      })}
+    </div>
+  )
+}
+
+/* ── Magic Link button with tooltip ── */
+
+function MagicLinkButton() {
+  const [showIcon, setShowIcon] = useState(false)
+  const [showTooltip, setShowTooltip] = useState(false)
+
+  return (
+    <div className="relative w-full">
+      <button
+        type="button"
+        onMouseEnter={() => setShowIcon(true)}
+        onMouseLeave={() => { setShowIcon(false); setShowTooltip(false) }}
+        className="flex items-center justify-center gap-2 w-full bg-[#F9F9FB] border border-[#8B8D98] rounded-[12px] py-4 text-[16px] font-medium text-[#1C2024] hover:bg-[#F0F0F3] transition-colors cursor-pointer"
+      >
+        Send me a Magic Link
+        <span
+          className={`transition-all duration-150 ${showIcon ? 'opacity-100 w-4' : 'opacity-0 w-0 overflow-hidden'}`}
+          onMouseEnter={() => setShowTooltip(true)}
+          onMouseLeave={() => setShowTooltip(false)}
+        >
+          <Info size={16} className="text-[#8B8D98] hover:text-[#4B7BF5] transition-colors shrink-0" />
+        </span>
+      </button>
+
+      {showTooltip && (
+        <div
+          role="tooltip"
+          className="absolute bottom-[calc(100%+8px)] left-1/2 -translate-x-1/2 z-50 w-[260px] bg-[#1D222B] text-white text-[13px] leading-[1.5] font-medium px-3 py-2.5 rounded-[8px] shadow-lg pointer-events-none"
+        >
+          We&apos;ll send a secure link to your inbox so you can sign in without a password.
+          <div className="absolute top-full left-1/2 -translate-x-1/2 border-[6px] border-transparent border-t-[#1D222B]" />
+        </div>
+      )}
+    </div>
+  )
+}
+
+/* ── Sign In form ── */
+
 function SignInForm({ tab, setTab }: TabsProps) {
   const [showPw, setShowPw] = useState(false)
+  const [pwFocused, setPwFocused] = useState(false)
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
+  const [emailError, setEmailError] = useState('')
+  const [passwordError, setPasswordError] = useState('')
+  const [emailTouched, setEmailTouched] = useState(false)
+  const [passwordTouched, setPasswordTouched] = useState(false)
+
+  const emailValid = isValidEmail(email)
+  const passwordValid = isValidPassword(password)
+  const canSubmit = emailValid && passwordValid
+
+  function handleEmailBlur() {
+    setEmailTouched(true)
+    if (!email) {
+      setEmailError('Email is required.')
+    } else if (!emailValid) {
+      setEmailError('Please enter a valid email address.')
+    } else {
+      setEmailError('')
+    }
+  }
+
+  function handlePasswordBlur() {
+    setPwFocused(false)
+    setPasswordTouched(true)
+    if (!password) {
+      setPasswordError('Password is required.')
+    } else if (!passwordValid) {
+      setPasswordError('Password must meet all requirements.')
+    } else {
+      setPasswordError('')
+    }
+  }
 
   return (
     <>
       <TabSwitcher tab={tab} setTab={setTab} />
 
-      <div className="flex flex-col gap-1 text-center w-full py-5">
+      <div className="flex flex-col gap-1 text-center w-full py-4">
         <h1 className="text-[32px] font-bold leading-[36px] text-[#1D222B]">Welcome back to UpKeep</h1>
         <p className="text-[16px] text-[#60646C]">Sign in to keep work moving.</p>
       </div>
 
-      <div className="flex flex-col gap-2 w-full">
+      <div className="flex flex-col gap-3 w-full">
         <InputField
           id="email"
           label="Email"
@@ -132,31 +249,43 @@ function SignInForm({ tab, setTab }: TabsProps) {
           placeholder="Email"
           required
           value={email}
-          onChange={e => setEmail(e.target.value)}
+          onChange={e => { setEmail(e.target.value); if (emailTouched && isValidEmail(e.target.value)) setEmailError('') }}
+          onBlur={handleEmailBlur}
+          hasError={!!emailError}
+          error={emailError}
         />
-        <InputField
-          id="password"
-          label="Password"
-          type={showPw ? 'text' : 'password'}
-          placeholder="Password"
-          required
-          value={password}
-          onChange={e => setPassword(e.target.value)}
-          suffix={
-            <button
-              type="button"
-              onClick={() => setShowPw(p => !p)}
-              className="px-4 text-[#8B8D98] hover:text-[#1D222B] transition-colors cursor-pointer"
-              aria-label={showPw ? 'Hide password' : 'Show password'}
-            >
-              {showPw ? <EyeOff size={18} /> : <Eye size={18} />}
-            </button>
-          }
-        />
+
+        <div className="flex flex-col gap-1.5">
+          <InputField
+            id="password"
+            label="Password"
+            type={showPw ? 'text' : 'password'}
+            placeholder="Password"
+            required
+            value={password}
+            onChange={e => { setPassword(e.target.value); if (passwordTouched && isValidPassword(e.target.value)) setPasswordError('') }}
+            onFocus={() => setPwFocused(true)}
+            onBlur={handlePasswordBlur}
+            hasError={!!passwordError}
+            error={passwordError}
+            suffix={
+              <button
+                type="button"
+                onClick={() => setShowPw(p => !p)}
+                className="px-4 text-[#8B8D98] hover:text-[#1D222B] transition-colors cursor-pointer"
+                aria-label={showPw ? 'Hide password' : 'Show password'}
+              >
+                {showPw ? <EyeOff size={18} /> : <Eye size={18} />}
+              </button>
+            }
+          />
+          {pwFocused && <PasswordRequirements password={password} />}
+        </div>
 
         <Button
           variant="primary"
-          className="w-full h-[56px] rounded-[12px] text-[16px] font-semibold mt-1"
+          disabled={!canSubmit}
+          className="w-full h-[56px] rounded-[12px] text-[16px] font-semibold mt-1 transition-all"
         >
           Sign In
         </Button>
@@ -165,14 +294,7 @@ function SignInForm({ tab, setTab }: TabsProps) {
       <Divider />
 
       <div className="flex flex-col gap-2 w-full">
-        <button
-          type="button"
-          className="flex items-center justify-center gap-2 w-full bg-[#F9F9FB] border border-[#8B8D98] rounded-[12px] py-4 text-[16px] font-medium text-[#1C2024] hover:bg-[#F0F0F3] transition-colors cursor-pointer"
-        >
-          Send me a Magic Link
-          <Info size={16} className="text-[#8B8D98]" />
-        </button>
-
+        <MagicLinkButton />
         <button
           type="button"
           className="flex items-center justify-center w-full border border-[#E0E1E6] rounded-[12px] py-4 text-[16px] font-medium text-[#1C2024] hover:bg-[#F9F9FB] transition-colors cursor-pointer"
@@ -184,23 +306,49 @@ function SignInForm({ tab, setTab }: TabsProps) {
   )
 }
 
+/* ── Sign Up form ── */
+
 function SignUpForm({ tab, setTab }: TabsProps) {
   const [showPw, setShowPw] = useState(false)
+  const [pwFocused, setPwFocused] = useState(false)
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [phone, setPhone] = useState('')
   const [company, setCompany] = useState('')
+  const [emailError, setEmailError] = useState('')
+  const [passwordError, setPasswordError] = useState('')
+  const [emailTouched, setEmailTouched] = useState(false)
+  const [passwordTouched, setPasswordTouched] = useState(false)
+
+  const emailValid = isValidEmail(email)
+  const passwordValid = isValidPassword(password)
+  const canSubmit = emailValid && passwordValid && !!phone
+
+  function handleEmailBlur() {
+    setEmailTouched(true)
+    if (!email) setEmailError('Email is required.')
+    else if (!emailValid) setEmailError('Please enter a valid email address.')
+    else setEmailError('')
+  }
+
+  function handlePasswordBlur() {
+    setPwFocused(false)
+    setPasswordTouched(true)
+    if (!password) setPasswordError('Password is required.')
+    else if (!passwordValid) setPasswordError('Password must meet all requirements.')
+    else setPasswordError('')
+  }
 
   return (
     <>
       <TabSwitcher tab={tab} setTab={setTab} />
 
-      <div className="flex flex-col gap-1 text-center w-full py-5">
+      <div className="flex flex-col gap-1 text-center w-full py-4">
         <h1 className="text-[32px] font-bold leading-[36px] text-[#1D222B]">Create your account</h1>
         <p className="text-[16px] text-[#60646C]">Sign up to get started with UpKeep. No credit card required.</p>
       </div>
 
-      <div className="flex flex-col gap-2 w-full">
+      <div className="flex flex-col gap-3 w-full">
         <InputField
           id="signup-email"
           label="Email"
@@ -208,29 +356,40 @@ function SignUpForm({ tab, setTab }: TabsProps) {
           placeholder="Email"
           required
           value={email}
-          onChange={e => setEmail(e.target.value)}
-        />
-        <InputField
-          id="signup-password"
-          label="Password"
-          type={showPw ? 'text' : 'password'}
-          placeholder="Password"
-          required
-          value={password}
-          onChange={e => setPassword(e.target.value)}
-          suffix={
-            <button
-              type="button"
-              onClick={() => setShowPw(p => !p)}
-              className="px-4 text-[#8B8D98] hover:text-[#1D222B] transition-colors cursor-pointer"
-              aria-label={showPw ? 'Hide password' : 'Show password'}
-            >
-              {showPw ? <EyeOff size={18} /> : <Eye size={18} />}
-            </button>
-          }
+          onChange={e => { setEmail(e.target.value); if (emailTouched && isValidEmail(e.target.value)) setEmailError('') }}
+          onBlur={handleEmailBlur}
+          hasError={!!emailError}
+          error={emailError}
         />
 
-        <div className="flex items-center border border-[#E0E1E6] rounded-[12px] bg-white overflow-hidden focus-within:border-[#4B7BF5] transition-colors">
+        <div className="flex flex-col gap-1.5">
+          <InputField
+            id="signup-password"
+            label="Password"
+            type={showPw ? 'text' : 'password'}
+            placeholder="Password"
+            required
+            value={password}
+            onChange={e => { setPassword(e.target.value); if (passwordTouched && isValidPassword(e.target.value)) setPasswordError('') }}
+            onFocus={() => setPwFocused(true)}
+            onBlur={handlePasswordBlur}
+            hasError={!!passwordError}
+            error={passwordError}
+            suffix={
+              <button
+                type="button"
+                onClick={() => setShowPw(p => !p)}
+                className="px-4 text-[#8B8D98] hover:text-[#1D222B] transition-colors cursor-pointer"
+                aria-label={showPw ? 'Hide password' : 'Show password'}
+              >
+                {showPw ? <EyeOff size={18} /> : <Eye size={18} />}
+              </button>
+            }
+          />
+          {pwFocused && <PasswordRequirements password={password} />}
+        </div>
+
+        <div className={`flex items-center border rounded-[12px] bg-white overflow-hidden transition-colors ${!phone && passwordTouched ? 'border-[#E5484D]' : 'border-[#E0E1E6] focus-within:border-[#4B7BF5]'}`}>
           <div className="flex items-center pl-3 gap-2 shrink-0">
             <FlagIcon />
           </div>
@@ -254,7 +413,8 @@ function SignUpForm({ tab, setTab }: TabsProps) {
 
         <Button
           variant="primary"
-          className="w-full h-[56px] rounded-[12px] text-[16px] font-semibold mt-1"
+          disabled={!canSubmit}
+          className="w-full h-[56px] rounded-[12px] text-[16px] font-semibold mt-1 transition-all"
         >
           Create Account
         </Button>
@@ -263,22 +423,18 @@ function SignUpForm({ tab, setTab }: TabsProps) {
       <Divider />
 
       <div className="flex flex-col gap-2 w-full">
-        <button
-          type="button"
-          className="flex items-center justify-center gap-2 w-full bg-[#F9F9FB] border border-[#8B8D98] rounded-[12px] py-4 text-[16px] font-medium text-[#1C2024] hover:bg-[#F0F0F3] transition-colors cursor-pointer"
-        >
-          Send me a Magic Link
-          <Info size={16} className="text-[#8B8D98]" />
-        </button>
+        <MagicLinkButton />
       </div>
 
-      <p className="text-[13px] text-[#8B8D98] text-center mt-2">
+      <p className="text-[13px] text-[#8B8D98] text-center">
         By continuing, you agree to our{' '}
         <a href="#" className="underline hover:text-[#1D222B] transition-colors">Terms of Service</a>
       </p>
     </>
   )
 }
+
+/* ── Page ── */
 
 export default function LoginPage() {
   const [tab, setTab] = useState<'signin' | 'signup'>('signin')
@@ -291,11 +447,12 @@ export default function LoginPage() {
         background: isSignIn
           ? 'linear-gradient(160deg, #050D1F 0%, #0A1830 45%, #071223 100%)'
           : 'linear-gradient(160deg, #1A0340 0%, #5B0EA6 45%, #9333EA 100%)',
+        transition: 'background 0.4s ease',
       }}
     >
-      {/* Abstract mesh overlay */}
+      {/* Mesh overlay */}
       <div
-        className="absolute inset-0 pointer-events-none"
+        className="absolute inset-0 pointer-events-none transition-all duration-500"
         style={{
           backgroundImage: isSignIn
             ? 'radial-gradient(ellipse 80% 60% at 15% 85%, rgba(30,80,160,0.4) 0%, transparent 60%), radial-gradient(ellipse 60% 50% at 85% 15%, rgba(20,50,120,0.3) 0%, transparent 60%)'
@@ -303,13 +460,8 @@ export default function LoginPage() {
         }}
       />
 
-      {/* Wave lines decoration */}
-      <svg
-        className="absolute inset-0 w-full h-full pointer-events-none opacity-20"
-        viewBox="0 0 1311 852"
-        preserveAspectRatio="xMidYMid slice"
-        aria-hidden
-      >
+      {/* Wave lines */}
+      <svg className="absolute inset-0 w-full h-full pointer-events-none opacity-20" viewBox="0 0 1311 852" preserveAspectRatio="xMidYMid slice" aria-hidden>
         {Array.from({ length: 12 }).map((_, i) => (
           <path
             key={i}
@@ -324,28 +476,27 @@ export default function LoginPage() {
       {/* Left panel */}
       <div className="flex flex-1 flex-col gap-10 items-start min-w-0 px-6 relative z-10">
         <div className="relative h-[39px] w-[156px] shrink-0">
-          <Image
-            src="/images/logo-upkeep.svg"
-            alt="UpKeep"
-            fill
-            className="object-contain object-left brightness-0 invert"
-            priority
-          />
+          <Image src="/images/logo-upkeep.svg" alt="UpKeep" fill className="object-contain object-left brightness-0 invert" priority />
         </div>
         <p className="text-white font-extrabold text-[48px] leading-[52px] max-w-[400px]">
-          {isSignIn
-            ? 'Trusted by thousands of maintenance teams.'
-            : 'Trusted by thousands of maintenance professionals.'}
+          {isSignIn ? 'Trusted by thousands of maintenance teams.' : 'Trusted by thousands of maintenance professionals.'}
         </p>
       </div>
 
-      {/* Right card */}
+      {/* Card */}
       <div className="bg-white flex flex-col items-center gap-4 px-[54px] py-[60px] rounded-[32px] w-[626px] shrink-0 relative z-10 shadow-2xl">
         {isSignIn
           ? <SignInForm tab={tab} setTab={setTab} />
           : <SignUpForm tab={tab} setTab={setTab} />
         }
       </div>
+
+      <style>{`
+        @keyframes fadeIn {
+          from { opacity: 0; transform: translateY(-4px); }
+          to   { opacity: 1; transform: translateY(0); }
+        }
+      `}</style>
     </div>
   )
 }
