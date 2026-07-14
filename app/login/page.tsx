@@ -266,8 +266,7 @@ function SecondaryActionButton({ label, tooltip }: { label: string; tooltip: str
       >
         {label}
         <span
-          className="flex items-center shrink-0 overflow-hidden transition-all duration-200"
-          style={{ opacity: hovered ? 1 : 0, width: hovered ? '18px' : '0px' }}
+          className="flex items-center shrink-0"
           onMouseEnter={() => setShowTooltip(true)}
           onMouseLeave={() => setShowTooltip(false)}
         >
