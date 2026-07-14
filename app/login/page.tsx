@@ -83,7 +83,7 @@ function CountrySelector({ selected, onSelect }: { selected: Country; onSelect: 
       <button
         type="button"
         onClick={() => setOpen(o => !o)}
-        className="flex items-center gap-1.5 px-3 py-4 border-r border-[#E0E1E6] cursor-pointer hover:bg-[#F9F9FB] transition-colors h-full"
+        className="flex items-center gap-1.5 px-3 py-4 border-r border-[#E0E1E6] cursor-pointer hover:bg-[#F9F9FB] transition-colors h-full outline-none"
       >
         <span className="text-[18px] leading-none">{selected.flag}</span>
         <span className="text-[13px] font-medium text-[#60646C]">{selected.dial}</span>
