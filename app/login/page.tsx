@@ -566,7 +566,7 @@ export default function LoginPage() {
   }, [])
 
   return (
-    <div className="min-h-screen flex items-center p-20 relative overflow-hidden">
+    <div className="h-screen flex items-stretch p-[60px] relative overflow-hidden">
       {/* Background image layers — crossfade independently of tab */}
       <div className="absolute inset-0 pointer-events-none">
         {SLIDES.map((s, i) => (
@@ -583,7 +583,7 @@ export default function LoginPage() {
       </div>
 
       {/* Left panel — phrase rotates with slide */}
-      <div className="flex flex-1 flex-col gap-10 items-start min-w-0 px-6 relative z-10">
+      <div className="flex flex-1 flex-col gap-10 items-start justify-center min-w-0 px-6 relative z-10">
         <div className="relative h-[39px] w-[156px] shrink-0">
           <Image src="/images/logo-upkeep.svg" alt="UpKeep" fill className="object-contain object-left brightness-0 invert" priority />
         </div>
@@ -596,11 +596,11 @@ export default function LoginPage() {
         </p>
       </div>
 
-      {/* Card — only content animates on tab switch, card shell stays */}
-      <div className="bg-white flex flex-col items-center px-[54px] py-[60px] rounded-[32px] w-[626px] shrink-0 relative z-10 shadow-2xl overflow-hidden">
+      {/* Card — fills height, scrolls inside if content overflows */}
+      <div className="bg-white flex flex-col rounded-[32px] w-[626px] shrink-0 relative z-10 shadow-2xl overflow-y-auto">
         <div
           key={tab}
-          className="flex flex-col items-center gap-4 w-full"
+          className="flex flex-col items-center gap-4 w-full px-[54px] py-[60px]"
           style={{ animation: 'cardIn 0.5s ease forwards' }}
         >
           {tab === 'signin'
