@@ -219,11 +219,13 @@ export function SideNav({ collapsed }: SideNavProps) {
                 <Bell size={16} className="text-[var(--color-neutral-9)]" />
                 <span className="absolute top-1.5 right-1.5 w-1.5 h-1.5 rounded-full bg-[var(--color-error)]" />
               </button>
-              <Avatar.Root className="w-7 h-7 rounded-full overflow-hidden shrink-0">
-                <Avatar.Fallback className="flex items-center justify-center w-full h-full bg-[var(--color-purple-light)] text-[var(--color-purple)] text-[length:var(--font-size-xs)] font-semibold">
-                  AM
-                </Avatar.Fallback>
-              </Avatar.Root>
+              <Link href="/login">
+                <Avatar.Root className="w-7 h-7 rounded-full overflow-hidden shrink-0 cursor-pointer hover:opacity-80 transition-opacity duration-[var(--duration-fast)]">
+                  <Avatar.Fallback className="flex items-center justify-center w-full h-full bg-[var(--color-purple-light)] text-[var(--color-purple)] text-[length:var(--font-size-xs)] font-semibold">
+                    AM
+                  </Avatar.Fallback>
+                </Avatar.Root>
+              </Link>
             </div>
           )}
         </div>
