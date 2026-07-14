@@ -83,7 +83,7 @@ function CountrySelector({ selected, onSelect }: { selected: Country; onSelect: 
       <button
         type="button"
         onClick={() => setOpen(o => !o)}
-        className="flex items-center gap-1.5 px-3 py-4 border-r border-[#E0E1E6] cursor-pointer hover:bg-[#F9F9FB] transition-colors h-full outline-none"
+        className="flex items-center gap-1.5 px-3 py-2 border-r border-[#E0E1E6] cursor-pointer hover:bg-[#F9F9FB] transition-colors h-full outline-none"
       >
         <span className="text-[18px] leading-none">{selected.flag}</span>
         <span className="text-[13px] font-medium text-[#60646C]">{selected.dial}</span>
@@ -149,7 +149,7 @@ function TabSwitcher({ tab, setTab }: TabsProps) {
       <button
         onClick={() => setTab('signup')}
         className={`px-10 py-2 rounded-full text-[14px] transition-all cursor-pointer ${
-          tab === 'signup' ? 'bg-white font-semibold text-black shadow-sm' : 'font-normal text-black/70'
+          tab === 'signup' ? 'bg-white font-semibold text-black' : 'font-normal text-black/70'
         }`}
       >
         Sign Up
@@ -157,7 +157,7 @@ function TabSwitcher({ tab, setTab }: TabsProps) {
       <button
         onClick={() => setTab('signin')}
         className={`px-10 py-2 rounded-full text-[14px] transition-all cursor-pointer ${
-          tab === 'signin' ? 'bg-white font-semibold text-black shadow-sm' : 'font-normal text-black/70'
+          tab === 'signin' ? 'bg-white font-semibold text-black' : 'font-normal text-black/70'
         }`}
       >
         Sign In
@@ -197,7 +197,7 @@ function InputField({ label, id, type = 'text', inputMode, placeholder, required
           {required && <span className="text-[#CC4E00] ml-0.5">*</span>}
         </label>
       )}
-      <div className={`flex items-center border rounded-[12px] bg-white overflow-hidden transition-colors ${borderClass}`}>
+      <div className={`flex items-center h-[48px] border rounded-[12px] bg-white overflow-hidden transition-colors ${borderClass}`}>
         <input
           id={id}
           type={type}
@@ -209,7 +209,7 @@ function InputField({ label, id, type = 'text', inputMode, placeholder, required
           onFocus={onFocus}
           aria-invalid={hasError}
           aria-describedby={error ? `${id}-error` : undefined}
-          className="flex-1 px-4 py-4 text-[16px] text-[#1D222B] placeholder:text-[#8B8D98] outline-none bg-transparent"
+          className="flex-1 px-4 py-2 text-[16px] text-[#1D222B] placeholder:text-[#8B8D98] outline-none bg-transparent"
         />
         {suffix}
       </div>
@@ -258,7 +258,7 @@ function SecondaryActionButton({ label, tooltip }: { label: string; tooltip: str
         type="button"
         onMouseEnter={() => setHovered(true)}
         onMouseLeave={() => { setHovered(false); setShowTooltip(false) }}
-        className="flex items-center justify-center gap-2 w-full border rounded-[12px] py-4 text-[16px] font-medium text-[#1C2024] transition-all duration-200 cursor-pointer"
+        className="flex items-center justify-center gap-2 w-full h-[48px] border rounded-[12px] text-[16px] font-medium text-[#1C2024] transition-all duration-200 cursor-pointer"
         style={{
           background: hovered ? '#F9F9FB' : '#ffffff',
           borderColor: hovered ? '#C1C2CC' : '#E0E1E6',
@@ -339,8 +339,8 @@ function SignInForm({ tab, setTab }: TabsProps) {
     <>
       <TabSwitcher tab={tab} setTab={setTab} />
 
-      <div className="flex flex-col gap-1 text-center w-full py-4">
-        <h1 className="text-[32px] font-bold leading-[36px] text-[#1D222B]">Welcome back to UpKeep</h1>
+      <div className="flex flex-col gap-1 text-center w-full py-3">
+        <h1 className="text-[28px] font-bold leading-[34px] text-[#1D222B]">Welcome back to UpKeep</h1>
         <p className="text-[16px] text-[#60646C]">Sign in to keep work moving.</p>
       </div>
 
@@ -350,7 +350,6 @@ function SignInForm({ tab, setTab }: TabsProps) {
           label="Email"
           type="email"
           inputMode="email"
-          placeholder="Email"
           required
           value={email}
           onChange={e => { const v = e.target.value.replace(/[^a-zA-Z0-9._+\-@]/g, ''); setEmail(v); if (emailTouched && isValidEmail(v)) setEmailError('') }}
@@ -364,7 +363,6 @@ function SignInForm({ tab, setTab }: TabsProps) {
             id="password"
             label="Password"
             type={showPw ? 'text' : 'password'}
-            placeholder="Password"
             required
             value={password}
             onChange={e => { setPassword(e.target.value); if (passwordTouched && isValidPassword(e.target.value)) setPasswordError('') }}
@@ -446,8 +444,8 @@ function SignUpForm({ tab, setTab }: TabsProps) {
     <>
       <TabSwitcher tab={tab} setTab={setTab} />
 
-      <div className="flex flex-col gap-1 text-center w-full py-4">
-        <h1 className="text-[32px] font-bold leading-[36px] text-[#1D222B]">Create your account</h1>
+      <div className="flex flex-col gap-1 text-center w-full py-3">
+        <h1 className="text-[28px] font-bold leading-[34px] text-[#1D222B]">Create your account</h1>
         <p className="text-[16px] text-[#60646C]">Sign up to get started with UpKeep. No credit card required.</p>
       </div>
 
@@ -457,7 +455,6 @@ function SignUpForm({ tab, setTab }: TabsProps) {
           label="Email"
           type="email"
           inputMode="email"
-          placeholder="Email"
           required
           value={email}
           onChange={e => { const v = e.target.value.replace(/[^a-zA-Z0-9._+\-@]/g, ''); setEmail(v); if (emailTouched && isValidEmail(v)) setEmailError('') }}
@@ -471,7 +468,6 @@ function SignUpForm({ tab, setTab }: TabsProps) {
             id="signup-password"
             label="Password"
             type={showPw ? 'text' : 'password'}
-            placeholder="Password"
             required
             value={password}
             onChange={e => { setPassword(e.target.value); if (passwordTouched && isValidPassword(e.target.value)) setPasswordError('') }}
@@ -497,28 +493,19 @@ function SignUpForm({ tab, setTab }: TabsProps) {
           <label htmlFor="phone" className="text-[14px] font-semibold text-[#1D222B]">
             Mobile Number <span className="text-[#CC4E00]">*</span>
           </label>
-          <div className={`flex items-center border rounded-[12px] bg-white transition-colors ${!phone && passwordTouched ? 'border-[#E5484D]' : 'border-[#E0E1E6] focus-within:border-[#4B7BF5]'}`}>
+          <div className={`flex items-center h-[48px] border rounded-[12px] bg-white transition-colors ${!phone && passwordTouched ? 'border-[#E5484D]' : 'border-[#E0E1E6] focus-within:border-[#4B7BF5]'}`}>
             <CountrySelector selected={country} onSelect={setCountry} />
             <input
               id="phone"
               type="tel"
               inputMode="numeric"
-              placeholder="Mobile Number"
               value={phone}
               onChange={e => setPhone(e.target.value.replace(/\D/g, ''))}
-              className="flex-1 px-3 py-4 text-[16px] text-[#1D222B] placeholder:text-[#8B8D98] outline-none bg-transparent"
+              className="flex-1 px-3 py-2 text-[16px] text-[#1D222B] placeholder:text-[#8B8D98] outline-none bg-transparent"
             />
           </div>
         </div>
 
-        <InputField
-          id="company"
-          label="Company Name"
-          type="text"
-          placeholder="Company Name"
-          value={company}
-          onChange={e => setCompany(e.target.value)}
-        />
 
         <Button
           variant="primary"
@@ -566,7 +553,7 @@ export default function LoginPage() {
   }, [])
 
   return (
-    <div className="h-screen flex items-stretch p-[60px] relative overflow-hidden">
+    <div className="h-screen relative overflow-hidden">
       {/* Background image layers — crossfade independently of tab */}
       <div className="absolute inset-0 pointer-events-none">
         {SLIDES.map((s, i) => (
@@ -582,31 +569,44 @@ export default function LoginPage() {
         ))}
       </div>
 
-      {/* Left panel — phrase rotates with slide */}
-      <div className="flex flex-1 flex-col gap-10 items-start justify-center min-w-0 px-6 relative z-10">
-        <div className="relative h-[39px] w-[156px] shrink-0">
-          <Image src="/images/logo-upkeep.svg" alt="UpKeep" fill className="object-contain object-left brightness-0 invert" priority />
+      {/* Centered container */}
+      <div className="flex items-center h-screen w-full max-w-[1300px] mx-auto p-[28px] max-lg:p-6 relative z-10">
+        {/* Left panel — hidden on small screens */}
+        <div className="hidden lg:flex flex-1 flex-col gap-10 items-start justify-center min-w-0 px-6">
+          <div className="relative h-[39px] w-[156px] shrink-0">
+            <Image src="/images/logo-upkeep.svg" alt="UpKeep" fill className="object-contain object-left brightness-0 invert" priority />
+          </div>
+          <p
+            key={slide}
+            className="text-white font-extrabold text-[42px] leading-[48px] max-w-[400px]"
+            style={{ animation: 'phraseIn 0.7s ease forwards' }}
+          >
+            {SLIDES[slide].phrase}
+          </p>
         </div>
-        <p
-          key={slide}
-          className="text-white font-extrabold text-[48px] leading-[52px] max-w-[400px]"
-          style={{ animation: 'phraseIn 0.7s ease forwards' }}
-        >
-          {SLIDES[slide].phrase}
-        </p>
-      </div>
 
-      {/* Card — fills height, scrolls inside if content overflows */}
-      <div className="bg-white flex flex-col rounded-[32px] w-[626px] shrink-0 relative z-10 shadow-2xl overflow-y-auto">
-        <div
-          key={tab}
-          className="flex flex-col items-center gap-4 w-full px-[54px] py-[60px]"
-          style={{ animation: 'cardIn 0.5s ease forwards' }}
-        >
-          {tab === 'signin'
-            ? <SignInForm tab={tab} setTab={setTab} />
-            : <SignUpForm tab={tab} setTab={setTab} />
-          }
+        {/* Card + below-card text — always fills height, card scrolls when needed */}
+        <div className="flex flex-col gap-4 shrink-0 w-full max-w-[626px] max-lg:self-stretch">
+          <div className="bg-white flex flex-col rounded-[32px] w-full shadow-2xl overflow-y-auto max-h-[746px] max-lg:flex-1 max-lg:max-h-none">
+            <div
+              key={tab}
+              className="flex flex-col items-center gap-4 w-full px-[40px] py-[40px] max-lg:px-6"
+              style={{ animation: 'cardIn 0.5s ease forwards' }}
+            >
+              {tab === 'signin'
+                ? <SignInForm tab={tab} setTab={setTab} />
+                : <SignUpForm tab={tab} setTab={setTab} />
+              }
+            </div>
+          </div>
+          {tab === 'signup' && (
+            <p className="text-white/80 text-[14px] text-center shrink-0">
+              Not Ready Yet?{' '}
+              <a href="#" className="font-semibold text-white underline underline-offset-2 hover:text-white/90 transition-colors">
+                Schedule a tour
+              </a>
+            </p>
+          )}
         </div>
       </div>
 
