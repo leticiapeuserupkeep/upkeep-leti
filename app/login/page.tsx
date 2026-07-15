@@ -145,11 +145,11 @@ interface TabsProps {
 
 function TabSwitcher({ tab, setTab }: TabsProps) {
   return (
-    <div className="flex items-center bg-[#E6EDFE] px-[10px] py-[8px] rounded-[36px] shrink-0">
+    <div className="flex items-center bg-[#0F1C3F] px-[4px] py-[4px] rounded-[36px] shrink-0">
       <button
         onClick={() => setTab('signup')}
         className={`px-10 py-2 rounded-full text-[14px] transition-all cursor-pointer ${
-          tab === 'signup' ? 'bg-white font-semibold text-black' : 'font-normal text-black/70'
+          tab === 'signup' ? 'bg-white font-semibold text-black' : 'font-normal text-white/70'
         }`}
       >
         Sign Up
@@ -157,7 +157,7 @@ function TabSwitcher({ tab, setTab }: TabsProps) {
       <button
         onClick={() => setTab('signin')}
         className={`px-10 py-2 rounded-full text-[14px] transition-all cursor-pointer ${
-          tab === 'signin' ? 'bg-white font-semibold text-black' : 'font-normal text-black/70'
+          tab === 'signin' ? 'bg-white font-semibold text-black' : 'font-normal text-white/70'
         }`}
       >
         Sign In
@@ -344,64 +344,58 @@ function SignInForm({ tab, setTab }: TabsProps) {
         <p className="text-[16px] text-[#60646C]">Sign in to keep work moving.</p>
       </div>
 
-      <div className="flex flex-col gap-3 w-full">
-        <InputField
-          id="email"
-          label="Email"
-          type="email"
-          inputMode="email"
-          required
-          value={email}
-          onChange={e => { const v = e.target.value.replace(/[^a-zA-Z0-9._+\-@]/g, ''); setEmail(v); if (emailTouched && isValidEmail(v)) setEmailError('') }}
-          onBlur={handleEmailBlur}
-          hasError={!!emailError}
-          error={emailError}
-        />
-
-        <div className="flex flex-col gap-1.5">
+      <div className="flex flex-col gap-3 w-full flex-1 justify-center">
+        <div className="flex flex-col gap-[24px] w-full">
           <InputField
-            id="password"
-            label="Password"
-            type={showPw ? 'text' : 'password'}
+            id="email"
+            label="Email"
+            type="email"
+            inputMode="email"
             required
-            value={password}
-            onChange={e => { setPassword(e.target.value); if (passwordTouched && isValidPassword(e.target.value)) setPasswordError('') }}
-            onFocus={() => setPwFocused(true)}
-            onBlur={handlePasswordBlur}
-            hasError={!!passwordError}
-            error={passwordError}
-            suffix={
-              <button
-                type="button"
-                onClick={() => setShowPw(p => !p)}
-                className="px-4 text-[#8B8D98] hover:text-[#1D222B] transition-colors cursor-pointer"
-                aria-label={showPw ? 'Hide password' : 'Show password'}
-              >
-                {showPw ? <EyeOff size={18} /> : <Eye size={18} />}
-              </button>
-            }
+            value={email}
+            onChange={e => { const v = e.target.value.replace(/[^a-zA-Z0-9._+\-@]/g, ''); setEmail(v); if (emailTouched && isValidEmail(v)) setEmailError('') }}
+            onBlur={handleEmailBlur}
+            hasError={!!emailError}
+            error={emailError}
           />
-          {pwFocused && <PasswordRequirements password={password} />}
+
+          <div className="flex flex-col gap-1.5">
+            <InputField
+              id="password"
+              label="Password"
+              type={showPw ? 'text' : 'password'}
+              required
+              value={password}
+              onChange={e => { setPassword(e.target.value); if (passwordTouched && isValidPassword(e.target.value)) setPasswordError('') }}
+              onFocus={() => setPwFocused(true)}
+              onBlur={handlePasswordBlur}
+              hasError={!!passwordError}
+              error={passwordError}
+              suffix={
+                <button
+                  type="button"
+                  onClick={() => setShowPw(p => !p)}
+                  className="px-4 text-[#8B8D98] hover:text-[#1D222B] transition-colors cursor-pointer"
+                  aria-label={showPw ? 'Hide password' : 'Show password'}
+                >
+                  {showPw ? <EyeOff size={18} /> : <Eye size={18} />}
+                </button>
+              }
+            />
+            {pwFocused && <PasswordRequirements password={password} />}
+          </div>
         </div>
 
-        <Button
-          variant="primary"
-          disabled={!canSubmit}
-          className="w-full h-[56px] rounded-[12px] text-[16px] font-semibold mt-1 transition-all"
-        >
-          Sign In
-        </Button>
       </div>
 
-      <Divider />
+      <Button
+        variant="primary"
+        disabled={!canSubmit}
+        className="w-full h-[56px] rounded-[12px] text-[16px] font-semibold mt-1 transition-all"
+      >
+        Sign In
+      </Button>
 
-      <div className="flex flex-col gap-2 w-full">
-        <MagicLinkButton />
-        <SecondaryActionButton
-          label="Continue with SSO"
-          tooltip="Sign in using your organization's single sign-on provider."
-        />
-      </div>
     </>
   )
 }
@@ -414,6 +408,7 @@ function SignUpForm({ tab, setTab }: TabsProps) {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [phone, setPhone] = useState('')
+  const [fullName, setFullName] = useState('')
   const [company, setCompany] = useState('')
   const [country, setCountry] = useState<Country>(COUNTRIES[0])
   const [emailError, setEmailError] = useState('')
@@ -445,67 +440,83 @@ function SignUpForm({ tab, setTab }: TabsProps) {
       <TabSwitcher tab={tab} setTab={setTab} />
 
       <div className="flex flex-col gap-1 text-center w-full py-3">
-        <h1 className="text-[28px] font-bold leading-[34px] text-[#1D222B]">Create your account</h1>
+        <h1 className="text-[28px] font-bold leading-[34px] text-[#1D222B]">Start a <span className="text-[#4B7BF5]">FREE</span> trial</h1>
         <p className="text-[16px] text-[#60646C]">Sign up to get started with UpKeep. No credit card required.</p>
       </div>
 
-      <div className="flex flex-col gap-3 w-full">
-        <InputField
-          id="signup-email"
-          label="Email"
-          type="email"
-          inputMode="email"
-          required
-          value={email}
-          onChange={e => { const v = e.target.value.replace(/[^a-zA-Z0-9._+\-@]/g, ''); setEmail(v); if (emailTouched && isValidEmail(v)) setEmailError('') }}
-          onBlur={handleEmailBlur}
-          hasError={!!emailError}
-          error={emailError}
-        />
-
-        <div className="flex flex-col gap-1.5">
-          <InputField
-            id="signup-password"
-            label="Password"
-            type={showPw ? 'text' : 'password'}
-            required
-            value={password}
-            onChange={e => { setPassword(e.target.value); if (passwordTouched && isValidPassword(e.target.value)) setPasswordError('') }}
-            onFocus={() => setPwFocused(true)}
-            onBlur={handlePasswordBlur}
-            hasError={!!passwordError}
-            error={passwordError}
-            suffix={
-              <button
-                type="button"
-                onClick={() => setShowPw(p => !p)}
-                className="px-4 text-[#8B8D98] hover:text-[#1D222B] transition-colors cursor-pointer"
-                aria-label={showPw ? 'Hide password' : 'Show password'}
-              >
-                {showPw ? <EyeOff size={18} /> : <Eye size={18} />}
-              </button>
-            }
-          />
-          {pwFocused && <PasswordRequirements password={password} />}
-        </div>
-
-        <div className="flex flex-col gap-1.5 w-full">
-          <label htmlFor="phone" className="text-[14px] font-semibold text-[#1D222B]">
-            Mobile Number <span className="text-[#CC4E00]">*</span>
-          </label>
-          <div className={`flex items-center h-[48px] border rounded-[12px] bg-white transition-colors ${!phone && passwordTouched ? 'border-[#E5484D]' : 'border-[#E0E1E6] focus-within:border-[#4B7BF5]'}`}>
-            <CountrySelector selected={country} onSelect={setCountry} />
-            <input
-              id="phone"
-              type="tel"
-              inputMode="numeric"
-              value={phone}
-              onChange={e => setPhone(e.target.value.replace(/\D/g, ''))}
-              className="flex-1 px-3 py-2 text-[16px] text-[#1D222B] placeholder:text-[#8B8D98] outline-none bg-transparent"
+      <div className="flex flex-col gap-3 w-full flex-1">
+        <div className="flex flex-col gap-[24px] w-full flex-1 justify-center">
+        <div className="flex gap-[24px] w-full">
+          <div className="flex-1 min-w-0">
+            <InputField
+              id="signup-fullname"
+              label="Full Name"
+              type="text"
+              required
+              value={fullName}
+              onChange={e => setFullName(e.target.value)}
+              error=""
             />
           </div>
+          <div className="flex-1 min-w-0 flex flex-col gap-1.5">
+            <label htmlFor="phone" className="text-[14px] font-semibold text-[#1D222B]">
+              Mobile Number <span className="text-[#CC4E00]">*</span>
+            </label>
+            <div className={`flex items-center h-[48px] border rounded-[12px] bg-white transition-colors ${!phone && passwordTouched ? 'border-[#E5484D]' : 'border-[#E0E1E6] focus-within:border-[#4B7BF5]'}`}>
+              <CountrySelector selected={country} onSelect={setCountry} />
+              <input
+                id="phone"
+                type="tel"
+                inputMode="numeric"
+                value={phone}
+                onChange={e => setPhone(e.target.value.replace(/\D/g, ''))}
+                className="flex-1 px-3 py-2 text-[16px] text-[#1D222B] placeholder:text-[#8B8D98] outline-none bg-transparent"
+              />
+            </div>
+          </div>
         </div>
-
+        <div className="flex gap-[24px] w-full">
+          <div className="flex-1 min-w-0">
+            <InputField
+              id="signup-email"
+              label="Email"
+              type="email"
+              inputMode="email"
+              required
+              value={email}
+              onChange={e => { const v = e.target.value.replace(/[^a-zA-Z0-9._+\-@]/g, ''); setEmail(v); if (emailTouched && isValidEmail(v)) setEmailError('') }}
+              onBlur={handleEmailBlur}
+              hasError={!!emailError}
+              error={emailError}
+            />
+          </div>
+          <div className="flex-1 min-w-0 flex flex-col gap-1.5">
+            <InputField
+              id="signup-password"
+              label="Password"
+              type={showPw ? 'text' : 'password'}
+              required
+              value={password}
+              onChange={e => { setPassword(e.target.value); if (passwordTouched && isValidPassword(e.target.value)) setPasswordError('') }}
+              onFocus={() => setPwFocused(true)}
+              onBlur={handlePasswordBlur}
+              hasError={!!passwordError}
+              error={passwordError}
+              suffix={
+                <button
+                  type="button"
+                  onClick={() => setShowPw(p => !p)}
+                  className="px-4 text-[#8B8D98] hover:text-[#1D222B] transition-colors cursor-pointer"
+                  aria-label={showPw ? 'Hide password' : 'Show password'}
+                >
+                  {showPw ? <EyeOff size={18} /> : <Eye size={18} />}
+                </button>
+              }
+            />
+            {pwFocused && <PasswordRequirements password={password} />}
+          </div>
+        </div>
+        </div>
 
         <Button
           variant="primary"
@@ -514,12 +525,6 @@ function SignUpForm({ tab, setTab }: TabsProps) {
         >
           Create Account
         </Button>
-      </div>
-
-      <Divider />
-
-      <div className="flex flex-col gap-2 w-full">
-        <MagicLinkButton />
       </div>
 
       <p className="text-[13px] text-[#8B8D98] text-center">
@@ -569,20 +574,56 @@ export default function LoginPage() {
         ))}
       </div>
 
+      {/* Top header */}
+      <div className="absolute top-0 left-0 right-0 z-20 flex items-center justify-between px-8 h-[64px] bg-white border-b border-[#E8E8EC]">
+        <div className="flex items-center gap-8">
+          <div className="relative h-[28px] w-[124px] shrink-0">
+            <Image src="/images/logo-upkeep.svg" alt="UpKeep" fill className="object-contain object-left" />
+          </div>
+          <nav className="hidden lg:flex items-center gap-1">
+            {['Product','Solutions','Resources','Pricing'].map(item => (
+              <button key={item} className="flex items-center gap-1 text-[14px] font-medium text-[#1D222B] hover:text-[#4B7BF5] transition-colors cursor-pointer px-3 py-2 rounded-[6px] hover:bg-[#F5F7FF]">
+                {item}
+                {item !== 'Pricing' && (
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="m6 9 6 6 6-6"/></svg>
+                )}
+              </button>
+            ))}
+          </nav>
+        </div>
+        <div className="flex items-center gap-2">
+          <button className="p-2 text-[#60646C] hover:text-[#1D222B] transition-colors cursor-pointer rounded-[6px] hover:bg-[#F5F7FF]" aria-label="Search">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+          </button>
+          <button className="text-[14px] font-medium text-[#1D222B] hover:text-[#4B7BF5] transition-colors cursor-pointer px-3 py-2 rounded-[6px] hover:bg-[#F5F7FF]">Log in</button>
+          <button className="text-[14px] font-semibold text-white bg-[#4B7BF5] hover:bg-[#3B6BE5] transition-colors px-4 py-2 rounded-[8px] cursor-pointer">Start a Free Trial</button>
+          <button className="p-2 text-[#60646C] hover:text-[#1D222B] transition-colors cursor-pointer rounded-[6px] hover:bg-[#F5F7FF]" aria-label="Language">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><path d="M2 12h20M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
+          </button>
+        </div>
+      </div>
+
       {/* Centered container */}
       <div className="flex items-center h-screen w-full max-w-[1300px] mx-auto p-[28px] max-lg:p-6 relative z-10">
         {/* Left panel — hidden on small screens */}
-        <div className="hidden lg:flex flex-1 flex-col gap-10 items-start justify-center min-w-0 px-6">
-          <div className="relative h-[39px] w-[156px] shrink-0">
-            <Image src="/images/logo-upkeep.svg" alt="UpKeep" fill className="object-contain object-left brightness-0 invert" priority />
+        <div className="hidden lg:flex flex-1 flex-col items-start justify-center min-w-0 px-6">
+          <div className="flex flex-col gap-10 items-start">
+            <div className="relative h-[34px] w-[151px] shrink-0">
+              <Image src="/images/logo-upkeep.svg" alt="UpKeep" fill className="object-contain object-left brightness-0 invert" priority />
+            </div>
+            <div className="flex flex-col gap-3">
+              <p
+                key={slide}
+                className="text-white font-extrabold text-[42px] leading-[48px] max-w-[400px]"
+                style={{ animation: 'phraseIn 0.7s ease forwards' }}
+              >
+                {SLIDES[slide].phrase}
+              </p>
+              <p className="text-white/70 text-[16px] leading-[24px] max-w-[380px]">
+                Manage every asset, work order, and safety inspection in one place.
+              </p>
+            </div>
           </div>
-          <p
-            key={slide}
-            className="text-white font-extrabold text-[42px] leading-[48px] max-w-[400px]"
-            style={{ animation: 'phraseIn 0.7s ease forwards' }}
-          >
-            {SLIDES[slide].phrase}
-          </p>
         </div>
 
         {/* Card + below-card text — always fills height, card scrolls when needed */}
@@ -590,7 +631,7 @@ export default function LoginPage() {
           <div className="bg-white flex flex-col rounded-[32px] w-full shadow-2xl overflow-y-auto max-h-[746px] max-lg:flex-1 max-lg:max-h-none">
             <div
               key={tab}
-              className="flex flex-col items-center gap-4 w-full px-[40px] py-[40px] max-lg:px-6"
+              className="flex flex-col items-center gap-4 w-full px-[32px] py-[32px] max-lg:px-6 min-h-[560px]"
               style={{ animation: 'cardIn 0.5s ease forwards' }}
             >
               {tab === 'signin'
@@ -607,6 +648,37 @@ export default function LoginPage() {
               </a>
             </p>
           )}
+        </div>
+      </div>
+
+      {/* Social proof — full-width bottom bar */}
+      <div className="absolute bottom-0 left-0 right-0 z-10 flex flex-col items-center gap-3 pb-6 pt-4 hidden lg:flex">
+        <p className="text-white/50 text-[11px] font-semibold tracking-[0.12em] uppercase">Join 4,000+ companies already growing</p>
+        <div className="flex items-center justify-center gap-8 opacity-60">
+          <svg viewBox="0 0 88 22" className="h-[16px] fill-white" aria-label="Unilever"><text x="0" y="18" fontFamily="Arial, Helvetica, sans-serif" fontSize="20" fontWeight="900" letterSpacing="0.5">Unilever</text></svg>
+          <svg viewBox="0 0 80 22" className="h-[15px] fill-white" aria-label="Aramark"><text x="0" y="17" fontFamily="Arial, Helvetica, sans-serif" fontSize="18" fontWeight="700" letterSpacing="0.3">aramark</text></svg>
+          <svg viewBox="0 0 32 28" className="h-[20px] fill-white" aria-label="McDonald's">
+            <path d="M0 28 L0 8 C0 3 4 0 8 0 C11 0 13.5 2 15 5.5 C16.5 2 19 0 22 0 C26 0 30 3 30 8 L30 28 L26 28 L26 10 C26 7 24.5 5 22 5 C19.5 5 18.5 7.5 18 10 L16.5 17 L13.5 17 L12 10 C11.5 7.5 10.5 5 8 5 C5.5 5 4 7 4 10 L4 28 Z"/>
+          </svg>
+          <svg viewBox="0 0 78 20" className="h-[14px] fill-white" aria-label="Yamaha"><text x="0" y="16" fontFamily="Arial, Helvetica, sans-serif" fontSize="17" fontWeight="800" letterSpacing="2">YAMAHA</text></svg>
+          <svg viewBox="0 0 24 24" className="h-[20px] fill-white" aria-label="Pepsi">
+            <circle cx="12" cy="12" r="11" fill="none" stroke="white" strokeWidth="2"/>
+            <path d="M1.5 14 Q6 10 12 13 Q18 16 22.5 12" fill="none" stroke="white" strokeWidth="2"/>
+            <path d="M1.5 14 Q6 18 12 18 Q18 18 22.5 14" fill="white"/>
+            <path d="M3 8.5 Q6 6 12 6 Q18 6 21 9" fill="white"/>
+          </svg>
+          <svg viewBox="0 0 80 22" className="h-[15px] fill-white" aria-label="Marriott"><text x="0" y="17" fontFamily="Georgia, 'Times New Roman', serif" fontSize="18" fontWeight="700" letterSpacing="0.5">Marriott</text></svg>
+          <svg viewBox="0 0 28 30" fill="none" stroke="white" strokeWidth="1.5" className="h-[20px]" aria-label="Shell">
+            <path d="M14 2 C14 2 2 10 2 19 C2 24 7.5 28 14 28 C20.5 28 26 24 26 19 C26 10 14 2 14 2 Z" fill="white" stroke="none"/>
+            <line x1="14" y1="2" x2="14" y2="28" stroke="#0d1117" strokeWidth="1.2"/>
+            <line x1="14" y1="2" x2="6" y2="24" stroke="#0d1117" strokeWidth="1.2"/>
+            <line x1="14" y1="2" x2="3.5" y2="17" stroke="#0d1117" strokeWidth="1.2"/>
+            <line x1="14" y1="2" x2="22" y2="24" stroke="#0d1117" strokeWidth="1.2"/>
+            <line x1="14" y1="2" x2="24.5" y2="17" stroke="#0d1117" strokeWidth="1.2"/>
+            <line x1="14" y1="2" x2="9" y2="26.5" stroke="#0d1117" strokeWidth="1.2"/>
+            <line x1="14" y1="2" x2="19" y2="26.5" stroke="#0d1117" strokeWidth="1.2"/>
+          </svg>
+          <svg viewBox="0 0 78 22" className="h-[15px] fill-white" aria-label="Subway"><text x="0" y="17" fontFamily="Arial, Helvetica, sans-serif" fontSize="18" fontWeight="900" letterSpacing="1">SUBWAY</text></svg>
         </div>
       </div>
 
