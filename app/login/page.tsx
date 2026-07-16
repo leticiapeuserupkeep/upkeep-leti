@@ -170,6 +170,7 @@ function TabSwitcher({ tab, setTab }: TabsProps) {
 
 interface FieldProps {
   label?: string
+  labelSuffix?: React.ReactNode
   id: string
   type?: string
   inputMode?: React.HTMLAttributes<HTMLInputElement>['inputMode']
@@ -184,20 +185,30 @@ interface FieldProps {
   hasError?: boolean
 }
 
-function InputField({ label, id, type = 'text', inputMode, placeholder, required, suffix, value, onChange, onBlur, onFocus, error, hasError }: FieldProps) {
-  const borderClass = hasError
-    ? 'border-[#E5484D] focus-within:border-[#E5484D]'
-    : 'border-[#E0E1E6] focus-within:border-[#4B7BF5]'
+function InputField({ label, labelSuffix, id, type = 'text', inputMode, placeholder, required, suffix, value, onChange, onBlur, onFocus, error, hasError }: FieldProps) {
+  const [focused, setFocused] = useState(false)
+
+  const borderClass = focused
+    ? 'border border-[#4B7BF5]'
+    : hasError
+    ? 'border border-[#E5484D]'
+    : 'border border-[#E0E1E6]'
+
+  const handleFocus = () => { setFocused(true); onFocus?.() }
+  const handleBlur = () => { setFocused(false); onBlur?.() }
 
   return (
     <div className="flex flex-col gap-1.5 w-full">
       {label && (
-        <label htmlFor={id} className="text-[14px] font-semibold text-[#1D222B]">
-          {label}
-          {required && <span className="text-[#CC4E00] ml-0.5">*</span>}
-        </label>
+        <div className="flex items-center gap-1.5">
+          <label htmlFor={id} className="text-[14px] font-semibold text-[#1D222B]">
+            {label}
+            {required && <span className="text-[#CC4E00] ml-0.5">*</span>}
+          </label>
+          {labelSuffix}
+        </div>
       )}
-      <div className={`flex items-center h-[48px] border rounded-[12px] bg-white overflow-hidden transition-colors ${borderClass}`}>
+      <div className={`flex items-center h-[48px] rounded-[12px] bg-white overflow-hidden transition-all ${borderClass}`}>
         <input
           id={id}
           type={type}
@@ -205,15 +216,15 @@ function InputField({ label, id, type = 'text', inputMode, placeholder, required
           placeholder={placeholder}
           value={value}
           onChange={onChange}
-          onBlur={onBlur}
-          onFocus={onFocus}
-          aria-invalid={hasError}
-          aria-describedby={error ? `${id}-error` : undefined}
-          className="flex-1 px-4 py-2 text-[16px] text-[#1D222B] placeholder:text-[#8B8D98] outline-none bg-transparent"
+          onBlur={handleBlur}
+          onFocus={handleFocus}
+          aria-invalid={hasError && !focused}
+          aria-describedby={error && !focused ? `${id}-error` : undefined}
+          className="flex-1 px-4 py-2 text-[16px] text-[#1D222B] placeholder:text-[#8B8D98] outline-none border-0 bg-transparent"
         />
         {suffix}
       </div>
-      {error && (
+      {error && !focused && (
         <p id={`${id}-error`} role="alert" className="flex items-center gap-1.5 text-[13px] text-[#E5484D] font-medium animate-[fadeIn_0.15s_ease]">
           <X size={13} className="shrink-0" />
           {error}
@@ -307,6 +318,11 @@ function SignInForm({ tab, setTab }: TabsProps) {
   const [passwordError, setPasswordError] = useState('')
   const [emailTouched, setEmailTouched] = useState(false)
   const [passwordTouched, setPasswordTouched] = useState(false)
+  const [ssoView, setSsoView] = useState<null | 'email' | 'companyId'>(null)
+  const [ssoInput, setSsoInput] = useState('')
+  const [forgotView, setForgotView] = useState<null | 'form' | 'sent'>(null)
+  const [forgotEmail, setForgotEmail] = useState('')
+  const [forgotEmailTouched, setForgotEmailTouched] = useState(false)
 
   const emailValid = isValidEmail(email)
   const passwordValid = isValidPassword(password)
@@ -335,13 +351,112 @@ function SignInForm({ tab, setTab }: TabsProps) {
     }
   }
 
+  if (forgotView) {
+    return (
+      <>
+        <TabSwitcher tab={tab} setTab={setTab} />
+        <div className="flex flex-col gap-3 w-full flex-1 justify-center">
+          <div className="flex flex-col gap-1 pt-[12px]">
+            <h1 className="text-[28px] font-bold leading-[34px] text-[#1D222B]">Forgot Password</h1>
+            <p className="text-[15px] text-[#60646C] leading-[22px] pt-[20px]">
+              {forgotView === 'form'
+                ? "Enter the email address you registered with and we'll send you instructions to reset your password."
+                : "If an account exists for that email, you'll receive a link to reset your password."}
+            </p>
+          </div>
+          {forgotView === 'form' && (
+            <div className="flex flex-col gap-[20px] w-full">
+              <div className="py-[20px]">
+              <InputField
+                id="forgot-email"
+                label="Email"
+                type="email"
+                inputMode="email"
+                required
+                value={forgotEmail}
+                onChange={e => setForgotEmail(e.target.value.replace(/[^a-zA-Z0-9._+\-@]/g, ''))}
+                onBlur={() => { if (forgotEmail.length > 0) setForgotEmailTouched(true) }}
+                hasError={forgotEmailTouched && forgotEmail.length > 0 && !isValidEmail(forgotEmail)}
+                error={forgotEmailTouched && forgotEmail.length > 0 && !isValidEmail(forgotEmail) ? 'Please enter a valid email address.' : ''}
+              />
+              </div>
+              <Button
+                variant="primary"
+                disabled={!isValidEmail(forgotEmail)}
+                className="w-full h-[56px] rounded-[12px] text-[16px] font-semibold transition-all"
+                onClick={() => setForgotView('sent')}
+              >
+                Continue
+              </Button>
+            </div>
+          )}
+        </div>
+        <button type="button" onClick={() => { setForgotView(null); setForgotEmail(''); setForgotEmailTouched(false) }} className="text-[13px] font-medium text-[#9CA3AF] underline underline-offset-2 hover:text-[#6B7280] transition-colors cursor-pointer self-start">
+          Back to Sign In
+        </button>
+      </>
+    )
+  }
+
+  if (ssoView) {
+    return (
+      <>
+        <TabSwitcher tab={tab} setTab={setTab} />
+        <div className="flex flex-col gap-3 w-full flex-1 justify-center py-[20px]">
+          <div className="flex flex-col gap-1 pt-[12px]">
+            <h1 className="text-[28px] font-bold leading-[34px] text-[#1D222B]">Single Sign-On</h1>
+            <p className="text-[15px] text-[#60646C] leading-[22px]">Enter your {ssoView === 'email' ? 'email' : 'company ID'} and we'll redirect you to your company's SSO provider.</p>
+          </div>
+          <div className="flex flex-col gap-[20px] w-full">
+            <div className="py-[20px]">
+            <InputField
+              id="sso-input"
+              label={ssoView === 'email' ? 'Email' : 'Company ID'}
+              labelSuffix={ssoView === 'companyId' ? (
+                <span className="relative group">
+                  <Info size={14} className="text-[#8B8D98] cursor-pointer" />
+                  <span className="pointer-events-none absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-[240px] rounded-[8px] bg-[#1D222B] px-3 py-2 text-[12px] text-white text-center opacity-0 group-hover:opacity-100 transition-opacity duration-150 z-50">
+                    Your company ID is provided by your IT admin or found in your SSO provider's dashboard under your organization settings.
+                    <span className="absolute top-full left-1/2 -translate-x-1/2 border-4 border-transparent border-t-[#1D222B]" />
+                  </span>
+                </span>
+              ) : undefined}
+              type={ssoView === 'email' ? 'email' : 'text'}
+              inputMode={ssoView === 'email' ? 'email' : 'text'}
+              required
+              value={ssoInput}
+              onChange={e => setSsoInput(e.target.value)}
+              error=""
+            />
+            </div>
+            <Button
+              variant="primary"
+              disabled={!ssoInput}
+              className="w-full h-[56px] rounded-[12px] text-[16px] font-semibold transition-all"
+            >
+              Continue
+            </Button>
+          </div>
+        </div>
+        <div className="flex items-center justify-between w-full">
+          <button type="button" onClick={() => { setSsoView(null); setSsoInput('') }} className="text-[13px] font-medium text-[#9CA3AF] underline underline-offset-2 hover:text-[#6B7280] transition-colors cursor-pointer">
+            Back to Sign In
+          </button>
+          <button type="button" onClick={() => { setSsoInput(''); setSsoView(ssoView === 'email' ? 'companyId' : 'email') }} className="text-[13px] font-medium text-[#4B7BF5] underline underline-offset-2 hover:text-[#3B6AE0] transition-colors cursor-pointer">
+            {ssoView === 'email' ? 'Use company ID instead' : 'Use email instead'}
+          </button>
+        </div>
+      </>
+    )
+  }
+
   return (
     <>
       <TabSwitcher tab={tab} setTab={setTab} />
 
-      <div className="flex flex-col gap-3 w-full flex-1 justify-center">
-        <div className="flex flex-col gap-[24px] w-full h-[327.5px] justify-center">
-          <div className="flex flex-col gap-1 text-center w-full pb-[12px]">
+      <div className="flex flex-col gap-3 w-full">
+        <div className="flex flex-col gap-[24px] w-full">
+          <div className="flex flex-col gap-1 text-center w-full pt-[12px]">
             <h1 className="text-[28px] font-bold leading-[34px] text-[#1D222B]">Welcome back to UpKeep</h1>
             <p className="text-[16px] text-[#60646C]">Sign in to keep work moving.</p>
           </div>
@@ -374,7 +489,7 @@ function SignInForm({ tab, setTab }: TabsProps) {
                 <button
                   type="button"
                   onClick={() => setShowPw(p => !p)}
-                  className="px-4 text-[#8B8D98] hover:text-[#1D222B] transition-colors cursor-pointer"
+                  className="px-4 text-[#8B8D98] hover:text-[#1D222B] transition-colors cursor-pointer border-0 outline-none bg-transparent"
                   aria-label={showPw ? 'Hide password' : 'Show password'}
                 >
                   {showPw ? <EyeOff size={18} /> : <Eye size={18} />}
@@ -382,18 +497,44 @@ function SignInForm({ tab, setTab }: TabsProps) {
               }
             />
             {pwFocused && <PasswordRequirements password={password} />}
+            <div className="flex justify-end">
+              <button type="button" onClick={() => setForgotView('form')} className="text-[12px] text-[#9CA3AF] underline underline-offset-2 hover:text-[#6B7280] transition-colors cursor-pointer">Forgot password?</button>
+            </div>
           </div>
         </div>
 
       </div>
 
-      <Button
-        variant="primary"
-        disabled={!canSubmit}
-        className="w-full h-[56px] rounded-[12px] text-[16px] font-semibold mt-1 transition-all"
-      >
-        Sign In
-      </Button>
+      <div className="flex flex-col gap-3 w-full flex-1 justify-end">
+        <Button
+          variant="primary"
+          disabled={!canSubmit}
+          className="w-full h-[56px] rounded-[12px] text-[16px] font-semibold transition-all"
+        >
+          Sign In
+        </Button>
+
+        <div className="flex items-center gap-3 w-full flex-1 py-6">
+          <div className="flex-1 h-px bg-[#E0E1E6]" />
+          <span className="text-[13px] text-[#8B8D98]">or</span>
+          <div className="flex-1 h-px bg-[#E0E1E6]" />
+        </div>
+
+        <button
+          type="button"
+          onClick={() => setSsoView('email')}
+          className="w-full h-[56px] rounded-[12px] text-[16px] font-semibold border border-[#E0E1E6] text-[#1D222B] hover:bg-[#F5F7FF] hover:border-[#4B7BF5] transition-all cursor-pointer flex items-center justify-center"
+        >
+          Continue with SSO
+          <span className="relative ml-2 group">
+            <Info size={16} className="text-[#8B8D98]" />
+            <span className="pointer-events-none absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-[220px] rounded-[8px] bg-[#1D222B] px-3 py-2 text-[12px] text-white text-center opacity-0 group-hover:opacity-100 transition-opacity duration-150 z-50">
+              Single Sign-On — log in with your company's identity provider
+              <span className="absolute top-full left-1/2 -translate-x-1/2 border-4 border-transparent border-t-[#1D222B]" />
+            </span>
+          </span>
+        </button>
+      </div>
 
       <p className="text-[13px] text-[#8B8D98] text-center">
         By continuing, you agree to our{' '}
@@ -420,6 +561,7 @@ function SignUpForm({ tab, setTab }: TabsProps) {
   const [passwordError, setPasswordError] = useState('')
   const [emailTouched, setEmailTouched] = useState(false)
   const [passwordTouched, setPasswordTouched] = useState(false)
+  const [creatingAccount, setCreatingAccount] = useState(false)
 
   const emailValid = isValidEmail(email)
   const passwordValid = isValidPassword(password)
@@ -438,6 +580,22 @@ function SignUpForm({ tab, setTab }: TabsProps) {
     if (!password) setPasswordError('Password is required.')
     else if (!passwordValid) setPasswordError('Password must meet all requirements.')
     else setPasswordError('')
+  }
+
+  if (creatingAccount) {
+    return (
+      <div className="flex flex-col items-center justify-center w-full flex-1 gap-8 px-4 text-center">
+        <div className="flex flex-col items-center gap-6">
+          <div className="w-12 h-12 rounded-full border-4 border-[#E6EDFE] border-t-[#4B7BF5] animate-spin" />
+          <div className="flex flex-col gap-3">
+            <h2 className="text-[22px] font-bold leading-[28px] text-[#1D222B]">Welcome to UpKeep!</h2>
+            <p className="text-[15px] text-[#60646C] leading-[22px] max-w-[320px]">
+              We're setting up your account so you can start working in UpKeep right away.
+            </p>
+          </div>
+        </div>
+      </div>
+    )
   }
 
   return (
@@ -478,7 +636,7 @@ function SignUpForm({ tab, setTab }: TabsProps) {
           <label htmlFor="phone" className="text-[14px] font-semibold text-[#1D222B]">
             Mobile Number <span className="text-[#CC4E00]">*</span>
           </label>
-          <div className={`flex items-center h-[48px] border rounded-[12px] bg-white transition-colors ${!phone && passwordTouched ? 'border-[#E5484D]' : 'border-[#E0E1E6] focus-within:border-[#4B7BF5]'}`}>
+          <div className={`flex items-center h-[48px] rounded-[12px] bg-white transition-all ${!phone && passwordTouched ? 'border border-[#E5484D] has-[input:focus]:border-[#4B7BF5]' : 'border border-[#E0E1E6] has-[input:focus]:border-[#4B7BF5]'}`}>
             <CountrySelector selected={country} onSelect={setCountry} />
             <input
               id="phone"
@@ -521,7 +679,7 @@ function SignUpForm({ tab, setTab }: TabsProps) {
                 <button
                   type="button"
                   onClick={() => setShowPw(p => !p)}
-                  className="px-4 text-[#8B8D98] hover:text-[#1D222B] transition-colors cursor-pointer"
+                  className="px-4 text-[#8B8D98] hover:text-[#1D222B] transition-colors cursor-pointer border-0 outline-none bg-transparent"
                   aria-label={showPw ? 'Hide password' : 'Show password'}
                 >
                   {showPw ? <EyeOff size={18} /> : <Eye size={18} />}
@@ -537,6 +695,7 @@ function SignUpForm({ tab, setTab }: TabsProps) {
           variant="primary"
           disabled={!canSubmit}
           className="w-full h-[56px] rounded-[12px] text-[16px] font-semibold mt-1 transition-all"
+          onClick={() => setCreatingAccount(true)}
         >
           Create Account
         </Button>
@@ -605,7 +764,7 @@ export default function LoginPage() {
       </div>
 
       {/* Top header */}
-      <div className="absolute top-0 left-0 right-0 z-20 flex items-center justify-between px-8 h-[64px] bg-white border-b border-[#E8E8EC]">
+      <div className="fixed top-0 left-0 right-0 z-20 flex items-center justify-between px-8 h-[64px] bg-white border-b border-[#E8E8EC]">
         <div className="flex items-center gap-8">
           <div className="relative h-[28px] w-[124px] shrink-0">
             <Image src="/images/logo-upkeep.svg" alt="UpKeep" fill className="object-contain object-left" />
@@ -634,11 +793,11 @@ export default function LoginPage() {
       </div>
 
       {/* Main content — flex-col fills viewport, social proof sits below card row */}
-      <div className="flex flex-col h-screen pt-[64px] relative z-10 justify-center">
+      <div className="flex flex-col h-screen pt-[64px] relative z-10 overflow-y-auto">
       {/* Centered container */}
-      <div className="flex items-center w-full max-w-[1300px] mx-auto p-[28px] max-lg:p-6 h-[713px]">
+      <div className="flex items-start w-full max-w-[1300px] mx-auto p-[40px] max-lg:p-6 h-auto">
         {/* Left panel — hidden on small screens */}
-        <div className="hidden lg:flex flex-1 flex-col items-start justify-center min-w-0 px-6">
+        <div className="hidden lg:flex flex-1 flex-col items-start justify-center min-w-0 px-6 self-center">
           <div className="flex flex-col gap-10 items-start">
             <div className="relative h-[34px] w-[151px] shrink-0">
               <Image src="/images/logo-upkeep.svg" alt="UpKeep" fill className="object-contain object-left brightness-0 invert" priority />
@@ -664,10 +823,10 @@ export default function LoginPage() {
 
         {/* Card + below-card text — always fills height, card scrolls when needed */}
         <div className="flex flex-col gap-4 shrink-0 w-full max-w-[626px] max-lg:self-stretch">
-          <div className="bg-white flex flex-col rounded-[32px] w-full shadow-2xl overflow-hidden max-h-[746px] max-lg:flex-1 max-lg:max-h-none max-lg:overflow-y-auto">
+          <div className="bg-white flex flex-col rounded-[32px] w-full shadow-2xl overflow-hidden max-lg:flex-1 max-lg:overflow-y-auto">
             <div
               key={tab}
-              className={`flex flex-col items-center gap-4 w-full px-[32px] py-[32px] max-lg:px-6 h-[620px] ${tab === 'signin' ? 'pb-[37px]' : ''}`}
+              className={`flex flex-col items-center gap-4 w-full px-[32px] py-[32px] max-lg:px-6 min-h-[647px] h-auto ${tab === 'signin' ? 'pb-[37px]' : ''}`}
               style={{ animation: 'cardIn 0.5s ease forwards' }}
             >
               {tab === 'signin'
