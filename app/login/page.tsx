@@ -145,19 +145,19 @@ interface TabsProps {
 
 function TabSwitcher({ tab, setTab }: TabsProps) {
   return (
-    <div className="flex items-center bg-[#0F1C3F] px-[4px] py-[4px] rounded-[36px] shrink-0">
+    <div className="flex items-center bg-[#E6EDFE] px-[4px] py-[4px] rounded-[36px] shrink-0">
       <button
         onClick={() => setTab('signup')}
-        className={`px-10 py-2 rounded-full text-[14px] transition-all cursor-pointer ${
-          tab === 'signup' ? 'bg-white font-semibold text-black' : 'font-normal text-white/70'
+        className={`px-10 py-2 rounded-full text-[14px] transition-all cursor-pointer [font-family:'Poppins',sans-serif] ${
+          tab === 'signup' ? 'bg-white font-semibold text-black' : 'font-normal text-[#4B7BF5]/70'
         }`}
       >
         Sign Up
       </button>
       <button
         onClick={() => setTab('signin')}
-        className={`px-10 py-2 rounded-full text-[14px] transition-all cursor-pointer ${
-          tab === 'signin' ? 'bg-white font-semibold text-black' : 'font-normal text-white/70'
+        className={`px-10 py-2 rounded-full text-[14px] transition-all cursor-pointer [font-family:'Poppins',sans-serif] ${
+          tab === 'signin' ? 'bg-white font-semibold text-black' : 'font-normal text-[#4B7BF5]/70'
         }`}
       >
         Sign In
@@ -339,13 +339,12 @@ function SignInForm({ tab, setTab }: TabsProps) {
     <>
       <TabSwitcher tab={tab} setTab={setTab} />
 
-      <div className="flex flex-col gap-1 text-center w-full py-3">
-        <h1 className="text-[28px] font-bold leading-[34px] text-[#1D222B]">Welcome back to UpKeep</h1>
-        <p className="text-[16px] text-[#60646C]">Sign in to keep work moving.</p>
-      </div>
-
       <div className="flex flex-col gap-3 w-full flex-1 justify-center">
-        <div className="flex flex-col gap-[24px] w-full">
+        <div className="flex flex-col gap-[24px] w-full h-[327.5px] justify-center">
+          <div className="flex flex-col gap-1 text-center w-full pb-[12px]">
+            <h1 className="text-[28px] font-bold leading-[34px] text-[#1D222B]">Welcome back to UpKeep</h1>
+            <p className="text-[16px] text-[#60646C]">Sign in to keep work moving.</p>
+          </div>
           <InputField
             id="email"
             label="Email"
@@ -396,6 +395,11 @@ function SignInForm({ tab, setTab }: TabsProps) {
         Sign In
       </Button>
 
+      <p className="text-[13px] text-[#8B8D98] text-center">
+        By continuing, you agree to our{' '}
+        <a href="#" className="underline hover:text-[#1D222B] transition-colors">Terms of Service</a>
+      </p>
+
     </>
   )
 }
@@ -439,13 +443,12 @@ function SignUpForm({ tab, setTab }: TabsProps) {
     <>
       <TabSwitcher tab={tab} setTab={setTab} />
 
-      <div className="flex flex-col gap-1 text-center w-full py-3">
-        <h1 className="text-[28px] font-bold leading-[34px] text-[#1D222B]">Start a <span className="text-[#4B7BF5]">FREE</span> trial</h1>
-        <p className="text-[16px] text-[#60646C]">Sign up to get started with UpKeep. No credit card required.</p>
-      </div>
-
       <div className="flex flex-col gap-3 w-full flex-1">
         <div className="flex flex-col gap-[24px] w-full flex-1 justify-center">
+        <div className="flex flex-col gap-1 text-center w-full pb-[12px]">
+          <h1 className="text-[28px] font-bold leading-[34px] text-[#1D222B]">Start a <span className="text-[#4B7BF5]">FREE</span> trial</h1>
+          <p className="text-[16px] text-[#60646C]">Sign up to get started with UpKeep. No credit card required.</p>
+        </div>
         <div className="flex gap-[24px] w-full">
           <div className="flex-1 min-w-0">
             <InputField
@@ -537,13 +540,28 @@ function SignUpForm({ tab, setTab }: TabsProps) {
 
 /* ── Rotating background slides ── */
 
-const SLIDES = [
-  { img: '/images/login/bg1.png', phrase: 'Trusted by thousands of maintenance teams.' },
-  { img: '/images/login/bg2.png', phrase: 'Keep work orders, assets, and teams in sync.' },
-  { img: '/images/login/bg3.png', phrase: 'Manage maintenance and operations in one place.' },
-  { img: '/images/login/bg4.png', phrase: 'Built for the teams that keep work moving.' },
-  { img: '/images/login/bg5.png', phrase: 'Keep maintenance running without the chaos.' },
-  { img: '/images/login/bg6.png', phrase: 'Trusted by thousands of maintenance professionals.' },
+const BG_IMAGES = [
+  '/images/login/bg1.png',
+  '/images/login/bg2.png',
+  '/images/login/bg3.png',
+  '/images/login/bg4.png',
+  '/images/login/bg5.png',
+]
+
+const SIGNIN_SLIDES = [
+  { phrase: 'Keep maintenance running without the chaos', sub: 'Sign in to manage work orders, assets, inspections, and operations in one place.' },
+  { phrase: 'The platform built for modern maintenance teams', sub: 'Log in to stay on top of work, reduce downtime, and keep operations moving.' },
+  { phrase: 'One place for work orders, assets, and uptime', sub: 'Sign in to keep your team aligned and your maintenance work on track.' },
+  { phrase: 'Maintenance management, built to keep work moving', sub: 'Log in to access your team, tasks, assets, and daily operations.' },
+  { phrase: 'Trusted by thousands of maintenance teams', sub: 'Sign in to simplify work orders, inspections, and asset management.' },
+]
+
+const SIGNUP_SLIDES = [
+  { phrase: 'Start managing maintenance with confidence', sub: 'Create your account to organize work orders, assets, inspections, and teams in one place.' },
+  { phrase: 'The smarter way to run maintenance', sub: 'Sign up to bring work orders, asset data, and team operations together.' },
+  { phrase: 'Built for teams that keep operations running', sub: 'Create your account to manage maintenance, safety, and daily work more efficiently.' },
+  { phrase: 'Keep work orders, assets, and teams in sync', sub: 'Sign up to simplify maintenance management from day one.' },
+  { phrase: 'CMMS, maintenance, and work order management in one place', sub: 'Create your account and start streamlining maintenance operations.' },
 ]
 
 /* ── Page ── */
@@ -553,7 +571,7 @@ export default function LoginPage() {
   const [slide, setSlide] = useState(0)
 
   useEffect(() => {
-    const id = setInterval(() => setSlide(s => (s + 1) % SLIDES.length), 8000)
+    const id = setInterval(() => setSlide(s => (s + 1) % BG_IMAGES.length), 8000)
     return () => clearInterval(id)
   }, [])
 
@@ -561,12 +579,12 @@ export default function LoginPage() {
     <div className="h-screen relative overflow-hidden">
       {/* Background image layers — crossfade independently of tab */}
       <div className="absolute inset-0 pointer-events-none">
-        {SLIDES.map((s, i) => (
+        {BG_IMAGES.map((s, i) => (
           <div
             key={i}
             className="absolute inset-0 bg-cover bg-center"
             style={{
-              backgroundImage: `url('${s.img}')`,
+              backgroundImage: `url('${s}')`,
               opacity: i === slide ? 1 : 0,
               transition: 'opacity 1.5s ease',
             }}
@@ -595,16 +613,18 @@ export default function LoginPage() {
           <button className="p-2 text-[#60646C] hover:text-[#1D222B] transition-colors cursor-pointer rounded-[6px] hover:bg-[#F5F7FF]" aria-label="Search">
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
           </button>
-          <button className="text-[14px] font-medium text-[#1D222B] hover:text-[#4B7BF5] transition-colors cursor-pointer px-3 py-2 rounded-[6px] hover:bg-[#F5F7FF]">Log in</button>
-          <button className="text-[14px] font-semibold text-white bg-[#4B7BF5] hover:bg-[#3B6BE5] transition-colors px-4 py-2 rounded-[8px] cursor-pointer">Start a Free Trial</button>
+          <button onClick={() => setTab('signin')} className="text-[14px] font-medium text-[#1D222B] hover:text-[#4B7BF5] transition-colors cursor-pointer px-3 py-2 rounded-[6px] hover:bg-[#F5F7FF]">Log in</button>
+          <button onClick={() => setTab('signup')} className="text-[14px] font-semibold text-white bg-[#4B7BF5] hover:bg-[#3B6BE5] transition-colors px-4 py-2 rounded-[8px] cursor-pointer">Start a Free Trial</button>
           <button className="p-2 text-[#60646C] hover:text-[#1D222B] transition-colors cursor-pointer rounded-[6px] hover:bg-[#F5F7FF]" aria-label="Language">
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><path d="M2 12h20M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
           </button>
         </div>
       </div>
 
+      {/* Main content — flex-col fills viewport, social proof sits below card row */}
+      <div className="flex flex-col h-screen pt-[64px] relative z-10 justify-center">
       {/* Centered container */}
-      <div className="flex items-center h-screen w-full max-w-[1300px] mx-auto p-[28px] max-lg:p-6 relative z-10">
+      <div className="flex items-center w-full max-w-[1300px] mx-auto p-[28px] max-lg:p-6 h-[690px]">
         {/* Left panel — hidden on small screens */}
         <div className="hidden lg:flex flex-1 flex-col items-start justify-center min-w-0 px-6">
           <div className="flex flex-col gap-10 items-start">
@@ -613,14 +633,18 @@ export default function LoginPage() {
             </div>
             <div className="flex flex-col gap-3">
               <p
-                key={slide}
+                key={`${tab}-${slide}`}
                 className="text-white font-extrabold text-[42px] leading-[48px] max-w-[400px]"
                 style={{ animation: 'phraseIn 0.7s ease forwards' }}
               >
-                {SLIDES[slide].phrase}
+                {(tab === 'signin' ? SIGNIN_SLIDES : SIGNUP_SLIDES)[slide].phrase}
               </p>
-              <p className="text-white/70 text-[16px] leading-[24px] max-w-[380px]">
-                Manage every asset, work order, and safety inspection in one place.
+              <p
+                key={`sub-${tab}-${slide}`}
+                className="text-white/70 text-[16px] leading-[24px] max-w-[380px]"
+                style={{ animation: 'phraseIn 0.7s ease forwards' }}
+              >
+                {(tab === 'signin' ? SIGNIN_SLIDES : SIGNUP_SLIDES)[slide].sub}
               </p>
             </div>
           </div>
@@ -628,10 +652,10 @@ export default function LoginPage() {
 
         {/* Card + below-card text — always fills height, card scrolls when needed */}
         <div className="flex flex-col gap-4 shrink-0 w-full max-w-[626px] max-lg:self-stretch">
-          <div className="bg-white flex flex-col rounded-[32px] w-full shadow-2xl overflow-y-auto max-h-[746px] max-lg:flex-1 max-lg:max-h-none">
+          <div className="bg-white flex flex-col rounded-[32px] w-full shadow-2xl overflow-hidden max-h-[746px] max-lg:flex-1 max-lg:max-h-none max-lg:overflow-y-auto">
             <div
               key={tab}
-              className="flex flex-col items-center gap-4 w-full px-[32px] py-[32px] max-lg:px-6 min-h-[560px]"
+              className={`flex flex-col items-center gap-4 w-full px-[32px] py-[32px] max-lg:px-6 h-[560px] ${tab === 'signin' ? 'pb-[37px]' : ''}`}
               style={{ animation: 'cardIn 0.5s ease forwards' }}
             >
               {tab === 'signin'
@@ -641,7 +665,7 @@ export default function LoginPage() {
             </div>
           </div>
           {tab === 'signup' && (
-            <p className="text-white/80 text-[14px] text-center shrink-0">
+            <p className="text-white/80 text-[14px] text-center shrink-0 relative z-10">
               Not Ready Yet?{' '}
               <a href="#" className="font-semibold text-white underline underline-offset-2 hover:text-white/90 transition-colors">
                 Schedule a tour
@@ -651,35 +675,19 @@ export default function LoginPage() {
         </div>
       </div>
 
-      {/* Social proof — full-width bottom bar */}
-      <div className="absolute bottom-0 left-0 right-0 z-10 flex flex-col items-center gap-3 pb-6 pt-4 hidden lg:flex">
-        <p className="text-white/50 text-[11px] font-semibold tracking-[0.12em] uppercase">Join 4,000+ companies already growing</p>
-        <div className="flex items-center justify-center gap-8 opacity-60">
-          <svg viewBox="0 0 88 22" className="h-[16px] fill-white" aria-label="Unilever"><text x="0" y="18" fontFamily="Arial, Helvetica, sans-serif" fontSize="20" fontWeight="900" letterSpacing="0.5">Unilever</text></svg>
-          <svg viewBox="0 0 80 22" className="h-[15px] fill-white" aria-label="Aramark"><text x="0" y="17" fontFamily="Arial, Helvetica, sans-serif" fontSize="18" fontWeight="700" letterSpacing="0.3">aramark</text></svg>
-          <svg viewBox="0 0 32 28" className="h-[20px] fill-white" aria-label="McDonald's">
-            <path d="M0 28 L0 8 C0 3 4 0 8 0 C11 0 13.5 2 15 5.5 C16.5 2 19 0 22 0 C26 0 30 3 30 8 L30 28 L26 28 L26 10 C26 7 24.5 5 22 5 C19.5 5 18.5 7.5 18 10 L16.5 17 L13.5 17 L12 10 C11.5 7.5 10.5 5 8 5 C5.5 5 4 7 4 10 L4 28 Z"/>
-          </svg>
-          <svg viewBox="0 0 78 20" className="h-[14px] fill-white" aria-label="Yamaha"><text x="0" y="16" fontFamily="Arial, Helvetica, sans-serif" fontSize="17" fontWeight="800" letterSpacing="2">YAMAHA</text></svg>
-          <svg viewBox="0 0 24 24" className="h-[20px] fill-white" aria-label="Pepsi">
-            <circle cx="12" cy="12" r="11" fill="none" stroke="white" strokeWidth="2"/>
-            <path d="M1.5 14 Q6 10 12 13 Q18 16 22.5 12" fill="none" stroke="white" strokeWidth="2"/>
-            <path d="M1.5 14 Q6 18 12 18 Q18 18 22.5 14" fill="white"/>
-            <path d="M3 8.5 Q6 6 12 6 Q18 6 21 9" fill="white"/>
-          </svg>
-          <svg viewBox="0 0 80 22" className="h-[15px] fill-white" aria-label="Marriott"><text x="0" y="17" fontFamily="Georgia, 'Times New Roman', serif" fontSize="18" fontWeight="700" letterSpacing="0.5">Marriott</text></svg>
-          <svg viewBox="0 0 28 30" fill="none" stroke="white" strokeWidth="1.5" className="h-[20px]" aria-label="Shell">
-            <path d="M14 2 C14 2 2 10 2 19 C2 24 7.5 28 14 28 C20.5 28 26 24 26 19 C26 10 14 2 14 2 Z" fill="white" stroke="none"/>
-            <line x1="14" y1="2" x2="14" y2="28" stroke="#0d1117" strokeWidth="1.2"/>
-            <line x1="14" y1="2" x2="6" y2="24" stroke="#0d1117" strokeWidth="1.2"/>
-            <line x1="14" y1="2" x2="3.5" y2="17" stroke="#0d1117" strokeWidth="1.2"/>
-            <line x1="14" y1="2" x2="22" y2="24" stroke="#0d1117" strokeWidth="1.2"/>
-            <line x1="14" y1="2" x2="24.5" y2="17" stroke="#0d1117" strokeWidth="1.2"/>
-            <line x1="14" y1="2" x2="9" y2="26.5" stroke="#0d1117" strokeWidth="1.2"/>
-            <line x1="14" y1="2" x2="19" y2="26.5" stroke="#0d1117" strokeWidth="1.2"/>
-          </svg>
-          <svg viewBox="0 0 78 22" className="h-[15px] fill-white" aria-label="Subway"><text x="0" y="17" fontFamily="Arial, Helvetica, sans-serif" fontSize="18" fontWeight="900" letterSpacing="1">SUBWAY</text></svg>
+      {/* Social proof — below centered row */}
+      <div className="hidden lg:flex flex-col items-center gap-3 pb-6">
+        <p className="text-white/50 text-[14px] font-semibold tracking-[0.12em] uppercase">Join 4,000+ companies already growing</p>
+        <div className="flex items-center justify-center gap-[20px] opacity-40">
+          <img src="/images/login/unilever.svg" alt="Unilever" className="h-[28px]" />
+          <img src="/images/login/aramark.svg" alt="Aramark" className="h-[26px]" />
+          <img src="/images/login/mcdonalds.svg" alt="McDonald's" className="h-[30px]" />
+          <img src="/images/login/yamaha.svg" alt="Yamaha" className="h-[30px]" />
+          <img src="/images/login/shell.svg" alt="Shell" className="h-[30px]" />
+          <img src="/images/login/marriott.svg" alt="Marriott" className="h-[26px]" />
+          <img src="/images/login/subway.svg" alt="Subway" className="h-[26px]" />
         </div>
+      </div>
       </div>
 
       <style>{`
