@@ -678,7 +678,7 @@ export default function LoginPage() {
       {/* Social proof — below centered row */}
       <div className="hidden lg:flex flex-col items-center gap-3 pb-6">
         <p className="text-white/50 text-[14px] font-semibold tracking-[0.12em] uppercase">Join 4,000+ companies already growing</p>
-        <div className="flex items-center justify-center gap-[20px] opacity-40">
+        <div className="flex items-center justify-center gap-[32px] opacity-40 pt-[12px]">
           <img src="/images/login/unilever.svg" alt="Unilever" className="h-[28px]" />
           <img src="/images/login/aramark.svg" alt="Aramark" className="h-[26px]" />
           <img src="/images/login/mcdonalds.svg" alt="McDonald's" className="h-[30px]" />
