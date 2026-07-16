@@ -636,7 +636,7 @@ export default function LoginPage() {
       {/* Main content — flex-col fills viewport, social proof sits below card row */}
       <div className="flex flex-col h-screen pt-[64px] relative z-10 justify-center">
       {/* Centered container */}
-      <div className="flex items-center w-full max-w-[1300px] mx-auto p-[28px] max-lg:p-6 h-[690px]">
+      <div className="flex items-center w-full max-w-[1300px] mx-auto p-[28px] max-lg:p-6 h-[713px]">
         {/* Left panel — hidden on small screens */}
         <div className="hidden lg:flex flex-1 flex-col items-start justify-center min-w-0 px-6">
           <div className="flex flex-col gap-10 items-start">
@@ -667,7 +667,7 @@ export default function LoginPage() {
           <div className="bg-white flex flex-col rounded-[32px] w-full shadow-2xl overflow-hidden max-h-[746px] max-lg:flex-1 max-lg:max-h-none max-lg:overflow-y-auto">
             <div
               key={tab}
-              className={`flex flex-col items-center gap-4 w-full px-[32px] py-[32px] max-lg:px-6 h-[560px] ${tab === 'signin' ? 'pb-[37px]' : ''}`}
+              className={`flex flex-col items-center gap-4 w-full px-[32px] py-[32px] max-lg:px-6 h-[620px] ${tab === 'signin' ? 'pb-[37px]' : ''}`}
               style={{ animation: 'cardIn 0.5s ease forwards' }}
             >
               {tab === 'signin'
@@ -688,7 +688,7 @@ export default function LoginPage() {
       </div>
 
       {/* Social proof — below centered row */}
-      <div className="hidden lg:flex flex-col items-center gap-3 pb-6">
+      <div className="hidden lg:flex flex-col items-center gap-3 pb-6 pt-[28px]">
         <p className="text-white/50 text-[14px] font-semibold tracking-[0.12em] uppercase">Join 4,000+ companies already growing</p>
         <div className="flex items-center justify-center gap-[32px] opacity-40 pt-[12px]">
           <img src="/images/login/unilever.svg" alt="Unilever" className="h-[28px]" />
