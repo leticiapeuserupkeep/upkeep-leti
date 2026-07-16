@@ -412,7 +412,8 @@ function SignUpForm({ tab, setTab }: TabsProps) {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [phone, setPhone] = useState('')
-  const [fullName, setFullName] = useState('')
+  const [firstName, setFirstName] = useState('')
+  const [lastName, setLastName] = useState('')
   const [company, setCompany] = useState('')
   const [country, setCountry] = useState<Country>(COUNTRIES[0])
   const [emailError, setEmailError] = useState('')
@@ -452,30 +453,41 @@ function SignUpForm({ tab, setTab }: TabsProps) {
         <div className="flex gap-[24px] w-full">
           <div className="flex-1 min-w-0">
             <InputField
-              id="signup-fullname"
-              label="Full Name"
+              id="signup-firstname"
+              label="First Name"
               type="text"
               required
-              value={fullName}
-              onChange={e => setFullName(e.target.value)}
+              value={firstName}
+              onChange={e => setFirstName(e.target.value)}
               error=""
             />
           </div>
-          <div className="flex-1 min-w-0 flex flex-col gap-1.5">
-            <label htmlFor="phone" className="text-[14px] font-semibold text-[#1D222B]">
-              Mobile Number <span className="text-[#CC4E00]">*</span>
-            </label>
-            <div className={`flex items-center h-[48px] border rounded-[12px] bg-white transition-colors ${!phone && passwordTouched ? 'border-[#E5484D]' : 'border-[#E0E1E6] focus-within:border-[#4B7BF5]'}`}>
-              <CountrySelector selected={country} onSelect={setCountry} />
-              <input
-                id="phone"
-                type="tel"
-                inputMode="numeric"
-                value={phone}
-                onChange={e => setPhone(e.target.value.replace(/\D/g, ''))}
-                className="flex-1 px-3 py-2 text-[16px] text-[#1D222B] placeholder:text-[#8B8D98] outline-none bg-transparent"
-              />
-            </div>
+          <div className="flex-1 min-w-0">
+            <InputField
+              id="signup-lastname"
+              label="Last Name"
+              type="text"
+              required
+              value={lastName}
+              onChange={e => setLastName(e.target.value)}
+              error=""
+            />
+          </div>
+        </div>
+        <div className="flex flex-col gap-1.5 w-full">
+          <label htmlFor="phone" className="text-[14px] font-semibold text-[#1D222B]">
+            Mobile Number <span className="text-[#CC4E00]">*</span>
+          </label>
+          <div className={`flex items-center h-[48px] border rounded-[12px] bg-white transition-colors ${!phone && passwordTouched ? 'border-[#E5484D]' : 'border-[#E0E1E6] focus-within:border-[#4B7BF5]'}`}>
+            <CountrySelector selected={country} onSelect={setCountry} />
+            <input
+              id="phone"
+              type="tel"
+              inputMode="numeric"
+              value={phone}
+              onChange={e => setPhone(e.target.value.replace(/\D/g, ''))}
+              className="flex-1 px-3 py-2 text-[16px] text-[#1D222B] placeholder:text-[#8B8D98] outline-none bg-transparent"
+            />
           </div>
         </div>
         <div className="flex gap-[24px] w-full">
