@@ -418,11 +418,11 @@ function SignInForm({ tab, setTab }: TabsProps) {
         <TabSwitcher tab={tab} setTab={setTab} />
         <div className="flex flex-col gap-3 w-full flex-1 justify-center">
           <div className="flex flex-col gap-1 pt-[12px]">
-            <h1 className="text-[28px] font-bold leading-[34px] text-[#1D222B]">Forgot Password</h1>
+            <h1 className="text-[28px] font-bold leading-[34px] text-[#1D222B]">{forgotView === 'form' ? 'Forgot Password' : 'Check your email'}</h1>
             <p className="text-[15px] text-[#60646C] leading-[22px] pt-[20px]">
               {forgotView === 'form'
                 ? "Enter the email address you registered with and we'll send you instructions to reset your password."
-                : "If an account exists for that email, you'll receive a link to reset your password."}
+                : "If an account exists for this email, you'll receive a password reset link shortly."}
             </p>
           </div>
           {forgotView === 'form' && (
