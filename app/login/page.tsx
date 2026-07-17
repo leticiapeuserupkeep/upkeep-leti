@@ -749,8 +749,8 @@ function SignUpForm({ tab, setTab }: TabsProps) {
               type="tel"
               inputMode="numeric"
               value={phone}
-              onChange={e => setPhone(e.target.value.replace(/\D/g, '').slice(0, 15))}
-              maxLength={15}
+              onChange={e => setPhone(e.target.value.replace(/\D/g, '').slice(0, 12))}
+              maxLength={12}
               className="flex-1 px-3 py-2 text-[16px] text-[#1D222B] placeholder:text-[#8B8D98] outline-none bg-transparent"
             />
           </div>
