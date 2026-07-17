@@ -18,7 +18,6 @@ export default function RootLayout({
     <html lang="en">
       <body className={poppins.className}>
         {children}
-        <script src="https://mcp.figma.com/mcp/html-to-design/capture.js" async />
       </body>
     </html>
   )
