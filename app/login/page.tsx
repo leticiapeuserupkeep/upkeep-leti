@@ -362,6 +362,7 @@ function SignInForm({ tab, setTab }: TabsProps) {
   const [passwordTouched, setPasswordTouched] = useState(false)
   const [ssoView, setSsoView] = useState<null | 'email' | 'companyId'>(null)
   const [ssoInput, setSsoInput] = useState('')
+  const [ssoSuccess, setSsoSuccess] = useState(false)
   const [forgotView, setForgotView] = useState<null | 'form' | 'sent'>(null)
   const [forgotEmail, setForgotEmail] = useState('')
   const [forgotEmailTouched, setForgotEmailTouched] = useState(false)
@@ -459,6 +460,23 @@ function SignInForm({ tab, setTab }: TabsProps) {
   }
 
   if (ssoView) {
+    if (ssoSuccess) {
+      return (
+        <>
+          <TabSwitcher tab={tab} setTab={setTab} />
+          <div className="flex flex-col items-center justify-center gap-4 w-full flex-1 text-center py-8">
+            <div className="flex items-center justify-center w-16 h-16 rounded-full bg-[#EEF3FF]">
+              <Check size={32} className="text-[#4B7BF5]" strokeWidth={2.5} />
+            </div>
+            <div className="flex flex-col gap-2">
+              <h1 className="text-[28px] font-bold leading-[34px] text-[#1D222B]">Congrats!</h1>
+              <p className="text-[16px] text-[#60646C]">You've successfully signed in.</p>
+            </div>
+          </div>
+        </>
+      )
+    }
+
     return (
       <>
         <TabSwitcher tab={tab} setTab={setTab} />
@@ -493,6 +511,7 @@ function SignInForm({ tab, setTab }: TabsProps) {
               variant="primary"
               disabled={!ssoInput}
               className="w-full h-[56px] rounded-[12px] text-[16px] font-semibold transition-all"
+              onClick={() => setSsoSuccess(true)}
             >
               Continue
             </Button>
