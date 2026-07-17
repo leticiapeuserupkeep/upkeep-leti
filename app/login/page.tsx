@@ -365,6 +365,7 @@ function SignInForm({ tab, setTab }: TabsProps) {
   const [forgotView, setForgotView] = useState<null | 'form' | 'sent'>(null)
   const [forgotEmail, setForgotEmail] = useState('')
   const [forgotEmailTouched, setForgotEmailTouched] = useState(false)
+  const [signedIn, setSignedIn] = useState(false)
 
   const emailValid = isValidEmail(email)
   const passwordValid = isValidPassword(password)
@@ -391,6 +392,23 @@ function SignInForm({ tab, setTab }: TabsProps) {
     } else {
       setPasswordError('')
     }
+  }
+
+  if (signedIn) {
+    return (
+      <>
+        <TabSwitcher tab={tab} setTab={setTab} />
+        <div className="flex flex-col items-center justify-center gap-4 w-full flex-1 text-center py-8">
+          <div className="flex items-center justify-center w-16 h-16 rounded-full bg-[#EEF3FF]">
+            <Check size={32} className="text-[#4B7BF5]" strokeWidth={2.5} />
+          </div>
+          <div className="flex flex-col gap-2">
+            <h1 className="text-[28px] font-bold leading-[34px] text-[#1D222B]">Congrats!</h1>
+            <p className="text-[16px] text-[#60646C]">You've successfully signed in.</p>
+          </div>
+        </div>
+      </>
+    )
   }
 
   if (forgotView) {
@@ -555,6 +573,7 @@ function SignInForm({ tab, setTab }: TabsProps) {
           variant="primary"
           disabled={!canSubmit}
           className="w-full h-[56px] rounded-[12px] text-[16px] font-semibold transition-all"
+          onClick={() => setSignedIn(true)}
         >
           Sign In
         </Button>
