@@ -242,12 +242,24 @@ function PasswordRequirements({ password, visible }: { password: string; visible
   const [phases, setPhases] = useState<Record<string, 1 | 2>>({})
   const [hidden, setHidden] = useState<Set<string>>(new Set())
   const prevPw = useRef('')
+  const pendingTimers = useRef<ReturnType<typeof setTimeout>[]>([])
+
+  // Clear all timers only on unmount
+  useEffect(() => {
+    return () => { pendingTimers.current.forEach(clearTimeout) }
+  }, [])
 
   useEffect(() => {
     const prev = prevPw.current
     prevPw.current = password
 
-    if (!password) { setPhases({}); setHidden(new Set()); return }
+    if (!password) {
+      pendingTimers.current.forEach(clearTimeout)
+      pendingTimers.current = []
+      setPhases({})
+      setHidden(new Set())
+      return
+    }
 
     const justMet = PW_RULES.filter(r => r.test(password) && !r.test(prev)).map(r => r.label)
     if (!justMet.length) return
@@ -257,7 +269,7 @@ function PasswordRequirements({ password, visible }: { password: string; visible
       setPhases(p => { const n = { ...p }; justMet.forEach(l => { n[l] = 2 }); return n }), 450)
     const t2 = setTimeout(() =>
       setHidden(h => new Set([...h, ...justMet])), 800)
-    return () => { clearTimeout(t1); clearTimeout(t2) }
+    pendingTimers.current.push(t1, t2)
   }, [password])
 
   const visibleRules = PW_RULES.filter(r => !hidden.has(r.label))
