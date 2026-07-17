@@ -311,6 +311,31 @@ function PasswordRequirements({ password, visible }: { password: string; visible
   )
 }
 
+/* ── Shared success screen ── */
+
+function SuccessScreen({ title, subtitle }: { title: string; subtitle: string }) {
+  return (
+    <div
+      className="flex flex-col items-center justify-center gap-4 w-full flex-1 text-center py-8"
+      style={{ animation: 'fadeInUp 0.45s cubic-bezier(0.22,1,0.36,1) both' }}
+    >
+      <div
+        className="flex items-center justify-center w-16 h-16 rounded-full bg-[#EEF3FF]"
+        style={{ animation: 'fadeInUp 0.45s 0.05s cubic-bezier(0.22,1,0.36,1) both' }}
+      >
+        <Check size={32} className="text-[#4B7BF5]" strokeWidth={2.5} />
+      </div>
+      <div
+        className="flex flex-col gap-2"
+        style={{ animation: 'fadeInUp 0.45s 0.12s cubic-bezier(0.22,1,0.36,1) both' }}
+      >
+        <h1 className="text-[28px] font-bold leading-[34px] text-[#1D222B]">{title}</h1>
+        <p className="text-[16px] text-[#60646C]">{subtitle}</p>
+      </div>
+    </div>
+  )
+}
+
 /* ── Secondary action button with hover info tooltip ── */
 
 function SecondaryActionButton({ label, tooltip }: { label: string; tooltip: string }) {
@@ -411,58 +436,58 @@ function SignInForm({ tab, setTab }: TabsProps) {
     return (
       <>
         <TabSwitcher tab={tab} setTab={setTab} />
-        <div className="flex flex-col items-center justify-center gap-4 w-full flex-1 text-center py-8">
-          <div className="flex items-center justify-center w-16 h-16 rounded-full bg-[#EEF3FF]">
-            <Check size={32} className="text-[#4B7BF5]" strokeWidth={2.5} />
-          </div>
-          <div className="flex flex-col gap-2">
-            <h1 className="text-[28px] font-bold leading-[34px] text-[#1D222B]">Congrats!</h1>
-            <p className="text-[16px] text-[#60646C]">You've successfully signed in.</p>
-          </div>
-        </div>
+        <SuccessScreen title="Congrats!" subtitle="You've successfully signed in." />
       </>
     )
   }
 
   if (forgotView) {
+    if (forgotView === 'sent') {
+      return (
+        <>
+          <TabSwitcher tab={tab} setTab={setTab} />
+          <SuccessScreen title="Check your email" subtitle="If an account exists for this email, you'll receive a password reset link shortly." />
+          <button type="button" onClick={() => { setForgotView(null); setForgotEmail(''); setForgotEmailTouched(false) }} className="text-[13px] font-medium text-[#9CA3AF] underline underline-offset-2 hover:text-[#6B7280] transition-colors cursor-pointer self-start">
+            Back to Sign In
+          </button>
+        </>
+      )
+    }
+
     return (
       <>
         <TabSwitcher tab={tab} setTab={setTab} />
         <div className="flex flex-col gap-3 w-full flex-1 justify-center">
           <div className="flex flex-col gap-1 pt-[12px]">
-            <h1 className="text-[28px] font-bold leading-[34px] text-[#1D222B]">{forgotView === 'form' ? 'Forgot Password' : 'Check your email'}</h1>
+            <h1 className="text-[28px] font-bold leading-[34px] text-[#1D222B]">Forgot Password</h1>
             <p className="text-[15px] text-[#60646C] leading-[22px] pt-[20px]">
-              {forgotView === 'form'
-                ? "Enter the email address you registered with and we'll send you instructions to reset your password."
-                : "If an account exists for this email, you'll receive a password reset link shortly."}
+              Enter the email address you registered with and we'll send you instructions to reset your password.
             </p>
           </div>
-          {forgotView === 'form' && (
-            <div className="flex flex-col gap-[20px] w-full">
-              <div className="py-[20px]">
-              <InputField
-                id="forgot-email"
-                label="Email"
-                type="email"
-                inputMode="email"
-                required
-                value={forgotEmail}
-                onChange={e => setForgotEmail(e.target.value.replace(/[^a-zA-Z0-9._+\-@]/g, ''))}
-                onBlur={() => { if (forgotEmail.length > 0) setForgotEmailTouched(true) }}
-                hasError={forgotEmailTouched && forgotEmail.length > 0 && !isValidEmail(forgotEmail)}
-                error={forgotEmailTouched && forgotEmail.length > 0 && !isValidEmail(forgotEmail) ? 'Please enter a valid email address.' : ''}
-              />
-              </div>
-              <Button
-                variant="primary"
-                disabled={!isValidEmail(forgotEmail)}
-                className="w-full h-[56px] rounded-[12px] text-[16px] font-semibold transition-all"
-                onClick={() => setForgotView('sent')}
-              >
-                Continue
-              </Button>
+          <div className="flex flex-col gap-[20px] w-full">
+            <div className="py-[20px]">
+            <InputField
+              id="forgot-email"
+              label="Email"
+              type="email"
+              inputMode="email"
+              required
+              value={forgotEmail}
+              onChange={e => setForgotEmail(e.target.value.replace(/[^a-zA-Z0-9._+\-@]/g, ''))}
+              onBlur={() => { if (forgotEmail.length > 0) setForgotEmailTouched(true) }}
+              hasError={forgotEmailTouched && forgotEmail.length > 0 && !isValidEmail(forgotEmail)}
+              error={forgotEmailTouched && forgotEmail.length > 0 && !isValidEmail(forgotEmail) ? 'Please enter a valid email address.' : ''}
+            />
             </div>
-          )}
+            <Button
+              variant="primary"
+              disabled={!isValidEmail(forgotEmail)}
+              className="w-full h-[56px] rounded-[12px] text-[16px] font-semibold transition-all"
+              onClick={() => setForgotView('sent')}
+            >
+              Continue
+            </Button>
+          </div>
         </div>
         <button type="button" onClick={() => { setForgotView(null); setForgotEmail(''); setForgotEmailTouched(false) }} className="text-[13px] font-medium text-[#9CA3AF] underline underline-offset-2 hover:text-[#6B7280] transition-colors cursor-pointer self-start">
           Back to Sign In
@@ -476,15 +501,7 @@ function SignInForm({ tab, setTab }: TabsProps) {
       return (
         <>
           <TabSwitcher tab={tab} setTab={setTab} />
-          <div className="flex flex-col items-center justify-center gap-4 w-full flex-1 text-center py-8">
-            <div className="flex items-center justify-center w-16 h-16 rounded-full bg-[#EEF3FF]">
-              <Check size={32} className="text-[#4B7BF5]" strokeWidth={2.5} />
-            </div>
-            <div className="flex flex-col gap-2">
-              <h1 className="text-[28px] font-bold leading-[34px] text-[#1D222B]">Congrats!</h1>
-              <p className="text-[16px] text-[#60646C]">You've successfully signed in.</p>
-            </div>
-          </div>
+          <SuccessScreen title="Congrats!" subtitle="You've successfully signed in." />
         </>
       )
     }
@@ -679,17 +696,10 @@ function SignUpForm({ tab, setTab }: TabsProps) {
 
   if (creatingAccount) {
     return (
-      <div className="flex flex-col items-center justify-center w-full flex-1 gap-8 px-4 text-center">
-        <div className="flex flex-col items-center gap-6">
-          <div className="w-12 h-12 rounded-full border-4 border-[#E6EDFE] border-t-[#4B7BF5] animate-spin" />
-          <div className="flex flex-col gap-3">
-            <h2 className="text-[22px] font-bold leading-[28px] text-[#1D222B]">Welcome to UpKeep!</h2>
-            <p className="text-[15px] text-[#60646C] leading-[22px] max-w-[320px]">
-              We're setting up your account so you can start working in UpKeep right away.
-            </p>
-          </div>
-        </div>
-      </div>
+      <>
+        <TabSwitcher tab={tab} setTab={setTab} />
+        <SuccessScreen title="Welcome to UpKeep!" subtitle="Your account is ready. Let's get to work." />
+      </>
     )
   }
 
