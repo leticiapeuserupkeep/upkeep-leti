@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useId } from 'react'
+import { useState, useEffect, useRef, useId } from 'react'
 import Image from 'next/image'
 import Link from 'next/link'
 import { Eye, EyeOff, Info, Check, X, ChevronDown } from 'lucide-react'
@@ -235,25 +235,66 @@ function InputField({ label, labelSuffix, id, type = 'text', inputMode, placehol
   )
 }
 
-/* ── Password requirements checklist ── */
+/* ── Password requirements checklist (floating, animated) ── */
 
-function PasswordRequirements({ password }: { password: string }) {
+function PasswordRequirements({ password, visible }: { password: string; visible: boolean }) {
+  // phase 1 = flash green, phase 2 = collapse+fade out
+  const [phases, setPhases] = useState<Record<string, 1 | 2>>({})
+  const [hidden, setHidden] = useState<Set<string>>(new Set())
+  const prevPw = useRef('')
+
+  useEffect(() => {
+    const prev = prevPw.current
+    prevPw.current = password
+
+    if (!password) { setPhases({}); setHidden(new Set()); return }
+
+    const justMet = PW_RULES.filter(r => r.test(password) && !r.test(prev)).map(r => r.label)
+    if (!justMet.length) return
+
+    setPhases(p => { const n = { ...p }; justMet.forEach(l => { n[l] = 1 }); return n })
+    const t1 = setTimeout(() =>
+      setPhases(p => { const n = { ...p }; justMet.forEach(l => { n[l] = 2 }); return n }), 450)
+    const t2 = setTimeout(() =>
+      setHidden(h => new Set([...h, ...justMet])), 800)
+    return () => { clearTimeout(t1); clearTimeout(t2) }
+  }, [password])
+
+  const visibleRules = PW_RULES.filter(r => !hidden.has(r.label))
+  if (!visible || !visibleRules.length) return null
+
   return (
-    <div className="flex flex-col gap-1.5 bg-[#F9F9FB] border border-[#E0E1E6] rounded-[10px] px-3 py-3 text-[13px]">
-      <p className="font-semibold text-[#1D222B] mb-0.5">Password requirements:</p>
-      {PW_RULES.map(rule => {
-        const ok = rule.test(password)
-        return (
-          <div key={rule.label} className="flex items-center gap-2">
-            <span className={`flex items-center justify-center w-4 h-4 rounded-full shrink-0 transition-colors ${ok ? 'bg-[#30A46C]' : 'bg-[#E0E1E6]'}`}>
-              <Check size={10} className="text-white" />
-            </span>
-            <span className={`transition-colors ${ok ? 'text-[#30A46C] font-medium' : 'text-[#8B8D98]'}`}>
-              {rule.label}
-            </span>
-          </div>
-        )
-      })}
+    <div className="absolute left-0 right-0 top-[calc(100%+6px)] z-50 bg-white border border-[#E0E1E6] shadow-lg rounded-[12px] px-3 py-3 text-[13px] animate-[fadeIn_0.15s_ease]">
+      <p className="font-semibold text-[#1D222B] mb-1.5">Password requirements:</p>
+      <div className="flex flex-col gap-1.5">
+        {visibleRules.map(rule => {
+          const phase = phases[rule.label]
+          const isGreen = phase === 1 || phase === 2
+          const isCollapsing = phase === 2
+          return (
+            <div
+              key={rule.label}
+              className="flex items-center gap-2 overflow-hidden"
+              style={{
+                maxHeight: isCollapsing ? '0px' : '32px',
+                opacity: isCollapsing ? 0 : 1,
+                marginBottom: isCollapsing ? '-6px' : undefined,
+                transition: isCollapsing ? 'max-height 0.35s ease, opacity 0.3s ease, margin 0.35s ease' : undefined,
+              }}
+            >
+              <span
+                className="flex items-center justify-center w-4 h-4 rounded-full shrink-0"
+                style={{ backgroundColor: isGreen ? '#30A46C' : '#E0E1E6', transition: 'background-color 0.3s ease' }}
+              >
+                <Check size={10} className="text-white" />
+              </span>
+              <span style={{ color: isGreen ? '#30A46C' : '#8B8D98', fontWeight: isGreen ? 500 : 400, transition: 'color 0.3s ease' }}>
+                {rule.label}
+              </span>
+            </div>
+          )
+        })}
+      </div>
     </div>
   )
 }
@@ -476,29 +517,31 @@ function SignInForm({ tab, setTab }: TabsProps) {
           />
 
           <div className="flex flex-col gap-1.5">
-            <InputField
-              id="password"
-              label="Password"
-              type={showPw ? 'text' : 'password'}
-              required
-              value={password}
-              onChange={e => { setPassword(e.target.value); if (passwordTouched && isValidPassword(e.target.value)) setPasswordError('') }}
-              onFocus={() => setPwFocused(true)}
-              onBlur={handlePasswordBlur}
-              hasError={!!passwordError}
-              error={passwordError}
-              suffix={
-                <button
-                  type="button"
-                  onClick={() => setShowPw(p => !p)}
-                  className="px-4 text-[#8B8D98] hover:text-[#1D222B] transition-colors cursor-pointer border-0 outline-none bg-transparent"
-                  aria-label={showPw ? 'Hide password' : 'Show password'}
-                >
-                  {showPw ? <EyeOff size={18} /> : <Eye size={18} />}
-                </button>
-              }
-            />
-            {pwFocused && <PasswordRequirements password={password} />}
+            <div className="relative">
+              <InputField
+                id="password"
+                label="Password"
+                type={showPw ? 'text' : 'password'}
+                required
+                value={password}
+                onChange={e => { setPassword(e.target.value); if (passwordTouched && isValidPassword(e.target.value)) setPasswordError('') }}
+                onFocus={() => setPwFocused(true)}
+                onBlur={handlePasswordBlur}
+                hasError={!!passwordError}
+                error={passwordError}
+                suffix={
+                  <button
+                    type="button"
+                    onClick={() => setShowPw(p => !p)}
+                    className="px-4 text-[#8B8D98] hover:text-[#1D222B] transition-colors cursor-pointer border-0 outline-none bg-transparent"
+                    aria-label={showPw ? 'Hide password' : 'Show password'}
+                  >
+                    {showPw ? <EyeOff size={18} /> : <Eye size={18} />}
+                  </button>
+                }
+              />
+              <PasswordRequirements password={password} visible={pwFocused} />
+            </div>
             <div className="flex justify-end">
               <button type="button" onClick={() => setForgotView('form')} className="text-[12px] text-[#9CA3AF] underline underline-offset-2 hover:text-[#6B7280] transition-colors cursor-pointer">Forgot password?</button>
             </div>
@@ -667,29 +710,31 @@ function SignUpForm({ tab, setTab }: TabsProps) {
             />
           </div>
           <div className="flex-1 min-w-0 flex flex-col gap-1.5">
-            <InputField
-              id="signup-password"
-              label="Password"
-              type={showPw ? 'text' : 'password'}
-              required
-              value={password}
-              onChange={e => { setPassword(e.target.value); if (passwordTouched && isValidPassword(e.target.value)) setPasswordError('') }}
-              onFocus={() => setPwFocused(true)}
-              onBlur={handlePasswordBlur}
-              hasError={!!passwordError}
-              error={passwordError}
-              suffix={
-                <button
-                  type="button"
-                  onClick={() => setShowPw(p => !p)}
-                  className="px-4 text-[#8B8D98] hover:text-[#1D222B] transition-colors cursor-pointer border-0 outline-none bg-transparent"
-                  aria-label={showPw ? 'Hide password' : 'Show password'}
-                >
-                  {showPw ? <EyeOff size={18} /> : <Eye size={18} />}
-                </button>
-              }
-            />
-            {pwFocused && <PasswordRequirements password={password} />}
+            <div className="relative">
+              <InputField
+                id="signup-password"
+                label="Password"
+                type={showPw ? 'text' : 'password'}
+                required
+                value={password}
+                onChange={e => { setPassword(e.target.value); if (passwordTouched && isValidPassword(e.target.value)) setPasswordError('') }}
+                onFocus={() => setPwFocused(true)}
+                onBlur={handlePasswordBlur}
+                hasError={!!passwordError}
+                error={passwordError}
+                suffix={
+                  <button
+                    type="button"
+                    onClick={() => setShowPw(p => !p)}
+                    className="px-4 text-[#8B8D98] hover:text-[#1D222B] transition-colors cursor-pointer border-0 outline-none bg-transparent"
+                    aria-label={showPw ? 'Hide password' : 'Show password'}
+                  >
+                    {showPw ? <EyeOff size={18} /> : <Eye size={18} />}
+                  </button>
+                }
+              />
+              <PasswordRequirements password={password} visible={pwFocused} />
+            </div>
           </div>
         </div>
         </div>
