@@ -447,9 +447,14 @@ function SignInForm({ tab, setTab }: TabsProps) {
         <>
           <TabSwitcher tab={tab} setTab={setTab} />
           <SuccessScreen title="Check your email" subtitle="If an account exists for this email, you'll receive a password reset link shortly." />
-          <button type="button" onClick={() => { setForgotView(null); setForgotEmail(''); setForgotEmailTouched(false) }} className="text-[13px] font-medium text-[#9CA3AF] underline underline-offset-2 hover:text-[#6B7280] transition-colors cursor-pointer self-start">
-            Back to Sign In
-          </button>
+          <div className="flex items-center justify-between w-full">
+            <button type="button" onClick={() => { setForgotView(null); setForgotEmail(''); setForgotEmailTouched(false) }} className="text-[13px] font-medium text-[#9CA3AF] underline underline-offset-2 hover:text-[#6B7280] transition-colors cursor-pointer">
+              Back to Sign In
+            </button>
+            <button type="button" onClick={() => setForgotView('form')} className="text-[13px] font-medium text-[#4B7BF5] underline underline-offset-2 hover:text-[#3B6AE0] transition-colors cursor-pointer">
+              Resend email
+            </button>
+          </div>
         </>
       )
     }
