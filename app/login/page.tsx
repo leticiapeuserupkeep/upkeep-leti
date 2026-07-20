@@ -153,7 +153,7 @@ function TabSwitcher({ tab, setTab }: TabsProps) {
           tab === 'signup' ? 'bg-white font-semibold text-black' : 'font-normal text-[#4B7BF5]/70'
         }`}
       >
-        FREE Trial
+        Free
       </button>
       <button
         onClick={() => setTab('signin')}
@@ -682,7 +682,7 @@ function SignUpForm({ tab, setTab }: TabsProps) {
 
   const emailValid = isValidEmail(email)
   const passwordValid = isValidPassword(password)
-  const canSubmit = emailValid && passwordValid && !!phone
+  const canSubmit = emailValid && passwordValid
 
   function handleEmailBlur() {
     setEmailTouched(true)
@@ -745,7 +745,7 @@ function SignUpForm({ tab, setTab }: TabsProps) {
         </div>
         <div className="flex flex-col gap-1.5 w-full">
           <label htmlFor="phone" className="text-[14px] font-semibold text-[#1D222B]">
-            Mobile Number <span className="text-[#CC4E00]">*</span>
+            Mobile Number <span className="text-[#8B8D98] font-normal">(Optional)</span>
           </label>
           <div className={`flex items-center h-[48px] rounded-[12px] bg-white transition-all ${!phone && passwordTouched ? 'border border-[#E5484D] has-[input:focus]:border-[#4B7BF5]' : 'border border-[#E0E1E6] has-[input:focus]:border-[#4B7BF5]'}`}>
             <CountrySelector selected={country} onSelect={setCountry} />
