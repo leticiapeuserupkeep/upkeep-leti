@@ -451,7 +451,7 @@ function SignInForm({ tab, setTab }: TabsProps) {
             <button type="button" onClick={() => { setForgotView(null); setForgotEmail(''); setForgotEmailTouched(false) }} className="text-[13px] font-medium text-[#9CA3AF] underline underline-offset-2 hover:text-[#6B7280] transition-colors cursor-pointer">
               Back to Sign In
             </button>
-            <button type="button" onClick={() => setForgotView('form')} className="text-[13px] font-medium text-[#4B7BF5] underline underline-offset-2 hover:text-[#3B6AE0] transition-colors cursor-pointer">
+            <button type="button" onClick={() => { setForgotEmail(''); setForgotEmailTouched(false); setForgotView('form') }} className="text-[13px] font-medium text-[#4B7BF5] underline underline-offset-2 hover:text-[#3B6AE0] transition-colors cursor-pointer">
               Resend email
             </button>
           </div>
@@ -462,7 +462,7 @@ function SignInForm({ tab, setTab }: TabsProps) {
     return (
       <>
         <TabSwitcher tab={tab} setTab={setTab} />
-        <div className="flex flex-col gap-3 w-full flex-1 justify-center">
+        <div key="forgot-form" className="flex flex-col gap-3 w-full flex-1 justify-center" style={{ animation: 'fadeInUp 0.35s cubic-bezier(0.22,1,0.36,1) both' }}>
           <div className="flex flex-col gap-1 pt-[12px]">
             <h1 className="text-[28px] font-bold leading-[34px] text-[#1D222B]">Forgot Password</h1>
             <p className="text-[15px] text-[#60646C] leading-[22px] pt-[20px]">
@@ -613,9 +613,7 @@ function SignInForm({ tab, setTab }: TabsProps) {
               />
               <PasswordRequirements password={password} visible={pwFocused} />
             </div>
-            <div className="flex justify-end">
-              <button type="button" onClick={() => setForgotView('form')} className="text-[12px] text-[#9CA3AF] underline underline-offset-2 hover:text-[#6B7280] transition-colors cursor-pointer">Forgot password?</button>
-            </div>
+            <button type="button" onClick={() => setForgotView('form')} className="text-[12px] text-[#4B7BF5] underline underline-offset-2 hover:text-[#3B6AE0] transition-colors cursor-pointer self-start">Forgot password?</button>
           </div>
         </div>
 
