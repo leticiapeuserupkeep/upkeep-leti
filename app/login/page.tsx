@@ -640,12 +640,12 @@ function SignInForm({ tab, setTab }: TabsProps) {
           className="w-full h-[56px] rounded-[12px] text-[16px] font-semibold border border-[#E0E1E6] text-[#1D222B] hover:bg-[#F5F7FF] hover:border-[#4B7BF5] transition-all cursor-pointer flex items-center justify-center gap-3"
         >
           <svg width="20" height="20" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
-            <path d="M47.532 24.552c0-1.636-.132-3.196-.382-4.68H24.48v9.022h12.954c-.558 2.956-2.25 5.462-4.794 7.144v5.93h7.762c4.54-4.18 7.13-10.332 7.13-17.416z" fill="#4285F4"/>
-            <path d="M24.48 48c6.492 0 11.938-2.152 15.918-5.832l-7.762-5.93c-2.152 1.44-4.902 2.292-8.156 2.292-6.274 0-11.584-4.234-13.48-9.922H2.976v6.124C6.938 42.788 15.144 48 24.48 48z" fill="#34A853"/>
-            <path d="M11 28.608A14.46 14.46 0 0 1 10.24 24c0-1.598.274-3.148.76-4.608V13.27H2.976A23.97 23.97 0 0 0 .48 24c0 3.876.93 7.546 2.496 10.73L11 28.608z" fill="#FBBC05"/>
-            <path d="M24.48 9.538c3.534 0 6.706 1.214 9.198 3.598l6.894-6.894C36.412 2.376 30.972 0 24.48 0 15.144 0 6.938 5.212 2.976 13.27L11 19.392c1.896-5.688 7.206-9.854 13.48-9.854z" fill="#EA4335"/>
+            <path d="M0 0h23v23H0z" fill="#F35325"/>
+            <path d="M25 0h23v23H25z" fill="#81BC06"/>
+            <path d="M0 25h23v23H0z" fill="#05A6F0"/>
+            <path d="M25 25h23v23H25z" fill="#FFBA08"/>
           </svg>
-          Continue with Google
+          Continue with Microsoft
         </button>
 
         <button
@@ -653,12 +653,12 @@ function SignInForm({ tab, setTab }: TabsProps) {
           className="w-full h-[56px] rounded-[12px] text-[16px] font-semibold border border-[#E0E1E6] text-[#1D222B] hover:bg-[#F5F7FF] hover:border-[#4B7BF5] transition-all cursor-pointer flex items-center justify-center gap-3"
         >
           <svg width="20" height="20" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
-            <path d="M0 0h23v23H0z" fill="#F35325"/>
-            <path d="M25 0h23v23H25z" fill="#81BC06"/>
-            <path d="M0 25h23v23H0z" fill="#05A6F0"/>
-            <path d="M25 25h23v23H25z" fill="#FFBA08"/>
+            <path d="M47.532 24.552c0-1.636-.132-3.196-.382-4.68H24.48v9.022h12.954c-.558 2.956-2.25 5.462-4.794 7.144v5.93h7.762c4.54-4.18 7.13-10.332 7.13-17.416z" fill="#4285F4"/>
+            <path d="M24.48 48c6.492 0 11.938-2.152 15.918-5.832l-7.762-5.93c-2.152 1.44-4.902 2.292-8.156 2.292-6.274 0-11.584-4.234-13.48-9.922H2.976v6.124C6.938 42.788 15.144 48 24.48 48z" fill="#34A853"/>
+            <path d="M11 28.608A14.46 14.46 0 0 1 10.24 24c0-1.598.274-3.148.76-4.608V13.27H2.976A23.97 23.97 0 0 0 .48 24c0 3.876.93 7.546 2.496 10.73L11 28.608z" fill="#FBBC05"/>
+            <path d="M24.48 9.538c3.534 0 6.706 1.214 9.198 3.598l6.894-6.894C36.412 2.376 30.972 0 24.48 0 15.144 0 6.938 5.212 2.976 13.27L11 19.392c1.896-5.688 7.206-9.854 13.48-9.854z" fill="#EA4335"/>
           </svg>
-          Continue with Microsoft
+          Continue with Google
         </button>
 
         <button
