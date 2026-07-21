@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect, useRef, useId } from 'react'
+import { useSearchParams } from 'next/navigation'
 import Image from 'next/image'
 import Link from 'next/link'
 import { Eye, EyeOff, Info, Check, X, ChevronDown } from 'lucide-react'
@@ -10,6 +11,17 @@ import { Button } from '@/app/components/ui/Button'
 
 function isValidEmail(email: string) {
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)
+}
+
+const PERSONAL_EMAIL_DOMAINS = new Set([
+  'gmail.com','yahoo.com','hotmail.com','outlook.com','live.com','icloud.com',
+  'me.com','mac.com','aol.com','protonmail.com','proton.me','mail.com',
+  'ymail.com','googlemail.com','msn.com','hotmail.co.uk','yahoo.co.uk',
+])
+
+function isCompanyEmail(email: string): boolean {
+  const domain = email.split('@')[1]?.toLowerCase()
+  return !!domain && !PERSONAL_EMAIL_DOMAINS.has(domain)
 }
 
 const PW_RULES = [
@@ -876,7 +888,10 @@ const SIGNUP_SLIDES = [
 /* ── Page ── */
 
 export default function LoginPage() {
-  const [tab, setTab] = useState<'signin' | 'signup'>('signin')
+  const searchParams = useSearchParams()
+  const [tab, setTab] = useState<'signin' | 'signup'>(
+    searchParams.get('tab') === 'signup' ? 'signup' : 'signin'
+  )
   const [slide, setSlide] = useState(0)
 
   useEffect(() => {
