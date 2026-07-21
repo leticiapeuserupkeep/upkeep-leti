@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useRef, useId } from 'react'
+import { useState, useEffect, useRef, useId, Suspense } from 'react'
 import { useSearchParams } from 'next/navigation'
 import Image from 'next/image'
 import Link from 'next/link'
@@ -887,7 +887,7 @@ const SIGNUP_SLIDES = [
 
 /* ── Page ── */
 
-export default function LoginPage() {
+function LoginPageContent() {
   const searchParams = useSearchParams()
   const [tab, setTab] = useState<'signin' | 'signup'>(
     searchParams.get('tab') === 'signup' ? 'signup' : 'signin'
@@ -1029,5 +1029,13 @@ export default function LoginPage() {
         }
       `}</style>
     </div>
+  )
+}
+
+export default function LoginPage() {
+  return (
+    <Suspense>
+      <LoginPageContent />
+    </Suspense>
   )
 }
