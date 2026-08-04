@@ -1,56 +1,56 @@
 'use client'
 
+import { type ReactNode } from 'react'
 import * as AvatarPrimitive from '@radix-ui/react-avatar'
+import { User } from 'lucide-react'
 
-type AvatarSize = 'sm' | 'md' | 'lg'
+export type AvatarSize = 'xs' | 'sm' | 'md' | 'lg' | 'xl' | '2xl'
+export type AvatarVariant = 'default' | 'solid'
 
-interface AvatarProps {
+export interface AvatarProps {
   src?: string
-  name: string
+  name?: string
+  icon?: ReactNode
   size?: AvatarSize
+  variant?: AvatarVariant
   className?: string
+  title?: string
 }
 
-const sizeStyles: Record<AvatarSize, string> = {
-  sm: 'w-6 h-6 text-[length:var(--font-size-xs)]',
-  md: 'w-8 h-8 text-[length:var(--font-size-sm)]',
-  lg: 'w-10 h-10 text-[length:var(--font-size-base)]',
+const SIZE: Record<AvatarSize, { container: string; text: string; iconSize: number }> = {
+  xs:  { container: 'w-5 h-5',    text: 'text-[9px]',                              iconSize: 10 },
+  sm:  { container: 'w-7 h-7',    text: 'text-[11px]',                             iconSize: 13 },
+  md:  { container: 'w-9 h-9',    text: 'text-[length:var(--font-size-sm)]',       iconSize: 16 },
+  lg:  { container: 'w-11 h-11',  text: 'text-[length:var(--font-size-base)]',     iconSize: 20 },
+  xl:  { container: 'w-[52px] h-[52px]', text: 'text-[18px]',                      iconSize: 24 },
+  '2xl': { container: 'w-16 h-16', text: 'text-[22px]',                            iconSize: 28 },
 }
 
 function getInitials(name: string): string {
-  return name
-    .split(' ')
-    .map((n) => n[0])
-    .join('')
-    .toUpperCase()
-    .slice(0, 2)
+  return name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2)
 }
 
-const avatarColors = [
-  'bg-[var(--color-purple-light)] text-[var(--color-purple)]',
-  'bg-[var(--color-info-light)] text-[var(--color-info)]',
-  'bg-[var(--color-success-light)] text-[var(--color-success)]',
-  'bg-[var(--color-warning-light)] text-[var(--color-warning)]',
-  'bg-[var(--color-error-light)] text-[var(--color-error)]',
-]
+export function Avatar({ src, name, icon, size = 'md', variant, className = '', title }: AvatarProps) {
+  const { container, text, iconSize } = SIZE[size]
 
-function getColorFromName(name: string): string {
-  let hash = 0
-  for (let i = 0; i < name.length; i++) hash = name.charCodeAt(i) + ((hash << 5) - hash)
-  return avatarColors[Math.abs(hash) % avatarColors.length]
-}
+  const fallbackColor = variant === 'solid'
+    ? 'bg-[var(--color-accent-9)] text-white'
+    : 'bg-[var(--color-accent-3)] text-[var(--color-accent-9)]'
 
-export function Avatar({ src, name, size = 'md', className = '' }: AvatarProps) {
+  const fallbackContent = name
+    ? <span className={`${text} font-semibold leading-none`}>{getInitials(name)}</span>
+    : <span className="flex items-center justify-center">{icon ?? <User size={iconSize} strokeWidth={2} />}</span>
+
   return (
     <AvatarPrimitive.Root
-      className={`inline-flex items-center justify-center rounded-full overflow-hidden shrink-0 ${sizeStyles[size]} ${className}`}
+      className={`inline-flex items-center justify-center rounded-full overflow-hidden shrink-0 cursor-default ${container} ${className}`}
     >
-      <AvatarPrimitive.Image src={src} alt={name} className="w-full h-full object-cover" />
+      {src && <AvatarPrimitive.Image src={src} alt={name ?? ''} className="w-full h-full object-cover" />}
       <AvatarPrimitive.Fallback
-        className={`flex items-center justify-center w-full h-full font-semibold ${getColorFromName(name)}`}
-        delayMs={200}
+        className={`flex items-center justify-center w-full h-full font-semibold ${fallbackColor}`}
+        delayMs={src ? 200 : 0}
       >
-        {getInitials(name)}
+        {fallbackContent}
       </AvatarPrimitive.Fallback>
     </AvatarPrimitive.Root>
   )

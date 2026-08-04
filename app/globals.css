@@ -7,6 +7,21 @@
     margin: 0;
   }
 
+  input[type="time"]::-webkit-datetime-edit { color: transparent; }
+  input[type="time"]:focus::-webkit-datetime-edit { color: inherit; }
+  input[type="time"]:not([value=""])::-webkit-datetime-edit { color: inherit; }
+
+  input[type="date"]::-webkit-datetime-edit { color: transparent; }
+  input[type="date"]:focus::-webkit-datetime-edit { color: inherit; }
+  input[type="date"]:not([value=""])::-webkit-datetime-edit { color: inherit; }
+  input[type="date"]::-webkit-calendar-picker-indicator { cursor: pointer; }
+
+  input[type="number"]::-webkit-inner-spin-button,
+  input[type="number"]::-webkit-outer-spin-button {
+    opacity: 1;
+    cursor: pointer;
+  }
+
   body {
     font-family: var(--font-family-base);
     font-size: var(--font-size-base);
@@ -16,6 +31,39 @@
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
   }
+}
+
+/* ── Assignment card animations ── */
+@keyframes card-in {
+  from { opacity: 0; transform: translateY(6px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+@keyframes card-out {
+  from { opacity: 1; transform: translateY(0); }
+  to   { opacity: 0; transform: translateY(6px); }
+}
+.animate-card-in  { animation: card-in  220ms ease-out both; }
+.animate-card-out { animation: card-out 180ms ease-in  both; }
+
+/* ── Avatar chip animations ── */
+@keyframes avatar-in {
+  from { opacity: 0; transform: scale(0.6); }
+  to   { opacity: 1; transform: scale(1); }
+}
+@keyframes avatar-out {
+  from { opacity: 1; transform: scale(1); }
+  to   { opacity: 0; transform: scale(0.6); }
+}
+.animate-avatar-in  { animation: avatar-in  180ms cubic-bezier(0.34, 1.56, 0.64, 1) both; }
+.animate-avatar-out { animation: avatar-out 140ms ease-in both; }
+
+/* ── Popover / dropdown open animation ── */
+@keyframes popover-in {
+  from { opacity: 0; transform: scale(0.96) translateY(-4px); }
+  to   { opacity: 1; transform: scale(1)    translateY(0); }
+}
+[data-radix-popper-content-wrapper] > * {
+  animation: popover-in 150ms cubic-bezier(0.16, 1, 0.3, 1) both;
 }
 
 /* ── Focus ring ── */
@@ -477,6 +525,29 @@
   from { opacity: 0; transform: scale(0.95); }
   to { opacity: 1; transform: scale(1); }
 }
+
+/* ── Modal ── */
+@keyframes modal-overlay-in {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+@keyframes modal-overlay-out {
+  from { opacity: 1; }
+  to   { opacity: 0; }
+}
+@keyframes modal-content-in {
+  from { opacity: 0; scale: 0.96; }
+  to   { opacity: 1; scale: 1;    }
+}
+@keyframes modal-content-out {
+  from { opacity: 1; scale: 1;    }
+  to   { opacity: 0; scale: 0.96; }
+}
+
+.modal-overlay[data-state="open"]   { animation: modal-overlay-in  180ms ease forwards; }
+.modal-overlay[data-state="closed"] { animation: modal-overlay-out 150ms ease forwards; }
+.modal-content[data-state="open"]   { animation: modal-content-in  200ms cubic-bezier(0.16,1,0.3,1) forwards; }
+.modal-content[data-state="closed"] { animation: modal-content-out 150ms ease forwards; }
 
 /* ── Dropdown / popover ── */
 @keyframes dropdown-in {

@@ -46,7 +46,7 @@ const sections: NavSection[] = [
     title: 'CORE',
     items: [
       { label: 'Work Orders', icon: ClipboardList, href: '/work-orders' },
-      { label: 'Preventive Maintenance', icon: CalendarClock },
+      { label: 'Preventive Maintenance', icon: CalendarClock, href: '/predictive-maintenance' },
       { label: 'Intelligence', icon: Sparkles },
       { label: 'Scheduler', icon: CalendarClock, href: '/scheduler' },
       { label: 'Requests', icon: Inbox },

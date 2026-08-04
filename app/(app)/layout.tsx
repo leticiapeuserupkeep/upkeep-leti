@@ -28,6 +28,7 @@ function getPageTitle(pathname: string): string {
   if (pathname.startsWith('/edge/gateways')) return 'Gateways'
   if (pathname.startsWith('/edge/alerts')) return 'Alerts'
   if (pathname.startsWith('/edge/settings')) return 'Settings'
+  if (pathname.startsWith('/predictive-maintenance')) return 'Preventive Maintenance'
   if (pathname.startsWith('/scheduler')) return 'Scheduler'
   if (pathname.startsWith('/command-center')) return 'Command Center'
   if (pathname.startsWith('/supernova/staging')) return 'SuperNova Staging'
@@ -60,6 +61,8 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
 
   const title = getPageTitle(pathname)
   const isCreateApp = pathname === '/studio/create'
+  const isPMCreate = pathname.startsWith('/predictive-maintenance/create')
+  const isPMList = pathname === '/predictive-maintenance'
   const isAgents = pathname.startsWith('/agents')
   const isBilling = pathname.startsWith('/billing')
   const isStudioBrowse = pathname.startsWith('/studio/browse')
@@ -146,6 +149,16 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
         </>
       )
     }
+    if (isPMList) {
+      return (
+        <Button variant="primary" size="md" asChild>
+          <Link href="/predictive-maintenance/create">
+            <Plus size={14} />
+            New PM
+          </Link>
+        </Button>
+      )
+    }
     return undefined
   }
 
@@ -169,10 +182,10 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
 
       <div
         className={`flex flex-col flex-1 min-w-0 min-h-0 ${
-          isCommandCenter ? 'h-screen overflow-hidden' : 'min-h-screen'
+          isCommandCenter || isPMCreate ? 'h-screen overflow-hidden' : 'min-h-screen'
         }`}
       >
-        {!isCreateApp && !isAgents && !isBilling && !isFleetDetail && !isCommandCenter && (
+        {!isCreateApp && !isAgents && !isBilling && !isFleetDetail && !isCommandCenter && !isPMCreate && (
           <TopBar
             title={title}
             role={role}
@@ -183,7 +196,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
             onTimeRangeChange={setTimeRange}
             onToggleSidebar={() => setSidebarCollapsed((prev) => !prev)}
             sites={sites}
-            minimal={isEdge || isStudioSection || pathname.startsWith('/exports') || pathname.startsWith('/files') || isWorkOrders || pathname.startsWith('/scheduler')}
+            minimal={isEdge || isStudioSection || pathname.startsWith('/exports') || pathname.startsWith('/files') || isWorkOrders || pathname.startsWith('/scheduler') || isPMList}
             backHref={isRuntimeDetail ? '/edge/runtime' : undefined}
             afterTitle={isEdgeSensors ? (
               <Button
@@ -232,7 +245,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
             ) : getActions()}
           />
         )}
-        {(isWorkOrders || pathname.startsWith('/exports')) && <div id="table-toolbar-portal" />}
+        {(isWorkOrders || isPMList || pathname.startsWith('/exports')) && <div id="table-toolbar-portal" />}
 
         {isRuntimeSection && <div id="runtime-sensor-bar-portal" />}
         {isRuntimeSection && <div id="runtime-kpi-portal" />}

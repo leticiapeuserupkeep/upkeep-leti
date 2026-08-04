@@ -18,6 +18,7 @@ export const TextInput = forwardRef<HTMLInputElement, TextInputProps>(
             className="text-[length:var(--font-size-sm)] font-medium text-[var(--color-neutral-12)]"
           >
             {label}
+            {props.required && <span className="ml-0.5 text-[var(--color-error)]">*</span>}
           </label>
         )}
         <div className="flex items-center rounded-[var(--radius-lg)] border border-[var(--border-default)] overflow-hidden focus-within:border-[var(--color-accent-7)] transition-colors duration-[var(--duration-fast)]">

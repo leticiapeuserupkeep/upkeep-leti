@@ -15,12 +15,14 @@ export function Modal({ open, onOpenChange, children, maxWidth = '480px' }: Moda
   return (
     <Dialog.Root open={open} onOpenChange={onOpenChange}>
       <Dialog.Portal>
-        <Dialog.Overlay className="fixed inset-0 z-[var(--z-overlay)] bg-black/40" />
+        <Dialog.Overlay className="modal-overlay fixed inset-0 z-[var(--z-overlay)] bg-black/40" />
         <Dialog.Content
-          className="fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-[var(--z-modal)] w-full max-h-[85vh] rounded-[var(--radius-2xl)] border border-[var(--border-default)] bg-[var(--surface-primary)] shadow-[var(--shadow-xl)] focus:outline-none flex flex-col overflow-hidden"
+          className="modal-content fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-[var(--z-modal)] w-full max-h-[85vh] rounded-[var(--radius-2xl)] border border-[var(--border-default)] bg-[var(--surface-primary)] shadow-[var(--shadow-xl)] focus:outline-none flex flex-col overflow-visible"
           style={{ maxWidth }}
         >
-          {children}
+          <div className="flex flex-col overflow-hidden rounded-[var(--radius-2xl)] max-h-[85vh]">
+            {children}
+          </div>
         </Dialog.Content>
       </Dialog.Portal>
     </Dialog.Root>
@@ -36,27 +38,25 @@ interface ModalHeaderProps {
 
 export function ModalHeader({ title, description, closeDisabled = false, children }: ModalHeaderProps) {
   return (
-    <div className="flex items-center justify-between px-[var(--space-xl)] pt-[var(--space-xl)] pb-[var(--space-md)] border-b border-[var(--border-subtle)]">
-      <div className="min-w-0 flex-1">
-        <Dialog.Title className="text-[length:var(--font-size-lg)] font-semibold text-[var(--color-neutral-12)]">
-          {title}
-        </Dialog.Title>
-        {description && (
-          <Dialog.Description className="text-[length:var(--font-size-sm)] text-[var(--color-neutral-8)] mt-0.5">
-            {description}
-          </Dialog.Description>
-        )}
-        {children}
-      </div>
+    <div className="relative px-[var(--space-xl)] pt-[var(--space-xl)] pb-[var(--space-md)]">
       <Dialog.Close asChild>
         <button
-          className="flex items-center justify-center w-8 h-8 shrink-0 rounded-[var(--radius-md)] text-[var(--color-neutral-8)] hover:bg-[var(--color-neutral-3)] hover:text-[var(--color-neutral-11)] transition-colors duration-[var(--duration-fast)] cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+          className="absolute top-3 right-3 flex items-center justify-center w-8 h-8 rounded-full bg-[var(--surface-primary)] text-[var(--color-neutral-8)] hover:bg-[var(--color-neutral-3)] hover:text-[var(--color-neutral-11)] transition-colors duration-[var(--duration-fast)] cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
           aria-label="Close"
           disabled={closeDisabled}
         >
-          <X size={18} />
+          <X size={16} />
         </button>
       </Dialog.Close>
+      <Dialog.Title className="text-[length:var(--font-size-lg)] font-semibold text-[var(--color-neutral-12)]">
+        {title}
+      </Dialog.Title>
+      {description && (
+        <Dialog.Description className="text-[length:var(--font-size-sm)] text-[var(--color-neutral-10)] mt-0.5">
+          {description}
+        </Dialog.Description>
+      )}
+      {children}
     </div>
   )
 }
@@ -81,7 +81,7 @@ interface ModalFooterProps {
 
 export function ModalFooter({ children, className = '' }: ModalFooterProps) {
   return (
-    <div className={`flex items-center gap-[var(--space-sm)] px-[var(--space-xl)] py-[var(--space-md)] border-t border-[var(--border-subtle)] ${className}`}>
+    <div className={`flex items-center gap-[var(--space-sm)] px-[var(--space-xl)] py-[var(--space-md)] ${className}`}>
       {children}
     </div>
   )
