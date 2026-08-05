@@ -2553,11 +2553,6 @@ export default function CreatePMPage() {
         <h1 className="text-[15px] font-semibold text-[var(--color-neutral-12)] flex-1">
           Create a New Preventive Maintenance
         </h1>
-        <div className="flex items-center gap-2 mr-2">
-          <span className="text-[13px] text-[var(--color-neutral-9)]">Create First Work Order Now</span>
-          <Switch checked={createWONow} onCheckedChange={setCreateWONow} size="md" aria-label="Create first Work Order Now" />
-        </div>
-        <div className="w-px h-5 bg-[var(--border-subtle)]" />
         <span className={`inline-flex items-center gap-1.5 h-7 px-3 rounded-full text-[12px] font-medium text-[var(--color-neutral-8)] bg-[var(--color-neutral-3)] shrink-0 transition-all duration-300 ease-in-out overflow-hidden ${(isSaving || draftSavedAt) ? 'opacity-100 max-w-[120px]' : 'opacity-0 max-w-0 px-0'}`}>
           {isSaving ? (
             <>
@@ -2571,6 +2566,11 @@ export default function CreatePMPage() {
             <span className="transition-opacity duration-200">Draft</span>
           )}
         </span>
+        <div className="flex items-center gap-2 mr-2">
+          <span className="text-[13px] text-[var(--color-neutral-9)]">Create First Work Order Now</span>
+          <Switch checked={createWONow} onCheckedChange={setCreateWONow} size="md" aria-label="Create first Work Order Now" />
+        </div>
+        <div className="w-px h-5 bg-[var(--border-subtle)]" />
         <Link href="/predictive-maintenance">
           <Button variant="secondary" size="md">Cancel</Button>
         </Link>
