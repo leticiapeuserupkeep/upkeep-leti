@@ -3011,9 +3011,9 @@ export default function CreatePMPage() {
                               <div className="flex flex-col items-center justify-center p-4 gap-2 text-center">
                                 <p className="text-[13px] font-semibold text-[var(--color-neutral-11)]">Assign to this trigger</p>
                                 <p className="text-[12px] text-[var(--color-neutral-8)]">Choose assets, locations, or meters for this trigger to act on.</p>
-                                <button type="button" onClick={() => setShowAssignModal(trigger.id)} className="text-[13px] font-medium text-[var(--color-accent-9)] hover:underline cursor-pointer">
-                                  Assign
-                                </button>
+                                <Button variant="primary" size="sm" onClick={() => setShowAssignModal(trigger.id)}>
+                                  <Plus size={13} className="mr-1" /> Assign
+                                </Button>
                               </div>
                             ) : (
                               <>
