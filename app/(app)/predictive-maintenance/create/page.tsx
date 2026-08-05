@@ -2558,19 +2558,19 @@ export default function CreatePMPage() {
           <Switch checked={createWONow} onCheckedChange={setCreateWONow} size="md" aria-label="Create first Work Order Now" />
         </div>
         <div className="w-px h-5 bg-[var(--border-subtle)]" />
-        {(isSaving || draftSavedAt) && (
-          <span className="inline-flex items-center gap-1.5 h-8 px-3 rounded-[var(--radius-lg)] text-[13px] font-medium text-[var(--color-neutral-8)] bg-[var(--color-neutral-3)] shrink-0">
-            {isSaving ? (
-              <>
-                <svg className="animate-spin w-3 h-3 text-[var(--color-neutral-7)]" fill="none" viewBox="0 0 24 24">
-                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/>
-                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"/>
-                </svg>
-                Saving…
-              </>
-            ) : 'Draft'}
-          </span>
-        )}
+        <span className={`inline-flex items-center gap-1.5 h-7 px-3 rounded-full text-[12px] font-medium text-[var(--color-neutral-8)] bg-[var(--color-neutral-3)] shrink-0 transition-all duration-300 ease-in-out overflow-hidden ${(isSaving || draftSavedAt) ? 'opacity-100 max-w-[120px]' : 'opacity-0 max-w-0 px-0'}`}>
+          {isSaving ? (
+            <>
+              <svg className="animate-spin w-3 h-3 shrink-0 text-[var(--color-neutral-7)]" fill="none" viewBox="0 0 24 24">
+                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/>
+                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"/>
+              </svg>
+              <span className="transition-opacity duration-200">Saving…</span>
+            </>
+          ) : (
+            <span className="transition-opacity duration-200">Draft</span>
+          )}
+        </span>
         <Link href="/predictive-maintenance">
           <Button variant="secondary" size="md">Cancel</Button>
         </Link>
@@ -2893,18 +2893,20 @@ export default function CreatePMPage() {
                 <div className="flex items-center gap-2">
                   <Clock size={16} className="text-[var(--color-neutral-7)]" />
                   <span className="text-[15px] font-semibold text-[var(--color-neutral-12)]">Triggers</span>
+                </div>
+                <div className="flex items-center gap-2">
                   {triggers.length > 0 && (
                     <span className="text-[11px] font-medium text-[var(--color-neutral-8)] bg-[var(--color-neutral-3)] rounded-full px-2 py-0.5">
                       {triggers.length} {triggers.length === 1 ? 'trigger' : 'triggers'} · {triggers.reduce((sum, t) => sum + t.assignments.length, 0)} {triggers.reduce((sum, t) => sum + t.assignments.length, 0) === 1 ? 'assignment' : 'assignments'}
                     </span>
                   )}
+                  {triggers.length > 0 && (
+                    <Button variant="secondary" size="sm" onClick={() => { setEditingTriggerId(null); setCalendarModalKey(k => k + 1); setShowCalendarModal(true) }}>
+                      <Plus size={13} className="mr-1" />
+                      New Trigger
+                    </Button>
+                  )}
                 </div>
-                {triggers.length > 0 && (
-                  <Button variant="secondary" size="sm" onClick={() => { setEditingTriggerId(null); setCalendarModalKey(k => k + 1); setShowCalendarModal(true) }}>
-                    <Plus size={13} className="mr-1" />
-                    New Trigger
-                  </Button>
-                )}
               </div>
 
               {triggers.length === 0 ? (
@@ -2919,9 +2921,21 @@ export default function CreatePMPage() {
               ) : (
                 <div className="flex flex-col gap-2 p-4">
                   {triggers.map(trigger => (
-                    <div key={trigger.id} className={`rounded-[8px] border overflow-hidden ${trigger.calendarTrigger.meterCondition && trigger.assignments.some(a => !a.meter) ? 'border-[var(--color-error,#CE2C31)]' : 'border-[var(--color-accent-4)]'}`}>
+                    <div key={trigger.id} id={`trigger-card-${trigger.id}`} className={`rounded-[8px] border overflow-hidden ${trigger.calendarTrigger.meterCondition && trigger.assignments.some(a => !a.meter) ? 'border-[var(--color-error,#CE2C31)]' : 'border-[var(--color-accent-4)]'}`}>
                       {/* Trigger row */}
-                      <div className="flex items-center gap-3 p-4 bg-[var(--color-accent-1)]">
+                      <div
+                        className="flex items-center gap-3 p-4 bg-[var(--color-accent-1)] cursor-pointer select-none"
+                        onClick={() => {
+                          const isExpanding = !trigger.expanded
+                          setTriggers(ts => ts.map(t => t.id === trigger.id ? { ...t, expanded: !t.expanded } : t))
+                          if (isExpanding) {
+                            setTimeout(() => {
+                              const el = document.getElementById(`trigger-card-${trigger.id}`)
+                              el?.scrollIntoView({ behavior: 'smooth', block: 'nearest' })
+                            }, 50)
+                          }
+                        }}
+                      >
                         <div className="flex-1 min-w-0">
                           {(() => {
                             const t = trigger.calendarTrigger
@@ -2959,14 +2973,14 @@ export default function CreatePMPage() {
                           </span>
                         )}
                         {!trigger.expanded && (
-                          <Button variant="primary" size="sm" onClick={() => setShowAssignModal(trigger.id)}>
+                          <Button variant="primary" size="sm" onClick={e => { e.stopPropagation(); setShowAssignModal(trigger.id) }}>
                             <Plus size={13} className="mr-1" />
                             Assign
                           </Button>
                         )}
                         <DropdownMenu modal={false}>
                           <DropdownMenuTrigger asChild>
-                            <button className="w-7 h-7 flex items-center justify-center rounded-[var(--radius-md)] hover:bg-[var(--color-neutral-4)] transition-colors cursor-pointer text-[var(--color-neutral-7)]">
+                            <button onClick={e => e.stopPropagation()} className="w-7 h-7 flex items-center justify-center rounded-[var(--radius-md)] hover:bg-[var(--color-neutral-4)] transition-colors cursor-pointer text-[var(--color-neutral-7)]">
                               <MoreHorizontal size={15} />
                             </button>
                           </DropdownMenuTrigger>
@@ -2982,7 +2996,7 @@ export default function CreatePMPage() {
                           </DropdownMenuContent>
                         </DropdownMenu>
                         <button
-                          onClick={() => setTriggers(ts => ts.map(t => t.id === trigger.id ? { ...t, expanded: !t.expanded } : t))}
+                          onClick={e => { e.stopPropagation(); setTriggers(ts => ts.map(t => t.id === trigger.id ? { ...t, expanded: !t.expanded } : t)) }}
                           className="w-7 h-7 flex items-center justify-center rounded-[var(--radius-md)] hover:bg-[var(--color-neutral-4)] transition-colors cursor-pointer text-[var(--color-neutral-7)]"
                         >
                           {trigger.expanded ? <ChevronUp size={15} /> : <ChevronDown size={15} />}
@@ -2990,7 +3004,7 @@ export default function CreatePMPage() {
                       </div>
 
                       {/* Expanded assignments sub-card */}
-                      <div className={`overflow-hidden transition-all duration-250 ease-in-out ${trigger.expanded ? 'max-h-[3000px] opacity-100' : 'max-h-0 opacity-0'}`}>
+                      <div className={`overflow-hidden transition-all duration-300 ease-in-out ${trigger.expanded ? 'max-h-[3000px] opacity-100' : 'max-h-0 opacity-0'}`}>
                         <div className="p-4 flex flex-col gap-4 bg-[var(--surface-primary)]">
                           <div className="overflow-hidden">
                             {trigger.assignments.length === 0 ? (
