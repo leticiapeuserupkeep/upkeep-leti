@@ -3135,11 +3135,11 @@ export default function CreatePMPage() {
                                             </Popover.Portal>
                                           </Popover.Root>
                                           <span className="flex-1" />
-                                          <button type="button" onClick={() => setAssignmentSelected(s => ({ ...s, [trigger.id]: new Set() }))} className="flex items-center gap-1 text-[13px] font-semibold text-white/60 hover:text-white cursor-pointer transition-colors shrink-0">Unselect</button>
-                                          <div className="w-px h-4 bg-white/20 shrink-0 mx-1" />
                                           <button type="button" onClick={() => setBulkDeleteConfirm(trigger.id)} className="flex items-center gap-1.5 px-2.5 h-7 rounded-[var(--radius-md)] bg-[#EDF2FE] hover:bg-[#dce8fd] transition-colors cursor-pointer text-[12px] font-medium text-[#CD2B31] shrink-0">
                                             <Trash2 size={12} /> Delete
                                           </button>
+                                          <div className="w-px h-4 bg-white/20 shrink-0 mx-1" />
+                                          <button type="button" onClick={() => setAssignmentSelected(s => ({ ...s, [trigger.id]: new Set() }))} className="flex items-center gap-1 text-[13px] font-semibold text-white/60 hover:text-white cursor-pointer transition-colors shrink-0">Unselect</button>
                                         </div>
                                       </div>
                                     {/* Column headers — always visible */}
