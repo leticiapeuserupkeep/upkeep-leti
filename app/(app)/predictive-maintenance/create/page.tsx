@@ -2901,7 +2901,7 @@ export default function CreatePMPage() {
                     </span>
                   )}
                   {triggers.length > 0 && (
-                    <Button variant="secondary" size="sm" onClick={() => { setEditingTriggerId(null); setCalendarModalKey(k => k + 1); setShowCalendarModal(true) }}>
+                    <Button variant="primary" size="sm" onClick={() => { setEditingTriggerId(null); setCalendarModalKey(k => k + 1); setShowCalendarModal(true) }}>
                       <Plus size={13} className="mr-1" />
                       New Trigger
                     </Button>
