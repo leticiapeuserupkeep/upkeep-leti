@@ -68,7 +68,7 @@ interface ModalBodyProps {
 
 export function ModalBody({ children, className = '' }: ModalBodyProps) {
   return (
-    <div className={`flex-1 overflow-y-auto px-[var(--space-xl)] py-[var(--space-lg)] ${className}`}>
+    <div className={`flex-1 min-h-0 overflow-y-auto px-[var(--space-xl)] py-[var(--space-lg)] ${className}`}>
       {children}
     </div>
   )

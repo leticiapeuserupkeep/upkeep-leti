@@ -4,12 +4,13 @@ import React, { useState, useRef, useEffect, useCallback } from 'react'
 import * as Popover from '@radix-ui/react-popover'
 import Link from 'next/link'
 import {
-  ChevronLeft, ChevronRight, ChevronUp, ChevronDown, FileText, Box,
+  ChevronLeft, ChevronRight, ChevronUp, ChevronDown, ChevronsUpDown, FileText, Box,
   Plus, X, MapPin, Gauge, Clock, Users, Upload, Trash2, PanelLeft,
   Calendar, ArrowRight, ArrowDown, Sparkle, MoreHorizontal, Pencil, Activity, CalendarClock,
-  User, RotateCcw, RefreshCw, Camera, Link2, Search, Ban,
+  User, RotateCcw, RefreshCw, Camera, Link2, Search, Ban, Flag, SlidersHorizontal,
 } from 'lucide-react'
 import { Button } from '@/app/components/ui/Button'
+import { IconButton } from '@/app/components/ui/IconButton'
 import { TextInput, Textarea } from '@/app/components/ui/TextInput'
 import { Switch } from '@/app/components/ui/Switch'
 import { Modal, ModalHeader, ModalBody, ModalFooter } from '@/app/components/ui/Modal'
@@ -71,7 +72,9 @@ interface CalendarTrigger {
   woRelativePeriod: string
   woOnThePeriod: string
   woAtTime: string
+  woOnTheAtTime: string
   // Meter trigger
+  meterCondition: string
   meterValue: string
   meterUnit: string
   meterDueN: string
@@ -100,14 +103,39 @@ interface ChecklistGroup {
 
 const CATEGORIES = ['Preventative', 'Electrical', 'Safety', 'Upgrade', 'Damage', 'Inspection']
 const PRIORITIES = ['None', 'Low', 'Medium', 'High']
+const PRIORITY_OPTIONS: { value: string; label: string; color: string }[] = [
+  { value: 'None',   label: 'None',   color: '#8B8D98' },
+  { value: 'Low',    label: 'Low',    color: '#3E63DD' },
+  { value: 'Medium', label: 'Medium', color: '#F76B15' },
+  { value: 'High',   label: 'High',   color: '#CE2C31' },
+]
 const ASSETS = ASSET_NAMES
 const LOCATIONS = LOCATION_NAMES
 const METERS = METER_NAMES
 const TRIGGERS = ['Every Wednesday', 'Daily', 'Weekly', 'Monthly', 'On Meter Reading']
 const ASSIGNEES = ['Leticia Peuser', 'John Smith', 'Maria Garcia', 'David Chen']
-const TEAMS = ['Maintenance', 'Electrical', 'Safety', 'Operations']
+const TEAM_COLORS: Record<string, string> = {
+  Maintenance: '#3B82F6',
+  Electrical: '#F59E0B',
+  Safety: '#10B981',
+  Operations: '#8B5CF6',
+}
+const TEAMS = ['Maintenance', 'Electrical', 'Safety', 'Operations'].map(name => ({
+  value: name,
+  label: name,
+  icon: (
+    <span style={{ background: TEAM_COLORS[name] }} className="w-5 h-5 rounded-full flex items-center justify-center text-white text-[9px] font-bold shrink-0">
+      {name[0]}
+    </span>
+  ),
+}))
 
 /* ── Select field component ── */
+
+type SelectOption = string | { value: string; label: string; icon?: React.ReactNode }
+function normalizeOption(o: SelectOption): { value: string; label: string; icon?: React.ReactNode } {
+  return typeof o === 'string' ? { value: o, label: o } : o
+}
 
 function Select({
   label, required, value, onChange, options, placeholder = 'Select…',
@@ -116,9 +144,11 @@ function Select({
   required?: boolean
   value: string
   onChange: (v: string) => void
-  options: string[]
+  options: SelectOption[]
   placeholder?: string
 }) {
+  const normalized = options.map(normalizeOption)
+  const selected = normalized.find(o => o.value === value)
   return (
     <div className="flex flex-col gap-[var(--space-xs)]">
       {label && (
@@ -130,20 +160,22 @@ function Select({
       <DropdownMenu modal={false}>
         <DropdownMenuTrigger asChild>
           <button className="w-full h-10 flex items-center pl-3 pr-2 rounded-[var(--radius-lg)] border border-[var(--border-default)] bg-[var(--surface-primary)] hover:bg-[var(--color-neutral-2)] hover:border-[var(--color-neutral-7)] data-[state=open]:border-[var(--color-accent-7)] transition-colors cursor-pointer outline-none">
+            {selected?.icon && <span className="mr-1.5 shrink-0 flex items-center">{selected.icon}</span>}
             <span className={`flex-1 text-left text-[13px] truncate ${value ? 'text-[var(--color-neutral-11)]' : 'text-[var(--color-neutral-7)]'}`}>
-              {value}
+              {selected?.label ?? placeholder}
             </span>
             <ChevronDown size={14} className="shrink-0 text-[var(--color-neutral-7)] ml-1" />
           </button>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="start" minWidth="var(--radix-dropdown-menu-trigger-width)">
-          {options.map(o => (
+          {normalized.map(o => (
             <DropdownMenuItem
-              key={o}
-              onSelect={() => onChange(o)}
-              className={value === o ? 'font-medium text-[var(--color-accent-9)] bg-[var(--color-accent-1)]' : ''}
+              key={o.value}
+              onSelect={() => onChange(o.value)}
+              className={value === o.value ? 'font-medium text-[var(--color-accent-9)] bg-[var(--color-accent-1)]' : ''}
             >
-              {o}
+              {o.icon && <span className="mr-1.5 shrink-0 flex items-center">{o.icon}</span>}
+              {o.label}
             </DropdownMenuItem>
           ))}
         </DropdownMenuContent>
@@ -201,12 +233,12 @@ const MONTH_DAYS = Array.from({ length: 31 }, (_, i) => String(i + 1))
 
 const EMPTY_TRIGGER: Omit<CalendarTrigger, 'id'> = {
   scheduleType: 'Regular Interval', every: '', period: '',
-  weekday: 'Mon',
+  weekday: '',
   monthMode: 'on-day', monthDay: '1', monthOrdinal: 'first', monthWeekday: 'Day',
   atTime: '',
-  woCreationMode: '', woRelativeN: '3', woRelativePeriod: 'Day',
-  woOnThePeriod: 'Monday', woAtTime: '',
-  meterValue: '', meterUnit: 'Units', meterDueN: '1', meterDuePeriod: 'Day',
+  woCreationMode: '', woRelativeN: '', woRelativePeriod: '',
+  woOnThePeriod: '', woAtTime: '', woOnTheAtTime: '',
+  meterCondition: '', meterValue: '', meterUnit: 'Units', meterDueN: '1', meterDuePeriod: 'Day',
 }
 
 const WEEKDAY_LETTERS = [
@@ -221,7 +253,7 @@ const WEEKDAY_LETTERS = [
 
 type InlineOption = string | { value: string; label: string }
 
-function InlineSelect({ value, onChange, options, placeholder, className }: { value: string; onChange: (v: string) => void; options: InlineOption[]; placeholder?: string; className?: string }) {
+function InlineSelect({ value, onChange, options, placeholder, className, error }: { value: string; onChange: (v: string) => void; options: InlineOption[]; placeholder?: string; className?: string; error?: boolean }) {
   const items = options.map(o => typeof o === 'string' ? { value: o, label: o } : o)
   const displayLabel = value ? (items.find(i => i.value === value)?.label ?? value) : (placeholder ?? '')
   return (
@@ -229,7 +261,7 @@ function InlineSelect({ value, onChange, options, placeholder, className }: { va
       <DropdownMenuTrigger asChild>
         <button
           type="button"
-          className={`inline-flex items-center gap-1.5 h-8 px-3 rounded-[var(--radius-md)] border border-[var(--border-default)] bg-[var(--surface-primary)] text-[13px] font-medium hover:bg-[var(--color-neutral-3)] transition-colors cursor-pointer ${value ? 'text-[var(--color-neutral-11)]' : 'text-[var(--color-neutral-7)]'} ${className ?? ''}`}
+          className={`inline-flex items-center gap-1.5 h-8 px-3 rounded-[var(--radius-md)] border bg-[var(--surface-primary)] text-[13px] font-medium hover:bg-[var(--color-neutral-3)] transition-colors cursor-pointer ${error ? 'border-[#CE2C31]' : 'border-[var(--border-default)]'} ${value ? 'text-[var(--color-neutral-11)]' : 'text-[var(--color-neutral-7)]'} ${className ?? ''}`}
         >
           <span>{displayLabel}</span>
           <ChevronDown size={12} className="text-[var(--color-neutral-7)]" />
@@ -263,11 +295,13 @@ function CreateCalendarTriggerModal({
     setForm(f => ({ ...f, [k]: v }))
 
   const [showInactivePeriods, setShowInactivePeriods] = useState(false)
-  const [showMeterTrigger, setShowMeterTrigger] = useState(false)
+  const [showMeterTrigger, setShowMeterTrigger] = useState(!!(initial?.meterValue || initial?.meterCondition))
+  const [showCalendarBased, setShowCalendarBased] = useState(!!(initial?.scheduleType && initial?.every && initial?.period))
   const [inactivePeriods, setInactivePeriods] = useState<Array<{ id: string; fromDate: string; fromTime: string; toDate: string; toTime: string }>>([])
   const [newPeriod, setNewPeriod] = useState({ fromDate: '', fromTime: '', toDate: '', toTime: '' })
   const lastAddedIdRef = useRef<string | null>(null)
   const inactiveInputRefs = useRef<Map<string, HTMLInputElement>>(new Map())
+  const meterCardRef = useRef<HTMLDivElement>(null)
   useEffect(() => {
     const id = lastAddedIdRef.current
     if (!id) return
@@ -278,14 +312,15 @@ function CreateCalendarTriggerModal({
       lastAddedIdRef.current = null
     }
   }, [inactivePeriods])
-  const [meterCondition, setMeterCondition] = useState('is above')
-  const [meterValue, setMeterValue] = useState('')
-  const [meterUnit, setMeterUnit] = useState('Units')
-  const [meterDueN, setMeterDueN] = useState('1')
-  const [meterDuePeriod, setMeterDuePeriod] = useState('Day')
+  const [meterCondition, setMeterCondition] = useState(initial?.meterCondition ?? '')
+  const [meterValue, setMeterValue] = useState(initial?.meterValue ?? '')
+  const [meterUnit, setMeterUnit] = useState(initial?.meterUnit ?? 'Units')
+  const [meterDueN, setMeterDueN] = useState(initial?.meterDueN ?? '')
+  const [meterDuePeriod, setMeterDuePeriod] = useState(initial?.meterDuePeriod ?? '')
+  const meterComplete = meterCondition !== '' && meterValue.trim() !== ''
 
   function handleSubmit() {
-    onSubmit({ ...form, id: initial?.id ?? crypto.randomUUID(), meterValue, meterUnit, meterDueN, meterDuePeriod })
+    onSubmit({ ...form, id: initial?.id ?? crypto.randomUUID(), meterCondition, meterValue, meterUnit, meterDueN, meterDuePeriod })
     setForm(EMPTY_TRIGGER)
     onClose()
   }
@@ -295,203 +330,284 @@ function CreateCalendarTriggerModal({
     onClose()
   }
 
-  const woPeriodOptions = form.period === 'Day' ? ['Hour(s)'] : PERIODS.map(p => `${p}(s)`)
+  const woPeriodOptions = ['Hour(s)', ...PERIODS.map(p => `${p}(s)`)]
 
   const timeInput = (value: string, onChange: (v: string) => void, className?: string) => (
     <TimePicker value={value} onChange={onChange} className={className ?? ''} />
   )
 
   return (
-    <Modal open={open} onOpenChange={v => !v && handleClose()} maxWidth="620px">
-      <ModalHeader title="Create Calendar Trigger" />
-      <ModalBody className="flex flex-col gap-6 p-6">
+    <Modal open={open} onOpenChange={v => !v && handleClose()} maxWidth="740px">
+      <ModalHeader title="Create Trigger" />
+      <ModalBody className="flex flex-col gap-3 p-6">
 
-        {/* Schedule type */}
-        <div className="flex flex-col gap-3">
-          <p className="text-[15px] font-semibold text-[var(--color-neutral-12)]">Schedule Type</p>
-          <div className="grid grid-cols-2 gap-3">
-            {[
-              { value: 'Regular Interval', label: 'Fixed schedule', desc: 'Repeat on set calendar dates.' },
-              { value: 'After Completion', label: 'After completion', desc: 'Repeat after the previous work order.' },
-            ].map(({ value, label, desc }) => {
-              const active = form.scheduleType === value
-              return (
-                <button key={value} type="button" onClick={() => {
-                  set('scheduleType')(value)
-                  if (value === 'After Completion') setForm(f => ({ ...f, scheduleType: value, every: '1', period: 'Day', atTime: '', weekday: 'Mon', monthDay: '1' }))
-                }}
-                  className={`flex items-center gap-3 px-4 py-3 rounded-[var(--radius-xl)] border text-left transition-colors cursor-pointer ${active ? 'border-[var(--color-accent-7)] bg-[var(--color-accent-1)]' : 'border-[var(--border-default)] hover:bg-[var(--color-neutral-2)]'}`}>
-                  <div className="flex-1 min-w-0">
-                    <p className={`text-[14px] font-semibold ${active ? 'text-[var(--color-accent-9)]' : 'text-[var(--color-neutral-12)]'}`}>{label}</p>
-                    <p className="text-[12px] text-[var(--color-neutral-8)] mt-0.5 leading-4">{desc}</p>
-                  </div>
-                  {active && <ArrowDown size={16} className="shrink-0 text-[var(--color-accent-9)]" />}
-                </button>
-              )
-            })}
-          </div>
-        </div>
-
-        {/* Animated reveal once a schedule type is selected */}
-        <div className={`flex flex-col gap-6 overflow-visible transition-all duration-300 ease-in-out ${form.scheduleType ? 'opacity-100' : 'max-h-0 opacity-0 overflow-hidden pointer-events-none'}`}>
-
-        <div className="h-px bg-[var(--border-subtle)]" />
-
-        {/* Maintenance Due */}
-        <div className="flex flex-col gap-4">
-          <div className="flex items-center justify-between">
-            <p className="text-[15px] font-semibold text-[var(--color-neutral-12)]">Maintenance Due</p>
-            {form.scheduleType !== 'After Completion' && (
-              <button type="button" onClick={() => setForm(f => ({ ...f, every: '', period: '', atTime: '', weekday: 'Mon', monthDay: '1' }))}
-                className={`text-[13px] font-medium text-[var(--color-error-9,#CE2C31)] underline underline-offset-2 cursor-pointer transition-opacity duration-200 ${(form.every || form.period) ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}>
+        {/* Calendar Based card */}
+        <div className="rounded-[var(--radius-xl)] border border-[var(--border-default)]">
+          <button type="button" onClick={() => setShowCalendarBased(v => !v)}
+            className="flex items-center gap-3 px-4 py-3 bg-[var(--color-neutral-2)] w-full text-left cursor-pointer hover:bg-[var(--color-neutral-3)] transition-colors rounded-[var(--radius-xl)]">
+            <div className="w-10 h-10 rounded-[var(--radius-md)] bg-[var(--color-neutral-3)] flex items-center justify-center shrink-0">
+              <Calendar size={15} className="text-[var(--color-neutral-9)]" />
+            </div>
+            <div className="flex-1 min-w-0">
+              <span className="text-[14px] font-medium text-[var(--color-neutral-12)]">Calendar Based</span>
+              {(() => {
+                const parts: string[] = []
+                if (form.scheduleType) {
+                  parts.push(form.scheduleType === 'After Completion' ? 'After completion' : 'Fixed schedule')
+                }
+                if (form.every && form.period) {
+                  parts.push(`Every ${form.every} ${form.period.toLowerCase()}(s)`)
+                }
+                if (form.woCreationMode === 'relative' && form.woRelativeN) {
+                  parts.push(`Create WO ${form.woRelativeN} ${(form.woRelativePeriod || '').toLowerCase()} before`)
+                } else if (form.woCreationMode === 'on-the') {
+                  parts.push(`Create WO ${form.woOnThePeriod} before`)
+                }
+                const maintenanceFilled = !!(form.every && form.period && (form.period !== 'Week' || form.weekday))
+                const touched = !!(form.every || form.period || form.woCreationMode)
+                const woMissing: string[] = form.woCreationMode === 'relative'
+                  ? [!form.woRelativeN && 'number', !form.woRelativePeriod && 'period'].filter(Boolean) as string[]
+                  : form.woCreationMode === 'on-the'
+                  ? [!form.woOnThePeriod && 'day'].filter(Boolean) as string[]
+                  : []
+                const mainMissing: string[] = [
+                  ...(!form.every || !form.period ? ['maintenance frequency'] : []),
+                  ...(form.period === 'Week' && !form.weekday ? ['day'] : []),
+                ]
+                const allMissing = [...mainMissing, ...woMissing]
+                if (touched && allMissing.length > 0 && !showCalendarBased) {
+                  return <p className="text-[11px] font-[500] text-[var(--color-error-9,#CE2C31)] mt-0.5 leading-4">Missing: {allMissing.join(', ')}</p>
+                }
+                if (touched && parts.length > 0) {
+                  return <p className="text-[11px] font-[500] text-[var(--color-neutral-9)] truncate mt-0.5 leading-4">{parts.join(' · ')}</p>
+                }
+                return <p className="text-[11px] font-[500] text-[var(--color-neutral-8)] mt-0.5 leading-4">Schedule work orders on set dates or after completion</p>
+              })()}
+            </div>
+            {(form.every || form.period || form.woCreationMode) ? (
+              <button type="button"
+                onClick={e => { e.stopPropagation(); setForm(f => ({ ...f, scheduleType: 'Regular Interval', every: '', period: '', atTime: '', weekday: '', monthDay: '1', woCreationMode: '', woRelativeN: '', woRelativePeriod: '', woOnThePeriod: '', woAtTime: '', woOnTheAtTime: '' })) }}
+                className="h-6 px-2 rounded-[var(--radius-sm)] border border-[var(--border-default)] bg-[var(--surface-primary)] text-[12px] font-medium text-[var(--color-neutral-11)] hover:bg-[var(--color-neutral-3)] transition-colors cursor-pointer shrink-0">
                 Reset
               </button>
+            ) : null}
+            {(form.every && form.period && form.woCreationMode) ? (
+              <div className="w-6 h-6 rounded-[var(--radius-sm)] bg-[var(--color-neutral-3)] flex items-center justify-center shrink-0">
+                {showCalendarBased ? <ChevronUp size={13} className="text-[var(--color-neutral-9)]" /> : <ChevronDown size={13} className="text-[var(--color-neutral-9)]" />}
+              </div>
+            ) : showCalendarBased ? (
+              <div className="w-6 h-6 rounded-[var(--radius-sm)] bg-[var(--color-neutral-3)] flex items-center justify-center shrink-0">
+                <ChevronUp size={13} className="text-[var(--color-neutral-9)]" />
+              </div>
+            ) : (
+              <div className="w-8 h-8 rounded-[var(--radius-lg)] bg-[var(--color-accent-9)] flex items-center justify-center shrink-0">
+                <Plus size={13} className="text-white" />
+              </div>
             )}
-          </div>
-          {form.scheduleType === 'After Completion' ? (
-            <div className="flex items-center gap-2">
-              <span className="text-[13px] text-[var(--color-neutral-10)] shrink-0">Every</span>
-              <NumberInput value={form.every} onChange={set('every')} min={1} className="w-14 shrink-0" />
-              <InlineSelect value={form.period} onChange={set('period')} options={PERIODS.map(p => ({ value: p, label: `${p}(s)` }))} className="justify-between" />
-              <span className="text-[13px] text-[var(--color-neutral-10)]">After the previous work order is completed</span>
-              <span className="text-[13px] text-[var(--color-neutral-10)] shrink-0">At</span>
-              {timeInput(form.atTime, set('atTime'), 'w-28 min-w-0')}
-            </div>
-          ) : (
-            <div className="flex items-center gap-2">
-              <span className="text-[13px] text-[var(--color-neutral-10)] shrink-0">Every</span>
-              <NumberInput value={form.every} onChange={set('every')} min={1} className="w-14 shrink-0" />
-              <InlineSelect value={form.period}
-                onChange={v => { set('period')(v); set('woRelativePeriod')(v === 'Day' ? 'Hour(s)' : `${v}(s)`) }}
-                options={PERIODS.map(p => ({ value: p, label: `${p}(s)` }))}
-                placeholder="Period"
-                className="flex-1 justify-between" />
-              {form.period === 'Week' && (
-                <>
-                  <span className="text-[13px] text-[var(--color-neutral-10)] shrink-0">On</span>
-                  <InlineSelect value={form.weekday} onChange={set('weekday')}
-                    options={WEEKDAY_LETTERS.map((wd, i) => ({ value: wd.value, label: FULL_WEEKDAYS[i] }))} />
-                </>
-              )}
-              {form.period === 'Month' && (
-                <>
-                  <InlineSelect value={form.monthDay} onChange={set('monthDay')} options={MONTH_DAYS} />
-                </>
-              )}
-              <span className="text-[13px] text-[var(--color-neutral-10)] shrink-0">At</span>
-              {timeInput(form.atTime, set('atTime'), 'flex-1 min-w-0')}
-            </div>
-          )}
-        </div>
+          </button>
+          <div style={{ display: 'grid', gridTemplateRows: showCalendarBased ? '1fr' : '0fr', transition: 'grid-template-rows 220ms ease' }}>
+            <div style={{ overflow: 'hidden' }}>
+              <div className="p-4 flex flex-col gap-6">
 
-        <div className="h-px bg-[var(--border-subtle)]" />
+                {/* Schedule type */}
+                <div className="flex flex-col gap-3">
+                  <p className="text-[14px] font-semibold text-[var(--color-neutral-12)]">Schedule Type</p>
+                  <div className="grid grid-cols-2 gap-3">
+                    {[
+                      { value: 'Regular Interval', label: 'Fixed schedule', desc: 'Repeat on set calendar dates.' },
+                      { value: 'After Completion', label: 'After completion', desc: 'Repeat after the previous work order.' },
+                    ].map(({ value, label, desc }) => {
+                      const active = form.scheduleType === value
+                      return (
+                        <button key={value} type="button" onClick={() => set('scheduleType')(value)}
+                          className={`flex items-center gap-3 px-4 py-3 rounded-[var(--radius-xl)] border text-left transition-colors cursor-pointer ${active ? 'border-[var(--color-accent-7)] bg-[var(--color-accent-1)]' : 'border-[var(--border-default)] hover:bg-[var(--color-neutral-2)]'}`}>
+                          <div className="flex-1 min-w-0">
+                            <p className={`text-[14px] font-semibold ${active ? 'text-[var(--color-accent-9)]' : 'text-[var(--color-neutral-12)]'}`}>{label}</p>
+                            <p className="text-[12px] text-[var(--color-neutral-8)] mt-0.5 leading-4">{desc}</p>
+                          </div>
+                          {active && <ArrowDown size={16} className="shrink-0 text-[var(--color-accent-9)]" />}
+                        </button>
+                      )
+                    })}
+                  </div>
+                </div>
 
-        {/* Create Work Order */}
-        <div className="flex flex-col gap-3">
-          <div className="flex items-center justify-between">
-            <p className="text-[15px] font-semibold text-[var(--color-neutral-12)]">Create Work Order</p>
-            <button type="button" onClick={() => setForm(f => ({ ...f, woCreationMode: '', woRelativeN: '3', woRelativePeriod: 'Day(s)', woOnThePeriod: 'Monday', woAtTime: '' }))}
-              className={`text-[13px] font-medium text-[var(--color-error-9,#CE2C31)] underline underline-offset-2 cursor-pointer transition-opacity duration-200 ${form.woCreationMode ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}>
-              Reset
-            </button>
-          </div>
-          {form.period === 'Day' ? (
-            <div className="flex items-center gap-2 p-3 rounded-[var(--radius-lg)] border border-[var(--border-default)]">
-              <NumberInput value={form.woRelativeN} onChange={set('woRelativeN')} min={1} className="w-16" />
-              <InlineSelect value="Hour(s)" onChange={() => {}} options={['Hour(s)']} />
-              <span className="text-[13px] text-[var(--color-neutral-10)]">before the due date At</span>
-              {timeInput(form.woAtTime, set('woAtTime'))}
-            </div>
-          ) : (
-            <div className="grid grid-cols-2 gap-4">
-              {([
-                { mode: 'relative' as const, label: 'Relative' },
-                { mode: 'on-the' as const, label: 'Weekday' },
-              ] as const).map(({ mode, label }) => {
-                const isSelected = form.woCreationMode === mode
-                return (
-                  <div key={mode} onClick={() => set('woCreationMode')(mode)}
-                    className={`flex flex-col rounded-lg border overflow-hidden cursor-pointer transition-colors ${isSelected ? 'border-[var(--color-accent-7)] bg-[var(--color-accent-1)]' : 'border-[#F0F0F3] bg-[#FCFCFD]'}`}>
-                    <div className={`flex items-center gap-[10px] px-4 h-[52px] shrink-0 ${isSelected ? 'bg-[var(--color-accent-2)]' : 'bg-[#F0F0F3]'}`}>
-                      <input type="radio" name="wo-mode" checked={isSelected} onChange={() => set('woCreationMode')(mode)}
-                        className="accent-[var(--color-accent-9)]" onClick={e => e.stopPropagation()} />
-                      <span className="text-[14px] text-[var(--color-neutral-12)]">{label}</span>
+                {/* Animated reveal once a schedule type is selected */}
+                <div className={`flex flex-col gap-6 overflow-visible transition-all duration-300 ease-in-out ${form.scheduleType ? 'opacity-100' : 'max-h-0 opacity-0 overflow-hidden pointer-events-none'}`}>
+
+                <div className="h-px bg-[var(--border-subtle)]" />
+
+                {/* Maintenance Due */}
+                <div className="flex flex-col gap-4">
+                  <p className="text-[14px] font-semibold text-[var(--color-neutral-12)]">Maintenance Due</p>
+                  {form.scheduleType === 'After Completion' ? (
+                    <div className="flex items-center gap-2">
+                      <span className="text-[13px] text-[var(--color-neutral-10)] shrink-0">Every</span>
+                      <NumberInput value={form.every} onChange={set('every')} min={1} className="w-[80px] shrink-0" error={!form.every} />
+                      <InlineSelect value={form.period} onChange={set('period')} options={PERIODS.map(p => ({ value: p, label: `${p}(s)` }))} className="flex-1 justify-between" error={!form.period} />
+                      <span className="text-[12px] text-[var(--color-neutral-10)]">After previous WO<br />is completed</span>
+                      <span className="text-[13px] text-[var(--color-neutral-10)] shrink-0">At</span>
+                      {timeInput(form.atTime, set('atTime'), 'flex-1 min-w-0')}
                     </div>
-                    <div className="p-4 flex flex-col gap-3 flex-1">
-                      {mode === 'relative' ? (
-                        <div className="flex items-center gap-2">
-                          <NumberInput value={form.woRelativeN} onChange={set('woRelativeN')} min={1} className="w-14 shrink-0" />
-                          <InlineSelect value={form.woRelativePeriod} onChange={set('woRelativePeriod')} options={woPeriodOptions} className="flex-1 justify-between" />
-                        </div>
-                      ) : (
-                        <div className="flex items-center gap-2">
-                          <span className="text-[12px] font-medium text-[var(--color-neutral-9)] shrink-0">On</span>
-                          <InlineSelect value={form.woOnThePeriod} onChange={set('woOnThePeriod')} options={FULL_WEEKDAYS} className="flex-1 justify-between" />
-                        </div>
-                      )}
-                      <span className="text-[12px] text-[var(--color-neutral-9)]">Before the due date</span>
+                  ) : (
+                    <div className="flex flex-col gap-1">
                       <div className="flex items-center gap-2">
-                        <span className="text-[12px] font-medium text-[var(--color-neutral-9)] shrink-0">At</span>
-                        {timeInput(form.woAtTime, set('woAtTime'), 'flex-1 min-w-0')}
+                        <span className="text-[13px] text-[var(--color-neutral-10)] shrink-0">Every</span>
+                        <NumberInput value={form.every} onChange={set('every')} min={1} className="w-[80px] shrink-0" error={!form.every} />
+                        <InlineSelect value={form.period}
+                          onChange={set('period')}
+                          options={PERIODS.map(p => ({ value: p, label: `${p}(s)` }))}
+                          placeholder="Period"
+                          className="flex-1 justify-between"
+                          error={!form.period} />
+                        {form.period === 'Week' && (
+                          <>
+                            <span className="text-[13px] text-[var(--color-neutral-10)] shrink-0">On</span>
+                            <InlineSelect value={form.weekday} onChange={set('weekday')}
+                              options={WEEKDAY_LETTERS.map((wd, i) => ({ value: wd.value, label: FULL_WEEKDAYS[i] }))} placeholder="Day" className="justify-between" error={!form.weekday} />
+                          </>
+                        )}
+                        {form.period === 'Month' && (
+                          <>
+                            <span className="text-[13px] text-[var(--color-neutral-10)] shrink-0">On Day</span>
+                            <InlineSelect value={form.monthDay} onChange={set('monthDay')} options={MONTH_DAYS} />
+                          </>
+                        )}
+                        <span className="text-[13px] text-[var(--color-neutral-10)] shrink-0">At</span>
+                        {timeInput(form.atTime, set('atTime'), 'flex-1 min-w-0')}
                       </div>
                     </div>
-                  </div>
-                )
-              })}
-            </div>
-          )}
-        </div>
+                  )}
+                </div>
 
-        <div className="h-px bg-[var(--border-subtle)]" />
+                <div className="h-px bg-[var(--border-subtle)]" />
+
+                {/* Create Work Order */}
+                <div className="flex flex-col gap-3">
+                  <p className="text-[14px] font-semibold text-[var(--color-neutral-12)]">Create Work Order</p>
+                  <div className="grid grid-cols-2 gap-4">
+                    {([
+                      { mode: 'relative' as const, label: 'Relative' },
+                      { mode: 'on-the' as const, label: 'Weekday' },
+                    ] as const).map(({ mode, label }) => {
+                      const isSelected = form.woCreationMode === mode
+                      return (
+                        <div key={mode}
+                          className={`flex flex-col rounded-lg border overflow-hidden transition-colors ${isSelected ? 'border-[var(--color-accent-7)] bg-[var(--color-accent-1)]' : 'border-[#F0F0F3] bg-[#FCFCFD]'}`}>
+                          <div onClick={() => set('woCreationMode')(isSelected ? '' : mode)} className={`flex items-center gap-[10px] px-4 h-[52px] shrink-0 cursor-pointer ${isSelected ? 'bg-[var(--color-accent-2)]' : 'bg-[#F0F0F3]'}`}>
+                            <span className={`flex-shrink-0 w-4 h-4 rounded-[var(--radius-sm)] border flex items-center justify-center transition-colors ${isSelected ? 'bg-[var(--color-accent-9)] border-[var(--color-accent-9)]' : 'border-[var(--color-neutral-6)] bg-[var(--surface-primary)]'}`}>
+                              {isSelected && <svg width="10" height="8" viewBox="0 0 10 8" fill="none"><path d="M1 4L3.5 6.5L9 1" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>}
+                            </span>
+                            <span className="text-[14px] text-[var(--color-neutral-12)]">{label}</span>
+                          </div>
+                          <div className="p-4 flex flex-col gap-3 flex-1" onClick={() => { if (!isSelected) set('woCreationMode')(mode) }}>
+                            {mode === 'relative' ? (
+                              <div className="flex items-center gap-2">
+                                <NumberInput value={form.woRelativeN} onChange={set('woRelativeN')} min={1} className="w-[80px] shrink-0" error={isSelected && !form.woRelativeN} />
+                                <InlineSelect value={form.woRelativePeriod} onChange={set('woRelativePeriod')} options={woPeriodOptions} placeholder="Period" className="flex-1 justify-between" error={isSelected && !form.woRelativePeriod} />
+                              </div>
+                            ) : (
+                              <div className="flex items-center gap-2">
+                                <span className="text-[12px] font-medium text-[var(--color-neutral-9)] shrink-0">On</span>
+                                <InlineSelect value={form.woOnThePeriod} onChange={set('woOnThePeriod')} options={FULL_WEEKDAYS} placeholder="Day" className="flex-1 justify-between" error={isSelected && !form.woOnThePeriod} />
+                              </div>
+                            )}
+                            <span className="text-[12px] text-[var(--color-neutral-9)]">Before the due date</span>
+                            <div className="flex items-center gap-2">
+                              <span className="text-[12px] font-medium text-[var(--color-neutral-9)] shrink-0">At</span>
+                              {mode === 'relative'
+                                ? timeInput(form.woAtTime, set('woAtTime'), 'flex-1 min-w-0')
+                                : timeInput(form.woOnTheAtTime, set('woOnTheAtTime'), 'flex-1 min-w-0')}
+                            </div>
+                          </div>
+                        </div>
+                      )
+                    })}
+                  </div>
+                </div>
+
+                </div>
+
+              </div>
+            </div>
+          </div>
+        </div>
 
         {/* Add Meter-Based Trigger */}
         <div className="flex flex-col gap-3">
           {(() => {
-            const meterComplete = meterValue.trim() !== '' && meterDueN.trim() !== ''
+            const meterHasData = meterCondition !== '' || meterValue.trim() !== '' || meterDueN.trim() !== ''
+            const meterPartial = meterHasData && !meterComplete
+            const missingParts = [
+              !meterCondition && 'condition',
+              !meterValue.trim() && 'units',
+            ].filter(Boolean) as string[]
+            const filledSummary = [
+              meterCondition,
+              meterValue.trim() && `${meterValue}${meterUnit ? ' ' + meterUnit : ''}`,
+              meterDueN.trim() && `due in ${meterDueN} ${meterDuePeriod.toLowerCase()}(s)`,
+            ].filter(Boolean).join(' · ')
+            const clearMeter = () => { setMeterCondition(''); setMeterValue(''); setMeterUnit('Units'); setMeterDueN(''); setMeterDuePeriod(''); setShowMeterTrigger(false) }
             return (
-              <div className="rounded-[var(--radius-xl)] border border-[var(--border-default)] overflow-hidden">
-                <button type="button" onClick={() => setShowMeterTrigger(v => !v)}
-                  className="flex items-center gap-4 px-4 py-3 bg-[#FCFCFD] w-full text-left cursor-pointer hover:bg-[var(--color-neutral-2)] transition-colors">
-                  <div className="w-8 h-8 rounded-[var(--radius-md)] bg-[var(--color-neutral-3)] flex items-center justify-center shrink-0">
-                    <Gauge size={15} className="text-[var(--color-neutral-9)]" />
-                  </div>
-                  <span className="flex-1 text-[14px] font-medium text-[var(--color-neutral-12)]">Add Meter-Based Trigger</span>
-                  {showMeterTrigger ? (
-                    meterComplete ? (
-                      <button type="button" onClick={e => { e.stopPropagation(); setShowMeterTrigger(false); setMeterValue(''); setMeterDueN('1') }}
-                        className="flex items-center gap-1.5 text-[13px] font-medium text-[var(--color-error-9,#e5352b)] hover:opacity-80 cursor-pointer shrink-0">
-                        <Trash2 size={13} />
+              <div ref={meterCardRef} className="rounded-[var(--radius-xl)] border border-[var(--border-default)] overflow-hidden">
+                <div className="flex items-center gap-4 px-4 py-3 bg-[var(--color-neutral-2)]">
+                  <button type="button" onClick={() => { setShowMeterTrigger(v => { if (!v) setTimeout(() => meterCardRef.current?.scrollIntoView({ behavior: 'smooth', block: 'nearest' }), 240); return !v }) }}
+                    className="flex items-center gap-4 flex-1 min-w-0 text-left cursor-pointer">
+                    <div className="w-10 h-10 rounded-[var(--radius-md)] bg-[var(--color-neutral-3)] flex items-center justify-center shrink-0">
+                      <Gauge size={15} className="text-[var(--color-neutral-9)]" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <span className="text-[14px] font-medium text-[var(--color-neutral-12)]">Add Meter-Based Trigger</span>
+                      {(meterComplete || meterPartial) ? (
+                        <p className="text-[11px] mt-0.5 leading-4 truncate">
+                          {filledSummary && <span className="font-medium text-[var(--color-neutral-9)]">{filledSummary}</span>}
+                          {filledSummary && missingParts.length > 0 && <span className="text-[var(--color-neutral-6)]"> · </span>}
+                          {missingParts.length > 0 && <span className="font-medium text-[#CE2C31]">Missing: {missingParts.join(', ')}</span>}
+                        </p>
+                      ) : (
+                        <p className="text-[11px] font-medium text-[var(--color-neutral-8)] mt-0.5 leading-4">Trigger work orders based on meter readings or usage</p>
+                      )}
+                    </div>
+                  </button>
+                  <div className="flex items-center gap-2 shrink-0">
+                    {meterHasData && (
+                      <button type="button" onClick={clearMeter}
+                        className="h-6 px-2 rounded-[var(--radius-sm)] border border-[var(--border-default)] bg-[var(--surface-primary)] text-[12px] font-medium text-[var(--color-neutral-11)] hover:bg-[var(--color-neutral-3)] transition-colors cursor-pointer">
                         Reset
                       </button>
-                    ) : (
-                      <button type="button" onClick={e => { e.stopPropagation(); setShowMeterTrigger(false) }}
+                    )}
+                    {meterHasData || showMeterTrigger ? (
+                      <button type="button" onClick={() => { setShowMeterTrigger(v => { if (!v) setTimeout(() => meterCardRef.current?.scrollIntoView({ behavior: 'smooth', block: 'nearest' }), 240); return !v }) }}
                         className="w-6 h-6 rounded-[var(--radius-sm)] bg-[var(--color-neutral-3)] flex items-center justify-center shrink-0 hover:bg-[var(--color-neutral-4)] transition-colors cursor-pointer">
-                        <X size={13} className="text-[var(--color-neutral-9)]" />
+                        {showMeterTrigger ? <ChevronUp size={13} className="text-[var(--color-neutral-9)]" /> : <ChevronDown size={13} className="text-[var(--color-neutral-9)]" />}
                       </button>
-                    )
-                  ) : (
-                    <div className="w-6 h-6 rounded-[var(--radius-sm)] bg-[var(--color-neutral-3)] flex items-center justify-center shrink-0">
-                      <Plus size={14} className="text-[var(--color-neutral-11)]" />
-                    </div>
-                  )}
-                </button>
+                    ) : (
+                      <button type="button" onClick={() => { setShowMeterTrigger(true); setTimeout(() => meterCardRef.current?.scrollIntoView({ behavior: 'smooth', block: 'nearest' }), 240) }}
+                        className="w-8 h-8 rounded-[var(--radius-lg)] bg-[var(--color-accent-9)] flex items-center justify-center shrink-0 hover:bg-[var(--color-accent-10)] transition-colors cursor-pointer">
+                        <Plus size={13} className="text-white" />
+                      </button>
+                    )}
+                  </div>
+                </div>
                 <div style={{ display: 'grid', gridTemplateRows: showMeterTrigger ? '1fr' : '0fr', transition: 'grid-template-rows 220ms ease' }}>
                   <div style={{ overflow: 'hidden' }}>
-                  <div className="p-4 grid grid-cols-3 gap-4">
-                    <div className="flex flex-col gap-1.5">
-                      <label className="text-[13px] font-medium text-[var(--color-neutral-11)]">When Meter</label>
-                      <InlineSelect value={meterCondition} onChange={setMeterCondition}
-                        options={['is above', 'is below', 'equals']} className="w-full justify-between" />
+                  <div className="p-4 flex gap-4">
+                    <div className="flex flex-1 gap-4">
+                      <div className="flex flex-col gap-1.5 flex-1">
+                        <label className="text-[13px] font-medium text-[var(--color-neutral-11)]">When Meter</label>
+                        <InlineSelect value={meterCondition} onChange={setMeterCondition}
+                          options={['is above', 'is below', 'equals']} placeholder="Condition" className="w-full justify-between" error={!meterCondition} />
+                      </div>
+                      <div className="flex flex-col gap-1.5 flex-1">
+                        <label className="text-[13px] font-medium text-[var(--color-neutral-11)]">Units</label>
+                        <NumberInput value={meterValue} onChange={setMeterValue} min={0} placeholder="0" className="w-full" error={!meterValue.trim()} />
+                      </div>
                     </div>
-                    <div className="flex flex-col gap-1.5">
-                      <label className="text-[13px] font-medium text-[var(--color-neutral-11)]">Units</label>
-                      <NumberInput value={meterValue} onChange={setMeterValue} min={0} placeholder="0" className="w-full" />
-                    </div>
-                    <div className="flex flex-col gap-1.5 border-l border-[var(--border-default)] pl-4">
+                    <div className={`flex flex-col gap-1.5 border-l border-[var(--border-default)] pl-4 min-w-[220px] transition-opacity ${meterCondition && meterValue.trim() ? '' : 'opacity-40 pointer-events-none'}`}>
                       <label className="text-[13px] font-medium text-[var(--color-neutral-11)]">Work Order Due Date</label>
                       <div className="flex items-center gap-2">
-                        <NumberInput value={meterDueN} onChange={setMeterDueN} min={1} className="w-14 shrink-0" />
-                        <InlineSelect value={meterDuePeriod} onChange={setMeterDuePeriod} options={['Day', 'Week', 'Month']} />
+                        <NumberInput value={meterDueN} onChange={setMeterDueN} min={1} className="w-[80px] shrink-0" />
+                        <InlineSelect value={meterDuePeriod} onChange={setMeterDuePeriod} options={['Day', 'Week', 'Month']} placeholder="Period" className="flex-1 justify-between" />
                       </div>
                     </div>
                   </div>
@@ -502,23 +618,58 @@ function CreateCalendarTriggerModal({
           })()}
 
           {/* Add Inactive Periods */}
-          <div className="rounded-[var(--radius-xl)] border border-[var(--border-default)] overflow-hidden">
-            <div className="flex items-center gap-4 px-4 py-3 bg-[#FCFCFD]">
-              <div className="w-8 h-8 rounded-[var(--radius-md)] bg-[var(--color-neutral-3)] flex items-center justify-center shrink-0">
-                <Ban size={15} className="text-[var(--color-neutral-9)]" />
-              </div>
-              <span className="flex-1 text-[14px] font-medium text-[var(--color-neutral-12)]">Add Inactive Periods</span>
-              <button type="button"
-                onClick={() => {
-                  const newId = crypto.randomUUID()
-                  lastAddedIdRef.current = newId
-                  setShowInactivePeriods(true)
-                  setInactivePeriods(ps => [...ps, { id: newId, fromDate: '', fromTime: '', toDate: '', toTime: '' }])
-                }}
-                className="w-6 h-6 rounded-[var(--radius-sm)] bg-[var(--color-neutral-3)] flex items-center justify-center shrink-0 hover:bg-[var(--color-neutral-4)] transition-colors cursor-pointer">
-                <Plus size={14} className="text-[var(--color-neutral-11)]" />
-              </button>
-            </div>
+          <div className={`rounded-[var(--radius-xl)] border border-[var(--border-default)] overflow-hidden transition-opacity ${(!form.scheduleType || !form.period) && !meterComplete ? 'opacity-40 pointer-events-none' : ''}`}>
+            {(() => {
+              const lastPeriod = inactivePeriods[inactivePeriods.length - 1]
+              const lastPeriodComplete = !lastPeriod || (!!lastPeriod.fromDate && !!lastPeriod.toDate)
+              const hasAnyPeriod = inactivePeriods.length > 0
+              return (
+                <div className="flex items-center gap-4 px-4 py-3 bg-[var(--color-neutral-2)]">
+                  <div className="w-10 h-10 rounded-[var(--radius-md)] bg-[var(--color-neutral-3)] flex items-center justify-center shrink-0">
+                    <Ban size={15} className="text-[var(--color-neutral-9)]" />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <span className="text-[14px] font-medium text-[var(--color-neutral-12)]">Add Inactive Periods</span>
+                    {(!form.scheduleType || !form.period) && !meterComplete && (
+                      <p className="text-[11px] text-[var(--color-neutral-8)] mt-0.5 leading-4">Set inactive days after configuring at least one trigger</p>
+                    )}
+                  </div>
+                  <div className="flex items-center gap-2 shrink-0">
+                    {hasAnyPeriod && (
+                      <button type="button"
+                        disabled={!lastPeriodComplete}
+                        onClick={() => {
+                          const newId = crypto.randomUUID()
+                          lastAddedIdRef.current = newId
+                          setShowInactivePeriods(true)
+                          setInactivePeriods(ps => [...ps, { id: newId, fromDate: '', fromTime: '', toDate: '', toTime: '' }])
+                        }}
+                        className="h-6 px-2 rounded-[var(--radius-sm)] border border-[var(--border-default)] bg-[var(--surface-primary)] text-[12px] font-medium text-[var(--color-neutral-11)] hover:bg-[var(--color-neutral-3)] transition-colors cursor-pointer disabled:opacity-40 disabled:pointer-events-none">
+                        Add Period
+                      </button>
+                    )}
+                    {hasAnyPeriod ? (
+                      <button type="button"
+                        onClick={() => setShowInactivePeriods(v => !v)}
+                        className="w-6 h-6 rounded-[var(--radius-sm)] bg-[var(--color-neutral-3)] flex items-center justify-center shrink-0 hover:bg-[var(--color-neutral-4)] transition-colors cursor-pointer">
+                        {showInactivePeriods ? <ChevronUp size={13} className="text-[var(--color-neutral-9)]" /> : <ChevronDown size={13} className="text-[var(--color-neutral-9)]" />}
+                      </button>
+                    ) : (
+                      <button type="button"
+                        onClick={() => {
+                          const newId = crypto.randomUUID()
+                          lastAddedIdRef.current = newId
+                          setShowInactivePeriods(true)
+                          setInactivePeriods(ps => [...ps, { id: newId, fromDate: '', fromTime: '', toDate: '', toTime: '' }])
+                        }}
+                        className="w-6 h-6 rounded-[var(--radius-sm)] bg-[var(--color-neutral-3)] flex items-center justify-center shrink-0 hover:bg-[var(--color-neutral-4)] transition-colors cursor-pointer">
+                        <Plus size={14} className="text-[var(--color-neutral-11)]" />
+                      </button>
+                    )}
+                  </div>
+                </div>
+              )
+            })()}
             <div style={{ display: 'grid', gridTemplateRows: (showInactivePeriods && inactivePeriods.length > 0) ? '1fr' : '0fr', transition: 'grid-template-rows 220ms ease' }}>
               <div style={{ overflow: 'hidden' }}>
               <div className="flex flex-col gap-3 p-4">
@@ -529,13 +680,13 @@ function CreateCalendarTriggerModal({
                       <input type="date" value={p.fromDate}
                         ref={el => { if (el) inactiveInputRefs.current.set(p.id, el); else inactiveInputRefs.current.delete(p.id) }}
                         onChange={e => setInactivePeriods(ps => ps.map(x => x.id === p.id ? { ...x, fromDate: e.target.value } : x))}
-                        className="h-8 px-3 rounded-[var(--radius-md)] border border-[var(--border-default)] bg-[var(--surface-primary)] text-[13px] text-[var(--color-neutral-11)] outline-none focus:border-[var(--color-accent-7)] transition-colors w-full" />
+                        className={`h-8 px-3 rounded-[var(--radius-md)] border bg-[var(--surface-primary)] text-[13px] text-[var(--color-neutral-11)] outline-none focus:border-[var(--color-accent-7)] transition-colors w-full ${!p.fromDate ? 'border-[#CE2C31]' : 'border-[var(--border-default)]'}`} />
                     </div>
                     <div className="flex flex-col gap-1.5">
                       <label className="text-[13px] font-medium text-[var(--color-neutral-11)]">To</label>
                       <input type="date" value={p.toDate}
                         onChange={e => setInactivePeriods(ps => ps.map(x => x.id === p.id ? { ...x, toDate: e.target.value } : x))}
-                        className="h-8 px-3 rounded-[var(--radius-md)] border border-[var(--border-default)] bg-[var(--surface-primary)] text-[13px] text-[var(--color-neutral-11)] outline-none focus:border-[var(--color-accent-7)] transition-colors w-full" />
+                        className={`h-8 px-3 rounded-[var(--radius-md)] border bg-[var(--surface-primary)] text-[13px] text-[var(--color-neutral-11)] outline-none focus:border-[var(--color-accent-7)] transition-colors w-full ${!p.toDate ? 'border-[#CE2C31]' : 'border-[var(--border-default)]'}`} />
                     </div>
                     <button type="button"
                       onClick={() => { setInactivePeriods(ps => ps.filter(x => x.id !== p.id)); if (inactivePeriods.length === 1) setShowInactivePeriods(false) }}
@@ -550,12 +701,20 @@ function CreateCalendarTriggerModal({
           </div>
         </div>
 
-        </div>{/* end animated reveal */}
-
       </ModalBody>
       <ModalFooter className="flex items-center justify-end gap-2 px-6 py-4">
         <Button variant="secondary" size="md" onClick={handleClose}>Cancel</Button>
-        <Button variant="primary" size="md" onClick={handleSubmit} disabled={!form.scheduleType || !form.period || !form.woCreationMode}>Create Trigger</Button>
+        {(() => {
+          const calendarValid = !!(form.scheduleType && form.every && form.period && (form.period !== 'Week' || !!form.weekday) && (!form.woCreationMode || (form.woCreationMode === 'relative' && !!form.woRelativeN && !!form.woRelativePeriod) || (form.woCreationMode === 'on-the' && !!form.woOnThePeriod)))
+          const calendarPartial = !!(form.every || form.period || form.woCreationMode) && !calendarValid
+          const meterPartial = (meterCondition !== '' || meterValue.trim() !== '') && !meterComplete
+          const hasValidTrigger = calendarValid || meterComplete
+          return (
+            <Button variant="primary" size="md" onClick={handleSubmit} disabled={!hasValidTrigger || meterPartial || calendarPartial}>
+              Create Trigger
+            </Button>
+          )
+        })()}
       </ModalFooter>
     </Modal>
   )
@@ -579,7 +738,7 @@ function TriggerRow({ trigger, onRemove, onEdit, meterMissing }: { trigger: Cale
         {trigger.meterValue && (
           <>
             <span className="inline-flex items-center justify-center px-2 h-5 rounded-full bg-[#F0F0F3] text-[12px] font-medium text-[#1C2024] shrink-0">or</span>
-            <span className={`text-[14px] font-medium ${meterMissing ? 'text-[#CE2C31]' : 'text-[#1C2024]'}`}>When a reading is greater than {trigger.meterValue} {trigger.meterUnit}</span>
+            <span className={`text-[14px] font-medium ${meterMissing ? 'text-[#CE2C31]' : 'text-[#1C2024]'}`}>When a reading is {trigger.meterCondition} {trigger.meterValue} {trigger.meterUnit}</span>
           </>
         )}
       </div>
@@ -763,8 +922,8 @@ function InlineAssignForm({ onSubmit, onCancel }: { onSubmit: (f: AssignAssetFor
       )}
 
       <div className="grid grid-cols-3 gap-4">
-        <SearchableSelect label="Primary Assignee" value={form.primaryAssignee} onChange={set('primaryAssignee')} options={ASSIGNEES} />
-        <SearchableMultiSelect label="Additional Assignee" values={form.additionalAssignee} onChange={v => setForm(f => ({ ...f, additionalAssignee: v }))} options={ASSIGNEES} />
+        <SearchableSelect label="Primary Assignee" value={form.primaryAssignee} onChange={set('primaryAssignee')} options={ASSIGNEES} showAvatar />
+        <SearchableMultiSelect label="Additional Assignee" values={form.additionalAssignee} onChange={v => setForm(f => ({ ...f, additionalAssignee: v }))} options={ASSIGNEES} showAvatar />
         <Select label="Team" value={form.team} onChange={set('team')} options={TEAMS} />
       </div>
 
@@ -1430,6 +1589,29 @@ function AssignAssetModal({
                     />
                   </div>
                   <div className="py-1 max-h-[220px] overflow-y-auto">
+                    {filteredAppliesToOptions.length > 0 && (() => {
+                      const allSelected = filteredAppliesToOptions.every(o => appliesToSelected.includes(o))
+                      const someSelected = !allSelected && filteredAppliesToOptions.some(o => appliesToSelected.includes(o))
+                      const selectedCount = filteredAppliesToOptions.filter(o => appliesToSelected.includes(o)).length
+                      return (
+                        <div className="flex items-center justify-between px-3 py-1.5 bg-[var(--color-neutral-2)] border-b border-[var(--border-subtle)]">
+                          <span className="text-[10px] font-semibold uppercase tracking-wide text-[var(--color-neutral-8)]">
+                            TOTAL RESULTS: {filteredAppliesToOptions.length}{someSelected ? ` · ${selectedCount} selected` : allSelected ? ` · all selected` : ''}
+                          </span>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              if (appliesToType === 'Asset') setForm(f => ({ ...f, asset: allSelected ? f.asset.filter(x => !filteredAppliesToOptions.includes(x)) : [...new Set([...f.asset, ...filteredAppliesToOptions])] }))
+                              else if (appliesToType === 'Location') setForm(f => ({ ...f, location: allSelected ? f.location.filter(x => !filteredAppliesToOptions.includes(x)) : [...new Set([...f.location, ...filteredAppliesToOptions])] }))
+                              else setForm(f => ({ ...f, meter: allSelected ? f.meter.filter(x => !filteredAppliesToOptions.includes(x)) : [...new Set([...f.meter, ...filteredAppliesToOptions])] }))
+                            }}
+                            className="text-[10px] font-semibold uppercase tracking-wide text-[var(--color-accent-9)] hover:opacity-80 cursor-pointer transition-opacity"
+                          >
+                            {allSelected ? 'Deselect All' : 'Select All'}
+                          </button>
+                        </div>
+                      )
+                    })()}
                     {filteredAppliesToOptions.length === 0 ? (
                       <p className="px-3 py-2 text-[13px] text-[var(--color-neutral-7)]">No results</p>
                     ) : filteredAppliesToOptions.map(o => {
@@ -1459,9 +1641,9 @@ function AssignAssetModal({
 
         {/* PEOPLE */}
         <div className="flex flex-col gap-4 mb-6">
-          <SearchableSelect label="Primary Assignee" value={form.primaryAssignee} onChange={set('primaryAssignee')} options={ASSIGNEES} />
+          <SearchableSelect label="Primary Assignee" value={form.primaryAssignee} onChange={set('primaryAssignee')} options={ASSIGNEES} showAvatar />
           <div className={form.primaryAssignee ? '' : 'opacity-40 pointer-events-none'}>
-            <SearchableMultiSelect label="Additional Assignee" values={form.additionalAssignee} onChange={v => setForm(f => ({ ...f, additionalAssignee: v }))} options={ASSIGNEES} />
+            <SearchableMultiSelect label="Additional Assignee" values={form.additionalAssignee} onChange={v => setForm(f => ({ ...f, additionalAssignee: v }))} options={ASSIGNEES} showAvatar />
           </div>
           <Select label="Team" value={form.team} onChange={set('team')} options={TEAMS} />
         </div>
@@ -1891,7 +2073,7 @@ function NovaPanel(props: NovaPanelProps) {
       trigger: '',
       frequency: '',
       primaryAssignee: ASSIGNEES[0],
-      team: TEAMS[0],
+      team: TEAMS[0].value,
       timeRange: '07/06/26 - 2:30 PM | 07/06/26 - 4:30 PM',
     }
     setAssignModalOpen(false)
@@ -2014,43 +2196,131 @@ function NovaPanel(props: NovaPanelProps) {
 
 /* ── Main page ── */
 
+/* ── PMTrigger types ── */
+
+interface PMTrigger {
+  id: string
+  calendarTrigger: CalendarTrigger
+  assignments: TriggerAssignment[]
+  expanded: boolean
+}
+
+interface TriggerAssignment {
+  id: string
+  name: string
+  type: 'Asset' | 'Location' | 'Meter'
+  subtext: string
+  meter?: string
+  assignees: string[]
+  team?: string
+  startDate: string
+  endDate: string
+}
+
+function formatScheduleText(t: CalendarTrigger): string {
+  const parts: string[] = []
+  if (t.every && t.period) parts.push(`Every ${t.every} ${t.period}${Number(t.every) > 1 ? 's' : ''}`)
+  if (t.weekday) {
+    const fullDay = FULL_WEEKDAYS[['Mon','Tue','Wed','Thu','Fri','Sat','Sun'].indexOf(t.weekday)]
+    parts.push(`On ${fullDay ? fullDay + 's' : t.weekday + 's'}`)
+  }
+  if (t.atTime) parts.push(`At ${t.atTime}`)
+  if (t.woCreationMode === 'relative' && t.woRelativeN && t.woRelativePeriod) {
+    parts.push(`WO ${t.woRelativeN} ${t.woRelativePeriod.toLowerCase()} before`)
+  } else if (t.woCreationMode === 'on-the' && t.woOnThePeriod) {
+    parts.push(`WO on ${t.woOnThePeriod} before`)
+  }
+  return parts.join(' · ') || 'Scheduled trigger'
+}
+function formatMeterText(t: CalendarTrigger): string | undefined {
+  if (!t.meterValue) return undefined
+  return `When a reading is ${t.meterCondition} ${t.meterValue} ${t.meterUnit || 'units'}`
+}
+
+function MeterPopoverContent({ current, onSelect }: { current: string; onSelect: (m: string) => void }) {
+  const [q, setQ] = React.useState('')
+  const filtered = ['', ...METERS].filter(m => !q || (m || 'None').toLowerCase().includes(q.toLowerCase()))
+  return (
+    <>
+      <div className="flex items-center gap-1.5 px-2.5 py-2 border-b border-[var(--border-subtle)]">
+        <Search size={12} className="text-[var(--color-neutral-7)] shrink-0" />
+        <input type="text" value={q} onChange={e => setQ(e.target.value)} placeholder="Search meters…" autoFocus className="flex-1 text-[12px] bg-transparent outline-none text-[var(--color-neutral-11)] placeholder:text-[var(--color-neutral-7)]" />
+      </div>
+      <div className="py-1 max-h-[200px] overflow-y-auto">
+        {filtered.map(m => (
+          <Popover.Close key={m || 'none'} asChild>
+            <button type="button" onClick={() => onSelect(m)} className={`w-full flex items-center px-3 py-1.5 text-[13px] text-left cursor-pointer transition-colors hover:bg-[var(--color-neutral-3)] ${current === m ? 'text-[var(--color-accent-9)] font-medium' : 'text-[var(--color-neutral-11)]'}`}>
+              {m || 'None'}
+            </button>
+          </Popover.Close>
+        ))}
+        {filtered.length === 0 && <p className="px-3 py-2 text-[12px] text-[var(--color-neutral-7)]">No meters found</p>}
+      </div>
+    </>
+  )
+}
+
+
+function BulkTechniciansContent({ selectedAssignments, onToggle }: {
+  selectedAssignments: Array<{ assignees: string[] }>
+  onToggle: (name: string) => void
+}) {
+  const [q, setQ] = React.useState('')
+  const filtered = ASSIGNEES.filter(n => !q || n.toLowerCase().includes(q.toLowerCase()))
+  return (
+    <>
+      <div className="flex items-center gap-1.5 px-2.5 py-2 border-b border-[var(--border-subtle)]">
+        <Search size={12} className="text-[var(--color-neutral-7)] shrink-0" />
+        <input type="text" value={q} onChange={e => setQ(e.target.value)} placeholder="Search..." autoFocus className="flex-1 text-[12px] bg-transparent outline-none text-[var(--color-neutral-11)] placeholder:text-[var(--color-neutral-7)]" />
+      </div>
+      <div className="py-1 max-h-[200px] overflow-y-auto">
+        {filtered.map(name => {
+          const allHave = selectedAssignments.length > 0 && selectedAssignments.every(a => a.assignees.includes(name))
+          const someHave = !allHave && selectedAssignments.some(a => a.assignees.includes(name))
+          return (
+            <button key={name} type="button" onClick={() => onToggle(name)} className="w-full flex items-center gap-2 px-2.5 py-1.5 text-[13px] text-left cursor-pointer hover:bg-[var(--color-neutral-3)] transition-colors">
+              <Avatar name={name} size="xs" className="shrink-0" />
+              <span className="flex-1 text-[var(--color-neutral-11)] truncate">{name}</span>
+              <div className={`w-4 h-4 rounded border flex items-center justify-center shrink-0 transition-colors ${allHave ? 'bg-[var(--color-accent-9)] border-[var(--color-accent-9)]' : someHave ? 'bg-[var(--color-accent-3)] border-[var(--color-accent-7)]' : 'border-[var(--border-default)]'}`}>
+                {allHave && <svg width="9" height="9" viewBox="0 0 9 9" fill="none"><path d="M1.5 4.5L3.5 6.5L7.5 2.5" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>}
+                {someHave && <div className="w-2 h-2 rounded-sm bg-[var(--color-accent-9)]" />}
+              </div>
+            </button>
+          )
+        })}
+        {filtered.length === 0 && <p className="px-3 py-2 text-[12px] text-[var(--color-neutral-7)]">No results</p>}
+      </div>
+    </>
+  )
+}
+
 export default function CreatePMPage() {
   const [title, setTitle] = useState('')
   const [description, setDescription] = useState('')
   const [category, setCategory] = useState('')
   const [priority, setPriority] = useState('')
   const [duration, setDuration] = useState('')
-  const [images, setImages] = useState<string[]>([])
   const [signature, setSignature] = useState(false)
   const [createWONow, setCreateWONow] = useState(false)
-  const [detailsOpen, setDetailsOpen] = useState(true)
-  const [extraDetailsOpen, setExtraDetailsOpen] = useState(true)
-  const [assets, setAssets] = useState<AssignedAsset[]>([])
-  const [removingAssets, setRemovingAssets] = useState<Set<string>>(new Set())
-  const [selectedAssets, setSelectedAssets] = useState<Set<string>>(new Set())
-  const [assignModalOpen, setAssignModalOpen] = useState(false)
-  const [editingAssetId, setEditingAssetId] = useState<string | null>(null)
-  const [triggerModal, setTriggerModal] = useState<{ assetId: string; type: 'meter' | 'calendar' | 'both' } | null>(null)
-  const [submitted, setSubmitted] = useState(false)
-  const [calendarTriggers, setCalendarTriggers] = useState<CalendarTrigger[]>([])
-  const [showCalendarModal, setShowCalendarModal] = useState(false)
-  const [triggerDropdownOpen, setTriggerDropdownOpen] = useState(false)
-  const [novaOpen, setNovaOpen] = useState(false)
+  const [checklists, setChecklists] = useState<ChecklistGroup[]>([])
   const [checklistsOpen, setChecklistsOpen] = useState(false)
   const [filesPartsOpen, setFilesPartsOpen] = useState(false)
-  const [checklists, setChecklists] = useState<ChecklistGroup[]>([])
-
-  const hasMeterTrigger = calendarTriggers.some(t => t.meterValue?.trim())
-  const meterMissing = hasMeterTrigger && assets.some(a => !a.meter)
+  const [images, setImages] = useState<string[]>([])
+  const [triggers, setTriggers] = useState<PMTrigger[]>([])
+  const [showCalendarModal, setShowCalendarModal] = useState(false)
+  const [calendarModalKey, setCalendarModalKey] = useState(0)
+  const [editingTriggerId, setEditingTriggerId] = useState<string | null>(null)
+  const [showAssignModal, setShowAssignModal] = useState<string | null>(null)
+  const [editingAssignmentId, setEditingAssignmentId] = useState<{ triggerId: string; assignmentId: string } | null>(null)
+  const [assignmentSearch, setAssignmentSearch] = useState<Record<string, string>>({})
+  const [assignmentSelected, setAssignmentSelected] = useState<Record<string, Set<string>>>({})
+  const [assignmentSort, setAssignmentSort] = useState<Record<string, { col: string; dir: 'asc' | 'desc' }>>({})
+  const [novaOpen, setNovaOpen] = useState(false)
+  const [submitted, setSubmitted] = useState(false)
 
   const fileInputRef = useRef<HTMLInputElement>(null)
   const imageInputRef = useRef<HTMLInputElement>(null)
   const imageScrollRef = useRef<HTMLDivElement>(null)
-  const scrollContainerRef = useRef<HTMLDivElement>(null)
-  useEffect(() => {
-    const raf = requestAnimationFrame(() => scrollContainerRef.current?.scrollTo(0, 0))
-    return () => cancelAnimationFrame(raf)
-  }, [])
 
   function handleImageUpload(e: React.ChangeEvent<HTMLInputElement>) {
     const files = Array.from(e.target.files ?? [])
@@ -2061,41 +2331,63 @@ export default function CreatePMPage() {
     e.target.value = ''
   }
 
-  function handleAssignAsset(form: AssignAssetForm) {
+  function handleAssignToTrigger(triggerId: string, form: AssignAssetForm) {
     const fmt = (d: string) => d ? new Date(d).toLocaleDateString('en-US', { month: '2-digit', day: '2-digit', year: '2-digit' }) : ''
-    const timeRange = form.startDate ? `${fmt(form.startDate)}${form.endDate ? ' | ' + fmt(form.endDate) : ''}` : ''
-    const shared = {
-      trigger: form.trigger,
-      frequency: form.trigger,
-      primaryAssignee: form.primaryAssignee || 'Unassigned',
-      additionalAssignees: form.additionalAssignee,
-      team: form.team || '',
-      timeRange,
+    let items: TriggerAssignment[] = []
+    if (form.asset.length > 0) {
+      items = form.asset.map(a => {
+        const db = getAssetData(a)
+        return {
+          id: crypto.randomUUID(),
+          name: a,
+          type: 'Asset' as const,
+          subtext: form.location[0] || db?.location || '',
+          meter: form.meter[0] || db?.meter || '',
+          assignees: [form.primaryAssignee, ...form.additionalAssignee].filter(Boolean),
+          team: form.team || db?.team || '',
+          startDate: fmt(form.startDate),
+          endDate: fmt(form.endDate),
+        }
+      })
+    } else if (form.location.length > 0) {
+      items = form.location.map(l => {
+        const db = getLocationData(l)
+        return {
+          id: crypto.randomUUID(),
+          name: l,
+          type: 'Location' as const,
+          subtext: '',
+          meter: form.meter[0] || '',
+          assignees: [form.primaryAssignee, ...form.additionalAssignee].filter(Boolean),
+          team: form.team || db?.team || '',
+          startDate: fmt(form.startDate),
+          endDate: fmt(form.endDate),
+        }
+      })
+    } else if (form.meter.length > 0) {
+      items = form.meter.map(m => {
+        const db = getMeterData(m)
+        return {
+          id: crypto.randomUUID(),
+          name: m,
+          type: 'Meter' as const,
+          subtext: db?.locationName || '',
+          meter: m,
+          assignees: [form.primaryAssignee, ...form.additionalAssignee].filter(Boolean),
+          team: form.team || '',
+          startDate: fmt(form.startDate),
+          endDate: fmt(form.endDate),
+        }
+      })
     }
-    // Create one card per selected item, filling missing fields from the database
-    const items: AssignedAsset[] = form.asset.length > 0
-      ? form.asset.map(a => {
-          const db = getAssetData(a)
-          return { id: crypto.randomUUID(), name: a, location: form.location[0] || db?.location || '', meter: form.meter[0] || db?.meter || '', ...shared, team: form.team || db?.team || shared.team, primaryAssignee: form.primaryAssignee || db?.assignee || shared.primaryAssignee }
-        })
-      : form.location.length > 0
-        ? form.location.map(l => {
-            const db = getLocationData(l)
-            return { id: crypto.randomUUID(), name: '', location: l, meter: form.meter[0] || '', ...shared, team: form.team || db?.team || shared.team, primaryAssignee: form.primaryAssignee || db?.assignees?.[0] || shared.primaryAssignee }
-          })
-        : form.meter.length > 0
-          ? form.meter.map(m => {
-              const db = getMeterData(m)
-              return { id: crypto.randomUUID(), name: '', location: form.location[0] || db?.locationName || '', meter: m, ...shared }
-            })
-          : [{ id: crypto.randomUUID(), name: '', location: '', meter: '', ...shared }]
-    if (editingAssetId) {
-      setAssets(a => a.map(x => x.id === editingAssetId ? { ...items[0], id: editingAssetId } : x))
-      setEditingAssetId(null)
+    if (editingAssignmentId?.triggerId === triggerId && editingAssignmentId.assignmentId) {
+      const editId = editingAssignmentId.assignmentId
+      setTriggers(ts => ts.map(t => t.id === triggerId ? { ...t, assignments: t.assignments.map(a => a.id === editId ? (items[0] ? { ...items[0], id: editId } : a) : a) } : t))
+      setEditingAssignmentId(null)
     } else {
-      setAssets(a => [...a, ...items])
+      setTriggers(ts => ts.map(t => t.id === triggerId ? { ...t, assignments: [...t.assignments, ...items] } : t))
     }
-    setAssignModalOpen(false)
+    setShowAssignModal(null)
   }
 
   function handleCreatePM() {
@@ -2114,7 +2406,7 @@ export default function CreatePMPage() {
         <div>
           <h2 className="text-[20px] font-bold text-[var(--color-neutral-12)]">PM Created!</h2>
           <p className="text-[14px] text-[var(--color-neutral-9)] mt-1">
-            <strong className="text-[var(--color-neutral-11)]">{title}</strong> has been added to Predictive Maintenance.
+            <strong className="text-[var(--color-neutral-11)]">{title}</strong> has been added to Preventive Maintenance.
           </p>
         </div>
         <div className="flex gap-2 mt-2">
@@ -2128,566 +2420,811 @@ export default function CreatePMPage() {
   }
 
   return (
-    <>
-      {/* Top bar */}
-      <div className="sticky top-0 z-[var(--z-sticky)] flex items-center gap-3 h-[60px] px-4 bg-[var(--surface-primary)] border-b border-[var(--border-subtle)]">
-        <button
-          onClick={() => window.dispatchEvent(new Event('toggle-sidebar'))}
-          className="flex items-center justify-center w-8 h-8 rounded-[var(--radius-lg)] hover:bg-[var(--color-neutral-3)] transition-colors text-[var(--color-neutral-7)] cursor-pointer"
-          aria-label="Toggle sidebar"
-        >
-          <PanelLeft size={20} />
-        </button>
+    <div className="flex flex-col h-full overflow-hidden">
+      {/* Header */}
+      <div className="h-14 flex items-center gap-3 px-4 bg-[var(--surface-primary)] border-b border-[var(--border-subtle)] shrink-0">
         <Link
           href="/predictive-maintenance"
           className="flex items-center justify-center w-8 h-8 rounded-[var(--radius-lg)] hover:bg-[var(--color-neutral-3)] transition-colors text-[var(--color-neutral-8)] cursor-pointer"
         >
           <ChevronLeft size={20} />
         </Link>
-        <h1 className="text-[16px] font-semibold text-[var(--color-neutral-12)] flex-1">
-          New Preventive Maintenance
+        <h1 className="text-[15px] font-semibold text-[var(--color-neutral-12)] flex-1">
+          Create a New Preventive Maintenance
         </h1>
-        <div className="w-px h-5 bg-[var(--border-subtle)] mx-1" />
+        <div className="flex items-center gap-2 mr-2">
+          <span className="text-[13px] text-[var(--color-neutral-9)]">Create First Work Order Now</span>
+          <Switch checked={createWONow} onCheckedChange={setCreateWONow} size="md" aria-label="Create first Work Order Now" />
+        </div>
+        <div className="w-px h-5 bg-[var(--border-subtle)]" />
         <Link href="/predictive-maintenance">
           <Button variant="secondary" size="md">Cancel</Button>
         </Link>
-        <Button
-          variant="primary"
-          size="md"
-          onClick={handleCreatePM}
-          disabled={!title}
-        >
+        <Button variant="primary" size="md" onClick={handleCreatePM} disabled={!title}>
           Create PM
         </Button>
       </div>
 
-      {/* Content + Nova side by side */}
-      <div className="flex flex-1 min-h-0 overflow-hidden">
-      <div className="flex-1 overflow-y-auto bg-white" ref={scrollContainerRef}>
-        <div className="max-w-[1100px] mx-auto px-6 py-6 flex flex-col gap-7">
+      {/* Body */}
+      <div className="flex-1 overflow-y-auto bg-[var(--surface-primary)]">
+        <div className="max-w-[1100px] mx-auto w-full">
 
-          {/* Page header row */}
-          <div className="flex items-end gap-5">
-            <p className="flex-1 text-[14px] text-[var(--color-neutral-10)] leading-5">
-              Automatically generate work orders based on a schedule or meter reading.<br />Add the details, assign technicians, and help prevent equipment failures.
+          {/* Page intro */}
+          <div className="flex items-center justify-between px-6 pt-6 pb-2">
+            <p className="text-[13px] text-[var(--color-neutral-9)] max-w-[520px]">
+              Automatically generate work orders based on a schedule or meter reading. Add the details, assign technicians, and help prevent equipment failures.
             </p>
-            <button
-              onClick={() => setNovaOpen(true)}
-              className="shrink-0 flex items-center gap-2 h-9 px-4 rounded-[var(--radius-xl)] border border-[var(--border-default)] bg-[var(--surface-primary)] hover:bg-[var(--color-neutral-2)] text-[var(--color-neutral-11)] text-[13px] font-medium transition-colors cursor-pointer"
-            >
-              <Sparkle size={16} className="text-[var(--color-accent-9)]" />
+            <button type="button" className="flex items-center gap-1.5 px-3 h-8 rounded-[var(--radius-lg)] border border-[var(--color-accent-6)] bg-[var(--color-accent-1)] hover:bg-[var(--color-accent-2)] text-[13px] font-medium text-[var(--color-accent-11)] transition-colors cursor-pointer shrink-0">
+              <svg width="14" height="14" viewBox="0 0 14 14" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="M7 1.5C7 1.5 8.5 4 11 4.5C8.5 5 7 7.5 7 7.5C7 7.5 5.5 5 3 4.5C5.5 4 7 1.5 7 1.5Z" fill="currentColor"/><path d="M3 9C3 9 3.75 10.5 5 10.75C3.75 11 3 12.5 3 12.5C3 12.5 2.25 11 1 10.75C2.25 10.5 3 9 3 9Z" fill="currentColor"/><path d="M11 8.5C11 8.5 11.75 10 13 10.25C11.75 10.5 11 12 11 12C11 12 10.25 10.5 9 10.25C10.25 10 11 8.5 11 8.5Z" fill="currentColor"/></svg>
               Create with Nova
             </button>
           </div>
 
-          <CreateCalendarTriggerModal
-            open={showCalendarModal}
-            onClose={() => setShowCalendarModal(false)}
-            onSubmit={t => setCalendarTriggers(ts => [...ts, t])}
-          />
-
-          {/* Two-column layout */}
-          <div className="flex gap-4 items-start">
-
-            {/* LEFT: Details sidebar */}
-            <div className="w-[320px] shrink-0 flex flex-col gap-4">
-              <div className="flex flex-col rounded-[var(--radius-xl)] border border-[var(--color-neutral-5)] bg-[var(--surface-primary)] overflow-hidden">
+          {/* DETAILS */}
+          <div className="p-6 flex flex-col gap-5">
+              <div className="rounded-[var(--radius-xl)] border border-[var(--border-default)] bg-[var(--surface-primary)]">
                 {/* Card header */}
-                <div className="flex items-center gap-3 px-4 h-[52px] border-b border-[var(--border-subtle)] bg-[var(--color-neutral-2)]">
-                  <div className="w-6 h-6 shrink-0 rounded-[var(--radius-sm)] bg-[var(--color-neutral-3)] flex items-center justify-center">
-                    <FileText size={13} className="text-[var(--color-neutral-8)]" />
-                  </div>
-                  <h2 className="text-[14px] font-semibold text-[var(--color-neutral-12)]">Details</h2>
+                <div className="flex items-center gap-3 px-4 h-[57px] bg-[#F9F9FB] border-b border-[var(--border-subtle)]">
+                  <FileText size={18} className="text-[var(--color-neutral-7)]" />
+                  <span className="text-[16px] font-semibold text-[var(--color-neutral-12)]">Details</span>
                 </div>
-
-                {/* Fields */}
-                <div className="flex flex-col gap-5 p-4">
-
-              {/* Title */}
-              <TextInput
-                label="Title"
-                required
-                autoFocus
-                placeholder="e.g. Monthly HVAC filter replacement"
-                value={title}
-                onChange={e => setTitle((e.target as HTMLInputElement).value)}
-              />
-
-              {/* Description */}
-              <Textarea
-                label="Description"
-                placeholder="Describe this maintenance task…"
-                value={description}
-                onChange={e => setDescription((e.target as HTMLTextAreaElement).value)}
-                className="h-[88px] resize-none"
-              />
-
-              {/* Category + Priority */}
-              <div className="flex gap-3">
-                <div className="flex-1 min-w-0">
-                  <Select label="Category" value={category} onChange={setCategory} options={CATEGORIES} />
-                </div>
-                <div className="flex-1 min-w-0">
-                  <Select label="Priority" value={priority} onChange={setPriority} options={PRIORITIES} />
-                </div>
-              </div>
-
-              {/* Duration */}
-              <TextInput
-                label="Duration (hs)"
-                type="number"
-                min="0"
-                step="0.5"
-                placeholder="0"
-                value={duration}
-                onChange={e => setDuration((e.target as HTMLInputElement).value)}
-                className="[appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
-              />
-
-              {/* Create first Work Order Now */}
-              <div
-                onClick={() => setCreateWONow(v => !v)}
-                className={`flex items-start justify-between gap-3 p-3.5 rounded-[var(--radius-xl)] border transition-colors cursor-pointer ${createWONow ? 'border-transparent bg-[var(--color-accent-1)]' : 'border-[var(--border-subtle)] bg-[var(--surface-secondary)] hover:bg-[var(--color-neutral-2)]'}`}
-              >
-                <div className="flex-1 min-w-0">
-                  <p className="text-[13px] font-semibold text-[var(--color-neutral-12)]">Create first Work Order Now</p>
-                </div>
-                <div onClick={e => e.stopPropagation()}>
-                  <Switch checked={createWONow} onCheckedChange={setCreateWONow} size="md" aria-label="Create first Work Order Now" />
-                </div>
-              </div>
-
-              {/* Signature Required */}
-              <div
-                onClick={() => setSignature(v => !v)}
-                className={`flex items-start justify-between gap-3 p-3.5 rounded-[var(--radius-xl)] border transition-colors cursor-pointer ${signature ? 'border-transparent bg-[var(--color-accent-1)]' : 'border-[var(--border-subtle)] bg-[var(--surface-secondary)] hover:bg-[var(--color-neutral-2)]'}`}
-              >
-                <div className="flex-1 min-w-0">
-                  <p className="text-[13px] font-semibold text-[var(--color-neutral-12)]">Signature Required</p>
-                  <p className="text-[12px] text-[var(--color-neutral-9)] mt-0.5 leading-4">
-                    Technicians must sign to complete this work order.
-                  </p>
-                </div>
-                <div onClick={e => e.stopPropagation()}>
-                  <Switch checked={signature} onCheckedChange={setSignature} size="md" aria-label="Signature required" />
-                </div>
-              </div>
-
-                </div>{/* end fields */}
-              </div>{/* end card */}
-
-              {/* Tasks & Checklists card */}
-              <div className="rounded-[var(--radius-xl)] border border-[var(--border-default)] bg-[var(--surface-primary)] overflow-hidden">
-                <div
-                  onClick={() => setChecklistsOpen(o => !o)}
-                  className="w-full flex items-center gap-2 px-4 h-[52px] border-b border-[var(--border-subtle)] bg-[var(--color-neutral-2)] hover:bg-[var(--color-neutral-3)] transition-colors cursor-pointer select-none"
-                >
-                  <svg width="20" height="20" viewBox="0 0 18 18" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" className="text-[var(--color-neutral-7)]">
-                    <path d="M6.75 4.5H3.75C3.33579 4.5 3 4.83579 3 5.25V14.25C3 14.6642 3.33579 15 3.75 15H14.25C14.6642 15 15 14.6642 15 14.25V5.25C15 4.83579 14.6642 4.5 14.25 4.5H11.25M6.75 4.5V3.75C6.75 3.33579 7.08579 3 7.5 3H10.5C10.9142 3 11.25 3.33579 11.25 3.75V4.5M6.75 4.5H11.25M6.75 9H11.25M6.75 12H9" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-                  </svg>
-                  <span className="flex-1 text-left text-[14px] font-semibold text-[var(--color-neutral-12)]">Tasks &amp; Checklists</span>
-                  {!checklistsOpen && (
-                    <DropdownMenu modal={false}>
-                      <DropdownMenuTrigger asChild>
-                        <button
-                          type="button"
-                          onClick={e => e.stopPropagation()}
-                          className="inline-flex items-center gap-1 h-6 px-2.5 rounded-[var(--radius-md)] border border-[var(--border-default)] bg-[var(--surface-primary)] text-[12px] font-medium text-[var(--color-neutral-10)] hover:bg-[var(--color-neutral-3)] transition-colors shrink-0 cursor-pointer"
-                        >
-                          Add
-                          <ChevronDown size={11} />
-                        </button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end">
-                        <DropdownMenuItem onSelect={() => {
-                          setChecklistsOpen(true)
-                          setChecklists(cs => cs.length
-                            ? cs.map((c, i) => i === 0 ? { ...c, tasks: [...c.tasks, { id: crypto.randomUUID(), title: 'New Task', type: 'pass-fail' as const, value: '' }] } : c)
-                            : [{ id: crypto.randomUUID(), title: 'New Checklist', open: true, tasks: [{ id: crypto.randomUUID(), title: 'New Task', type: 'pass-fail' as const, value: '' }] }]
-                          )
-                        }}>Task</DropdownMenuItem>
-                        <DropdownMenuItem onSelect={() => {
-                          setChecklistsOpen(true)
-                          setChecklists(cs => [...cs, { id: crypto.randomUUID(), title: 'New Checklist', open: true, tasks: [] }])
-                        }}>Checklist</DropdownMenuItem>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
-                  )}
-                  {checklistsOpen ? <ChevronUp size={16} className="text-[var(--color-neutral-9)]" /> : <ChevronDown size={16} className="text-[var(--color-neutral-9)]" />}
-                </div>
-                {checklistsOpen && (
-                  <div className="p-4 flex flex-col gap-4">
-                    {checklists.length === 0 ? (
-                      <div className="flex flex-col items-center justify-center py-3 gap-1.5 text-center">
-                        <p className="text-[14px] font-semibold text-[var(--color-neutral-11)]">Add tasks &amp; checklists</p>
-                        <p className="text-[13px] text-[var(--color-neutral-8)]">Define the tasks technicians need to complete for this preventive maintenance.</p>
-                        <div>
-                          <DropdownMenu modal={false}>
-                            <DropdownMenuTrigger asChild>
-                              <button className="inline-flex items-center gap-1.5 h-7 px-3 rounded-[var(--radius-md)] bg-[var(--color-accent-9)] text-white text-[13px] font-medium hover:bg-[var(--color-accent-10)] transition-colors cursor-pointer">
-                                Add
-                                <ChevronDown size={13} />
-                              </button>
-                            </DropdownMenuTrigger>
-                            <DropdownMenuContent align="center" minWidth="180px">
-                              <DropdownMenuItem onSelect={() => setChecklists(cs => [...cs, { id: crypto.randomUUID(), title: 'New Checklist', open: true, tasks: [] }])}>
-                                <Plus size={13} className="mr-2" />
-                                New Checklist
-                              </DropdownMenuItem>
-                              <DropdownMenuItem onSelect={() => setChecklists(cs => cs.length ? cs.map((c, i) => i === 0 ? { ...c, tasks: [...c.tasks, { id: crypto.randomUUID(), title: 'New Task', type: 'pass-fail' as const, value: '' }] } : c) : [{ id: crypto.randomUUID(), title: 'New Checklist', open: true, tasks: [{ id: crypto.randomUUID(), title: 'New Task', type: 'pass-fail' as const, value: '' }] }])}>
-                                <Plus size={13} className="mr-2" />
-                                Add Task
-                              </DropdownMenuItem>
-                            </DropdownMenuContent>
-                          </DropdownMenu>
+                {/* Card content */}
+                <div className="px-4 py-3 flex flex-col gap-5">
+                  {/* Two-column layout: Left (Title+Description) | Right (Category+Priority+Duration+Signature) */}
+                  <div className="grid grid-cols-2 gap-5">
+                    {/* Left column */}
+                    <div className="flex flex-col gap-5">
+                      <TextInput
+                        label="Title"
+                        required
+                        autoFocus
+                        placeholder="e.g. Monthly HVAC filter replacement"
+                        value={title}
+                        onChange={e => setTitle((e.target as HTMLInputElement).value)}
+                      />
+                      <Textarea
+                        label="Description"
+                        placeholder="Describe this maintenance task…"
+                        value={description}
+                        onChange={e => setDescription((e.target as HTMLTextAreaElement).value)}
+                        className="h-[128px] resize-none"
+                      />
+                    </div>
+                    {/* Right column */}
+                    <div className="flex flex-col gap-5">
+                      <Select label="Category" value={category} onChange={setCategory} options={CATEGORIES} />
+                      <div className="grid grid-cols-2 gap-5">
+                        <Select
+                          label="Priority"
+                          value={priority}
+                          onChange={setPriority}
+                          options={PRIORITY_OPTIONS.map(p => ({
+                            value: p.value,
+                            label: p.label,
+                            icon: <Flag size={13} fill={p.color} stroke={p.color} />,
+                          }))}
+                        />
+                        <TextInput
+                          label="Duration (hs)"
+                          type="number"
+                          min="0"
+                          step="0.5"
+                          placeholder="0"
+                          value={duration}
+                          onChange={e => setDuration((e.target as HTMLInputElement).value)}
+                          className="[appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                        />
+                      </div>
+                      {/* Signature Required */}
+                      <div
+                        onClick={() => setSignature(v => !v)}
+                        className={`flex items-center justify-between gap-3 p-3 rounded-2xl border cursor-pointer transition-colors ${signature ? 'border-[var(--color-accent-7)] bg-[var(--color-accent-1)] hover:bg-[var(--color-accent-2)]' : 'border-[#E0E1E6] bg-[#F9F9FB] hover:bg-[var(--color-neutral-3)]'}`}
+                      >
+                        <div className="flex-1 min-w-0">
+                          <p className="text-[14px] font-semibold text-[var(--color-neutral-12)]">Signature Required</p>
+                          <p className="text-[12px] text-[#60646C] mt-0.5 leading-4">Technicians must sign to complete this work order.</p>
+                        </div>
+                        <div onClick={e => e.stopPropagation()}>
+                          <Switch checked={signature} onCheckedChange={setSignature} size="md" aria-label="Signature required" />
                         </div>
                       </div>
-                    ) : (
-                      <>
-                        <div className="flex items-center justify-between">
-                          <span className="text-[13px] font-medium text-[var(--color-neutral-9)]">{checklists.reduce((n, c) => n + c.tasks.length, 0)} tasks</span>
-                          <DropdownMenu modal={false}>
-                            <DropdownMenuTrigger asChild>
-                              <button className="inline-flex items-center gap-1.5 h-8 px-3 rounded-[var(--radius-md)] bg-[var(--color-accent-9)] border border-[var(--color-accent-10)] text-white text-[13px] font-medium hover:bg-[var(--color-accent-10)] transition-colors cursor-pointer">
-                                Add <ChevronDown size={13} />
+                    </div>
+                  </div>
+                </div>
+
+                  {/* Images, Files & Parts */}
+              <button
+                onClick={() => setFilesPartsOpen(o => !o)}
+                className="w-full flex items-center gap-2 px-4 h-[52px] border-y border-[#F0F0F3] bg-[#F9F9FB] hover:bg-[var(--color-neutral-3)] transition-colors cursor-pointer"
+              >
+                <svg width="20" height="20" viewBox="0 0 18 18" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" className="text-[var(--color-neutral-7)]">
+                  <path d="M9.1875 15.9375H4.3125C3.89829 15.9375 3.5625 15.6017 3.5625 15.1875V2.8125C3.5625 2.39829 3.89829 2.0625 4.3125 2.0625H13.6875C14.1017 2.0625 14.4375 2.39829 14.4375 2.8125V9.1875M13.6875 11.4375V13.6875M13.6875 13.6875V15.9375M13.6875 13.6875H11.4375M13.6875 13.6875H15.9375M6.5625 5.0625H11.4375M6.5625 8.0625H8.4375" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                </svg>
+                <span className="flex-1 text-left text-[14px] font-semibold text-[var(--color-neutral-12)]">Images, Files &amp; Parts</span>
+                {filesPartsOpen ? <ChevronUp size={16} className="text-[var(--color-neutral-9)]" /> : <ChevronDown size={16} className="text-[var(--color-neutral-9)]" />}
+              </button>
+              {filesPartsOpen && (
+                <div className="p-5 flex flex-col gap-5">
+                  {/* Images */}
+                  <div className="flex flex-col gap-3">
+                    <div className="flex items-center justify-between">
+                      <span className="text-[13px] font-semibold text-[var(--color-neutral-11)]">Images</span>
+                      <div className="flex items-center gap-1.5">
+                        {images.length > 0 && (
+                          <span className="text-[12px] text-[var(--color-neutral-8)]">{images.length} Images Added</span>
+                        )}
+                        <button onClick={() => imageScrollRef.current?.scrollBy({ left: -200, behavior: 'smooth' })} className="w-7 h-7 flex items-center justify-center rounded-[var(--radius-md)] border border-[var(--border-default)] bg-[var(--surface-primary)] text-[var(--color-neutral-7)] hover:bg-[var(--color-neutral-3)] transition-colors cursor-pointer">
+                          <ChevronLeft size={14} />
+                        </button>
+                        <button onClick={() => imageScrollRef.current?.scrollBy({ left: 200, behavior: 'smooth' })} className="w-7 h-7 flex items-center justify-center rounded-[var(--radius-md)] border border-[var(--border-default)] bg-[var(--surface-primary)] text-[var(--color-neutral-7)] hover:bg-[var(--color-neutral-3)] transition-colors cursor-pointer">
+                          <ChevronRight size={14} />
+                        </button>
+                      </div>
+                    </div>
+                    <div className="relative">
+                      <div ref={imageScrollRef} className="flex items-center gap-3 overflow-x-auto" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
+                        <button onClick={() => imageInputRef.current?.click()} className="shrink-0 w-[80px] h-[80px] rounded-[var(--radius-lg)] border-2 border-dashed border-[var(--color-accent-4)] bg-[var(--color-accent-1)] flex items-center justify-center text-[var(--color-accent-7)] hover:border-[var(--color-accent-6)] transition-colors cursor-pointer">
+                          <Plus size={20} />
+                        </button>
+                        <input ref={imageInputRef} type="file" accept="image/*" multiple className="hidden" onChange={handleImageUpload} />
+                        {images.map((src, i) => (
+                          <ImageThumb key={i} src={src} onRemove={() => setImages(imgs => imgs.filter((_, j) => j !== i))} />
+                        ))}
+                      </div>
+                      <div className="pointer-events-none absolute right-0 top-0 h-full w-16 bg-gradient-to-l from-[var(--surface-primary)] to-transparent" />
+                    </div>
+                  </div>
+
+                  <div className="h-px bg-[var(--border-subtle)]" />
+
+                  {/* Files */}
+                  <div className="flex flex-col gap-3">
+                    <div className="flex items-center justify-between">
+                      <span className="text-[13px] font-semibold text-[var(--color-neutral-11)]">Files</span>
+                      <button className="text-[13px] text-[var(--color-accent-9)] font-medium hover:text-[var(--color-accent-11)] cursor-pointer">Add from Saved Files</button>
+                    </div>
+                    <button onClick={() => fileInputRef.current?.click()} className="w-full h-[72px] rounded-[var(--radius-lg)] border-2 border-dashed border-[var(--border-default)] flex items-center justify-center gap-3 text-[var(--color-neutral-8)] hover:border-[var(--color-accent-7)] hover:text-[var(--color-accent-9)] transition-colors cursor-pointer">
+                      <Upload size={16} />
+                      <span className="text-[13px] font-medium">Upload</span>
+                      <span className="text-[13px] text-[var(--color-neutral-7)]">or drop a file</span>
+                    </button>
+                    <input ref={fileInputRef} type="file" multiple className="hidden" />
+                  </div>
+
+                  <div className="h-px bg-[var(--border-subtle)]" />
+
+                  {/* Parts */}
+                  <div className="flex items-center justify-between">
+                    <span className="text-[13px] font-semibold text-[var(--color-neutral-11)]">Parts</span>
+                    <DropdownMenu modal={false}>
+                      <DropdownMenuTrigger asChild>
+                        <button className="inline-flex items-center gap-1.5 h-8 px-3 rounded-[var(--radius-md)] bg-[var(--color-accent-9)] border border-[var(--color-accent-10)] text-white text-[13px] font-medium hover:bg-[var(--color-accent-10)] transition-colors cursor-pointer">
+                          Add <ChevronDown size={13} />
+                        </button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end" minWidth="160px">
+                        <DropdownMenuItem><Plus size={13} className="mr-2" />Add Part</DropdownMenuItem>
+                        <DropdownMenuItem><Plus size={13} className="mr-2" />From Inventory</DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  </div>
+                </div>
+              )}
+
+                  {/* Tasks & Checklists */}
+              <div
+                onClick={() => setChecklistsOpen(o => !o)}
+                className="w-full flex items-center gap-2 px-4 h-[52px] border-b border-[#F0F0F3] bg-[#F9F9FB] hover:bg-[var(--color-neutral-3)] transition-colors cursor-pointer select-none"
+              >
+                <svg width="20" height="20" viewBox="0 0 18 18" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" className="text-[var(--color-neutral-7)]">
+                  <path d="M6.75 4.5H3.75C3.33579 4.5 3 4.83579 3 5.25V14.25C3 14.6642 3.33579 15 3.75 15H14.25C14.6642 15 15 14.6642 15 14.25V5.25C15 4.83579 14.6642 4.5 14.25 4.5H11.25M6.75 4.5V3.75C6.75 3.33579 7.08579 3 7.5 3H10.5C10.9142 3 11.25 3.33579 11.25 3.75V4.5M6.75 4.5H11.25M6.75 9H11.25M6.75 12H9" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                </svg>
+                <span className="flex-1 text-left text-[14px] font-semibold text-[var(--color-neutral-12)]">Tasks &amp; Checklists</span>
+                {(() => {
+                  const totalTasks = checklists.reduce((n, c) => n + c.tasks.length, 0)
+                  const showEmpty = checklistsOpen && checklists.length === 0
+                  return !showEmpty ? (
+                    <>
+                      {totalTasks > 0 && (
+                        <span className="inline-flex items-center h-5 px-2 rounded-full bg-[var(--color-neutral-3)] text-[11px] font-medium text-[var(--color-neutral-9)] shrink-0">
+                          {totalTasks} {totalTasks === 1 ? 'task' : 'tasks'}
+                        </span>
+                      )}
+                      <DropdownMenu modal={false}>
+                        <DropdownMenuTrigger asChild>
+                          <button
+                            type="button"
+                            onClick={e => e.stopPropagation()}
+                            className="inline-flex items-center gap-1 h-6 px-2.5 rounded-[var(--radius-md)] border border-[var(--border-default)] bg-[var(--surface-primary)] text-[12px] font-medium text-[var(--color-neutral-10)] hover:bg-[var(--color-neutral-3)] transition-colors shrink-0 cursor-pointer"
+                          >
+                            Add
+                            <ChevronDown size={11} />
+                          </button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                          <DropdownMenuItem onSelect={() => {
+                            setChecklistsOpen(true)
+                            setChecklists(cs => cs.length
+                              ? cs.map((c, i) => i === 0 ? { ...c, tasks: [...c.tasks, { id: crypto.randomUUID(), title: 'New Task', type: 'pass-fail' as const, value: '' }] } : c)
+                              : [{ id: crypto.randomUUID(), title: 'New Checklist', open: true, tasks: [{ id: crypto.randomUUID(), title: 'New Task', type: 'pass-fail' as const, value: '' }] }]
+                            )
+                          }}>Task</DropdownMenuItem>
+                          <DropdownMenuItem onSelect={() => {
+                            setChecklistsOpen(true)
+                            setChecklists(cs => [...cs, { id: crypto.randomUUID(), title: 'New Checklist', open: true, tasks: [] }])
+                          }}>Checklist</DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    </>
+                  ) : null
+                })()}
+                {checklistsOpen ? <ChevronUp size={16} className="text-[var(--color-neutral-9)]" /> : <ChevronDown size={16} className="text-[var(--color-neutral-9)]" />}
+              </div>
+              {checklistsOpen && (
+                <div className="p-4 flex flex-col gap-4 max-w-[700px] mx-auto w-full">
+                  {checklists.length === 0 ? (
+                    <div className="flex flex-col items-center justify-center py-3 gap-1.5 text-center">
+                      <p className="text-[14px] font-semibold text-[var(--color-neutral-11)]">Add tasks &amp; checklists</p>
+                      <p className="text-[13px] text-[var(--color-neutral-8)]">Define the tasks technicians need to complete for this preventive maintenance.</p>
+                      <div>
+                        <DropdownMenu modal={false}>
+                          <DropdownMenuTrigger asChild>
+                            <button className="inline-flex items-center gap-1.5 h-7 px-3 rounded-[var(--radius-md)] bg-[var(--color-accent-9)] text-white text-[13px] font-medium hover:bg-[var(--color-accent-10)] transition-colors cursor-pointer">
+                              Add
+                              <ChevronDown size={13} />
+                            </button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="center" minWidth="180px">
+                            <DropdownMenuItem onSelect={() => setChecklists(cs => [...cs, { id: crypto.randomUUID(), title: 'New Checklist', open: true, tasks: [] }])}>
+                              <Plus size={13} className="mr-2" />
+                              New Checklist
+                            </DropdownMenuItem>
+                            <DropdownMenuItem onSelect={() => setChecklists(cs => cs.length ? cs.map((c, i) => i === 0 ? { ...c, tasks: [...c.tasks, { id: crypto.randomUUID(), title: 'New Task', type: 'pass-fail' as const, value: '' }] } : c) : [{ id: crypto.randomUUID(), title: 'New Checklist', open: true, tasks: [{ id: crypto.randomUUID(), title: 'New Task', type: 'pass-fail' as const, value: '' }] }])}>
+                              <Plus size={13} className="mr-2" />
+                              Add Task
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      </div>
+                    </div>
+                  ) : (
+                    <>
+                      {checklists.map(group => (
+                        <div key={group.id} className="flex flex-col gap-3">
+                          <div className="flex items-center justify-between">
+                            <span className="text-[14px] font-semibold text-[var(--color-neutral-12)]">{group.title}</span>
+                            <div className="flex items-center gap-2">
+                              <span className="inline-flex items-center h-6 px-2 rounded-full bg-[var(--color-neutral-3)] text-[12px] font-medium text-[var(--color-neutral-9)]">
+                                {group.tasks.length} {group.tasks.length === 1 ? 'task' : 'tasks'}
+                              </span>
+                              <button onClick={() => setChecklists(cs => cs.map(c => c.id === group.id ? { ...c, open: !c.open } : c))} className="w-6 h-6 flex items-center justify-center text-[var(--color-neutral-7)] hover:text-[var(--color-neutral-11)] cursor-pointer">
+                                {group.open ? <ChevronUp size={15} /> : <ChevronDown size={15} />}
                               </button>
-                            </DropdownMenuTrigger>
-                            <DropdownMenuContent align="end" minWidth="180px">
-                              <DropdownMenuItem onSelect={() => setChecklists(cs => [...cs, { id: crypto.randomUUID(), title: 'New Checklist', open: true, tasks: [] }])}>
-                                <Plus size={13} className="mr-2" />New Checklist
-                              </DropdownMenuItem>
-                              <DropdownMenuItem onSelect={() => setChecklists(cs => cs.map((c, i) => i === 0 ? { ...c, tasks: [...c.tasks, { id: crypto.randomUUID(), title: 'New Task', type: 'pass-fail' as const, value: '' }] } : c))}>
-                                <Plus size={13} className="mr-2" />Add Task
-                              </DropdownMenuItem>
-                            </DropdownMenuContent>
-                          </DropdownMenu>
-                        </div>
-                        {checklists.map(group => (
-                          <div key={group.id} className="flex flex-col gap-3">
-                            <div className="flex items-center justify-between">
-                              <span className="text-[14px] font-semibold text-[var(--color-neutral-12)]">{group.title}</span>
-                              <div className="flex items-center gap-2">
-                                <span className="inline-flex items-center h-6 px-2 rounded-full bg-[var(--color-neutral-3)] text-[12px] font-medium text-[var(--color-neutral-9)]">
-                                  {group.tasks.length} {group.tasks.length === 1 ? 'task' : 'tasks'}
-                                </span>
-                                <button onClick={() => setChecklists(cs => cs.map(c => c.id === group.id ? { ...c, open: !c.open } : c))} className="w-6 h-6 flex items-center justify-center text-[var(--color-neutral-7)] hover:text-[var(--color-neutral-11)] cursor-pointer">
-                                  {group.open ? <ChevronUp size={15} /> : <ChevronDown size={15} />}
-                                </button>
-                              </div>
                             </div>
-                            {group.open && (
-                              <div className="flex flex-col gap-2">
-                                {group.tasks.map(task => (
-                                  <div key={task.id} className="rounded-[var(--radius-lg)] border border-[var(--border-default)] bg-[var(--surface-primary)] p-4 flex flex-col gap-3">
-                                    <div className="flex items-start justify-between gap-2">
-                                      <span className="text-[14px] font-semibold text-[var(--color-neutral-12)] flex-1">{task.title}</span>
-                                      <div className="flex items-center gap-1 shrink-0">
-                                        {[User, Box, RotateCcw, ...(task.type === 'pass-fail' ? [RefreshCw] : [])].map((Icon, i) => (
-                                          <button key={i} className="w-7 h-7 flex items-center justify-center rounded-[var(--radius-sm)] text-[var(--color-neutral-7)] hover:bg-[var(--color-neutral-3)] cursor-pointer">
-                                            <Icon size={14} />
-                                          </button>
-                                        ))}
-                                      </div>
-                                    </div>
-                                    {task.type === 'pass-fail' ? (
-                                      <div className="grid grid-cols-3 rounded-[var(--radius-md)] border border-[var(--border-default)] overflow-hidden">
-                                        {(['Pass', 'Flag', 'Fail'] as const).map((opt, idx) => (
-                                          <button key={opt} onClick={() => setChecklists(cs => cs.map(c => ({ ...c, tasks: c.tasks.map(t => t.id === task.id ? { ...t, value: t.value === opt ? '' : opt } : t) })))}
-                                            className={`py-2 text-[13px] font-medium text-center transition-colors cursor-pointer ${idx > 0 ? 'border-l border-[var(--border-default)]' : ''} ${task.value === opt ? opt === 'Pass' ? 'bg-[var(--color-success-subtle)] text-[var(--color-success)]' : opt === 'Flag' ? 'bg-[#FFF3E0] text-[#C85200]' : 'bg-[var(--color-error-subtle)] text-[var(--color-error)]' : 'bg-[var(--surface-secondary)] text-[var(--color-neutral-11)] hover:bg-[var(--color-neutral-3)]'}`}>
-                                            {opt}
-                                          </button>
-                                        ))}
-                                      </div>
-                                    ) : (
-                                      <input type="text" placeholder="Response" value={task.value}
-                                        onChange={e => setChecklists(cs => cs.map(c => ({ ...c, tasks: c.tasks.map(t => t.id === task.id ? { ...t, value: e.target.value } : t) })))}
-                                        className="w-full h-9 px-3 rounded-[var(--radius-md)] border border-[var(--border-default)] bg-[var(--surface-primary)] text-[13px] outline-none focus:border-[var(--color-accent-7)] transition-colors" />
-                                    )}
-                                    <div className="flex items-center gap-4">
-                                      {[{ icon: Camera, label: 'Photo' }, { icon: FileText, label: 'Note' }, { icon: Link2, label: 'URL' }].map(({ icon: Icon, label }) => (
-                                        <button key={label} className="flex items-center gap-1.5 text-[12px] text-[var(--color-neutral-7)] hover:text-[var(--color-neutral-11)] cursor-pointer">
-                                          <Icon size={13} />{label}
+                          </div>
+                          {group.open && (
+                            <div className="flex flex-col gap-2">
+                              {group.tasks.map(task => (
+                                <div key={task.id} className="rounded-[var(--radius-lg)] border border-[var(--border-default)] bg-[var(--surface-primary)] p-4 flex flex-col gap-3">
+                                  <div className="flex items-start justify-between gap-2">
+                                    <span className="text-[14px] font-semibold text-[var(--color-neutral-12)] flex-1">{task.title}</span>
+                                    <div className="flex items-center gap-1 shrink-0">
+                                      {[User, Box, RotateCcw, ...(task.type === 'pass-fail' ? [RefreshCw] : [])].map((Icon, i) => (
+                                        <button key={i} className="w-7 h-7 flex items-center justify-center rounded-[var(--radius-sm)] text-[var(--color-neutral-7)] hover:bg-[var(--color-neutral-3)] cursor-pointer">
+                                          <Icon size={14} />
                                         </button>
                                       ))}
                                     </div>
                                   </div>
-                                ))}
+                                  {task.type === 'pass-fail' ? (
+                                    <div className="grid grid-cols-3 rounded-[var(--radius-md)] border border-[var(--border-default)] overflow-hidden">
+                                      {(['Pass', 'Flag', 'Fail'] as const).map((opt, idx) => (
+                                        <button key={opt} onClick={() => setChecklists(cs => cs.map(c => ({ ...c, tasks: c.tasks.map(t => t.id === task.id ? { ...t, value: t.value === opt ? '' : opt } : t) })))}
+                                          className={`py-2 text-[13px] font-medium text-center transition-colors cursor-pointer ${idx > 0 ? 'border-l border-[var(--border-default)]' : ''} ${task.value === opt ? opt === 'Pass' ? 'bg-[var(--color-success-subtle)] text-[var(--color-success)]' : opt === 'Flag' ? 'bg-[#FFF3E0] text-[#C85200]' : 'bg-[var(--color-error-subtle)] text-[var(--color-error)]' : 'bg-[var(--surface-secondary)] text-[var(--color-neutral-11)] hover:bg-[var(--color-neutral-3)]'}`}>
+                                          {opt}
+                                        </button>
+                                      ))}
+                                    </div>
+                                  ) : (
+                                    <input type="text" placeholder="Response" value={task.value}
+                                      onChange={e => setChecklists(cs => cs.map(c => ({ ...c, tasks: c.tasks.map(t => t.id === task.id ? { ...t, value: e.target.value } : t) })))}
+                                      className="w-full h-9 px-3 rounded-[var(--radius-md)] border border-[var(--border-default)] bg-[var(--surface-primary)] text-[13px] outline-none focus:border-[var(--color-accent-7)] transition-colors" />
+                                  )}
+                                  <div className="flex items-center gap-4">
+                                    {[{ icon: Camera, label: 'Photo' }, { icon: FileText, label: 'Note' }, { icon: Link2, label: 'URL' }].map(({ icon: Icon, label }) => (
+                                      <button key={label} className="flex items-center gap-1.5 text-[12px] text-[var(--color-neutral-7)] hover:text-[var(--color-neutral-11)] cursor-pointer">
+                                        <Icon size={13} />{label}
+                                      </button>
+                                    ))}
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+                      ))}
+                    </>
+                  )}
+                </div>
+              )}
+              </div>
+
+          </div>
+
+          {/* TRIGGERS */}
+          <div className="px-6 pb-6">
+            <div className="rounded-[var(--radius-xl)] border border-[var(--border-default)] bg-[var(--surface-primary)] overflow-hidden">
+
+              {/* Card header */}
+              <div className="flex items-center justify-between px-5 h-[54px] bg-[var(--color-neutral-2)] border-b border-[var(--border-subtle)]">
+                <div className="flex items-center gap-2">
+                  <Clock size={16} className="text-[var(--color-neutral-7)]" />
+                  <span className="text-[15px] font-semibold text-[var(--color-neutral-12)]">Triggers</span>
+                  {triggers.length > 0 && (
+                    <span className="text-[11px] font-medium text-[var(--color-neutral-8)] bg-[var(--color-neutral-3)] rounded-full px-2 py-0.5">
+                      {triggers.length} {triggers.length === 1 ? 'trigger' : 'triggers'} · {triggers.reduce((sum, t) => sum + t.assignments.length, 0)} {triggers.reduce((sum, t) => sum + t.assignments.length, 0) === 1 ? 'assignment' : 'assignments'}
+                    </span>
+                  )}
+                </div>
+                {triggers.length > 0 && (
+                  <Button variant="secondary" size="sm" onClick={() => { setEditingTriggerId(null); setCalendarModalKey(k => k + 1); setShowCalendarModal(true) }}>
+                    <Plus size={13} className="mr-1" />
+                    New Trigger
+                  </Button>
+                )}
+              </div>
+
+              {triggers.length === 0 ? (
+                <div className="flex flex-col items-center justify-center py-16 gap-2 text-center">
+                  <p className="text-[14px] font-semibold text-[var(--color-neutral-11)]">No triggers yet</p>
+                  <p className="text-[13px] text-[var(--color-neutral-8)]">Create a trigger to define when work orders should be generated.</p>
+                  <Button variant="primary" size="md" onClick={() => { setCalendarModalKey(k => k + 1); setShowCalendarModal(true) }}>
+                    <Plus size={13} className="mr-1" />
+                    New Trigger
+                  </Button>
+                </div>
+              ) : (
+                <div className="flex flex-col gap-2 p-4">
+                  {triggers.map(trigger => (
+                    <div key={trigger.id} className={`rounded-[8px] border overflow-hidden ${trigger.calendarTrigger.meterCondition && trigger.assignments.some(a => !a.meter) ? 'border-[var(--color-error,#CE2C31)]' : 'border-[var(--color-accent-4)]'}`}>
+                      {/* Trigger row */}
+                      <div className="flex items-center gap-3 p-4 bg-[var(--color-accent-1)]">
+                        <div className="flex-1 min-w-0">
+                          {(() => {
+                            const t = trigger.calendarTrigger
+                            const parts: string[] = []
+                            if (t.every && t.period) parts.push(`Every ${t.every} ${t.period}${Number(t.every) > 1 ? 's' : ''}`)
+                            if (t.weekday) {
+                              const fullDay = FULL_WEEKDAYS[['Mon','Tue','Wed','Thu','Fri','Sat','Sun'].indexOf(t.weekday)]
+                              parts.push(`On ${fullDay ? fullDay + 's' : t.weekday + 's'}`)
+                            }
+                            if (t.atTime) parts.push(`At ${t.atTime}`)
+                            const calText = parts.join(' · ')
+                            const meterText = formatMeterText(t)
+                            const fullText = calText && meterText
+                              ? `${calText} · or ${meterText}`
+                              : calText || meterText || 'Scheduled trigger'
+                            return <span className="text-[13px] font-semibold text-[var(--color-neutral-11)] truncate block">{fullText}</span>
+                          })()}
+                        </div>
+                        {(() => {
+                          const isMeter = !!trigger.calendarTrigger.meterCondition
+                          const missingMeters = isMeter ? trigger.assignments.filter(a => !a.meter).length : 0
+                          return missingMeters > 0 ? (
+                            <span className="flex items-center gap-1 rounded-full bg-[var(--color-error-3,#FFEFEF)] text-[var(--color-error,#CE2C31)] text-[11px] px-2.5 py-0.5 font-medium shrink-0">
+                              <Ban size={10} /> {missingMeters} missing meter{missingMeters > 1 ? 's' : ''}
+                            </span>
+                          ) : null
+                        })()}
+                        <span className="rounded-full bg-[var(--color-accent-2)] text-[var(--color-accent-9)] text-[11px] px-2.5 py-0.5 font-medium shrink-0">
+                          {trigger.assignments.length} Assignments
+                        </span>
+                        {!trigger.expanded && (
+                          <Button variant="primary" size="sm" onClick={() => setShowAssignModal(trigger.id)}>
+                            <Plus size={13} className="mr-1" />
+                            Assign
+                          </Button>
+                        )}
+                        <DropdownMenu modal={false}>
+                          <DropdownMenuTrigger asChild>
+                            <button className="w-7 h-7 flex items-center justify-center rounded-[var(--radius-md)] hover:bg-[var(--color-neutral-4)] transition-colors cursor-pointer text-[var(--color-neutral-7)]">
+                              <MoreHorizontal size={15} />
+                            </button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end">
+                            <DropdownMenuItem onSelect={() => { setEditingTriggerId(trigger.id); setCalendarModalKey(k => k + 1); setShowCalendarModal(true) }}>
+                              <Pencil size={13} className="mr-2 text-[var(--color-neutral-8)]" />
+                              Edit Trigger
+                            </DropdownMenuItem>
+                            <DropdownMenuItem onSelect={() => setTriggers(ts => ts.filter(t => t.id !== trigger.id))}>
+                              <Trash2 size={13} className="mr-2 text-[var(--color-error)]" />
+                              <span className="text-[var(--color-error)]">Delete Trigger</span>
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                        <button
+                          onClick={() => setTriggers(ts => ts.map(t => t.id === trigger.id ? { ...t, expanded: !t.expanded } : t))}
+                          className="w-7 h-7 flex items-center justify-center rounded-[var(--radius-md)] hover:bg-[var(--color-neutral-4)] transition-colors cursor-pointer text-[var(--color-neutral-7)]"
+                        >
+                          {trigger.expanded ? <ChevronUp size={15} /> : <ChevronDown size={15} />}
+                        </button>
+                      </div>
+
+                      {/* Expanded assignments sub-card */}
+                      {trigger.expanded && (
+                        <div className="p-4 flex flex-col gap-4 bg-[var(--surface-primary)]">
+                          <div className="overflow-hidden">
+                            {trigger.assignments.length === 0 ? (
+                              <div className="flex flex-col items-center justify-center p-4 gap-2 text-center">
+                                <p className="text-[13px] font-semibold text-[var(--color-neutral-11)]">Assign to this trigger</p>
+                                <p className="text-[12px] text-[var(--color-neutral-8)]">Choose assets, locations, or meters for this trigger to act on.</p>
+                                <button type="button" onClick={() => setShowAssignModal(trigger.id)} className="text-[13px] font-medium text-[var(--color-accent-9)] hover:underline cursor-pointer">
+                                  Assign
+                                </button>
                               </div>
+                            ) : (
+                              <>
+                                {/* Toolbar + Column headers */}
+                                {(() => {
+                                  const isMeterTrigger = !!trigger.calendarTrigger.meterCondition
+                                  const q = (assignmentSearch[trigger.id] ?? '').toLowerCase()
+                                  const sort = assignmentSort[trigger.id]
+                                  const filtered = trigger.assignments
+                                    .filter(a => a.name.toLowerCase().includes(q) || (a.subtext || '').toLowerCase().includes(q))
+                                    .sort((a, b) => {
+                                      if (!sort) return 0
+                                      const dir = sort.dir === 'asc' ? 1 : -1
+                                      if (sort.col === 'name') return dir * a.name.localeCompare(b.name)
+                                      if (sort.col === 'meter') return dir * (a.meter || '').localeCompare(b.meter || '')
+                                      if (sort.col === 'user') return dir * ((a.assignees[0] || '').localeCompare(b.assignees[0] || ''))
+                                      if (sort.col === 'team') return dir * ((a.team || '').localeCompare(b.team || ''))
+                                      if (sort.col === 'start') return dir * ((a.startDate || '').localeCompare(b.startDate || ''))
+                                      return 0
+                                    })
+                                  const sel = assignmentSelected[trigger.id] ?? new Set<string>()
+                                  const allChecked = filtered.length > 0 && filtered.every(a => sel.has(a.id))
+                                  const toggleAll = () => setAssignmentSelected(s => {
+                                    const next = new Set(s[trigger.id] ?? new Set<string>())
+                                    if (allChecked) filtered.forEach(a => next.delete(a.id))
+                                    else filtered.forEach(a => next.add(a.id))
+                                    return { ...s, [trigger.id]: next }
+                                  })
+                                  const toggleOne = (id: string) => setAssignmentSelected(s => {
+                                    const next = new Set(s[trigger.id] ?? new Set<string>())
+                                    if (next.has(id)) next.delete(id); else next.add(id)
+                                    return { ...s, [trigger.id]: next }
+                                  })
+                                  const someChecked = !allChecked && filtered.some(a => sel.has(a.id))
+                                  return (<>
+                                    {/* Title / search / assign row — always visible */}
+                                    <div className="flex items-center gap-2 px-3 h-10 w-full border-b border-[var(--border-subtle)]">
+                                      <span className="text-[14px] font-semibold text-[var(--color-neutral-11)] flex-1">
+                                        Assignments ({trigger.assignments.length})
+                                      </span>
+                                      <div className="flex items-center gap-1.5 flex-1 mx-2 max-w-[260px] h-6 px-2 rounded-[var(--radius-md)] border border-[var(--border-default)] bg-[var(--surface-primary)]">
+                                        <Search size={11} className="text-[var(--color-neutral-6)] shrink-0" />
+                                        <input
+                                          type="text"
+                                          value={assignmentSearch[trigger.id] ?? ''}
+                                          onChange={e => setAssignmentSearch(s => ({ ...s, [trigger.id]: e.target.value }))}
+                                          placeholder="Filter assignments…"
+                                          className="flex-1 min-w-0 bg-transparent outline-none text-[12px] text-[var(--color-neutral-11)] placeholder:text-[var(--color-neutral-6)]"
+                                        />
+                                      </div>
+                                      <button type="button" onClick={() => setShowAssignModal(trigger.id)} className="shrink-0 flex items-center gap-1 px-2 h-7 rounded-[var(--radius-md)] bg-[#EDF2FE] hover:bg-[#dce8fd] transition-colors cursor-pointer text-[12px] font-medium text-[var(--color-accent-11)]">
+                                        <Plus size={12} /> Assign
+                                      </button>
+                                    </div>
+                                    {/* Bulk bar — shown as a second row when rows are selected */}
+                                    <div className={`overflow-hidden transition-all duration-200 ease-in-out ${sel.size > 0 ? 'max-h-[52px] opacity-100 my-2' : 'max-h-0 opacity-0 my-0'}`}>
+                                      <div className="flex items-center gap-3 px-3 h-10 bg-[#1F2D5C] rounded-[8px]">
+                                          <span className="text-[12px] font-semibold text-white/80 shrink-0">{sel.size} selected</span>
+                                          <div className="w-px h-4 bg-white/20 shrink-0" />
+                                          {/* Bulk: Add Meter */}
+                                          <Popover.Root>
+                                            <Popover.Trigger asChild>
+                                              <button type="button" className="flex items-center gap-1 text-[13px] font-semibold text-white cursor-pointer hover:opacity-80 transition-opacity shrink-0">Add Meter</button>
+                                            </Popover.Trigger>
+                                            <Popover.Portal>
+                                              <Popover.Content sideOffset={8} align="start" className="z-[var(--z-dropdown)] w-[200px] rounded-[var(--radius-xl)] border border-[var(--border-default)] bg-[var(--surface-primary)] shadow-[var(--shadow-lg)] outline-none overflow-hidden" onOpenAutoFocus={e => e.preventDefault()}>
+                                                <MeterPopoverContent current="" onSelect={meter => setTriggers(ts => ts.map(t => t.id === trigger.id ? { ...t, assignments: t.assignments.map(a => sel.has(a.id) ? { ...a, meter } : a) } : t))} />
+                                              </Popover.Content>
+                                            </Popover.Portal>
+                                          </Popover.Root>
+                                          {/* Bulk: Technicians */}
+                                          <Popover.Root>
+                                            <Popover.Trigger asChild>
+                                              <button type="button" className="flex items-center gap-1 text-[13px] font-semibold text-white cursor-pointer hover:opacity-80 transition-opacity shrink-0">Technicians</button>
+                                            </Popover.Trigger>
+                                            <Popover.Portal>
+                                              <Popover.Content sideOffset={8} align="start" className="z-[var(--z-dropdown)] w-[200px] rounded-[var(--radius-xl)] border border-[var(--border-default)] bg-[var(--surface-primary)] shadow-[var(--shadow-lg)] outline-none overflow-hidden" onOpenAutoFocus={e => e.preventDefault()}>
+                                                <BulkTechniciansContent
+                                                  selectedAssignments={trigger.assignments.filter(a => sel.has(a.id))}
+                                                  onToggle={name => setTriggers(ts => ts.map(t => t.id === trigger.id ? { ...t, assignments: t.assignments.map(a => sel.has(a.id) ? { ...a, assignees: a.assignees.includes(name) ? a.assignees.filter(n => n !== name) : [...a.assignees, name] } : a) } : t))}
+                                                />
+                                              </Popover.Content>
+                                            </Popover.Portal>
+                                          </Popover.Root>
+                                          {/* Bulk: Team */}
+                                          <Popover.Root>
+                                            <Popover.Trigger asChild>
+                                              <button type="button" className="flex items-center gap-1 text-[13px] font-semibold text-white cursor-pointer hover:opacity-80 transition-opacity shrink-0">Team</button>
+                                            </Popover.Trigger>
+                                            <Popover.Portal>
+                                              <Popover.Content sideOffset={8} align="start" className="z-[var(--z-dropdown)] w-[160px] rounded-[var(--radius-xl)] border border-[var(--border-default)] bg-[var(--surface-primary)] shadow-[var(--shadow-lg)] outline-none overflow-hidden py-1" onOpenAutoFocus={e => e.preventDefault()}>
+                                                {['', ...TEAMS.map(t => t.value)].map(team => (
+                                                  <Popover.Close key={team || 'none'} asChild>
+                                                    <button type="button" onClick={() => setTriggers(ts => ts.map(t => t.id === trigger.id ? { ...t, assignments: t.assignments.map(a => sel.has(a.id) ? { ...a, team } : a) } : t))} className="w-full flex items-center gap-2 px-3 py-1.5 text-[13px] text-left cursor-pointer transition-colors hover:bg-[var(--color-neutral-3)] text-[var(--color-neutral-11)]">
+                                                      {team && <span style={{ background: TEAM_COLORS[team] }} className="w-4 h-4 rounded-full flex items-center justify-center text-white text-[8px] font-bold shrink-0">{team[0]}</span>}
+                                                      {team || 'None'}
+                                                    </button>
+                                                  </Popover.Close>
+                                                ))}
+                                              </Popover.Content>
+                                            </Popover.Portal>
+                                          </Popover.Root>
+                                          {/* Bulk: Start / End */}
+                                          <Popover.Root>
+                                            <Popover.Trigger asChild>
+                                              <button type="button" className="flex items-center gap-1 text-[13px] font-semibold text-white cursor-pointer hover:opacity-80 transition-opacity shrink-0">Start / End</button>
+                                            </Popover.Trigger>
+                                            <Popover.Portal>
+                                              <Popover.Content sideOffset={8} align="start" className="z-[var(--z-dropdown)] w-[200px] rounded-[var(--radius-xl)] border border-[var(--border-default)] bg-[var(--surface-primary)] shadow-[var(--shadow-lg)] outline-none p-3 flex flex-col gap-3" onOpenAutoFocus={e => e.preventDefault()}>
+                                                <div className="flex flex-col gap-1">
+                                                  <label className="text-[11px] font-medium text-[var(--color-neutral-8)]">Start</label>
+                                                  <input type="date" onChange={e => setTriggers(ts => ts.map(t => t.id === trigger.id ? { ...t, assignments: t.assignments.map(a => sel.has(a.id) ? { ...a, startDate: e.target.value } : a) } : t))} className="h-8 w-full px-2 rounded-[var(--radius-md)] border border-[var(--border-default)] bg-[var(--surface-primary)] text-[12px] text-[var(--color-neutral-11)] outline-none focus:border-[var(--color-accent-7)]" />
+                                                </div>
+                                                <div className="flex flex-col gap-1">
+                                                  <label className="text-[11px] font-medium text-[var(--color-neutral-8)]">End</label>
+                                                  <input type="date" onChange={e => setTriggers(ts => ts.map(t => t.id === trigger.id ? { ...t, assignments: t.assignments.map(a => sel.has(a.id) ? { ...a, endDate: e.target.value } : a) } : t))} className="h-8 w-full px-2 rounded-[var(--radius-md)] border border-[var(--border-default)] bg-[var(--surface-primary)] text-[12px] text-[var(--color-neutral-11)] outline-none focus:border-[var(--color-accent-7)]" />
+                                                </div>
+                                              </Popover.Content>
+                                            </Popover.Portal>
+                                          </Popover.Root>
+                                          <span className="flex-1" />
+                                          <button type="button" onClick={() => { setTriggers(ts => ts.map(t => t.id === trigger.id ? { ...t, assignments: t.assignments.filter(a => !sel.has(a.id)) } : t)); setAssignmentSelected(s => ({ ...s, [trigger.id]: new Set() })) }} className="flex items-center gap-1.5 px-2.5 h-7 rounded-[var(--radius-md)] bg-[#EDF2FE] hover:bg-[#dce8fd] transition-colors cursor-pointer text-[12px] font-medium text-[#CD2B31] shrink-0">
+                                            <Trash2 size={12} /> Delete
+                                          </button>
+                                        </div>
+                                      </div>
+                                    {/* Column headers — always visible */}
+                                    <div className="flex items-center gap-5 px-3 h-[56px] bg-[#F9F9FB] mt-4">
+                                      <button type="button" onClick={toggleAll} className={`flex-shrink-0 w-4 h-4 rounded-[var(--radius-sm)] border flex items-center justify-center transition-colors ${allChecked || someChecked ? 'bg-[var(--color-accent-9)] border-[var(--color-accent-9)]' : 'border-[var(--color-neutral-6)] bg-[var(--surface-primary)]'}`}>
+                                        {allChecked && <svg width="10" height="8" viewBox="0 0 10 8" fill="none"><path d="M1 4L3.5 6.5L9 1" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>}
+                                        {someChecked && <svg width="8" height="2" viewBox="0 0 8 2" fill="none"><rect x="0" y="0.5" width="8" height="1" rx="0.5" fill="white"/></svg>}
+                                      </button>
+                                      {(() => {
+                                        const SortHeader = ({ col, label, className }: { col: string; label: string; className: string }) => {
+                                          const active = sort?.col === col
+                                          const toggle = () => setAssignmentSort(s => ({ ...s, [trigger.id]: { col, dir: active && s[trigger.id]?.dir === 'asc' ? 'desc' : 'asc' } }))
+                                          return (
+                                            <button type="button" onClick={toggle} className={`${className} flex items-center gap-0.5 text-[11px] font-medium uppercase tracking-wide cursor-pointer hover:text-[var(--color-neutral-11)] transition-colors ${active ? 'text-[var(--color-neutral-11)]' : 'text-[var(--color-neutral-8)]'}`}>
+                                              {label}
+                                              {active ? (sort?.dir === 'asc' ? <ChevronUp size={10} /> : <ChevronDown size={10} />) : <ChevronsUpDown size={10} className="opacity-40" />}
+                                            </button>
+                                          )
+                                        }
+                                        return (<>
+                                          <SortHeader col="name" label="Assignment" className="flex-1 min-w-0" />
+                                          <SortHeader col="meter" label="Meter" className="w-[120px] shrink-0" />
+                                          <SortHeader col="user" label="Technicians" className="w-[96px] shrink-0" />
+                                          <SortHeader col="team" label="Team" className="w-[80px] shrink-0" />
+                                          <SortHeader col="start" label="Start / End" className="w-[110px] shrink-0" />
+                                        </>)
+                                      })()}
+                                      <span className="w-7 shrink-0" />
+                                    </div>
+                                    {/* Scrollable assignment list */}
+                                    <div className="overflow-y-auto max-h-[380px]">
+                                      {filtered.map(a => (
+                                        <div key={a.id} className={`flex items-center gap-5 px-3 py-4 border-b border-[#F0F0F3] last:border-0 text-[13px] ${isMeterTrigger && !a.meter ? 'bg-[#FFF8F8]' : sel.has(a.id) ? 'bg-[#F8FAFF]' : 'bg-white'}`}>
+                                          <button type="button" onClick={() => toggleOne(a.id)} className={`flex-shrink-0 w-4 h-4 rounded-[var(--radius-sm)] border flex items-center justify-center transition-colors ${sel.has(a.id) ? 'bg-[var(--color-accent-9)] border-[var(--color-accent-9)]' : 'border-[var(--color-neutral-6)] bg-[var(--surface-primary)]'}`}>
+                                            {sel.has(a.id) && <svg width="10" height="8" viewBox="0 0 10 8" fill="none"><path d="M1 4L3.5 6.5L9 1" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>}
+                                          </button>
+                                          {/* Name + type badge + subtext */}
+                                          <div className="flex flex-col flex-1 min-w-0">
+                                            <div className="flex items-center gap-2">
+                                              <span className="font-medium text-[var(--color-neutral-12)] truncate">{a.name}</span>
+                                              <Badge severity={a.type === 'Asset' ? 'neutral' : a.type === 'Location' ? 'info' : 'warning'} variant="subtle" size="sm">{a.type}</Badge>
+                                            </div>
+                                            {a.subtext && <span className="text-[11px] text-[var(--color-neutral-7)] truncate">{a.subtext}</span>}
+                                          </div>
+                                          {/* Meter — inline edit */}
+                                          <Popover.Root>
+                                            <Popover.Trigger asChild>
+                                              <button title={a.meter || undefined} className={`w-[120px] shrink-0 flex items-center px-1.5 h-7 rounded-[var(--radius-md)] hover:bg-[var(--color-neutral-3)] transition-colors cursor-pointer text-[12px] outline-none ${isMeterTrigger && !a.meter ? 'text-[var(--color-error,#CE2C31)] font-medium' : 'text-[var(--color-neutral-8)]'}`}>
+                                                <span className="truncate">{a.meter || (isMeterTrigger ? 'Assign Meter' : '—')}</span>
+                                              </button>
+                                            </Popover.Trigger>
+                                            <Popover.Portal>
+                                              <Popover.Content sideOffset={4} align="start" className="z-[var(--z-dropdown)] w-[200px] rounded-[var(--radius-xl)] border border-[var(--border-default)] bg-[var(--surface-primary)] shadow-[var(--shadow-lg)] outline-none overflow-hidden" onOpenAutoFocus={e => e.preventDefault()}>
+                                                <MeterPopoverContent current={a.meter || ''} onSelect={m => setTriggers(ts => ts.map(t => t.id === trigger.id ? { ...t, assignments: t.assignments.map(x => x.id === a.id ? { ...x, meter: m } : x) } : t))} />
+                                              </Popover.Content>
+                                            </Popover.Portal>
+                                          </Popover.Root>
+                                          {/* Assignee avatars — inline edit */}
+                                          <Popover.Root>
+                                            <Popover.Trigger asChild>
+                                              <div className="group/user w-[96px] shrink-0 flex items-center gap-1 h-7 cursor-pointer rounded-[var(--radius-md)] hover:bg-[var(--color-neutral-3)] transition-colors px-1 -mx-1">
+                                                {a.assignees.length === 0 ? (
+                                                  <span className="text-[12px] text-[var(--color-neutral-8)] truncate">Add Technicians</span>
+                                                ) : (
+                                                  a.assignees.slice(0, 3).map((name, idx) => (
+                                                    <TooltipProvider key={name} delayDuration={300}>
+                                                      <Tooltip content={name} side="top">
+                                                        <div style={{ marginLeft: idx > 0 ? '-6px' : '0', zIndex: 10 - idx, position: 'relative' }}>
+                                                          <Avatar name={name} size="xs" className="!w-7 !h-7 border-2 border-[var(--surface-primary)]" />
+                                                        </div>
+                                                      </Tooltip>
+                                                    </TooltipProvider>
+                                                  ))
+                                                )}
+                                                {a.assignees.length > 3 && <span className="text-[10px] text-[var(--color-neutral-8)] ml-0.5">+{a.assignees.length - 3}</span>}
+                                                <IconButton label={a.assignees.length > 0 ? 'Edit assignees' : 'Add assignee'} variant="secondary" size="sm" className="opacity-0 group-hover/user:opacity-100 transition-opacity shrink-0 pointer-events-none">
+                                                  {a.assignees.length > 0 ? <Pencil size={10} /> : <Plus size={11} />}
+                                                </IconButton>
+                                              </div>
+                                            </Popover.Trigger>
+                                            <Popover.Portal>
+                                              <Popover.Content sideOffset={4} align="start" className="z-[var(--z-dropdown)] w-[200px] rounded-[var(--radius-xl)] border border-[var(--border-default)] bg-[var(--surface-primary)] shadow-[var(--shadow-lg)] outline-none overflow-hidden" onOpenAutoFocus={e => e.preventDefault()}>
+                                                <div className="flex items-center gap-1.5 px-2.5 py-2 border-b border-[var(--border-subtle)]">
+                                                  <Search size={12} className="text-[var(--color-neutral-7)] shrink-0" />
+                                                  <input type="text" placeholder="Search..." autoFocus className="flex-1 text-[12px] bg-transparent outline-none text-[var(--color-neutral-11)] placeholder:text-[var(--color-neutral-7)]" />
+                                                </div>
+                                                <div className="py-1 max-h-[200px] overflow-y-auto">
+                                                  {ASSIGNEES.map(name => {
+                                                    const checked = a.assignees.includes(name)
+                                                    return (
+                                                      <button key={name} type="button" onClick={() => setTriggers(ts => ts.map(t => t.id === trigger.id ? { ...t, assignments: t.assignments.map(x => x.id === a.id ? { ...x, assignees: checked ? x.assignees.filter(n => n !== name) : [...x.assignees, name] } : x) } : t))} className="w-full flex items-center gap-2 px-2.5 py-1.5 text-[13px] text-left cursor-pointer hover:bg-[var(--color-neutral-3)] transition-colors">
+                                                        <Avatar name={name} size="xs" className="shrink-0" />
+                                                        <span className="flex-1 text-[var(--color-neutral-11)] truncate">{name}</span>
+                                                        <div className={`w-4 h-4 rounded border flex items-center justify-center shrink-0 transition-colors ${checked ? 'bg-[var(--color-accent-9)] border-[var(--color-accent-9)]' : 'border-[var(--border-default)]'}`}>
+                                                          {checked && <svg width="9" height="9" viewBox="0 0 9 9" fill="none"><path d="M1.5 4.5L3.5 6.5L7.5 2.5" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>}
+                                                        </div>
+                                                      </button>
+                                                    )
+                                                  })}
+                                                </div>
+                                              </Popover.Content>
+                                            </Popover.Portal>
+                                          </Popover.Root>
+                                          {/* Team — inline edit */}
+                                          <Popover.Root>
+                                            <div className="group/team w-[80px] shrink-0 flex items-center gap-1.5 h-7">
+                                              {a.team ? (
+                                                <TooltipProvider delayDuration={300}>
+                                                  <Tooltip content={a.team} side="top">
+                                                    <span style={{ background: TEAM_COLORS[a.team] }} className="w-7 h-7 rounded-full flex items-center justify-center text-white text-[10px] font-bold shrink-0 cursor-default">{a.team[0]}</span>
+                                                  </Tooltip>
+                                                </TooltipProvider>
+                                              ) : (
+                                                <span className="text-[11px] text-[var(--color-neutral-6)] truncate">Assign team</span>
+                                              )}
+                                              <Popover.Trigger asChild>
+                                                <IconButton label={a.team ? 'Edit team' : 'Assign team'} variant="secondary" size="sm" className="opacity-0 group-hover/team:opacity-100 transition-opacity shrink-0">
+                                                  {a.team ? <Pencil size={10} /> : <Plus size={11} />}
+                                                </IconButton>
+                                              </Popover.Trigger>
+                                            </div>
+                                            <Popover.Portal>
+                                              <Popover.Content sideOffset={4} align="start" className="z-[var(--z-dropdown)] w-[160px] rounded-[var(--radius-xl)] border border-[var(--border-default)] bg-[var(--surface-primary)] shadow-[var(--shadow-lg)] outline-none overflow-hidden py-1" onOpenAutoFocus={e => e.preventDefault()}>
+                                                {['', ...TEAMS.map(t => t.value)].map(team => (
+                                                  <Popover.Close key={team || 'none'} asChild>
+                                                    <button type="button" onClick={() => setTriggers(ts => ts.map(t => t.id === trigger.id ? { ...t, assignments: t.assignments.map(x => x.id === a.id ? { ...x, team } : x) } : t))} className={`w-full flex items-center gap-2 px-3 py-1.5 text-[13px] text-left cursor-pointer transition-colors hover:bg-[var(--color-neutral-3)] ${a.team === team ? 'text-[var(--color-accent-9)] font-medium' : 'text-[var(--color-neutral-11)]'}`}>
+                                                      {team && <span style={{ background: TEAM_COLORS[team] }} className="w-4 h-4 rounded-full flex items-center justify-center text-white text-[8px] font-bold shrink-0">{team[0]}</span>}
+                                                      {team || 'None'}
+                                                    </button>
+                                                  </Popover.Close>
+                                                ))}
+                                              </Popover.Content>
+                                            </Popover.Portal>
+                                          </Popover.Root>
+                                          {/* Date range — inline edit */}
+                                          <Popover.Root>
+                                            <Popover.Trigger asChild>
+                                              <button className="w-[110px] shrink-0 flex flex-col justify-center items-start h-7 px-1.5 rounded-[var(--radius-md)] hover:bg-[var(--color-neutral-3)] transition-colors cursor-pointer outline-none text-[11px] text-[var(--color-neutral-8)]">
+                                                {a.startDate && <span>Start: {a.startDate}</span>}
+                                                {a.endDate && <span>End: {a.endDate}</span>}
+                                                {!a.startDate && !a.endDate && <span>—</span>}
+                                              </button>
+                                            </Popover.Trigger>
+                                            <Popover.Portal>
+                                              <Popover.Content sideOffset={4} align="start" className="z-[var(--z-dropdown)] w-[200px] rounded-[var(--radius-xl)] border border-[var(--border-default)] bg-[var(--surface-primary)] shadow-[var(--shadow-lg)] outline-none p-3 flex flex-col gap-3" onOpenAutoFocus={e => e.preventDefault()}>
+                                                <div className="flex flex-col gap-1">
+                                                  <label className="text-[11px] font-medium text-[var(--color-neutral-8)]">Start</label>
+                                                  <input type="date" value={a.startDate} onChange={e => setTriggers(ts => ts.map(t => t.id === trigger.id ? { ...t, assignments: t.assignments.map(x => x.id === a.id ? { ...x, startDate: e.target.value } : x) } : t))} className="h-8 px-2 rounded-[var(--radius-md)] border border-[var(--border-default)] bg-[var(--surface-primary)] text-[12px] text-[var(--color-neutral-11)] outline-none focus:border-[var(--color-accent-7)]" />
+                                                </div>
+                                                <div className="flex flex-col gap-1">
+                                                  <label className="text-[11px] font-medium text-[var(--color-neutral-8)]">End</label>
+                                                  <input type="date" value={a.endDate} onChange={e => setTriggers(ts => ts.map(t => t.id === trigger.id ? { ...t, assignments: t.assignments.map(x => x.id === a.id ? { ...x, endDate: e.target.value } : x) } : t))} className="h-8 px-2 rounded-[var(--radius-md)] border border-[var(--border-default)] bg-[var(--surface-primary)] text-[12px] text-[var(--color-neutral-11)] outline-none focus:border-[var(--color-accent-7)]" />
+                                                </div>
+                                              </Popover.Content>
+                                            </Popover.Portal>
+                                          </Popover.Root>
+                                          {/* Actions */}
+                                          <DropdownMenu modal={false}>
+                                            <DropdownMenuTrigger asChild>
+                                              <button className="w-7 h-7 flex items-center justify-center rounded-[var(--radius-md)] hover:bg-[var(--color-neutral-3)] transition-colors cursor-pointer text-[var(--color-neutral-7)] shrink-0">
+                                                <MoreHorizontal size={14} />
+                                              </button>
+                                            </DropdownMenuTrigger>
+                                            <DropdownMenuContent align="end">
+                                              <DropdownMenuItem onSelect={() => { setEditingAssignmentId({ triggerId: trigger.id, assignmentId: a.id }); setShowAssignModal(trigger.id) }}>
+                                                <Pencil size={13} className="mr-2 text-[var(--color-neutral-8)]" />
+                                                Edit {a.type}
+                                              </DropdownMenuItem>
+                                              <DropdownMenuItem onSelect={() => setTriggers(ts => ts.map(t => t.id === trigger.id ? { ...t, assignments: t.assignments.filter(x => x.id !== a.id) } : t))}>
+                                                <Trash2 size={13} className="mr-2 text-[var(--color-error)]" />
+                                                <span className="text-[var(--color-error)]">Remove {a.type}</span>
+                                              </DropdownMenuItem>
+                                            </DropdownMenuContent>
+                                          </DropdownMenu>
+                                        </div>
+                                      ))}
+                                    </div>
+                                  </>)
+                                })()}
+                              </>
                             )}
                           </div>
-                        ))}
-                      </>
-                    )}
-                  </div>
-                )}
-              </div>
-
-              {/* Images, Files & Parts card */}
-              <div className="rounded-[var(--radius-xl)] border border-[var(--border-default)] bg-[var(--surface-primary)] overflow-hidden">
-                <button
-                  onClick={() => setFilesPartsOpen(o => !o)}
-                  className="w-full flex items-center gap-2 px-4 h-[52px] border-b border-[var(--border-subtle)] bg-[var(--color-neutral-2)] hover:bg-[var(--color-neutral-3)] transition-colors cursor-pointer"
-                >
-                  <svg width="20" height="20" viewBox="0 0 18 18" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" className="text-[var(--color-neutral-7)]">
-                    <path d="M9.1875 15.9375H4.3125C3.89829 15.9375 3.5625 15.6017 3.5625 15.1875V2.8125C3.5625 2.39829 3.89829 2.0625 4.3125 2.0625H13.6875C14.1017 2.0625 14.4375 2.39829 14.4375 2.8125V9.1875M13.6875 11.4375V13.6875M13.6875 13.6875V15.9375M13.6875 13.6875H11.4375M13.6875 13.6875H15.9375M6.5625 5.0625H11.4375M6.5625 8.0625H8.4375" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-                  </svg>
-                  <span className="flex-1 text-left text-[14px] font-semibold text-[var(--color-neutral-12)]">Images, Files &amp; Parts</span>
-                  {filesPartsOpen ? <ChevronUp size={16} className="text-[var(--color-neutral-9)]" /> : <ChevronDown size={16} className="text-[var(--color-neutral-9)]" />}
-                </button>
-                {filesPartsOpen && (
-                  <div className="p-5 flex flex-col gap-5">
-
-                    {/* Images */}
-                    <div className="flex flex-col gap-3">
-                      <div className="flex items-center justify-between">
-                        <span className="text-[13px] font-semibold text-[var(--color-neutral-11)]">Images</span>
-                        <div className="flex items-center gap-1.5">
-                          {images.length > 0 && (
-                            <span className="text-[12px] text-[var(--color-neutral-8)]">{images.length} Images Added</span>
-                          )}
-                          <button onClick={() => imageScrollRef.current?.scrollBy({ left: -200, behavior: 'smooth' })} className="w-7 h-7 flex items-center justify-center rounded-[var(--radius-md)] border border-[var(--border-default)] bg-[var(--surface-primary)] text-[var(--color-neutral-7)] hover:bg-[var(--color-neutral-3)] transition-colors cursor-pointer">
-                            <ChevronLeft size={14} />
-                          </button>
-                          <button onClick={() => imageScrollRef.current?.scrollBy({ left: 200, behavior: 'smooth' })} className="w-7 h-7 flex items-center justify-center rounded-[var(--radius-md)] border border-[var(--border-default)] bg-[var(--surface-primary)] text-[var(--color-neutral-7)] hover:bg-[var(--color-neutral-3)] transition-colors cursor-pointer">
-                            <ChevronRight size={14} />
-                          </button>
                         </div>
-                      </div>
-                      <div className="relative">
-                        <div ref={imageScrollRef} className="flex items-center gap-3 overflow-x-auto" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
-                          <button onClick={() => imageInputRef.current?.click()} className="shrink-0 w-[80px] h-[80px] rounded-[var(--radius-lg)] border-2 border-dashed border-[var(--color-accent-4)] bg-[var(--color-accent-1)] flex items-center justify-center text-[var(--color-accent-7)] hover:border-[var(--color-accent-6)] transition-colors cursor-pointer">
-                            <Plus size={20} />
-                          </button>
-                          <input ref={imageInputRef} type="file" accept="image/*" multiple className="hidden" onChange={handleImageUpload} />
-                          {images.map((src, i) => (
-                            <ImageThumb key={i} src={src} onRemove={() => setImages(imgs => imgs.filter((_, j) => j !== i))} />
-                          ))}
-                        </div>
-                        <div className="pointer-events-none absolute right-0 top-0 h-full w-16 bg-gradient-to-l from-[var(--surface-primary)] to-transparent" />
-                      </div>
+                      )}
                     </div>
-
-                    <div className="h-px bg-[var(--border-subtle)]" />
-
-                    {/* Files */}
-                    <div className="flex flex-col gap-3">
-                      <div className="flex items-center justify-between">
-                        <span className="text-[13px] font-semibold text-[var(--color-neutral-11)]">Files</span>
-                        <button className="text-[13px] text-[var(--color-accent-9)] font-medium hover:text-[var(--color-accent-11)] cursor-pointer">Add from Saved Files</button>
-                      </div>
-                      <button onClick={() => fileInputRef.current?.click()} className="w-full h-[72px] rounded-[var(--radius-lg)] border-2 border-dashed border-[var(--border-default)] flex items-center justify-center gap-3 text-[var(--color-neutral-8)] hover:border-[var(--color-accent-7)] hover:text-[var(--color-accent-9)] transition-colors cursor-pointer">
-                        <Upload size={16} />
-                        <span className="text-[13px] font-medium">Upload</span>
-                        <span className="text-[13px] text-[var(--color-neutral-7)]">or drop a file</span>
-                      </button>
-                      <input ref={fileInputRef} type="file" multiple className="hidden" />
-                    </div>
-
-                    <div className="h-px bg-[var(--border-subtle)]" />
-
-                    {/* Parts */}
-                    <div className="flex items-center justify-between">
-                      <span className="text-[13px] font-semibold text-[var(--color-neutral-11)]">Parts</span>
-                      <DropdownMenu modal={false}>
-                        <DropdownMenuTrigger asChild>
-                          <button className="inline-flex items-center gap-1.5 h-8 px-3 rounded-[var(--radius-md)] bg-[var(--color-accent-9)] border border-[var(--color-accent-10)] text-white text-[13px] font-medium hover:bg-[var(--color-accent-10)] transition-colors cursor-pointer">
-                            Add <ChevronDown size={13} />
-                          </button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end" minWidth="160px">
-                          <DropdownMenuItem><Plus size={13} className="mr-2" />Add Part</DropdownMenuItem>
-                          <DropdownMenuItem><Plus size={13} className="mr-2" />From Inventory</DropdownMenuItem>
-                        </DropdownMenuContent>
-                      </DropdownMenu>
-                    </div>
-
-                  </div>
-                )}
-              </div>
-            </div>
-
-            {/* RIGHT: Cards stack */}
-            <div className="flex-1 min-w-0 flex flex-col gap-4">
-
-              {/* Assigned To card */}
-              <div className="rounded-[var(--radius-xl)] border border-[var(--border-default)] bg-[var(--surface-primary)] overflow-hidden">
-                <div className="flex items-center gap-3 px-4 h-[52px] border-b border-[var(--border-subtle)] bg-[var(--color-neutral-2)]">
-                  <svg width="20" height="20" viewBox="0 0 18 18" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" className="text-[var(--color-neutral-7)]">
-                    <path d="M9.77262 9.98537C9.52237 9.95379 9.26492 9.9375 9.00086 9.9375C8.9638 9.9375 8.92688 9.93782 8.89009 9.93846C6.10032 9.98688 4.06885 11.8632 3.50452 14.3743C3.40762 14.8055 3.75773 15.1875 4.19967 15.1875H8.62586M8.89009 9.93846C8.40253 9.94692 7.93842 10.0112 7.50093 10.125M9.77262 9.98537C10.0229 10.0169 10.2659 10.0638 10.5011 10.125M9.77262 9.98537C10.2991 10.0518 10.7936 10.1859 11.2509 10.3785M11.0634 13.95L12.7134 15.1875L15.1884 11.0625M11.8134 4.875C11.8134 6.4283 10.5542 7.6875 9.00086 7.6875C7.44756 7.6875 6.18836 6.4283 6.18836 4.875C6.18836 3.3217 7.44756 2.0625 9.00086 2.0625C10.5542 2.0625 11.8134 3.3217 11.8134 4.875Z" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-                  </svg>
-                  <span className="flex-1 text-[14px] font-semibold text-[var(--color-neutral-12)]">Assigned To</span>
-                  {assets.length > 0 && (
-                    <span className="inline-flex items-center justify-center h-5 min-w-5 px-1.5 rounded-full bg-[var(--color-neutral-4)] text-[11px] font-bold text-[var(--color-neutral-10)]">{assets.length}</span>
-                  )}
-                  {assets.length > 0 && (
-                    <Button variant="secondary" size="sm" onClick={() => setAssignModalOpen(true)}>
-                      <Plus size={13} />
-                      Assign
-                    </Button>
-                  )}
+                  ))}
                 </div>
-                <div className="p-4">
-                  {assets.length === 0 ? (
-                    <div className="flex flex-col items-center justify-center py-6 gap-1.5 text-center">
-                      <p className="text-[14px] font-semibold text-[var(--color-neutral-11)]">Assign your preventive maintenance</p>
-                      <p className="text-[13px] text-[var(--color-neutral-8)] max-w-[400px]">Choose where this preventive maintenance applies.</p>
-                      <Button variant="primary" size="md" onClick={() => setAssignModalOpen(true)}>
-                        Assign
-                      </Button>
-                    </div>
-                  ) : (
-                    <div className="flex flex-col gap-4">
-                      {assets.map((a, idx) => (
-                        <div
-                          key={a.id}
-                          className={removingAssets.has(a.id) ? 'animate-card-out' : 'animate-card-in'}
-                        >
-                          <AssignmentCard
-                            asset={a}
-                            defaultExpanded={idx < 5}
-                            isSelected={selectedAssets.has(a.id)}
-                            meterError={hasMeterTrigger && !a.meter}
-                            onToggleSelect={() => setSelectedAssets(s => {
-                              const next = new Set(s)
-                              next.has(a.id) ? next.delete(a.id) : next.add(a.id)
-                              return next
-                            })}
-                            onRemove={() => {
-                              setRemovingAssets(s => new Set(s).add(a.id))
-                              setTimeout(() => {
-                                setAssets(list => list.filter(x => x.id !== a.id))
-                                setRemovingAssets(s => { const n = new Set(s); n.delete(a.id); return n })
-                              }, 180)
-                            }}
-                            onSelectTrigger={type => setTriggerModal({ assetId: a.id, type })}
-                            onUpdate={patch => setAssets(list => list.map(x => x.id === a.id ? { ...x, ...patch } : x))}
-                            onEdit={() => {
-                              setEditingAssetId(a.id)
-                              setAssignModalOpen(true)
-                            }}
-                          />
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              </div>
-
-              {/* Triggers card */}
-              <div className="rounded-[var(--radius-xl)] border border-[var(--border-default)] bg-[var(--surface-primary)] overflow-hidden">
-                <div className="flex items-center gap-2 px-4 h-[52px] border-b border-[var(--border-subtle)] bg-[var(--color-neutral-2)]">
-                  <svg width="20" height="20" viewBox="0 0 18 18" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" className="text-[var(--color-neutral-7)]">
-                    <path d="M9 9.75L6.75 7.5M7.3125 1.6875H10.6875M15.1875 9.75C15.1875 13.1673 12.4173 15.9375 9 15.9375C5.58274 15.9375 2.8125 13.1673 2.8125 9.75C2.8125 6.33274 5.58274 3.5625 9 3.5625C12.4173 3.5625 15.1875 6.33274 15.1875 9.75Z" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-                  </svg>
-                  <span className="flex-1 text-[14px] font-semibold text-[var(--color-neutral-12)]">Triggers</span>
-                  {calendarTriggers.length > 0 && (
-                    meterMissing ? (
-                      <span className="inline-flex items-center justify-center w-6 h-6 rounded-full bg-[#CE2C31] text-white text-[13px] font-bold">!</span>
-                    ) : (
-                      <span className="inline-flex items-center justify-center w-6 h-6 rounded-full bg-[#30A46C]">
-                        <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M3 8L6.5 11.5L13 4.5" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>
-                      </span>
-                    )
-                  )}
-                </div>
-                <div className="px-4 pt-4 pb-4 flex flex-col gap-4">
-                  {calendarTriggers.length > 0 && assets.length === 0 && (
-                    <div className="flex items-start gap-2.5 px-3 py-2.5 rounded-[var(--radius-lg)] bg-[#FFF8E1] border border-[#F5D97A]">
-                      <span className="shrink-0 mt-0.5 inline-flex items-center justify-center w-4 h-4 rounded-full bg-[#946800] text-white text-[9px] font-bold leading-none">!</span>
-                      <p className="text-[12px] text-[#946800] leading-relaxed flex-1">
-                        <span className="font-semibold">No assignment yet.</span>{' '}
-                        Assign assets, locations, or meters so this trigger can generate work orders.{' '}
-                        <button type="button" onClick={() => setAssignModalOpen(true)} className="font-semibold underline underline-offset-2 cursor-pointer hover:opacity-80 transition-opacity">
-                          Add assignment
-                        </button>
-                      </p>
-                    </div>
-                  )}
-                  {meterMissing && (
-                    <div className="flex items-start gap-2.5 px-3 py-2.5 rounded-[var(--radius-lg)] bg-[#FFF1EE] border border-[#FFCDC2]">
-                      <span className="shrink-0 mt-0.5 inline-flex items-center justify-center w-4 h-4 rounded-full bg-[#CE2C31] text-white text-[9px] font-bold leading-none">!</span>
-                      <p className="text-[12px] text-[#CE2C31] leading-relaxed">
-                        <span className="font-semibold">{assets.filter(a => !a.meter).length} {assets.filter(a => !a.meter).length === 1 ? 'assignment is' : 'assignments are'} missing a meter.</span>{' '}
-                        Assign a meter to enable this trigger.
-                      </p>
-                    </div>
-                  )}
-                  {calendarTriggers.length > 0 ? (
-                    <div className="flex flex-col gap-2">
-                      {calendarTriggers.map(t => (
-                        <TriggerRow key={t.id} trigger={t} meterMissing={meterMissing} onRemove={() => setCalendarTriggers(ts => ts.filter(x => x.id !== t.id))} onEdit={() => setShowCalendarModal(true)} />
-                      ))}
-                    </div>
-                  ) : (
-                    <div className="flex flex-col items-center justify-center py-6 gap-2 text-center">
-                      <p className="text-[14px] font-semibold text-[var(--color-neutral-12)]">Create your first trigger</p>
-                      <p className="text-[13px] text-[var(--color-neutral-9)]">Choose how this preventive maintenance should generate work orders.</p>
-                      <Button variant="primary" size="md" onClick={() => setShowCalendarModal(true)}>
-                        Create trigger
-                      </Button>
-                    </div>
-                  )}
-                </div>
-              </div>
+              )}
 
             </div>
           </div>
 
         </div>
+
       </div>
 
-      {/* Nova AI Panel — in-flow, pushes form left */}
-      <NovaPanel
-        open={novaOpen}
-        onClose={() => setNovaOpen(false)}
-        setTitle={setTitle}
-        setDescription={setDescription}
-        setCategory={setCategory}
-        setPriority={setPriority}
-        setDetailsOpen={setDetailsOpen}
-        setAssignModalOpen={setAssignModalOpen}
-        addAsset={a => setAssets(prev => [...prev, a])}
+      {/* Calendar trigger modal */}
+      <CreateCalendarTriggerModal
+        key={calendarModalKey}
+        open={showCalendarModal}
+        onClose={() => { setShowCalendarModal(false); setEditingTriggerId(null) }}
+        initial={editingTriggerId ? triggers.find(t => t.id === editingTriggerId)?.calendarTrigger : undefined}
+        onSubmit={t => {
+          if (editingTriggerId) {
+            setTriggers(ts => ts.map(tr => tr.id === editingTriggerId ? { ...tr, calendarTrigger: t } : tr))
+          } else {
+            setTriggers(ts => [...ts, { id: crypto.randomUUID(), calendarTrigger: t, assignments: [], expanded: true }])
+          }
+          setShowCalendarModal(false)
+          setEditingTriggerId(null)
+        }}
       />
-
-      </div>{/* end flex row wrapper */}
 
       {/* Assign modal */}
-      <AssignAssetModal
-        open={assignModalOpen}
-        onClose={() => { setAssignModalOpen(false); setEditingAssetId(null) }}
-        onSubmit={handleAssignAsset}
-        existingAssets={editingAssetId ? assets.filter(x => x.id !== editingAssetId) : assets}
-        initialValues={(() => {
-          const a = editingAssetId ? assets.find(x => x.id === editingAssetId) : null
-          if (!a) return undefined
-          const [sd, ed] = (a.timeRange || '').split('|').map(s => s.trim())
-          return {
-            asset: a.name ? [a.name] : [],
-            location: !a.name && a.location ? [a.location] : [],
-            meter: !a.name && !a.location && a.meter ? [a.meter] : [],
-            primaryAssignee: a.primaryAssignee === 'Unassigned' ? '' : (a.primaryAssignee || ''),
-            additionalAssignee: a.additionalAssignees || [],
-            team: a.team || '',
-            trigger: a.trigger || '',
-            startDate: sd || '',
-            endDate: ed || '',
-          } satisfies AssignAssetForm
-        })()}
-      />
-
-      {/* Trigger setup modal */}
-      {triggerModal && (
-        <TriggerSetupModal
-          type={triggerModal.type}
-          onClose={() => setTriggerModal(null)}
-          onSave={label => {
-            setAssets(list => list.map(a =>
-              a.id === triggerModal.assetId ? { ...a, trigger: label, frequency: label, triggerType: triggerModal.type } : a
-            ))
-            setTriggerModal(null)
-          }}
+      {showAssignModal && (
+        <AssignAssetModal
+          open={!!showAssignModal}
+          onClose={() => { setShowAssignModal(null); setEditingAssignmentId(null) }}
+          onSubmit={form => handleAssignToTrigger(showAssignModal, form)}
+          existingAssets={[]}
+          initialValues={(() => {
+            if (!editingAssignmentId) return undefined
+            const t = triggers.find(t => t.id === editingAssignmentId.triggerId)
+            const a = t?.assignments.find(a => a.id === editingAssignmentId.assignmentId)
+            if (!a) return undefined
+            return {
+              asset: a.type === 'Asset' ? [a.name] : [],
+              location: a.type === 'Location' ? [a.name] : [],
+              meter: a.type === 'Meter' ? [a.name] : [],
+              primaryAssignee: a.assignees[0] || '',
+              additionalAssignee: a.assignees.slice(1),
+              team: a.team || '',
+              trigger: '',
+              startDate: '',
+              endDate: '',
+            }
+          })()}
         />
       )}
-    </>
+
+    </div>
   )
 }

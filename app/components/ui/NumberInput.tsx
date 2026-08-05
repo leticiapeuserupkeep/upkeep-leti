@@ -10,9 +10,10 @@ interface NumberInputProps {
   step?: number
   placeholder?: string
   className?: string
+  error?: boolean
 }
 
-export function NumberInput({ value, onChange, min, max, step = 1, placeholder, className = '' }: NumberInputProps) {
+export function NumberInput({ value, onChange, min, max, step = 1, placeholder, className = '', error = false }: NumberInputProps) {
   const num = parseFloat(String(value))
 
   function increment() {
@@ -37,7 +38,7 @@ export function NumberInput({ value, onChange, min, max, step = 1, placeholder, 
         max={max}
         step={step}
         placeholder={placeholder}
-        className="w-full h-8 pl-3 pr-7 rounded-[var(--radius-md)] border border-[var(--border-default)] bg-[var(--surface-primary)] text-[13px] text-[var(--color-neutral-11)] outline-none focus:border-[var(--color-accent-7)] transition-colors [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+        className={`w-full h-8 pl-3 pr-7 rounded-[var(--radius-md)] border bg-[var(--surface-primary)] text-[13px] text-[var(--color-neutral-11)] outline-none focus:border-[var(--color-accent-7)] transition-colors [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none ${error ? 'border-[#CE2C31]' : 'border-[var(--border-default)]'}`}
       />
       <div className="absolute right-0 top-0 bottom-0 flex flex-col border-l border-[var(--border-default)] rounded-r-[var(--radius-md)] overflow-hidden">
         <button

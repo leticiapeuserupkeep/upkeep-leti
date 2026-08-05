@@ -3,6 +3,7 @@
 import { useState, useRef, useEffect, useCallback } from 'react'
 import * as Popover from '@radix-ui/react-popover'
 import { ChevronDown, Search, Check, X } from 'lucide-react'
+import { Avatar } from '@/app/components/ui/Avatar'
 
 /* ── Single-select ── */
 
@@ -14,10 +15,11 @@ interface SearchableSelectProps {
   options: string[]
   placeholder?: string
   className?: string
+  showAvatar?: boolean
 }
 
 export function SearchableSelect({
-  label, required, value, onChange, options, placeholder = '', className = '',
+  label, required, value, onChange, options, placeholder = '', className = '', showAvatar = false,
 }: SearchableSelectProps) {
   const [open, setOpen] = useState(false)
   const [query, setQuery] = useState('')
@@ -75,6 +77,7 @@ export function SearchableSelect({
                   onClick={() => { onChange(o); setOpen(false) }}
                   className={`w-full flex items-center gap-2 px-3 py-[var(--space-xs)] text-[13px] text-left cursor-pointer transition-colors hover:bg-[var(--color-neutral-3)] ${value === o ? 'text-[var(--color-accent-9)] font-medium bg-[var(--color-accent-1)]' : 'text-[var(--color-neutral-11)]'}`}
                 >
+                  {showAvatar && <Avatar name={o} size="xs" className="shrink-0" />}
                   <span className="flex-1 truncate">{o}</span>
                   {value === o && <Check size={13} className="shrink-0" />}
                 </button>
@@ -97,10 +100,11 @@ interface SearchableMultiSelectProps {
   options: string[]
   placeholder?: string
   className?: string
+  showAvatar?: boolean
 }
 
 export function SearchableMultiSelect({
-  label, required, values, onChange, options, placeholder = '', className = '',
+  label, required, values, onChange, options, placeholder = '', className = '', showAvatar = false,
 }: SearchableMultiSelectProps) {
   const [open, setOpen] = useState(false)
   const [query, setQuery] = useState('')
@@ -233,6 +237,7 @@ export function SearchableMultiSelect({
                     <span className={`shrink-0 flex items-center justify-center w-4 h-4 rounded-[3px] border transition-colors ${selected ? 'bg-[var(--color-accent-9)] border-[var(--color-accent-9)]' : 'border-[var(--border-default)] bg-[var(--surface-primary)]'}`}>
                       {selected && <Check size={10} className="text-white" strokeWidth={3} />}
                     </span>
+                    {showAvatar && <Avatar name={o} size="xs" className="shrink-0" />}
                     <span className="flex-1 truncate">{o}</span>
                   </button>
                 )
