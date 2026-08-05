@@ -3,6 +3,7 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react'
 import * as Popover from '@radix-ui/react-popover'
 import Link from 'next/link'
+import { useRouter } from 'next/navigation'
 import {
   ChevronLeft, ChevronRight, ChevronUp, ChevronDown, ChevronsUpDown, FileText, Box,
   Plus, X, MapPin, Gauge, Clock, Users, Upload, Trash2, PanelLeft,
@@ -2003,10 +2004,11 @@ interface NovaPanelProps {
   setDetailsOpen: (v: boolean) => void
   setAssignModalOpen: (v: boolean) => void
   addAsset: (a: AssignedAsset) => void
+  addTrigger: (t: PMTrigger) => void
 }
 
 function NovaPanel(props: NovaPanelProps) {
-  const { open, onClose, setTitle, setDescription, setCategory, setPriority, setDetailsOpen, setAssignModalOpen, addAsset } = props
+  const { open, onClose, setTitle, setDescription, setCategory, setPriority, setDetailsOpen, setAssignModalOpen, addAsset, addTrigger } = props
   const [messages, setMessages] = useState<NovaMessage[]>([
     { id: '0', role: 'nova', text: "Hi! Describe the PM you want to create and I'll build it for you — filling in every field." },
   ])
@@ -2044,57 +2046,103 @@ function NovaPanel(props: NovaPanelProps) {
     setBusy(true)
     const { fill } = novaGenerate(prompt)
 
-    // Step 1 — open Details, type title
-    setStatusText('Opening Details section…')
+    // Step 1 — fill details
     setDetailsOpen(true)
-    await sleep(500)
+    await sleep(400)
+    setStatusText('Filling in the details…')
+    pushMsg('nova', '✏️ Starting with the basic details — title, description, category and priority…')
+    await sleep(600)
 
-    setStatusText('Typing title…')
     await typeText(setTitle, fill.title ?? '')
-    await sleep(300)
-
-    setStatusText('Writing description…')
-    await typeText(setDescription, fill.description ?? '', 12)
-    await sleep(300)
-
-    setStatusText('Setting category…')
+    await sleep(200)
+    await typeText(setDescription, fill.description ?? '', 10)
+    await sleep(200)
     setCategory(fill.category ?? '')
-    await sleep(350)
-
-    setStatusText('Setting priority…')
+    await sleep(300)
     setPriority(fill.priority ?? '')
     await sleep(500)
 
-    // Step 2 — assign asset
-    setStatusText('Assigning asset…')
-    setAssignModalOpen(true)
-    await sleep(700)
-
-    const assetKey = ASSETS[0]
-    const assetMeta = getAssetData(assetKey)
-    const newAsset: AssignedAsset = {
+    // Step 2 — calendar trigger
+    setStatusText('Creating a calendar-based trigger…')
+    pushMsg('nova', '📅 Creating a recurring calendar trigger — every 3 months, work order 2 weeks before…')
+    await sleep(800)
+    const calTrigger: PMTrigger = {
       id: crypto.randomUUID(),
-      name: assetKey,
-      location: assetMeta?.location ?? '',
-      meter: assetMeta?.meter ?? '',
-      trigger: '',
-      frequency: '',
-      primaryAssignee: ASSIGNEES[0],
-      team: TEAMS[0].value,
-      timeRange: '07/06/26 - 2:30 PM | 07/06/26 - 4:30 PM',
+      expanded: true,
+      assignments: [],
+      calendarTrigger: {
+        id: crypto.randomUUID(),
+        scheduleType: 'Regular Interval',
+        every: '3', period: 'Month',
+        weekday: '', monthMode: 'on-day', monthDay: '1',
+        monthOrdinal: 'first', monthWeekday: 'Day',
+        atTime: '08:00 AM',
+        woCreationMode: 'relative', woRelativeN: '2', woRelativePeriod: 'Week',
+        woOnThePeriod: '', woAtTime: '07:00 AM', woOnTheAtTime: '',
+        meterCondition: '', meterValue: '', meterUnit: '',
+        meterDueN: '', meterDuePeriod: '',
+      },
     }
-    setAssignModalOpen(false)
-    addAsset(newAsset)
+    addTrigger(calTrigger)
+    await sleep(600)
+
+    // Step 3 — add assets to calendar trigger
+    setStatusText('Adding assets to the calendar trigger…')
+    pushMsg('nova', '🏭 Adding some assets to that trigger so work orders know where to go…')
+    await sleep(700)
+    const asset1 = ASSETS[0]
+    const asset2 = ASSETS[1] ?? ASSETS[0]
+    const meta1 = getAssetData(asset1)
+    const meta2 = getAssetData(asset2)
+    addTrigger({ ...calTrigger, assignments: [
+      { id: crypto.randomUUID(), name: asset1, type: 'Asset', subtext: meta1?.location ?? '', meter: meta1?.meter, assignees: [ASSIGNEES[0]], team: TEAMS[0].value, startDate: '', endDate: '' },
+      { id: crypto.randomUUID(), name: asset2, type: 'Asset', subtext: meta2?.location ?? '', meter: meta2?.meter, assignees: [ASSIGNEES[1] ?? ASSIGNEES[0]], team: TEAMS[0].value, startDate: '', endDate: '' },
+    ]})
+    await sleep(500)
+
+    // Step 4 — meter trigger
+    setStatusText('Creating a meter-based trigger…')
+    pushMsg('nova', '📊 Now adding a meter trigger — fires when a reading goes above 500 units…')
+    await sleep(700)
+    const meterTrigger: PMTrigger = {
+      id: crypto.randomUUID(),
+      expanded: false,
+      assignments: [],
+      calendarTrigger: {
+        id: crypto.randomUUID(),
+        scheduleType: 'Regular Interval',
+        every: '', period: '', weekday: '',
+        monthMode: 'on-day', monthDay: '1',
+        monthOrdinal: 'first', monthWeekday: 'Day',
+        atTime: '',
+        woCreationMode: '', woRelativeN: '', woRelativePeriod: '',
+        woOnThePeriod: '', woAtTime: '', woOnTheAtTime: '',
+        meterCondition: 'above', meterValue: '500', meterUnit: 'hours',
+        meterDueN: '1', meterDuePeriod: 'Week',
+      },
+    }
+    addTrigger(meterTrigger)
+    await sleep(500)
+
+    // Step 5 — add asset to meter trigger
+    setStatusText('Assigning assets to the meter trigger…')
+    pushMsg('nova', '🔧 Wiring up assets to the meter trigger too…')
+    await sleep(600)
+    const asset3 = ASSETS[2] ?? ASSETS[0]
+    const meta3 = getAssetData(asset3)
+    addTrigger({ ...meterTrigger, assignments: [
+      { id: crypto.randomUUID(), name: asset3, type: 'Asset', subtext: meta3?.location ?? '', meter: meta3?.meter ?? METER_NAMES[0], assignees: [ASSIGNEES[2] ?? ASSIGNEES[0]], team: TEAMS[1]?.value ?? TEAMS[0].value, startDate: '', endDate: '' },
+    ]})
     await sleep(600)
 
     setStatusText('')
     setBusy(false)
-
-    pushMsg('nova', "✅ Your PM is ready! Review the details on the left and hit **Create PM** when you're happy.", [
+    pushMsg('nova', `✅ All done! I've set up **${fill.title}** with a calendar trigger (every 3 months) and a meter trigger (above 500 hours). Please check the PM info on the left — edit anything you'd like — and hit **Create PM** when you're happy.`, [
       { label: 'Title', value: fill.title ?? '' },
       { label: 'Category', value: fill.category ?? '' },
       { label: 'Priority', value: fill.priority ?? '' },
-      { label: 'Asset', value: assetKey },
+      { label: 'Triggers', value: '2 triggers created' },
+      { label: 'Assets', value: '3 assets assigned' },
     ])
   }
 
@@ -2327,6 +2375,29 @@ export default function CreatePMPage() {
   const [assignmentSort, setAssignmentSort] = useState<Record<string, { col: string; dir: 'asc' | 'desc' }>>({})
   const [novaOpen, setNovaOpen] = useState(false)
   const [submitted, setSubmitted] = useState(false)
+  const router = useRouter()
+
+  function persistPM(status: 'Active' | 'Draft') {
+    const schedule = triggers[0]
+      ? formatScheduleText(triggers[0].calendarTrigger) || `Meter trigger`
+      : 'No schedule'
+    const item = {
+      id: `pm-new-${Date.now()}`,
+      title: title || 'Untitled PM',
+      assets: triggers.flatMap(t => t.assignments.map(a => ({
+        asset: a.name, location: a.subtext, assignee: a.assignees[0], team: a.team,
+      }))),
+      schedule,
+      status,
+      priority: priority || 'None',
+      woCount: 0,
+    }
+    try {
+      const existing = JSON.parse(localStorage.getItem('upkeep_new_pms') ?? '[]')
+      const updated = [item, ...existing.filter((x: { id: string }) => x.id !== item.id)]
+      localStorage.setItem('upkeep_new_pms', JSON.stringify(updated))
+    } catch {}
+  }
 
   const fileInputRef = useRef<HTMLInputElement>(null)
   const imageInputRef = useRef<HTMLInputElement>(null)
@@ -2401,6 +2472,8 @@ export default function CreatePMPage() {
   }
 
   const hasUnassignedTriggers = triggers.length > 0 && triggers.some(t => t.assignments.length === 0)
+  const hasMissingMeters = triggers.some(t => t.calendarTrigger.meterCondition && t.assignments.some(a => !a.meter))
+  const hasAnyError = triggers.length === 0 || hasUnassignedTriggers || hasMissingMeters
 
   // Auto-save draft every 15s when there's content
   useEffect(() => {
@@ -2408,6 +2481,7 @@ export default function CreatePMPage() {
     const id = setInterval(() => {
       setIsSaving(true)
       setTimeout(() => {
+        persistPM('Draft')
         setIsSaving(false)
         setDraftSavedAt(new Date())
       }, 800)
@@ -2420,6 +2494,7 @@ export default function CreatePMPage() {
     if (!title && triggers.length === 0) return
     setIsSaving(true)
     const id = setTimeout(() => {
+      persistPM('Draft')
       setIsSaving(false)
       setDraftSavedAt(new Date())
     }, 800)
@@ -2427,8 +2502,9 @@ export default function CreatePMPage() {
   }, [title.length > 0, triggers.length > 0])
 
   function handleCreatePM() {
-    if (!title || hasUnassignedTriggers) return
-    setSubmitted(true)
+    if (!title || hasAnyError) return
+    persistPM('Active')
+    router.push('/predictive-maintenance')
   }
 
   if (submitted) {
@@ -2458,7 +2534,16 @@ export default function CreatePMPage() {
   return (
     <div className="flex flex-col h-full overflow-hidden">
       {/* Header */}
-      <div className="h-14 flex items-center gap-3 px-4 bg-[var(--surface-primary)] border-b border-[var(--border-subtle)] shrink-0">
+      <div className="h-[60px] flex items-center gap-3 px-4 bg-[var(--surface-primary)] border-b border-[var(--border-subtle)] shrink-0">
+        <button
+          type="button"
+          onClick={() => window.dispatchEvent(new Event('toggle-sidebar'))}
+          className="flex items-center justify-center w-8 h-8 rounded-[var(--radius-lg)] hover:bg-[var(--color-neutral-3)] transition-colors text-[var(--color-neutral-8)] cursor-pointer shrink-0"
+          aria-label="Toggle sidebar"
+        >
+          <PanelLeft size={20} />
+        </button>
+        <div className="w-px h-5 bg-[var(--border-subtle)] shrink-0" />
         <Link
           href="/predictive-maintenance"
           className="flex items-center justify-center w-8 h-8 rounded-[var(--radius-lg)] hover:bg-[var(--color-neutral-3)] transition-colors text-[var(--color-neutral-8)] cursor-pointer"
@@ -2468,40 +2553,35 @@ export default function CreatePMPage() {
         <h1 className="text-[15px] font-semibold text-[var(--color-neutral-12)] flex-1">
           Create a New Preventive Maintenance
         </h1>
-        {/* Draft status */}
-        {(isSaving || draftSavedAt) && (
-          <div className="flex items-center gap-1.5 mr-1">
-            {isSaving ? (
-              <>
-                <svg className="animate-spin w-3.5 h-3.5 text-[var(--color-neutral-7)]" fill="none" viewBox="0 0 24 24">
-                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/>
-                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"/>
-                </svg>
-                <span className="text-[12px] text-[var(--color-neutral-7)]">Saving…</span>
-              </>
-            ) : (
-              <span className="text-[12px] text-[var(--color-neutral-7)]">Draft saved</span>
-            )}
-          </div>
-        )}
-        {draftSavedAt && (
-          <span className="text-[11px] font-semibold px-2 py-0.5 rounded-full bg-[var(--color-neutral-3)] text-[var(--color-neutral-8)] shrink-0">Draft</span>
-        )}
         <div className="flex items-center gap-2 mr-2">
           <span className="text-[13px] text-[var(--color-neutral-9)]">Create First Work Order Now</span>
           <Switch checked={createWONow} onCheckedChange={setCreateWONow} size="md" aria-label="Create first Work Order Now" />
         </div>
         <div className="w-px h-5 bg-[var(--border-subtle)]" />
+        {(isSaving || draftSavedAt) && (
+          <span className="inline-flex items-center gap-1.5 h-8 px-3 rounded-[var(--radius-lg)] text-[13px] font-medium text-[var(--color-neutral-8)] bg-[var(--color-neutral-3)] shrink-0">
+            {isSaving ? (
+              <>
+                <svg className="animate-spin w-3 h-3 text-[var(--color-neutral-7)]" fill="none" viewBox="0 0 24 24">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/>
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"/>
+                </svg>
+                Saving…
+              </>
+            ) : 'Draft'}
+          </span>
+        )}
         <Link href="/predictive-maintenance">
           <Button variant="secondary" size="md">Cancel</Button>
         </Link>
-        <Button variant="primary" size="md" onClick={handleCreatePM} disabled={!title || hasUnassignedTriggers}>
+        <Button variant="primary" size="md" onClick={handleCreatePM} disabled={!title || hasAnyError}>
           Create PM
         </Button>
       </div>
 
       {/* Body */}
-      <div className="flex-1 overflow-y-auto bg-[var(--surface-primary)]">
+      <div className="flex-1 flex overflow-hidden bg-[var(--surface-primary)]">
+        <div className="flex-1 overflow-y-auto">
         <div className="max-w-[1100px] mx-auto w-full">
 
           {/* Page intro */}
@@ -2509,14 +2589,14 @@ export default function CreatePMPage() {
             <p className="text-[13px] text-[var(--color-neutral-9)] max-w-[520px]">
               Automatically generate work orders based on a schedule or meter reading. Add the details, assign technicians, and help prevent equipment failures.
             </p>
-            <button type="button" className="flex items-center gap-1.5 px-3 h-8 rounded-[var(--radius-lg)] border border-[var(--color-accent-6)] bg-[var(--color-accent-1)] hover:bg-[var(--color-accent-2)] text-[13px] font-medium text-[var(--color-accent-11)] transition-colors cursor-pointer shrink-0">
+            <button type="button" onClick={() => setNovaOpen(true)} className="flex items-center gap-1.5 px-3 h-8 rounded-[var(--radius-lg)] border border-[var(--color-accent-6)] bg-[var(--color-accent-1)] hover:bg-[var(--color-accent-2)] text-[13px] font-medium text-[var(--color-accent-11)] transition-colors cursor-pointer shrink-0">
               <svg width="14" height="14" viewBox="0 0 14 14" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="M7 1.5C7 1.5 8.5 4 11 4.5C8.5 5 7 7.5 7 7.5C7 7.5 5.5 5 3 4.5C5.5 4 7 1.5 7 1.5Z" fill="currentColor"/><path d="M3 9C3 9 3.75 10.5 5 10.75C3.75 11 3 12.5 3 12.5C3 12.5 2.25 11 1 10.75C2.25 10.5 3 9 3 9Z" fill="currentColor"/><path d="M11 8.5C11 8.5 11.75 10 13 10.25C11.75 10.5 11 12 11 12C11 12 10.25 10.5 9 10.25C10.25 10 11 8.5 11 8.5Z" fill="currentColor"/></svg>
               Create with Nova
             </button>
           </div>
 
           {/* DETAILS */}
-          <div className="p-6 flex flex-col gap-5">
+          <div className="p-6 flex flex-col gap-5 overflow-hidden">
               <div className="rounded-[var(--radius-xl)] border border-[var(--border-default)] bg-[var(--surface-primary)]">
                 {/* Card header */}
                 <div className="flex items-center gap-3 px-4 h-[57px] bg-[#F9F9FB] border-b border-[var(--border-subtle)]">
@@ -2548,28 +2628,26 @@ export default function CreatePMPage() {
                     {/* Right column */}
                     <div className="flex flex-col gap-5">
                       <Select label="Category" value={category} onChange={setCategory} options={CATEGORIES} />
-                      <div className="grid grid-cols-2 gap-5">
-                        <Select
-                          label="Priority"
-                          value={priority}
-                          onChange={setPriority}
-                          options={PRIORITY_OPTIONS.map(p => ({
-                            value: p.value,
-                            label: p.label,
-                            icon: <Flag size={13} fill={p.color} stroke={p.color} />,
-                          }))}
-                        />
-                        <TextInput
-                          label="Duration (hs)"
-                          type="number"
-                          min="0"
-                          step="0.5"
-                          placeholder="0"
-                          value={duration}
-                          onChange={e => setDuration((e.target as HTMLInputElement).value)}
-                          className="[appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
-                        />
-                      </div>
+                      <Select
+                        label="Priority"
+                        value={priority}
+                        onChange={setPriority}
+                        options={PRIORITY_OPTIONS.map(p => ({
+                          value: p.value,
+                          label: p.label,
+                          icon: <Flag size={13} fill={p.color} stroke={p.color} />,
+                        }))}
+                      />
+                      <TextInput
+                        label="Duration (hs)"
+                        type="number"
+                        min="0"
+                        step="0.5"
+                        placeholder="0"
+                        value={duration}
+                        onChange={e => setDuration((e.target as HTMLInputElement).value)}
+                        className="[appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                      />
                     </div>
                   </div>
                   {/* Signature Required — full-width row */}
@@ -3242,6 +3320,23 @@ export default function CreatePMPage() {
 
         </div>
 
+      </div>
+        <NovaPanel
+          open={novaOpen}
+          onClose={() => setNovaOpen(false)}
+          setTitle={setTitle}
+          setDescription={setDescription}
+          setCategory={setCategory}
+          setPriority={setPriority}
+          setDetailsOpen={() => {}}
+          setAssignModalOpen={() => {}}
+          addAsset={() => {}}
+          addTrigger={t => setTriggers(ts => {
+            const existing = ts.find(x => x.id === t.id)
+            if (existing) return ts.map(x => x.id === t.id ? t : x)
+            return [...ts.map(x => ({ ...x, expanded: false })), t]
+          })}
+        />
       </div>
 
       {/* Calendar trigger modal */}

@@ -220,10 +220,17 @@ export default function PreventiveMaintenancePage() {
   const [expanded, setExpanded] = useState<Set<string>>(new Set())
   const [selectedPMs, setSelectedPMs] = useState<Set<string>>(new Set())
   const [toolbarPortal, setToolbarPortal] = useState<HTMLElement | null>(null)
+  const [newItems, setNewItems] = useState<PMItem[]>([])
 
   useEffect(() => {
     setToolbarPortal(document.getElementById('table-toolbar-portal'))
+    try {
+      const stored = JSON.parse(localStorage.getItem('upkeep_new_pms') ?? '[]')
+      setNewItems(stored)
+    } catch {}
   }, [])
+
+  const allItems = [...newItems, ...pmItems]
 
   const toggle = (id: string) => setExpanded(prev => {
     const next = new Set(prev)
@@ -231,7 +238,7 @@ export default function PreventiveMaintenancePage() {
     return next
   })
 
-  const filtered = pmItems.filter(pm =>
+  const filtered = allItems.filter(pm =>
     pm.title.toLowerCase().includes(search.toLowerCase()) ||
     pm.assets.some(a => a.asset.toLowerCase().includes(search.toLowerCase()))
   )
