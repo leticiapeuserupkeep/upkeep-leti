@@ -2930,9 +2930,9 @@ export default function CreatePMPage() {
                           setTriggers(ts => ts.map(t => t.id === trigger.id ? { ...t, expanded: !t.expanded } : t))
                           if (isExpanding) {
                             setTimeout(() => {
-                              const el = document.getElementById(`trigger-card-${trigger.id}`)
+                              const el = document.getElementById(`trigger-content-${trigger.id}`)
                               el?.scrollIntoView({ behavior: 'smooth', block: 'nearest' })
-                            }, 50)
+                            }, 320)
                           }
                         }}
                       >
@@ -3004,7 +3004,7 @@ export default function CreatePMPage() {
                       </div>
 
                       {/* Expanded assignments sub-card */}
-                      <div className={`overflow-hidden transition-all duration-300 ease-in-out ${trigger.expanded ? 'max-h-[3000px] opacity-100' : 'max-h-0 opacity-0'}`}>
+                      <div id={`trigger-content-${trigger.id}`} className={`overflow-hidden transition-all duration-300 ease-in-out ${trigger.expanded ? 'max-h-[3000px] opacity-100' : 'max-h-0 opacity-0'}`}>
                         <div className="p-4 flex flex-col gap-4 bg-[var(--surface-primary)]">
                           <div className="overflow-hidden">
                             {trigger.assignments.length === 0 ? (
