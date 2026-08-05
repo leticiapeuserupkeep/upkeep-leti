@@ -337,7 +337,7 @@ function CreateCalendarTriggerModal({
   )
 
   return (
-    <Modal open={open} onOpenChange={v => !v && handleClose()} maxWidth="740px">
+    <Modal open={open} onOpenChange={v => !v && handleClose()} maxWidth="720px">
       <ModalHeader title="Create Trigger" />
       <ModalBody className="flex flex-col gap-3 p-6">
 
@@ -500,25 +500,32 @@ function CreateCalendarTriggerModal({
                             </span>
                             <span className="text-[14px] text-[var(--color-neutral-12)]">{label}</span>
                           </div>
-                          <div className="p-4 flex flex-col gap-3 flex-1" onClick={() => { if (!isSelected) set('woCreationMode')(mode) }}>
+                          <div className="p-4 flex-1" onClick={() => { if (!isSelected) set('woCreationMode')(mode) }}>
                             {mode === 'relative' ? (
-                              <div className="flex items-center gap-2">
-                                <NumberInput value={form.woRelativeN} onChange={set('woRelativeN')} min={1} className="w-[80px] shrink-0" error={isSelected && !form.woRelativeN} />
-                                <InlineSelect value={form.woRelativePeriod} onChange={set('woRelativePeriod')} options={woPeriodOptions} placeholder="Period" className="flex-1 justify-between" error={isSelected && !form.woRelativePeriod} />
+                              <div className="flex flex-col gap-2">
+                                <div className="flex items-center gap-2">
+                                  <NumberInput value={form.woRelativeN} onChange={set('woRelativeN')} min={1} className="w-[80px] shrink-0" error={isSelected && !form.woRelativeN} />
+                                  <InlineSelect value={form.woRelativePeriod} onChange={set('woRelativePeriod')} options={woPeriodOptions} placeholder="Period" className="flex-1 justify-between" error={isSelected && !form.woRelativePeriod} />
+                                </div>
+                                <div className="flex items-center gap-2">
+                                  <span className="text-[12px] text-[var(--color-neutral-9)] shrink-0">Before the due date</span>
+                                  <span className="text-[12px] font-medium text-[var(--color-neutral-9)] shrink-0">At</span>
+                                  {timeInput(form.woAtTime, set('woAtTime'), 'flex-1 min-w-0')}
+                                </div>
                               </div>
                             ) : (
-                              <div className="flex items-center gap-2">
-                                <span className="text-[12px] font-medium text-[var(--color-neutral-9)] shrink-0">On</span>
-                                <InlineSelect value={form.woOnThePeriod} onChange={set('woOnThePeriod')} options={FULL_WEEKDAYS} placeholder="Day" className="flex-1 justify-between" error={isSelected && !form.woOnThePeriod} />
+                              <div className="flex flex-col gap-2">
+                                <div className="flex items-center gap-2">
+                                  <span className="text-[12px] font-medium text-[var(--color-neutral-9)] shrink-0">On</span>
+                                  <InlineSelect value={form.woOnThePeriod} onChange={set('woOnThePeriod')} options={FULL_WEEKDAYS} placeholder="Day" className="flex-1 justify-between" error={isSelected && !form.woOnThePeriod} />
+                                </div>
+                                <div className="flex items-center gap-2">
+                                  <span className="text-[12px] text-[var(--color-neutral-9)] shrink-0">Before the due date</span>
+                                  <span className="text-[12px] font-medium text-[var(--color-neutral-9)] shrink-0">At</span>
+                                  {timeInput(form.woOnTheAtTime, set('woOnTheAtTime'), 'flex-1 min-w-0')}
+                                </div>
                               </div>
                             )}
-                            <span className="text-[12px] text-[var(--color-neutral-9)]">Before the due date</span>
-                            <div className="flex items-center gap-2">
-                              <span className="text-[12px] font-medium text-[var(--color-neutral-9)] shrink-0">At</span>
-                              {mode === 'relative'
-                                ? timeInput(form.woAtTime, set('woAtTime'), 'flex-1 min-w-0')
-                                : timeInput(form.woOnTheAtTime, set('woOnTheAtTime'), 'flex-1 min-w-0')}
-                            </div>
                           </div>
                         </div>
                       )
@@ -2312,6 +2319,9 @@ export default function CreatePMPage() {
   const [editingTriggerId, setEditingTriggerId] = useState<string | null>(null)
   const [showAssignModal, setShowAssignModal] = useState<string | null>(null)
   const [editingAssignmentId, setEditingAssignmentId] = useState<{ triggerId: string; assignmentId: string } | null>(null)
+  const [bulkDeleteConfirm, setBulkDeleteConfirm] = useState<string | null>(null)
+  const [isSaving, setIsSaving] = useState(false)
+  const [draftSavedAt, setDraftSavedAt] = useState<Date | null>(null)
   const [assignmentSearch, setAssignmentSearch] = useState<Record<string, string>>({})
   const [assignmentSelected, setAssignmentSelected] = useState<Record<string, Set<string>>>({})
   const [assignmentSort, setAssignmentSort] = useState<Record<string, { col: string; dir: 'asc' | 'desc' }>>({})
@@ -2390,8 +2400,34 @@ export default function CreatePMPage() {
     setShowAssignModal(null)
   }
 
+  const hasUnassignedTriggers = triggers.length > 0 && triggers.some(t => t.assignments.length === 0)
+
+  // Auto-save draft every 15s when there's content
+  useEffect(() => {
+    if (!title && triggers.length === 0) return
+    const id = setInterval(() => {
+      setIsSaving(true)
+      setTimeout(() => {
+        setIsSaving(false)
+        setDraftSavedAt(new Date())
+      }, 800)
+    }, 15000)
+    return () => clearInterval(id)
+  }, [title, triggers])
+
+  // Initial save when first meaningful content appears
+  useEffect(() => {
+    if (!title && triggers.length === 0) return
+    setIsSaving(true)
+    const id = setTimeout(() => {
+      setIsSaving(false)
+      setDraftSavedAt(new Date())
+    }, 800)
+    return () => clearTimeout(id)
+  }, [title.length > 0, triggers.length > 0])
+
   function handleCreatePM() {
-    if (!title) return
+    if (!title || hasUnassignedTriggers) return
     setSubmitted(true)
   }
 
@@ -2432,6 +2468,25 @@ export default function CreatePMPage() {
         <h1 className="text-[15px] font-semibold text-[var(--color-neutral-12)] flex-1">
           Create a New Preventive Maintenance
         </h1>
+        {/* Draft status */}
+        {(isSaving || draftSavedAt) && (
+          <div className="flex items-center gap-1.5 mr-1">
+            {isSaving ? (
+              <>
+                <svg className="animate-spin w-3.5 h-3.5 text-[var(--color-neutral-7)]" fill="none" viewBox="0 0 24 24">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/>
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"/>
+                </svg>
+                <span className="text-[12px] text-[var(--color-neutral-7)]">Saving…</span>
+              </>
+            ) : (
+              <span className="text-[12px] text-[var(--color-neutral-7)]">Draft saved</span>
+            )}
+          </div>
+        )}
+        {draftSavedAt && (
+          <span className="text-[11px] font-semibold px-2 py-0.5 rounded-full bg-[var(--color-neutral-3)] text-[var(--color-neutral-8)] shrink-0">Draft</span>
+        )}
         <div className="flex items-center gap-2 mr-2">
           <span className="text-[13px] text-[var(--color-neutral-9)]">Create First Work Order Now</span>
           <Switch checked={createWONow} onCheckedChange={setCreateWONow} size="md" aria-label="Create first Work Order Now" />
@@ -2440,7 +2495,7 @@ export default function CreatePMPage() {
         <Link href="/predictive-maintenance">
           <Button variant="secondary" size="md">Cancel</Button>
         </Link>
-        <Button variant="primary" size="md" onClick={handleCreatePM} disabled={!title}>
+        <Button variant="primary" size="md" onClick={handleCreatePM} disabled={!title || hasUnassignedTriggers}>
           Create PM
         </Button>
       </div>
@@ -2515,19 +2570,19 @@ export default function CreatePMPage() {
                           className="[appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                         />
                       </div>
-                      {/* Signature Required */}
-                      <div
-                        onClick={() => setSignature(v => !v)}
-                        className={`flex items-center justify-between gap-3 p-3 rounded-2xl border cursor-pointer transition-colors ${signature ? 'border-[var(--color-accent-7)] bg-[var(--color-accent-1)] hover:bg-[var(--color-accent-2)]' : 'border-[#E0E1E6] bg-[#F9F9FB] hover:bg-[var(--color-neutral-3)]'}`}
-                      >
-                        <div className="flex-1 min-w-0">
-                          <p className="text-[14px] font-semibold text-[var(--color-neutral-12)]">Signature Required</p>
-                          <p className="text-[12px] text-[#60646C] mt-0.5 leading-4">Technicians must sign to complete this work order.</p>
-                        </div>
-                        <div onClick={e => e.stopPropagation()}>
-                          <Switch checked={signature} onCheckedChange={setSignature} size="md" aria-label="Signature required" />
-                        </div>
-                      </div>
+                    </div>
+                  </div>
+                  {/* Signature Required — full-width row */}
+                  <div
+                    onClick={() => setSignature(v => !v)}
+                    className={`flex items-center justify-between gap-3 p-3 rounded-2xl border cursor-pointer transition-colors ${signature ? 'border-[var(--color-accent-7)] bg-[var(--color-accent-1)] hover:bg-[var(--color-accent-2)]' : 'border-[#E0E1E6] bg-[#F9F9FB] hover:bg-[var(--color-neutral-3)]'}`}
+                  >
+                    <div className="flex-1 min-w-0">
+                      <p className="text-[14px] font-semibold text-[var(--color-neutral-12)]">Signature Required</p>
+                      <p className="text-[12px] text-[#60646C] mt-0.5 leading-4">Technicians must sign to complete this work order.</p>
+                    </div>
+                    <div onClick={e => e.stopPropagation()}>
+                      <Switch checked={signature} onCheckedChange={setSignature} size="md" aria-label="Signature required" />
                     </div>
                   </div>
                 </div>
@@ -2816,9 +2871,15 @@ export default function CreatePMPage() {
                             </span>
                           ) : null
                         })()}
-                        <span className="rounded-full bg-[var(--color-accent-2)] text-[var(--color-accent-9)] text-[11px] px-2.5 py-0.5 font-medium shrink-0">
-                          {trigger.assignments.length} Assignments
-                        </span>
+                        {trigger.assignments.length === 0 ? (
+                          <span className="rounded-full bg-[var(--color-error-3,#FFEFEF)] text-[var(--color-error,#CE2C31)] text-[11px] px-2.5 py-0.5 font-medium shrink-0">
+                            No Assignments
+                          </span>
+                        ) : (
+                          <span className="rounded-full bg-[var(--color-accent-2)] text-[var(--color-accent-9)] text-[11px] px-2.5 py-0.5 font-medium shrink-0">
+                            {trigger.assignments.length} Assignment{trigger.assignments.length !== 1 ? 's' : ''}
+                          </span>
+                        )}
                         {!trigger.expanded && (
                           <Button variant="primary" size="sm" onClick={() => setShowAssignModal(trigger.id)}>
                             <Plus size={13} className="mr-1" />
@@ -2851,7 +2912,7 @@ export default function CreatePMPage() {
                       </div>
 
                       {/* Expanded assignments sub-card */}
-                      {trigger.expanded && (
+                      <div className={`overflow-hidden transition-all duration-250 ease-in-out ${trigger.expanded ? 'max-h-[3000px] opacity-100' : 'max-h-0 opacity-0'}`}>
                         <div className="p-4 flex flex-col gap-4 bg-[var(--surface-primary)]">
                           <div className="overflow-hidden">
                             {trigger.assignments.length === 0 ? (
@@ -2897,7 +2958,7 @@ export default function CreatePMPage() {
                                   const someChecked = !allChecked && filtered.some(a => sel.has(a.id))
                                   return (<>
                                     {/* Title / search / assign row — always visible */}
-                                    <div className="flex items-center gap-2 px-3 h-10 w-full border-b border-[var(--border-subtle)]">
+                                    <div className="flex items-center gap-2 px-3 h-10 w-full">
                                       <span className="text-[14px] font-semibold text-[var(--color-neutral-11)] flex-1">
                                         Assignments ({trigger.assignments.length})
                                       </span>
@@ -2982,7 +3043,9 @@ export default function CreatePMPage() {
                                             </Popover.Portal>
                                           </Popover.Root>
                                           <span className="flex-1" />
-                                          <button type="button" onClick={() => { setTriggers(ts => ts.map(t => t.id === trigger.id ? { ...t, assignments: t.assignments.filter(a => !sel.has(a.id)) } : t)); setAssignmentSelected(s => ({ ...s, [trigger.id]: new Set() })) }} className="flex items-center gap-1.5 px-2.5 h-7 rounded-[var(--radius-md)] bg-[#EDF2FE] hover:bg-[#dce8fd] transition-colors cursor-pointer text-[12px] font-medium text-[#CD2B31] shrink-0">
+                                          <button type="button" onClick={() => setAssignmentSelected(s => ({ ...s, [trigger.id]: new Set() }))} className="flex items-center gap-1 text-[13px] font-semibold text-white/60 hover:text-white cursor-pointer transition-colors shrink-0">Unselect</button>
+                                          <div className="w-px h-4 bg-white/20 shrink-0 mx-1" />
+                                          <button type="button" onClick={() => setBulkDeleteConfirm(trigger.id)} className="flex items-center gap-1.5 px-2.5 h-7 rounded-[var(--radius-md)] bg-[#EDF2FE] hover:bg-[#dce8fd] transition-colors cursor-pointer text-[12px] font-medium text-[#CD2B31] shrink-0">
                                             <Trash2 size={12} /> Delete
                                           </button>
                                         </div>
@@ -3168,7 +3231,7 @@ export default function CreatePMPage() {
                             )}
                           </div>
                         </div>
-                      )}
+                      </div>
                     </div>
                   ))}
                 </div>
@@ -3191,7 +3254,7 @@ export default function CreatePMPage() {
           if (editingTriggerId) {
             setTriggers(ts => ts.map(tr => tr.id === editingTriggerId ? { ...tr, calendarTrigger: t } : tr))
           } else {
-            setTriggers(ts => [...ts, { id: crypto.randomUUID(), calendarTrigger: t, assignments: [], expanded: true }])
+            setTriggers(ts => [...ts.map(tr => ({ ...tr, expanded: false })), { id: crypto.randomUUID(), calendarTrigger: t, assignments: [], expanded: true }])
           }
           setShowCalendarModal(false)
           setEditingTriggerId(null)
@@ -3223,6 +3286,34 @@ export default function CreatePMPage() {
             }
           })()}
         />
+      )}
+
+      {/* Bulk delete confirmation modal */}
+      {bulkDeleteConfirm && (
+        <Modal open={!!bulkDeleteConfirm} onOpenChange={v => !v && setBulkDeleteConfirm(null)} maxWidth="400px">
+          <div className="p-6 flex flex-col gap-4">
+            <div className="flex flex-col gap-1">
+              <h2 className="text-[16px] font-semibold text-[var(--color-neutral-12)]">Delete assignments?</h2>
+              <p className="text-[14px] text-[var(--color-neutral-10)]">
+                {(() => {
+                  const sel = assignmentSelected[bulkDeleteConfirm]
+                  const count = sel?.size ?? 0
+                  return `This will permanently delete ${count} selected assignment${count === 1 ? '' : 's'}. This action cannot be undone.`
+                })()}
+              </p>
+            </div>
+            <div className="flex items-center justify-end gap-2">
+              <Button variant="secondary" size="sm" onClick={() => setBulkDeleteConfirm(null)}>Cancel</Button>
+              <Button variant="danger" size="sm" onClick={() => {
+                const tid = bulkDeleteConfirm
+                const sel = assignmentSelected[tid]
+                setTriggers(ts => ts.map(t => t.id === tid ? { ...t, assignments: t.assignments.filter(a => !sel?.has(a.id)) } : t))
+                setAssignmentSelected(s => ({ ...s, [tid]: new Set() }))
+                setBulkDeleteConfirm(null)
+              }}>Delete</Button>
+            </div>
+          </div>
+        </Modal>
       )}
 
     </div>

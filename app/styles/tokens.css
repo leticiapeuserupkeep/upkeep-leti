@@ -59,8 +59,8 @@
   --surface-sunken: var(--color-neutral-3);
   --surface-raised: var(--color-neutral-1);
   --surface-overlay: rgba(0, 0, 0, 0.5);
-  --border-default: var(--color-neutral-4);
-  --border-subtle: var(--color-neutral-3);
+  --border-default: var(--color-neutral-6);
+  --border-subtle: var(--color-neutral-4);
 
   /* ── Spacing ── */
   --space-2xs: 4px;
@@ -229,8 +229,8 @@
   --surface-sunken: #0c0c0e;
   --surface-raised: var(--color-neutral-3);
   --surface-overlay: rgba(0, 0, 0, 0.7);
-  --border-default: var(--color-neutral-4);
-  --border-subtle: var(--color-neutral-3);
+  --border-default: var(--color-neutral-5);
+  --border-subtle: var(--color-neutral-4);
 
   --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.3);
   --shadow-md: 0 4px 6px rgba(0, 0, 0, 0.3);
