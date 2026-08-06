@@ -250,7 +250,7 @@ export function SideNav({ collapsed }: SideNavProps) {
                   </div>
                 ) : (
                   <Collapsible.Root key={section.title} defaultOpen={!section.defaultClosed} className="w-full">
-                    <Collapsible.Trigger className="flex items-center gap-2 w-full px-2 pt-2 pb-1 h-7 rounded-[var(--radius-sm)] cursor-pointer group">
+                    <Collapsible.Trigger suppressHydrationWarning className="flex items-center gap-2 w-full px-2 pt-2 pb-1 h-7 rounded-[var(--radius-sm)] cursor-pointer group">
                       <span className="flex-1 text-left text-[length:var(--font-size-sm)] font-medium uppercase tracking-[0.02em] text-[var(--color-neutral-8)]">
                         {section.title}
                       </span>
