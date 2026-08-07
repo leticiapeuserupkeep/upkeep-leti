@@ -3,7 +3,7 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react'
 import * as Popover from '@radix-ui/react-popover'
 import Link from 'next/link'
-import { useRouter } from 'next/navigation'
+import { useRouter, useSearchParams } from 'next/navigation'
 import {
   ChevronLeft, ChevronRight, ChevronUp, ChevronDown, ChevronsUpDown, FileText, Box,
   Plus, X, MapPin, Gauge, Clock, Users, Upload, Trash2, PanelLeft,
@@ -1596,7 +1596,7 @@ function AssignAssetModal({
                       className="flex-1 text-[13px] text-[var(--color-neutral-11)] bg-transparent outline-none placeholder:text-[var(--color-neutral-7)]"
                     />
                   </div>
-                  <div className="py-1 max-h-[220px] overflow-y-auto">
+                  <div className="py-1 max-h-[220px] overflow-y-auto overscroll-contain" onWheelCapture={e => e.stopPropagation()}>
                     {filteredAppliesToOptions.length > 0 && (() => {
                       const allSelected = filteredAppliesToOptions.every(o => appliesToSelected.includes(o))
                       const someSelected = !allSelected && filteredAppliesToOptions.some(o => appliesToSelected.includes(o))
@@ -2370,19 +2370,98 @@ export default function CreatePMPage() {
   const [bulkDeleteConfirm, setBulkDeleteConfirm] = useState<string | null>(null)
   const [isSaving, setIsSaving] = useState(false)
   const [draftSavedAt, setDraftSavedAt] = useState<Date | null>(null)
+  const [hasSavedDraft, setHasSavedDraft] = useState(false)
+  const [editingPmStatus, setEditingPmStatus] = useState<'Active' | 'Draft' | null>(null)
+  const [showLeaveModal, setShowLeaveModal] = useState(false)
+  const [pendingNavHref, setPendingNavHref] = useState('')
+  const [isDirty, setIsDirty] = useState(false)
+  const dirtyTrackingRef = useRef(false)
+  const draftIdRef = useRef(`pm-new-${Date.now()}`)
   const [assignmentSearch, setAssignmentSearch] = useState<Record<string, string>>({})
   const [assignmentSelected, setAssignmentSelected] = useState<Record<string, Set<string>>>({})
   const [assignmentSort, setAssignmentSort] = useState<Record<string, { col: string; dir: 'asc' | 'desc' }>>({})
   const [novaOpen, setNovaOpen] = useState(false)
   const [submitted, setSubmitted] = useState(false)
   const router = useRouter()
+  const searchParams = useSearchParams()
+
+  useEffect(() => {
+    if (searchParams?.get('assign') === '1' && triggers.length > 0 && !showAssignModal) {
+      setShowAssignModal(triggers[0].id)
+    }
+  }, [searchParams, triggers.length])
+
+  useEffect(() => {
+    const editId = searchParams?.get('edit')
+    if (!editId) return
+    try {
+      const stored = localStorage.getItem('upkeep_editing_pm')
+      if (!stored) return
+      const pm = JSON.parse(stored) as {
+        id: string; title?: string; category?: string; priority?: string; status?: string
+        schedules?: Array<{ id: string; calendarTrigger: string; meterTrigger?: string; assignments: Array<{ id: string; asset: string; assetType: string; location: string; meter?: string; startDate?: string; endDate?: string }> }>
+      }
+      if (pm.id !== editId) return
+      draftIdRef.current = pm.id
+      setEditingPmStatus((pm.status === 'Draft' ? 'Draft' : 'Active'))
+      if (pm.title) setTitle(pm.title)
+      if (pm.category) setCategory(pm.category)
+      if (pm.priority) setPriority(pm.priority)
+      if (pm.schedules?.length) {
+        const defaultCal = (): CalendarTrigger => ({
+          id: crypto.randomUUID(),
+          scheduleType: 'Regular Interval',
+          every: '1', period: 'Month',
+          weekday: '', monthMode: 'on-day' as const, monthDay: '1',
+          monthOrdinal: 'first', monthWeekday: 'Day',
+          atTime: '08:00 AM',
+          woCreationMode: '' as const, woRelativeN: '', woRelativePeriod: '',
+          woOnThePeriod: '', woAtTime: '', woOnTheAtTime: '',
+          meterCondition: '', meterValue: '', meterUnit: '',
+          meterDueN: '', meterDuePeriod: '',
+        })
+        setTriggers(pm.schedules.map(s => ({
+          id: s.id,
+          calendarTrigger: defaultCal(),
+          assignments: s.assignments.map(a => ({
+            id: a.id,
+            name: a.asset,
+            type: (a.assetType || 'Asset') as 'Asset' | 'Location' | 'Meter',
+            subtext: a.location || '',
+            meter: a.meter || '',
+            assignees: [],
+            team: '',
+            startDate: a.startDate || '',
+            endDate: a.endDate || '',
+          })),
+          expanded: false,
+        })))
+      }
+    } catch {}
+    // Enable dirty tracking after pre-fill settles (new PM enables immediately via separate effect)
+    if (searchParams?.get('edit')) {
+      setTimeout(() => { dirtyTrackingRef.current = true }, 50)
+    }
+  }, [searchParams])
+
+  // For new PM: enable dirty tracking immediately on mount
+  useEffect(() => {
+    if (!searchParams?.get('edit')) {
+      dirtyTrackingRef.current = true
+    }
+  }, [])
+
+  // Mark dirty whenever tracked state changes (only after tracking is enabled)
+  useEffect(() => {
+    if (dirtyTrackingRef.current) setIsDirty(true)
+  }, [title, category, priority, triggers.length])
 
   function persistPM(status: 'Active' | 'Draft') {
     const schedule = triggers[0]
       ? formatScheduleText(triggers[0].calendarTrigger) || `Meter trigger`
       : 'No schedule'
     const item = {
-      id: `pm-new-${Date.now()}`,
+      id: draftIdRef.current,
       title: title || 'Untitled PM',
       assets: triggers.flatMap(t => t.assignments.map(a => ({
         asset: a.name, location: a.subtext, assignee: a.assignees[0], team: a.team,
@@ -2475,36 +2554,49 @@ export default function CreatePMPage() {
   const hasMissingMeters = triggers.some(t => t.calendarTrigger.meterCondition && t.assignments.some(a => !a.meter))
   const hasAnyError = triggers.length === 0 || hasUnassignedTriggers || hasMissingMeters
 
-  // Auto-save draft every 15s when there's content
-  useEffect(() => {
-    if (!title && triggers.length === 0) return
-    const id = setInterval(() => {
-      setIsSaving(true)
-      setTimeout(() => {
-        persistPM('Draft')
-        setIsSaving(false)
-        setDraftSavedAt(new Date())
-      }, 800)
-    }, 15000)
-    return () => clearInterval(id)
-  }, [title, triggers])
-
-  // Initial save when first meaningful content appears
-  useEffect(() => {
-    if (!title && triggers.length === 0) return
-    setIsSaving(true)
-    const id = setTimeout(() => {
-      persistPM('Draft')
-      setIsSaving(false)
-      setDraftSavedAt(new Date())
-    }, 800)
-    return () => clearTimeout(id)
-  }, [title.length > 0, triggers.length > 0])
 
   function handleCreatePM() {
     if (!title || hasAnyError) return
     persistPM('Active')
     router.push('/predictive-maintenance')
+  }
+
+  const isEditing = !!(searchParams?.get('edit'))
+
+  function handleSaveDraft() {
+    persistPM('Draft')
+    router.push('/predictive-maintenance')
+  }
+
+  function handleSaveEdit() {
+    persistPM(editingPmStatus === 'Draft' ? 'Draft' : 'Active')
+    router.push('/predictive-maintenance')
+  }
+
+  function handleNavigateAway(href: string) {
+    if (isDirty) {
+      setPendingNavHref(href)
+      setShowLeaveModal(true)
+      return
+    }
+    router.push(href)
+  }
+
+  function handleLeaveModalSave() {
+    if (isEditing) {
+      persistPM(editingPmStatus === 'Draft' ? 'Draft' : 'Active')
+    } else {
+      persistPM('Draft')
+      setHasSavedDraft(true)
+    }
+    setIsDirty(false)
+    setShowLeaveModal(false)
+    router.push(pendingNavHref)
+  }
+
+  function handleLeaveModalDiscard() {
+    setShowLeaveModal(false)
+    router.push(pendingNavHref)
   }
 
   if (submitted) {
@@ -2544,39 +2636,48 @@ export default function CreatePMPage() {
           <PanelLeft size={20} />
         </button>
         <div className="w-px h-5 bg-[var(--border-subtle)] shrink-0" />
-        <Link
-          href="/predictive-maintenance"
+        <button
+          type="button"
+          onClick={() => handleNavigateAway('/predictive-maintenance')}
           className="flex items-center justify-center w-8 h-8 rounded-[var(--radius-lg)] hover:bg-[var(--color-neutral-3)] transition-colors text-[var(--color-neutral-8)] cursor-pointer"
         >
           <ChevronLeft size={20} />
-        </Link>
+        </button>
         <h1 className="text-[15px] font-semibold text-[var(--color-neutral-12)] flex-1">
           Create a New Preventive Maintenance
         </h1>
-        <span className={`inline-flex items-center gap-1.5 h-7 px-3 rounded-full text-[12px] font-medium text-[var(--color-neutral-8)] bg-[var(--color-neutral-3)] shrink-0 transition-all duration-300 ease-in-out overflow-hidden ${(isSaving || draftSavedAt) ? 'opacity-100 max-w-[120px]' : 'opacity-0 max-w-0 px-0'}`}>
-          {isSaving ? (
-            <>
-              <svg className="animate-spin w-3 h-3 shrink-0 text-[var(--color-neutral-7)]" fill="none" viewBox="0 0 24 24">
-                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/>
-                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"/>
-              </svg>
-              <span className="transition-opacity duration-200">Saving…</span>
-            </>
-          ) : (
-            <span className="transition-opacity duration-200">Draft</span>
-          )}
-        </span>
         <div className="flex items-center gap-2 mr-2">
           <span className="text-[13px] text-[var(--color-neutral-9)]">Create First Work Order Now</span>
           <Switch checked={createWONow} onCheckedChange={setCreateWONow} size="md" aria-label="Create first Work Order Now" />
         </div>
         <div className="w-px h-5 bg-[var(--border-subtle)]" />
-        <Link href="/predictive-maintenance">
-          <Button variant="secondary" size="md">Cancel</Button>
-        </Link>
-        <Button variant="primary" size="md" onClick={handleCreatePM} disabled={!title || hasAnyError}>
-          Create PM
-        </Button>
+        <button
+          type="button"
+          onClick={() => handleNavigateAway('/predictive-maintenance')}
+          className="text-[14px] font-medium text-[var(--color-neutral-9)] hover:text-[var(--color-neutral-12)] transition-colors cursor-pointer px-1"
+        >
+          Cancel
+        </button>
+        {/* Edit active PM: just "Save" as primary, no draft button */}
+        {isEditing && editingPmStatus === 'Active' ? (
+          <Button variant="primary" size="md" onClick={handleSaveEdit} disabled={!title}>
+            Save
+          </Button>
+        ) : (
+          <>
+            {/* Draft save button: hidden when editing an active PM */}
+            <button
+              type="button"
+              onClick={handleSaveDraft}
+              className="inline-flex items-center justify-center h-8 px-3 rounded-[var(--radius-lg)] bg-[var(--color-accent-1)] text-[14px] font-medium text-[var(--color-accent-11)] hover:bg-[var(--color-accent-2)] transition-colors cursor-pointer select-none"
+            >
+              Save Draft
+            </button>
+            <Button variant="primary" size="md" onClick={handleCreatePM} disabled={!title || hasAnyError}>
+              Create PM
+            </Button>
+          </>
+        )}
       </div>
 
       {/* Body */}
@@ -2596,8 +2697,8 @@ export default function CreatePMPage() {
           </div>
 
           {/* DETAILS */}
-          <div className="p-6 flex flex-col gap-5 overflow-hidden">
-              <div className="rounded-[var(--radius-xl)] border border-[var(--border-default)] bg-[var(--surface-primary)]">
+          <div className="p-6 flex flex-col gap-5 overflow-y-auto">
+              <div className="rounded-[var(--radius-xl)] border border-[var(--border-default)] bg-[var(--surface-primary)] overflow-hidden">
                 {/* Card header */}
                 <div className="flex items-center gap-3 px-4 h-[57px] bg-[#F9F9FB] border-b border-[var(--border-subtle)]">
                   <FileText size={18} className="text-[var(--color-neutral-7)]" />
@@ -2892,18 +2993,18 @@ export default function CreatePMPage() {
               <div className="flex items-center justify-between px-5 h-[54px] bg-[var(--color-neutral-2)] border-b border-[var(--border-subtle)]">
                 <div className="flex items-center gap-2">
                   <Clock size={16} className="text-[var(--color-neutral-7)]" />
-                  <span className="text-[15px] font-semibold text-[var(--color-neutral-12)]">Triggers</span>
+                  <span className="text-[15px] font-semibold text-[var(--color-neutral-12)]">Schedules</span>
                 </div>
                 <div className="flex items-center gap-2">
                   {triggers.length > 0 && (
                     <span className="text-[11px] font-medium text-[var(--color-neutral-8)] bg-[var(--color-neutral-3)] rounded-full px-2 py-0.5">
-                      {triggers.length} {triggers.length === 1 ? 'trigger' : 'triggers'} · {triggers.reduce((sum, t) => sum + t.assignments.length, 0)} {triggers.reduce((sum, t) => sum + t.assignments.length, 0) === 1 ? 'assignment' : 'assignments'}
+                      {triggers.length} {triggers.length === 1 ? 'schedule' : 'schedules'} · {triggers.reduce((sum, t) => sum + t.assignments.length, 0)} {triggers.reduce((sum, t) => sum + t.assignments.length, 0) === 1 ? 'assignment' : 'assignments'}
                     </span>
                   )}
                   {triggers.length > 0 && (
-                    <Button variant="primary" size="sm" onClick={() => { setEditingTriggerId(null); setCalendarModalKey(k => k + 1); setShowCalendarModal(true) }}>
-                      <Plus size={13} className="mr-1" />
-                      New Trigger
+                    <Button variant="secondary" size="sm" onClick={() => { setEditingTriggerId(null); setCalendarModalKey(k => k + 1); setShowCalendarModal(true) }}>
+                      <Plus size={12} />
+                      New Schedule
                     </Button>
                   )}
                 </div>
@@ -2911,20 +3012,20 @@ export default function CreatePMPage() {
 
               {triggers.length === 0 ? (
                 <div className="flex flex-col items-center justify-center py-16 gap-2 text-center">
-                  <p className="text-[14px] font-semibold text-[var(--color-neutral-11)]">No triggers yet</p>
-                  <p className="text-[13px] text-[var(--color-neutral-8)]">Create a trigger to define when work orders should be generated.</p>
+                  <p className="text-[14px] font-semibold text-[var(--color-neutral-11)]">No schedules yet</p>
+                  <p className="text-[13px] text-[var(--color-neutral-8)]">Create a schedule to define when work orders should be generated.</p>
                   <Button variant="primary" size="md" onClick={() => { setCalendarModalKey(k => k + 1); setShowCalendarModal(true) }}>
                     <Plus size={13} className="mr-1" />
-                    New Trigger
+                    New Schedule
                   </Button>
                 </div>
               ) : (
                 <div className="flex flex-col gap-2 p-4">
                   {triggers.map(trigger => (
-                    <div key={trigger.id} id={`trigger-card-${trigger.id}`} className={`rounded-[8px] border overflow-hidden ${trigger.calendarTrigger.meterCondition && trigger.assignments.some(a => !a.meter) ? 'border-[var(--color-error,#CE2C31)]' : 'border-[var(--color-accent-4)]'}`}>
+                    <div key={trigger.id} id={`trigger-card-${trigger.id}`} className={`rounded-[8px] border overflow-hidden ${trigger.calendarTrigger.meterCondition && trigger.assignments.some(a => !a.meter) ? 'border-[var(--color-error,#CE2C31)]' : trigger.expanded ? 'border-[var(--color-accent-4)]' : 'border-[var(--border-default)]'}`}>
                       {/* Trigger row */}
                       <div
-                        className="flex items-center gap-3 p-4 bg-[var(--color-accent-1)] cursor-pointer select-none"
+                        className={`flex items-center gap-3 p-4 cursor-pointer select-none transition-colors ${trigger.expanded ? 'bg-[var(--color-accent-1)]' : 'bg-[var(--surface-primary)] hover:bg-[var(--color-neutral-2)]'}`}
                         onClick={() => {
                           const isExpanding = !trigger.expanded
                           setTriggers(ts => ts.map(t => t.id === trigger.id ? { ...t, expanded: !t.expanded } : t))
@@ -2949,7 +3050,7 @@ export default function CreatePMPage() {
                             const calText = parts.join(' · ')
                             const meterText = formatMeterText(t)
                             const fullText = calText && meterText
-                              ? `${calText} · or ${meterText}`
+                              ? `${calText} or ${meterText}`
                               : calText || meterText || 'Scheduled trigger'
                             return <span className="text-[13px] font-semibold text-[var(--color-neutral-11)] truncate block">{fullText}</span>
                           })()}
@@ -2973,8 +3074,8 @@ export default function CreatePMPage() {
                           </span>
                         )}
                         {!trigger.expanded && (
-                          <Button variant="primary" size="sm" onClick={e => { e.stopPropagation(); setShowAssignModal(trigger.id) }}>
-                            <Plus size={13} className="mr-1" />
+                          <Button variant="secondary" size="sm" onClick={e => { e.stopPropagation(); setShowAssignModal(trigger.id) }}>
+                            <Plus size={12} />
                             Assign
                           </Button>
                         )}
@@ -3009,10 +3110,10 @@ export default function CreatePMPage() {
                           <div className="overflow-hidden">
                             {trigger.assignments.length === 0 ? (
                               <div className="flex flex-col items-center justify-center p-4 gap-2 text-center">
-                                <p className="text-[13px] font-semibold text-[var(--color-neutral-11)]">Assign to this trigger</p>
+                                <p className="text-[13px] font-semibold text-[var(--color-neutral-11)]">Assign to this schedule</p>
                                 <p className="text-[12px] text-[var(--color-neutral-8)]">Choose assets, locations, or meters for this trigger to act on.</p>
                                 <Button variant="primary" size="sm" onClick={() => setShowAssignModal(trigger.id)}>
-                                  <Plus size={13} className="mr-1" /> Assign
+                                  Assign
                                 </Button>
                               </div>
                             ) : (
@@ -3068,9 +3169,9 @@ export default function CreatePMPage() {
                                         <Plus size={12} /> Assign
                                       </button>
                                     </div>
-                                    {/* Bulk bar — shown as a second row when rows are selected */}
-                                    <div className={`overflow-hidden transition-all duration-200 ease-in-out ${sel.size > 0 ? 'max-h-[52px] opacity-100 my-2' : 'max-h-0 opacity-0 my-0'}`}>
-                                      <div className="flex items-center gap-3 px-3 h-10 bg-[#1F2D5C] rounded-[8px]">
+                                    {/* Bulk bar — fixed bottom bar when rows are selected */}
+                                    {sel.size > 0 && (
+                                      <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 flex items-center gap-1 h-[60px] px-2 rounded-[4px] bg-[var(--color-neutral-12)] shadow-[var(--shadow-lg)] text-white">
                                           <span className="text-[12px] font-semibold text-white/80 shrink-0">{sel.size} selected</span>
                                           <div className="w-px h-4 bg-white/20 shrink-0" />
                                           {/* Bulk: Add Meter */}
@@ -3141,7 +3242,7 @@ export default function CreatePMPage() {
                                           <div className="w-px h-4 bg-white/20 shrink-0 mx-1" />
                                           <button type="button" onClick={() => setAssignmentSelected(s => ({ ...s, [trigger.id]: new Set() }))} className="flex items-center gap-1 text-[13px] font-semibold text-white/60 hover:text-white cursor-pointer transition-colors shrink-0">Unselect</button>
                                         </div>
-                                      </div>
+                                    )}
                                     {/* Column headers — always visible */}
                                     <div className="flex items-center gap-5 px-3 h-[56px] bg-[#F9F9FB] mt-4">
                                       <button type="button" onClick={toggleAll} className={`flex-shrink-0 w-4 h-4 rounded-[var(--radius-sm)] border flex items-center justify-center transition-colors ${allChecked || someChecked ? 'bg-[var(--color-accent-9)] border-[var(--color-accent-9)]' : 'border-[var(--color-neutral-6)] bg-[var(--surface-primary)]'}`}>
@@ -3420,6 +3521,30 @@ export default function CreatePMPage() {
                 setAssignmentSelected(s => ({ ...s, [tid]: new Set() }))
                 setBulkDeleteConfirm(null)
               }}>Delete</Button>
+            </div>
+          </div>
+        </Modal>
+      )}
+
+      {/* Leave without saving modal */}
+      {showLeaveModal && (
+        <Modal open={showLeaveModal} onOpenChange={v => !v && setShowLeaveModal(false)} maxWidth="420px">
+          <div className="p-6 flex flex-col gap-4">
+            <div>
+              <h2 className="text-[16px] font-semibold text-[var(--color-neutral-12)]">
+                {isEditing ? 'Save changes to this PM?' : 'Save before leaving?'}
+              </h2>
+              <p className="text-[13px] text-[var(--color-neutral-9)] mt-1">
+                {isEditing
+                  ? 'You have unsaved changes. Save to keep them, or discard to leave without saving.'
+                  : 'You have unsaved changes. Save as a draft to continue editing later, or discard them.'}
+              </p>
+            </div>
+            <div className="flex justify-end gap-2">
+              <Button variant="secondary" size="md" onClick={handleLeaveModalDiscard}>Discard</Button>
+              <Button variant="primary" size="md" onClick={handleLeaveModalSave}>
+                {isEditing ? 'Save Changes' : 'Save Draft'}
+              </Button>
             </div>
           </div>
         </Modal>
