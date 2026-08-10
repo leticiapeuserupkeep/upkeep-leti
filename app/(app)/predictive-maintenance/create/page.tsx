@@ -2384,6 +2384,9 @@ function CreatePMPageContent() {
   const [novaOpen, setNovaOpen] = useState(false)
   const [submitted, setSubmitted] = useState(false)
   const [newTriggerIds, setNewTriggerIds] = useState<Set<string>>(new Set())
+  const [focusedTriggerIds, setFocusedTriggerIds] = useState<Set<string>>(new Set())
+  const [skeletonAssignmentIds, setSkeletonAssignmentIds] = useState<Set<string>>(new Set())
+  const [newAssignmentIds, setNewAssignmentIds] = useState<Set<string>>(new Set())
   const [skeletonTriggerIds, setSkeletonTriggerIds] = useState<Set<string>>(new Set())
   const [titleError, setTitleError] = useState(false)
   const titleContainerRef = useRef<HTMLDivElement>(null)
@@ -2480,6 +2483,7 @@ function CreatePMPageContent() {
       const existing = JSON.parse(localStorage.getItem('upkeep_new_pms') ?? '[]')
       const updated = [item, ...existing.filter((x: { id: string }) => x.id !== item.id)]
       localStorage.setItem('upkeep_new_pms', JSON.stringify(updated))
+      localStorage.setItem('upkeep_pm_skeleton_id', item.id)
     } catch {}
   }
 
@@ -2567,7 +2571,23 @@ function CreatePMPageContent() {
       setTriggers(ts => ts.map(t => t.id === triggerId ? { ...t, assignments: t.assignments.map(a => a.id === editId ? (items[0] ? { ...items[0], id: editId } : a) : a) } : t))
       setEditingAssignmentId(null)
     } else {
-      setTriggers(ts => ts.map(t => t.id === triggerId ? { ...t, assignments: [...t.assignments, ...items] } : t))
+      const currentTrigger = triggers.find(t => t.id === triggerId)
+      const isFirst = (currentTrigger?.assignments.length ?? 0) === 0
+      const wasCollapsed = !currentTrigger?.expanded
+      setTriggers(ts => ts.map(t => t.id === triggerId ? { ...t, expanded: true, assignments: [...t.assignments, ...items] } : t))
+      const newIds = items.map(i => i.id)
+      const skeletonDuration = isFirst ? 500 : 0
+      const expandDelay = wasCollapsed ? 350 : 0
+      if (isFirst) setSkeletonAssignmentIds(s => new Set([...s, ...newIds]))
+      setTimeout(() => {
+        if (isFirst) setSkeletonAssignmentIds(s => { const next = new Set(s); newIds.forEach(id => next.delete(id)); return next })
+        setNewAssignmentIds(s => new Set([...s, ...newIds]))
+        newIds.forEach(id => {
+          const el = document.getElementById(`assignment-row-${id}`)
+          el?.scrollIntoView({ behavior: 'smooth', block: 'nearest' })
+        })
+      }, skeletonDuration + expandDelay)
+      setTimeout(() => setNewAssignmentIds(s => { const next = new Set(s); newIds.forEach(id => next.delete(id)); return next }), skeletonDuration + expandDelay + 600)
     }
     setShowAssignModal(null)
     if (!title.trim()) {
@@ -2690,6 +2710,13 @@ function CreatePMPageContent() {
         .assign-cta-glow {
           animation: assign-cta-glow-kf 2s ease-in-out infinite;
         }
+        @keyframes assignment-row-in {
+          from { opacity: 0; transform: translateY(-6px); }
+          to { opacity: 1; transform: translateY(0); }
+        }
+        .assignment-row-new {
+          animation: assignment-row-in 350ms cubic-bezier(0.32, 0.72, 0, 1) forwards;
+        }
       `}</style>
       {/* Header */}
       <div className="h-[60px] flex items-center gap-3 px-4 bg-[var(--surface-primary)] border-b border-[var(--border-subtle)] shrink-0">
@@ -2731,7 +2758,7 @@ function CreatePMPageContent() {
               Save
             </Button>
             {createDisabled && missingFields.length > 0 && (
-              <div className="absolute bottom-full right-0 mb-2 hidden group-hover/create:flex flex-col gap-1 bg-[var(--color-neutral-12)] text-white rounded-[var(--radius-lg)] px-3 py-2.5 shadow-lg pointer-events-none z-50 min-w-[220px]">
+              <div className="absolute top-full right-0 mt-2 hidden group-hover/create:flex flex-col gap-1 bg-[var(--color-neutral-12)] text-white rounded-[var(--radius-lg)] px-3 py-2.5 shadow-lg pointer-events-none z-50 min-w-[220px]">
                 <span className="text-[11px] font-semibold uppercase tracking-wide text-white/60 mb-0.5">Required to save</span>
                 {missingFields.map(f => (
                   <span key={f} className="flex items-center gap-1.5 text-[12px]">
@@ -2757,7 +2784,7 @@ function CreatePMPageContent() {
                 Create PM
               </Button>
               {createDisabled && missingFields.length > 0 && (
-                <div className="absolute bottom-full right-0 mb-2 hidden group-hover/create:flex flex-col gap-1 bg-[var(--color-neutral-12)] text-white rounded-[var(--radius-lg)] px-3 py-2.5 shadow-lg pointer-events-none z-50 min-w-[220px]">
+                <div className="absolute top-full right-0 mt-2 hidden group-hover/create:flex flex-col gap-1 bg-[var(--color-neutral-12)] text-white rounded-[var(--radius-lg)] px-3 py-2.5 shadow-lg pointer-events-none z-50 min-w-[220px]">
                   <span className="text-[11px] font-semibold uppercase tracking-wide text-white/60 mb-0.5">Required to create</span>
                   {missingFields.map(f => (
                     <span key={f} className="flex items-center gap-1.5 text-[12px]">
@@ -3124,7 +3151,7 @@ function CreatePMPageContent() {
                     const hasNoAssignments = !trigger.expanded && trigger.assignments.length === 0
                     const hasError = hasMissingMeters || hasMissingTech || hasNoAssignments
                     const borderClass = hasError ? 'border-[var(--color-error,#CE2C31)]' : trigger.expanded ? 'border-[var(--color-accent-4)]' : 'border-[var(--border-default)]'
-                    const shadowClass = hasError ? 'shadow-[0_0_1px_3px_rgba(206,44,49,0.2)]' : ''
+                    const shadowClass = hasError ? 'shadow-[0_0_1px_3px_rgba(206,44,49,0.2)]' : focusedTriggerIds.has(trigger.id) ? 'shadow-[0_0_1px_3px_rgba(0,106,220,0.1)]' : ''
                     return (
                     <div key={trigger.id} id={`trigger-card-${trigger.id}`} className={`rounded-[8px] border overflow-hidden ${borderClass} ${shadowClass} ${newTriggerIds.has(trigger.id) ? 'trigger-card-new' : ''}`}>
                       {skeletonTriggerIds.has(trigger.id) ? (
@@ -3301,7 +3328,7 @@ function CreatePMPageContent() {
                                     </div>
                                     {/* Bulk bar — fixed bottom bar when rows are selected */}
                                     {sel.size > 0 && (
-                                      <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 flex items-center gap-1 h-[60px] px-2 rounded-[4px] bg-[var(--color-neutral-12)] shadow-[var(--shadow-lg)] text-white">
+                                      <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 flex items-center gap-5 h-[60px] px-4 rounded-[4px] bg-[var(--color-neutral-12)] shadow-[var(--shadow-lg)] text-white">
                                           <span className="text-[12px] font-semibold text-white/80 shrink-0">{sel.size} selected</span>
                                           <div className="w-px h-4 bg-white/20 shrink-0" />
                                           {/* Bulk: Add Meter */}
@@ -3366,6 +3393,7 @@ function CreatePMPageContent() {
                                             </Popover.Portal>
                                           </Popover.Root>
                                           <span className="flex-1" />
+                                          <span className="w-[50px] shrink-0" />
                                           <button type="button" onClick={() => setBulkDeleteConfirm(trigger.id)} className="flex items-center gap-1 text-[13px] font-semibold text-white/60 hover:text-white cursor-pointer transition-colors shrink-0">
                                             Delete
                                           </button>
@@ -3402,8 +3430,20 @@ function CreatePMPageContent() {
                                     </div>
                                     {/* Scrollable assignment list */}
                                     <div className="overflow-y-auto max-h-[380px]">
-                                      {filtered.map(a => (
-                                        <div key={a.id} className={`flex items-center gap-5 px-3 py-4 border-b border-[#F0F0F3] last:border-0 text-[13px] ${isMeterTrigger && !a.meter ? 'bg-[#FFF8F8]' : sel.has(a.id) ? 'bg-[#F8FAFF]' : 'bg-white'}`}>
+                                      {filtered.map(a => skeletonAssignmentIds.has(a.id) ? (
+                                        <div key={a.id} id={`assignment-row-${a.id}`} className="flex items-center gap-5 px-3 py-4 border-b border-[#F0F0F3] last:border-0 bg-white skeleton-shimmer">
+                                          <div className="flex-shrink-0 w-4 h-4 rounded-[var(--radius-sm)] bg-[var(--color-neutral-3)]" />
+                                          <div className="flex-1 flex flex-col gap-1.5">
+                                            <div className="h-3 w-32 rounded-full bg-[var(--color-neutral-3)]" />
+                                            <div className="h-2.5 w-20 rounded-full bg-[var(--color-neutral-3)]" />
+                                          </div>
+                                          <div className="w-[120px] h-3 rounded-full bg-[var(--color-neutral-3)]" />
+                                          <div className="w-[96px] h-3 rounded-full bg-[var(--color-neutral-3)]" />
+                                          <div className="w-[80px] h-3 rounded-full bg-[var(--color-neutral-3)]" />
+                                          <div className="w-[110px] h-3 rounded-full bg-[var(--color-neutral-3)]" />
+                                        </div>
+                                      ) : (
+                                        <div key={a.id} id={`assignment-row-${a.id}`} className={`flex items-center gap-5 px-3 py-4 border-b border-[#F0F0F3] last:border-0 text-[13px] ${newAssignmentIds.has(a.id) ? 'assignment-row-new' : ''} ${isMeterTrigger && !a.meter ? 'bg-[#FFF8F8]' : sel.has(a.id) ? 'bg-[#F8FAFF]' : 'bg-white'}`}>
                                           <button type="button" onClick={() => toggleOne(a.id)} className={`flex-shrink-0 w-4 h-4 rounded-[var(--radius-sm)] border flex items-center justify-center transition-colors ${sel.has(a.id) ? 'bg-[var(--color-accent-9)] border-[var(--color-accent-9)]' : 'border-[var(--color-neutral-6)] bg-[var(--surface-primary)]'}`}>
                                             {sel.has(a.id) && <svg width="10" height="8" viewBox="0 0 10 8" fill="none"><path d="M1 4L3.5 6.5L9 1" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>}
                                           </button>
@@ -3605,8 +3645,14 @@ function CreatePMPageContent() {
             setTriggers(ts => [...ts.map(tr => ({ ...tr, expanded: false })), { id: newId, calendarTrigger: t, assignments: [], expanded: true }])
             setNewTriggerIds(s => new Set([...s, newId]))
             setSkeletonTriggerIds(s => new Set([...s, newId]))
+            setFocusedTriggerIds(s => new Set([...s, newId]))
             setTimeout(() => setNewTriggerIds(s => { const next = new Set(s); next.delete(newId); return next }), 600)
             setTimeout(() => setSkeletonTriggerIds(s => { const next = new Set(s); next.delete(newId); return next }), 2000)
+            setTimeout(() => setFocusedTriggerIds(s => { const next = new Set(s); next.delete(newId); return next }), 2500)
+            setTimeout(() => {
+              const el = document.getElementById(`trigger-card-${newId}`)
+              el?.scrollIntoView({ behavior: 'smooth', block: 'nearest' })
+            }, 100)
           }
           setShowCalendarModal(false)
           setEditingTriggerId(null)

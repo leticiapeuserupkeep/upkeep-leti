@@ -193,6 +193,8 @@ export default function PreventiveMaintenancePage() {
   const [selectedPMs, setSelectedPMs] = useState<Set<string>>(new Set())
   const [toolbarPortal, setToolbarPortal] = useState<HTMLElement | null>(null)
   const [newItems, setNewItems] = useState<PMItem[]>([])
+  const [skeletonRowId, setSkeletonRowId] = useState<string | null>(null)
+  const [fadingInId, setFadingInId] = useState<string | null>(null)
   const [openMenu, setOpenMenu] = useState<string | null>(null)
   const menuRef = useRef<HTMLDivElement>(null)
   const [inlineEdit, setInlineEdit] = useState<{ pmId: string; field: 'status' | 'priority' | 'category' } | null>(null)
@@ -200,6 +202,7 @@ export default function PreventiveMaintenancePage() {
   const [pmOverrides, setPMOverrides] = useState<Record<string, Partial<Pick<PMItem, 'status' | 'priority' | 'category'>>>>({})
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null)
   const [deletedIds, setDeletedIds] = useState<Set<string>>(new Set())
+  const [pageReady, setPageReady] = useState(false)
   const [bulkMenu, setBulkMenu] = useState<'priority' | 'status' | 'category' | null>(null)
   const bulkMenuRef = useRef<HTMLDivElement>(null)
   const [bulkDeleteConfirm, setBulkDeleteConfirm] = useState(false)
@@ -226,11 +229,19 @@ export default function PreventiveMaintenancePage() {
 
   useEffect(() => {
     setToolbarPortal(document.getElementById('table-toolbar-portal'))
+    setPageReady(true)
     try {
       const stored = JSON.parse(localStorage.getItem('upkeep_new_pms') ?? '[]') as LegacyPMItem[]
       if (stored.length) setNewItems(stored.map(convertLegacy))
       const deleted = JSON.parse(localStorage.getItem('upkeep_deleted_pm_ids') ?? '[]') as string[]
       if (deleted.length) setDeletedIds(new Set(deleted))
+      const skelId = localStorage.getItem('upkeep_pm_skeleton_id')
+      if (skelId) {
+        localStorage.removeItem('upkeep_pm_skeleton_id')
+        setSkeletonRowId(skelId)
+        setTimeout(() => { setSkeletonRowId(null); setFadingInId(skelId) }, 1500)
+        setTimeout(() => setFadingInId(null), 2500)
+      }
     } catch {}
   }, [])
 
@@ -269,6 +280,19 @@ export default function PreventiveMaintenancePage() {
 
   return (
     <TooltipProvider delayDuration={300}>
+    <style>{`
+      @keyframes pm-row-in {
+        from { opacity: 0; transform: translateY(6px); }
+        to { opacity: 1; transform: translateY(0); }
+      }
+      .pm-row-entry {
+        animation: pm-row-in 350ms ease-out both;
+      }
+      @keyframes fadeInRow {
+        from { opacity: 0; transform: translateY(-6px); }
+        to { opacity: 1; transform: translateY(0); }
+      }
+    `}</style>
     <div className="flex flex-col flex-1 w-full relative">
       {toolbarPortal && createPortal(
         <TableToolbar
@@ -417,7 +441,19 @@ export default function PreventiveMaintenancePage() {
                   </tr>
                 </thead>
                 <tbody>
-                  {filtered.map(pm => {
+                  {skeletonRowId && (
+                    <tr className="border-b border-[var(--border-default)] animate-pulse">
+                      <td className="px-3 py-4 w-8"><div className="w-4 h-4 rounded bg-[var(--color-neutral-3)]" /></td>
+                      <td className="px-3 py-4"><div className="h-3 w-48 rounded-full bg-[var(--color-neutral-3)]" /></td>
+                      <td className="px-3 py-4"><div className="h-3 w-20 rounded-full bg-[var(--color-neutral-3)]" /></td>
+                      <td className="px-3 py-4"><div className="h-3 w-16 rounded-full bg-[var(--color-neutral-3)]" /></td>
+                      <td className="px-3 py-4"><div className="h-3 w-12 rounded-full bg-[var(--color-neutral-3)]" /></td>
+                      <td className="px-3 py-4"><div className="h-3 w-12 rounded-full bg-[var(--color-neutral-3)]" /></td>
+                      <td className="px-3 py-4"><div className="h-3 w-24 rounded-full bg-[var(--color-neutral-3)]" /></td>
+                      <td className="px-3 py-4 w-8" />
+                    </tr>
+                  )}
+                  {filtered.map((pm, pmIdx) => {
                     const isExpanded = expandedPMs.has(pm.id)
                     const schedCount = pm.schedules.length
                     const assnCount = totalAssignments(pm)
@@ -435,7 +471,10 @@ export default function PreventiveMaintenancePage() {
                         {/* Main PM row */}
                         <tr
                           className={`transition-colors group cursor-pointer ${isExpanded ? '' : 'border-b border-[var(--border-default)]'}
-                            ${selectedPMs.has(pm.id) ? 'bg-[var(--color-accent-1)]' : isExpanded ? 'bg-[#F9F9FB]' : 'hover:bg-[#FCFCFD]'}`}
+                            ${selectedPMs.has(pm.id) ? 'bg-[var(--color-accent-1)]' : isExpanded ? 'bg-[#F9F9FB]' : 'hover:bg-[#FCFCFD]'}
+                            ${fadingInId === pm.id ? 'animate-[fadeInRow_600ms_ease-out_forwards]' : ''}
+                            ${pageReady && fadingInId !== pm.id ? 'pm-row-entry' : ''}`}
+                          style={pageReady && fadingInId !== pm.id ? { animationDelay: `${pmIdx * 35}ms` } : {}}
                           onClick={() => setSelectedPM(pm)}
                         >
                           {/* Checkbox */}
@@ -448,7 +487,16 @@ export default function PreventiveMaintenancePage() {
 
                           {/* Title */}
                           <td className="px-4 py-4 align-middle">
-                            <p className="text-[13px] font-semibold text-[var(--color-neutral-12)] leading-5 group-hover:text-[var(--color-accent-9)] transition-colors">{pm.title}</p>
+                            {(() => {
+                              const isUntitled = !pm.title || pm.title.toLowerCase() === 'untitled pm' || pm.title.toLowerCase() === 'untitled'
+                              return isUntitled ? (
+                                <button type="button" onClick={e => { e.stopPropagation(); router.push(`/predictive-maintenance/create?edit=${pm.id}`) }} className="text-[13px] font-semibold text-[var(--color-error)] leading-5 hover:underline cursor-pointer text-left">
+                                  {pm.title || 'Untitled PM'}
+                                </button>
+                              ) : (
+                                <p className="text-[13px] font-semibold text-[var(--color-neutral-12)] leading-5 group-hover:text-[var(--color-accent-9)] transition-colors">{pm.title}</p>
+                              )
+                            })()}
                           </td>
 
                           {/* Schedules */}
@@ -660,8 +708,10 @@ export default function PreventiveMaintenancePage() {
                                   {pm.schedules.map(sched => {
                                     const key = `${pm.id}|${sched.id}`
                                     const isSchedExp = expandedSchedules.has(key)
+                                    const missingTechCount = sched.assignments.filter(a => a.technicians.length === 0).length
+                                    const schedHasError = sched.assignments.length === 0 || missingTechCount > 0
                                     return (
-                                      <div key={sched.id} className="rounded-[8px] border border-[var(--color-accent-4)] overflow-hidden">
+                                      <div key={sched.id} className={`rounded-[8px] border overflow-hidden ${schedHasError ? 'border-[var(--color-error,#CE2C31)] shadow-[0_0_1px_3px_rgba(206,44,49,0.1)]' : 'border-[var(--color-accent-4)]'}`}>
                                         {/* Schedule card header */}
                                         <div
                                           className="flex items-center gap-3 p-4 bg-[var(--color-accent-1)] cursor-pointer select-none"
@@ -672,6 +722,11 @@ export default function PreventiveMaintenancePage() {
                                               {sched.calendarTrigger}{sched.meterTrigger ? ` or ${sched.meterTrigger}` : ''}
                                             </span>
                                           </div>
+                                          {missingTechCount > 0 && (
+                                            <span className="flex items-center gap-1 rounded-full bg-[#FFEFEF] text-[var(--color-error)] text-[11px] px-2.5 py-0.5 font-medium shrink-0">
+                                              {missingTechCount} missing technician{missingTechCount !== 1 ? 's' : ''}
+                                            </span>
+                                          )}
                                           <span className={`rounded-full text-[11px] px-2.5 py-0.5 font-medium shrink-0 ${sched.assignments.length === 0 ? 'bg-[#FFEFEF] text-[var(--color-error)]' : 'bg-[var(--color-accent-2)] text-[var(--color-accent-9)]'}`}>
                                             {sched.assignments.length === 0 ? 'No Assignments' : `${sched.assignments.length} Assignment${sched.assignments.length !== 1 ? 's' : ''}`}
                                           </span>
@@ -714,8 +769,10 @@ export default function PreventiveMaintenancePage() {
                                                 </div>
                                                 {/* Assignment rows */}
                                                 <div className="max-h-[320px] overflow-y-auto overscroll-contain">
-                                                {sched.assignments.map(a => (
-                                                  <div key={a.id} className="flex items-center gap-5 px-3 py-3 border-b border-[#F0F0F3] last:border-0 hover:bg-[#F9FAFB] transition-colors">
+                                                {sched.assignments.map(a => {
+                                                  const missingTech = a.technicians.length === 0
+                                                  return (
+                                                  <div key={a.id} className={`flex items-center gap-5 px-3 py-3 border-b border-[#F0F0F3] last:border-0 transition-colors ${missingTech ? 'bg-[#FFF8F8] hover:bg-[#FFF0F0]' : 'hover:bg-[#F9FAFB]'}`}>
                                                     <div className="flex flex-col flex-1 min-w-0">
                                                       <div className="flex items-center gap-2">
                                                         <span className="text-[13px] font-medium text-[var(--color-neutral-12)] truncate">{a.asset}</span>
@@ -727,7 +784,7 @@ export default function PreventiveMaintenancePage() {
                                                     <div className="w-[90px] shrink-0">
                                                       {a.technicians.length > 0
                                                         ? <AvatarStack techs={a.technicians} extra={a.extraTechs} />
-                                                        : <span className="text-[var(--color-neutral-5)] text-[12px]">—</span>
+                                                        : <button type="button" onClick={e => { e.stopPropagation(); router.push(`/predictive-maintenance/create?edit=${pm.id}`) }} className="text-[var(--color-error)] text-[12px] font-medium hover:underline cursor-pointer">Add</button>
                                                       }
                                                     </div>
                                                     <div className="w-[100px] shrink-0 flex flex-col gap-0.5">
@@ -739,7 +796,8 @@ export default function PreventiveMaintenancePage() {
                                                       {a.nextWO && <span className="text-[11px] text-[var(--color-neutral-8)] leading-4">Next: {a.nextWO}</span>}
                                                     </div>
                                                   </div>
-                                                ))}
+                                                  )
+                                                })}
                                                 </div>
                                               </>
                                             )}

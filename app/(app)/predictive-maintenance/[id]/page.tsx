@@ -216,8 +216,10 @@ function SchedulesContent({ pm, expandedSchedules, onToggle }: {
 
       {pm.schedules.map(sched => {
         const isExp = expandedSchedules.has(sched.id)
+        const missingTechCount = sched.assignments.filter(a => a.technicians.length === 0).length
+        const schedHasError = sched.assignments.length === 0 || missingTechCount > 0
         return (
-          <div key={sched.id} className="rounded-[var(--radius-lg)] border border-[var(--color-accent-4)] overflow-hidden">
+          <div key={sched.id} className={`rounded-[var(--radius-lg)] border overflow-hidden ${schedHasError ? 'border-[var(--color-error,#CE2C31)] shadow-[0_0_1px_3px_rgba(206,44,49,0.1)]' : 'border-[var(--color-accent-4)]'}`}>
             {/* Schedule header */}
             <div
               className="flex items-center gap-3 px-4 py-3 bg-[var(--color-accent-1)] cursor-pointer select-none"
@@ -229,6 +231,11 @@ function SchedulesContent({ pm, expandedSchedules, onToggle }: {
                   {sched.calendarTrigger}{sched.meterTrigger ? ` or ${sched.meterTrigger}` : ''}
                 </span>
               </div>
+              {missingTechCount > 0 && (
+                <span className="flex items-center gap-1 rounded-full bg-[#FFEFEF] text-[var(--color-error)] text-[11px] px-2.5 py-0.5 font-medium shrink-0">
+                  {missingTechCount} missing technician{missingTechCount !== 1 ? 's' : ''}
+                </span>
+              )}
               <span className={`rounded-full text-[11px] px-2.5 py-0.5 font-medium shrink-0 ${sched.assignments.length === 0 ? 'bg-[#FFEFEF] text-[var(--color-error)]' : 'bg-[var(--color-accent-2)] text-[var(--color-accent-9)]'}`}>
                 {sched.assignments.length === 0 ? 'No Assignments' : `${sched.assignments.length} Assignment${sched.assignments.length !== 1 ? 's' : ''}`}
               </span>
@@ -259,12 +266,15 @@ function SchedulesContent({ pm, expandedSchedules, onToggle }: {
                       <span className="text-[10px] font-medium uppercase tracking-wide text-[var(--color-neutral-7)] w-[130px] shrink-0">Work Orders</span>
                     </div>
                     {/* Rows */}
-                    {sched.assignments.map(a => (
-                      <div key={a.id} className="flex items-center gap-5 px-4 py-3 border-b border-[var(--border-subtle)] last:border-0 hover:bg-[#F9FAFB] transition-colors">
+                    {sched.assignments.map(a => {
+                      const missingTech = a.technicians.length === 0
+                      return (
+                      <div key={a.id} className={`flex items-center gap-5 px-4 py-3 border-b border-[var(--border-subtle)] last:border-0 transition-colors ${missingTech ? 'bg-[#FFF8F8] hover:bg-[#FFF0F0]' : 'hover:bg-[#F9FAFB]'}`}>
                         <div className="flex flex-col flex-1 min-w-0">
                           <div className="flex items-center gap-1.5">
                             <span className="text-[13px] font-medium text-[var(--color-neutral-12)] truncate">{a.asset}</span>
                             <span className="px-1.5 py-0.5 rounded-[var(--radius-sm)] bg-[var(--color-neutral-3)] text-[10px] font-medium text-[var(--color-neutral-8)] shrink-0">{a.assetType}</span>
+                            {missingTech && <span className="px-1.5 py-0.5 rounded-[var(--radius-sm)] bg-[#FFEFEF] text-[10px] font-medium text-[var(--color-error)] shrink-0">Missing technician</span>}
                           </div>
                           {a.location && <span className="text-[11px] text-[var(--color-neutral-7)] truncate">{a.location}</span>}
                         </div>
@@ -272,7 +282,7 @@ function SchedulesContent({ pm, expandedSchedules, onToggle }: {
                         <div className="w-[80px] shrink-0">
                           {a.technicians.length > 0
                             ? <AvatarStack techs={a.technicians} extra={a.extraTechs} />
-                            : <span className="text-[var(--color-neutral-5)] text-[12px]">—</span>}
+                            : <span className="text-[var(--color-error)] text-[12px] font-medium">Add</span>}
                         </div>
                         <div className="w-[100px] shrink-0 flex flex-col gap-0.5">
                           {a.startDate && <span className="text-[11px] text-[var(--color-neutral-8)]">Start: {a.startDate}</span>}
@@ -283,7 +293,8 @@ function SchedulesContent({ pm, expandedSchedules, onToggle }: {
                           {a.nextWO && <span className="text-[11px] text-[var(--color-neutral-8)]">Next: {a.nextWO}</span>}
                         </div>
                       </div>
-                    ))}
+                      )
+                    })}
                   </>
                 )}
               </div>
