@@ -580,7 +580,7 @@ export default function PreventiveMaintenancePage() {
                                   {pm.title || 'Untitled PM'}
                                 </button>
                               ) : (
-                                <p className="text-[13px] font-semibold text-[var(--color-neutral-12)] leading-5 group-hover:text-[var(--color-accent-9)] transition-colors">{pm.title}</p>
+                                <button type="button" onClick={e => { e.stopPropagation(); setSelectedPM(pm) }} className="text-[13px] font-semibold text-[var(--color-neutral-12)] leading-5 group-hover:text-[var(--color-accent-9)] transition-colors hover:underline cursor-pointer text-left">{pm.title}</button>
                               )
                             })()}
                           </td>

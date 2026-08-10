@@ -168,8 +168,9 @@ function mdyToIso(mdy: string): string {
 
 function MiniCalendar({ iso, onSelect }: { iso: string; onSelect: (iso: string) => void }) {
   const today = new Date()
-  const initYear = iso ? parseInt(iso.split('-')[0], 10) : today.getFullYear()
-  const initMonth = iso ? parseInt(iso.split('-')[1], 10) - 1 : today.getMonth()
+  const validIso = /^\d{4}-\d{2}-\d{2}$/.test(iso)
+  const initYear = validIso ? parseInt(iso.split('-')[0], 10) : today.getFullYear()
+  const initMonth = validIso ? parseInt(iso.split('-')[1], 10) - 1 : today.getMonth()
   const [viewYear, setViewYear] = React.useState(initYear)
   const [viewMonth, setViewMonth] = React.useState(initMonth)
   const MONTHS = ['January','February','March','April','May','June','July','August','September','October','November','December']
@@ -178,7 +179,7 @@ function MiniCalendar({ iso, onSelect }: { iso: string; onSelect: (iso: string) 
   const daysInMonth = new Date(viewYear, viewMonth + 1, 0).getDate()
   const cells: (number | null)[] = [...Array(firstDay).fill(null), ...Array.from({ length: daysInMonth }, (_, i) => i + 1)]
   while (cells.length % 7 !== 0) cells.push(null)
-  const selParts = iso ? iso.split('-') : []
+  const selParts = validIso ? iso.split('-') : []
   const selY = selParts[0] ? parseInt(selParts[0], 10) : -1
   const selM = selParts[1] ? parseInt(selParts[1], 10) - 1 : -1
   const selD = selParts[2] ? parseInt(selParts[2], 10) : -1
@@ -3754,7 +3755,7 @@ function CreatePMPageContent() {
                                     </div>
                                     {/* Scrollable assignment list */}
                                     <div className="overflow-y-auto max-h-[380px]">
-                                      {filtered.length === 0 && (q || af.technician || af.meter || af.team) && (
+                                      {filtered.length === 0 && hasFilters && (
                                         <div className="flex flex-col items-center justify-center py-10 gap-1 text-center">
                                           <p className="text-[13px] font-semibold text-[var(--color-neutral-11)]">No results found</p>
                                           <p className="text-[12px] text-[var(--color-neutral-7)]">Try resetting your filters or adjusting your search.</p>
