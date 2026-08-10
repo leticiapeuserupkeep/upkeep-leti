@@ -133,16 +133,12 @@ const TEAMS = ['Maintenance', 'Electrical', 'Safety', 'Operations'].map(name => 
 
 /* ── Date utilities ── */
 
-const MONTH_NAMES = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec']
-
 function displayDate(iso: string): string {
   if (!iso) return ''
   const parts = iso.split('-')
   if (parts.length !== 3) return iso
   const [y, m, d] = parts
-  const mi = parseInt(m, 10) - 1
-  if (mi < 0 || mi > 11) return iso
-  return `${MONTH_NAMES[mi]} ${parseInt(d, 10)}, ${y}`
+  return `${m.padStart(2,'0')}/${d.padStart(2,'0')}/${y}`
 }
 
 function validateDateRange(start: string, end: string): string {
@@ -1468,16 +1464,22 @@ function AssignAssetModal({
   const usedAssets = existingAssets.map(a => a.name).filter(Boolean)
   const usedLocations = existingAssets.map(a => a.location).filter(Boolean)
   const usedMeters = existingAssets.map(a => a.meter).filter(Boolean)
+  const usedList = appliesToType === 'Asset' ? usedAssets : appliesToType === 'Location' ? usedLocations : usedMeters
   const allAppliesToOptions = appliesToType === 'Asset' ? ASSETS : appliesToType === 'Location' ? LOCATIONS : METERS
-  const appliesToOptions = allAppliesToOptions.filter(o =>
-    !(appliesToType === 'Asset' ? usedAssets : appliesToType === 'Location' ? usedLocations : usedMeters).includes(o)
-  )
+  const appliesToOptions = allAppliesToOptions
   const appliesToSelected: string[] = appliesToType === 'Asset' ? form.asset
     : appliesToType === 'Location' ? form.location
     : form.meter
-  const filteredAppliesToOptions = appliesToOptions.filter(o =>
-    o.toLowerCase().includes(valueQuery.toLowerCase())
-  )
+  const filteredAppliesToOptions = appliesToOptions.filter(o => {
+    const q = valueQuery.toLowerCase()
+    if (!q) return true
+    if (o.toLowerCase().includes(q)) return true
+    if (appliesToType === 'Asset') {
+      const meta = getAssetData(o)
+      if (meta?.location?.toLowerCase().includes(q)) return true
+    }
+    return false
+  })
 
   function toggleAppliesToValue(v: string) {
     const update = (arr: string[]) => arr.includes(v) ? arr.filter(x => x !== v) : [...arr, v]
@@ -1654,17 +1656,24 @@ function AssignAssetModal({
                       <p className="px-3 py-2 text-[13px] text-[var(--color-neutral-7)]">No results</p>
                     ) : filteredAppliesToOptions.map(o => {
                       const checked = appliesToSelected.includes(o)
+                      const alreadyUsed = usedList.includes(o)
+                      const assetLocation = appliesToType === 'Asset' ? getAssetData(o)?.location : undefined
                       return (
                         <button
                           key={o}
                           type="button"
-                          onClick={() => toggleAppliesToValue(o)}
-                          className={`w-full flex items-center gap-2.5 px-3 py-2 text-[13px] text-left cursor-pointer transition-colors hover:bg-[var(--color-neutral-3)] ${checked ? 'text-[var(--color-neutral-12)] bg-[var(--color-accent-1)]' : 'text-[var(--color-neutral-11)]'}`}
+                          onClick={() => !alreadyUsed && toggleAppliesToValue(o)}
+                          className={`w-full flex items-center gap-2.5 px-3 py-2 text-[13px] text-left transition-colors ${alreadyUsed ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer hover:bg-[var(--color-neutral-3)]'} ${checked ? 'text-[var(--color-neutral-12)] bg-[var(--color-accent-1)]' : 'text-[var(--color-neutral-11)]'}`}
                         >
-                          <span className={`flex-shrink-0 w-4 h-4 rounded-[var(--radius-sm)] border flex items-center justify-center transition-colors ${checked ? 'bg-[var(--color-accent-9)] border-[var(--color-accent-9)]' : 'border-[var(--color-neutral-6)] bg-[var(--surface-primary)]'}`}>
-                            {checked && <svg width="10" height="8" viewBox="0 0 10 8" fill="none"><path d="M1 4L3.5 6.5L9 1" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>}
+                          <span className={`flex-shrink-0 w-4 h-4 rounded-[var(--radius-sm)] border flex items-center justify-center transition-colors ${alreadyUsed ? 'border-[var(--color-neutral-4)] bg-[var(--color-neutral-3)]' : checked ? 'bg-[var(--color-accent-9)] border-[var(--color-accent-9)]' : 'border-[var(--color-neutral-6)] bg-[var(--surface-primary)]'}`}>
+                            {(checked && !alreadyUsed) && <svg width="10" height="8" viewBox="0 0 10 8" fill="none"><path d="M1 4L3.5 6.5L9 1" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>}
+                            {alreadyUsed && <svg width="8" height="8" viewBox="0 0 8 8" fill="none"><circle cx="4" cy="4" r="2.5" fill="var(--color-neutral-7)"/></svg>}
                           </span>
-                          <span className="flex-1 truncate">{o}</span>
+                          <div className="flex-1 flex flex-col min-w-0">
+                            <span className="truncate">{o}</span>
+                            {assetLocation && <span className="text-[11px] text-[var(--color-neutral-7)] truncate">{assetLocation}</span>}
+                          </div>
+                          {alreadyUsed && <span className="text-[10px] font-medium text-[var(--color-neutral-7)] shrink-0 ml-1">Assigned</span>}
                         </button>
                       )
                     })}
@@ -3469,7 +3478,7 @@ function CreatePMPageContent() {
                                           <SortHeader col="meter" label="Meter" className="w-[120px] shrink-0" />
                                           <SortHeader col="user" label="Technicians" className="w-[96px] shrink-0" />
                                           <SortHeader col="team" label="Team" className="w-[80px] shrink-0" />
-                                          <SortHeader col="start" label="Start / End" className="w-[110px] shrink-0" />
+                                          <SortHeader col="start" label="Start / End" className="w-[140px] shrink-0" />
                                         </>)
                                       })()}
                                       <span className="w-7 shrink-0" />
@@ -3486,7 +3495,7 @@ function CreatePMPageContent() {
                                           <div className="w-[120px] h-3 rounded-full bg-[var(--color-neutral-3)]" />
                                           <div className="w-[96px] h-3 rounded-full bg-[var(--color-neutral-3)]" />
                                           <div className="w-[80px] h-3 rounded-full bg-[var(--color-neutral-3)]" />
-                                          <div className="w-[110px] h-3 rounded-full bg-[var(--color-neutral-3)]" />
+                                          <div className="w-[140px] h-3 rounded-full bg-[var(--color-neutral-3)]" />
                                         </div>
                                       ) : (
                                         <div key={a.id} id={`assignment-row-${a.id}`} className={`flex items-center gap-5 px-3 py-4 border-b border-[#F0F0F3] last:border-0 text-[13px] ${newAssignmentIds.has(a.id) ? 'assignment-row-new' : ''} ${isMeterTrigger && !a.meter ? 'bg-[#FFF8F8]' : sel.has(a.id) ? 'bg-[#F8FAFF]' : 'bg-white'}`}>
@@ -3600,7 +3609,7 @@ function CreatePMPageContent() {
                                           {/* Date range — inline edit */}
                                           <Popover.Root>
                                             <Popover.Trigger asChild>
-                                              <button className="w-[110px] shrink-0 flex flex-col justify-center items-start h-7 px-1.5 rounded-[var(--radius-md)] hover:bg-[var(--color-neutral-3)] transition-colors cursor-pointer outline-none text-[11px] text-[var(--color-neutral-8)]">
+                                              <button className="w-[140px] shrink-0 flex flex-col justify-center items-start h-7 px-1.5 rounded-[var(--radius-md)] hover:bg-[var(--color-neutral-3)] transition-colors cursor-pointer outline-none text-[11px] text-[var(--color-neutral-8)]">
                                                 {a.startDate && <span>Start: {displayDate(a.startDate)}</span>}
                                                 {a.endDate && <span>End: {displayDate(a.endDate)}</span>}
                                                 {!a.startDate && !a.endDate && <span>—</span>}

@@ -16,9 +16,7 @@ function displayDate(iso: string): string {
   const parts = iso.split('-')
   if (parts.length !== 3) return iso
   const [y, m, d] = parts
-  const mi = parseInt(m, 10) - 1
-  if (mi < 0 || mi > 11) return iso
-  return ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'][mi] + ` ${parseInt(d, 10)}, ${y}`
+  return `${m.padStart(2,'0')}/${d.padStart(2,'0')}/${y}`
 }
 
 const PRIORITY_DOT: Record<string, string> = {

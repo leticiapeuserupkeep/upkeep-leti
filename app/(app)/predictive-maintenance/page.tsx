@@ -77,15 +77,12 @@ function totalAssignments(pm: PMItem) {
   return pm.schedules.reduce((n, s) => n + s.assignments.length, 0)
 }
 
-const MONTH_NAMES_SHORT = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec']
 function displayDate(iso: string): string {
   if (!iso) return ''
   const parts = iso.split('-')
   if (parts.length !== 3) return iso
   const [y, m, d] = parts
-  const mi = parseInt(m, 10) - 1
-  if (mi < 0 || mi > 11) return iso
-  return `${MONTH_NAMES_SHORT[mi]} ${parseInt(d, 10)}, ${y}`
+  return `${m.padStart(2,'0')}/${d.padStart(2,'0')}/${y}`
 }
 
 function convertLegacy(item: LegacyPMItem): PMItem {
