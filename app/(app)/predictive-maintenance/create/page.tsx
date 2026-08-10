@@ -3130,7 +3130,7 @@ function CreatePMPageContent() {
                           return (<>
                             {missingMeters > 0 && (
                               <span className="flex items-center gap-1 rounded-full bg-[var(--color-error-3,#FFEFEF)] text-[var(--color-error,#CE2C31)] text-[11px] px-2.5 py-0.5 font-medium shrink-0">
-                                <Ban size={10} /> {missingMeters} missing meter{missingMeters > 1 ? 's' : ''}
+                                {missingMeters} missing meter{missingMeters > 1 ? 's' : ''}
                               </span>
                             )}
                             {missingTech > 0 && (
