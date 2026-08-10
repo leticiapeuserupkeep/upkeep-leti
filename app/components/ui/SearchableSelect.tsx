@@ -43,7 +43,7 @@ export function SearchableSelect({
         <Popover.Trigger asChild>
           <button
             type="button"
-            className="w-full h-10 flex items-center pl-3 pr-2 rounded-[var(--radius-lg)] border border-[var(--border-default)] bg-[var(--surface-primary)] hover:bg-[var(--color-neutral-2)] data-[state=open]:border-[var(--color-accent-7)] transition-colors cursor-pointer outline-none"
+            className="w-full h-10 flex items-center pl-3 pr-2 rounded-[var(--radius-lg)] border border-[var(--border-default)] bg-[var(--surface-primary)] hover:bg-[var(--color-neutral-2)] data-[state=open]:border-[var(--color-accent-7)] data-[state=open]:shadow-[0_0_1px_3px_rgba(0,106,220,0.1)] transition-colors cursor-pointer outline-none"
           >
             <span className={`flex-1 text-left text-[13px] truncate ${value ? 'text-[var(--color-neutral-11)]' : 'text-[var(--color-neutral-7)]'}`}>
               {value || placeholder}
@@ -180,7 +180,7 @@ export function SearchableMultiSelect({
           <button
             ref={triggerRef}
             type="button"
-            className="w-full h-10 flex items-center gap-1 pl-3 pr-2 rounded-[var(--radius-lg)] border border-[var(--border-default)] bg-[var(--surface-primary)] hover:bg-[var(--color-neutral-2)] data-[state=open]:border-[var(--color-accent-7)] transition-colors cursor-pointer outline-none text-left overflow-hidden"
+            className="w-full h-10 flex items-center gap-1 pl-3 pr-2 rounded-[var(--radius-lg)] border border-[var(--border-default)] bg-[var(--surface-primary)] hover:bg-[var(--color-neutral-2)] data-[state=open]:border-[var(--color-accent-7)] data-[state=open]:shadow-[0_0_1px_3px_rgba(0,106,220,0.1)] transition-colors cursor-pointer outline-none text-left overflow-hidden"
           >
             {values.length === 0 ? (
               <span className="flex-1 text-[13px] text-[var(--color-neutral-7)]">{placeholder}</span>

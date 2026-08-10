@@ -12,7 +12,7 @@ interface SearchInputProps extends Omit<InputHTMLAttributes<HTMLInputElement>, '
 export const SearchInput = forwardRef<HTMLInputElement, SearchInputProps>(
   ({ value, onValueChange, onClear, placeholder = 'Search', className = '', ...props }, ref) => {
     return (
-      <div className={`flex items-center gap-[var(--space-xs)] px-[var(--space-sm)] py-[var(--space-xs)] border border-[var(--border-default)] rounded-[var(--radius-lg)] bg-[var(--surface-primary)] focus-within:border-black focus-within:shadow-[0_0_1px_3px_rgba(0,106,220,0.1)] transition-colors duration-[var(--duration-fast)] ${className}`}>
+      <div className={`flex items-center gap-[var(--space-xs)] px-[var(--space-sm)] py-[var(--space-xs)] border border-[var(--border-default)] rounded-[var(--radius-lg)] bg-[var(--surface-primary)] focus-within:border-[var(--color-accent-7)] focus-within:shadow-[0_0_1px_3px_rgba(0,106,220,0.1)] transition-colors duration-[var(--duration-fast)] ${className}`}>
         <Search size={16} className="text-[var(--color-neutral-8)] shrink-0" />
         <input
           ref={ref}

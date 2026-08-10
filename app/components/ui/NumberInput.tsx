@@ -38,7 +38,7 @@ export function NumberInput({ value, onChange, min, max, step = 1, placeholder, 
         max={max}
         step={step}
         placeholder={placeholder}
-        className={`w-full h-8 pl-3 pr-7 rounded-[var(--radius-md)] border bg-[var(--surface-primary)] text-[13px] text-[var(--color-neutral-11)] outline-none focus:border-black focus:shadow-[0_0_1px_3px_rgba(0,106,220,0.1)] transition-colors [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none ${error ? 'border-[#CE2C31]' : 'border-[var(--border-default)]'}`}
+        className={`w-full h-8 pl-3 pr-7 rounded-[var(--radius-md)] border bg-[var(--surface-primary)] text-[13px] text-[var(--color-neutral-11)] outline-none focus:border-[var(--color-accent-7)] focus:shadow-[0_0_1px_3px_rgba(0,106,220,0.1)] transition-colors [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none ${error ? 'border-[#CE2C31]' : 'border-[var(--border-default)]'}`}
       />
       <div className="absolute right-0 top-0 bottom-0 flex flex-col border-l border-[var(--border-default)] rounded-r-[var(--radius-md)] overflow-hidden">
         <button
