@@ -2708,7 +2708,7 @@ function CreatePMPageContent() {
           <ChevronLeft size={20} />
         </button>
         <h1 className="text-[15px] font-semibold text-[var(--color-neutral-12)] flex-1">
-          Create a New Preventive Maintenance
+          {isEditing ? 'Edit Preventive Maintenance' : 'Create a New Preventive Maintenance'}
         </h1>
         <div className="flex items-center gap-2 mr-2">
           <span className="text-[13px] text-[var(--color-neutral-9)]">Create First Work Order Now</span>
