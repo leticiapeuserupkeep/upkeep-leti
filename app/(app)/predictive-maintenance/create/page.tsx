@@ -3065,7 +3065,7 @@ function CreatePMPageContent() {
               ) : (
                 <div className="flex flex-col gap-2 p-4">
                   {triggers.map(trigger => (
-                    <div key={trigger.id} id={`trigger-card-${trigger.id}`} className={`rounded-[8px] border overflow-hidden ${trigger.calendarTrigger.meterCondition && trigger.assignments.some(a => !a.meter) ? 'border-[var(--color-error,#CE2C31)]' : trigger.expanded ? 'border-[var(--color-accent-4)]' : !trigger.expanded && trigger.assignments.length === 0 ? 'border-[var(--color-error,#CE2C31)]' : 'border-[var(--border-default)]'} ${!trigger.expanded && trigger.assignments.length === 0 ? 'shadow-[0_0_0_4px_rgba(206,44,49,0.4)]' : ''} ${newTriggerIds.has(trigger.id) ? 'trigger-card-new' : ''}`}>
+                    <div key={trigger.id} id={`trigger-card-${trigger.id}`} className={`rounded-[8px] border overflow-hidden ${trigger.calendarTrigger.meterCondition && trigger.assignments.some(a => !a.meter) ? 'border-[var(--color-error,#CE2C31)]' : trigger.expanded ? 'border-[var(--color-accent-4)]' : !trigger.expanded && trigger.assignments.length === 0 ? 'border-[var(--color-error,#CE2C31)]' : 'border-[var(--border-default)]'} ${!trigger.expanded && trigger.assignments.length === 0 ? 'shadow-[0_0_1px_3px_rgba(206,44,49,0.2)]' : ''} ${newTriggerIds.has(trigger.id) ? 'trigger-card-new' : ''}`}>
                       {skeletonTriggerIds.has(trigger.id) ? (
                         <div className="flex flex-col bg-[var(--surface-primary)]">
                           <div className="flex items-center gap-3 px-4 py-4 bg-[var(--color-neutral-2)]">
