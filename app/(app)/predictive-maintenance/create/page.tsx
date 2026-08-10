@@ -3066,9 +3066,25 @@ function CreatePMPageContent() {
                 <div className="flex flex-col gap-2 p-4">
                   {triggers.map(trigger => (
                     <div key={trigger.id} id={`trigger-card-${trigger.id}`} className={`rounded-[8px] border overflow-hidden ${trigger.calendarTrigger.meterCondition && trigger.assignments.some(a => !a.meter) ? 'border-[var(--color-error,#CE2C31)]' : trigger.expanded ? 'border-[var(--color-accent-4)]' : 'border-[var(--border-default)]'} ${newTriggerIds.has(trigger.id) ? 'trigger-card-new' : ''}`}>
+                      {skeletonTriggerIds.has(trigger.id) ? (
+                        <div className="flex flex-col bg-[var(--surface-primary)]">
+                          <div className="flex items-center gap-3 px-4 py-4 bg-[var(--color-neutral-2)]">
+                            <div className="w-[140px] h-3 rounded-full bg-[var(--color-neutral-4)] skeleton-shimmer" />
+                            <div className="flex-1" />
+                            <div className="w-[90px] h-5 rounded-full bg-[var(--color-neutral-4)] skeleton-shimmer" />
+                            <div className="w-7 h-7 rounded-[var(--radius-md)] bg-[var(--color-neutral-4)] skeleton-shimmer" />
+                            <div className="w-7 h-7 rounded-[var(--radius-md)] bg-[var(--color-neutral-4)] skeleton-shimmer" />
+                          </div>
+                          <div className="flex flex-col items-center justify-center p-8 gap-3">
+                            <div className="w-[160px] h-3 rounded-full bg-[var(--color-neutral-3)] skeleton-shimmer" />
+                            <div className="w-[260px] h-2.5 rounded-full bg-[var(--color-neutral-3)] skeleton-shimmer" />
+                            <div className="w-[80px] h-7 rounded-[var(--radius-md)] bg-[var(--color-neutral-3)] skeleton-shimmer mt-1" />
+                          </div>
+                        </div>
+                      ) : null}
                       {/* Trigger row */}
                       <div
-                        className={`flex items-center gap-3 p-4 cursor-pointer select-none transition-colors ${trigger.expanded ? 'bg-[var(--color-accent-1)]' : 'bg-[var(--surface-primary)] hover:bg-[var(--color-neutral-2)]'}`}
+                        className={`flex items-center gap-3 p-4 cursor-pointer select-none transition-colors ${skeletonTriggerIds.has(trigger.id) ? 'hidden' : ''} ${trigger.expanded ? 'bg-[var(--color-accent-1)]' : 'bg-[var(--surface-primary)] hover:bg-[var(--color-neutral-2)]'}`}
                         onClick={() => {
                           const isExpanding = !trigger.expanded
                           setTriggers(ts => ts.map(t => t.id === trigger.id ? { ...t, expanded: !t.expanded } : t))
@@ -3148,17 +3164,10 @@ function CreatePMPageContent() {
                       </div>
 
                       {/* Expanded assignments sub-card */}
-                      <div id={`trigger-content-${trigger.id}`} className={`overflow-hidden transition-all duration-300 ease-in-out ${trigger.expanded ? 'max-h-[3000px] opacity-100' : 'max-h-0 opacity-0'}`}>
+                      <div id={`trigger-content-${trigger.id}`} className={`overflow-hidden transition-all duration-300 ease-in-out ${skeletonTriggerIds.has(trigger.id) ? 'hidden' : ''} ${trigger.expanded ? 'max-h-[3000px] opacity-100' : 'max-h-0 opacity-0'}`}>
                         <div className="p-4 flex flex-col gap-4 bg-[var(--surface-primary)]">
                           <div className="overflow-hidden">
                             {trigger.assignments.length === 0 ? (
-                              skeletonTriggerIds.has(trigger.id) ? (
-                                <div className="flex flex-col items-center justify-center p-6 gap-3">
-                                  <div className="w-[160px] h-3 rounded-full bg-[var(--color-neutral-3)] skeleton-shimmer" />
-                                  <div className="w-[260px] h-2.5 rounded-full bg-[var(--color-neutral-3)] skeleton-shimmer" />
-                                  <div className="w-[80px] h-7 rounded-[var(--radius-md)] bg-[var(--color-neutral-3)] skeleton-shimmer mt-1" />
-                                </div>
-                              ) : (
                               <div className="flex flex-col items-center justify-center p-4 gap-2 text-center assign-content-fadein">
                                 <p className="text-[13px] font-semibold text-[var(--color-neutral-11)]">Assign to this schedule</p>
                                 <p className="text-[12px] text-[var(--color-neutral-8)]">Choose assets, locations, or meters for this trigger to act on.</p>
@@ -3168,7 +3177,6 @@ function CreatePMPageContent() {
                                   </Button>
                                 </div>
                               </div>
-                              )
                             ) : (
                               <>
                                 {/* Toolbar + Column headers */}
@@ -3522,7 +3530,7 @@ function CreatePMPageContent() {
             setNewTriggerIds(s => new Set([...s, newId]))
             setSkeletonTriggerIds(s => new Set([...s, newId]))
             setTimeout(() => setNewTriggerIds(s => { const next = new Set(s); next.delete(newId); return next }), 600)
-            setTimeout(() => setSkeletonTriggerIds(s => { const next = new Set(s); next.delete(newId); return next }), 4000)
+            setTimeout(() => setSkeletonTriggerIds(s => { const next = new Set(s); next.delete(newId); return next }), 2000)
           }
           setShowCalendarModal(false)
           setEditingTriggerId(null)
