@@ -2304,8 +2304,9 @@ function MeterPopoverContent({ current, onSelect }: { current: string; onSelect:
       <div className="py-1 max-h-[200px] overflow-y-auto">
         {filtered.map(m => (
           <Popover.Close key={m || 'none'} asChild>
-            <button type="button" onClick={() => onSelect(m)} className={`w-full flex items-center px-3 py-1.5 text-[13px] text-left cursor-pointer transition-colors hover:bg-[var(--color-neutral-3)] ${current === m ? 'text-[var(--color-accent-9)] font-medium' : 'text-[var(--color-neutral-11)]'}`}>
+            <button type="button" onClick={() => onSelect(m)} className={`w-full flex items-center justify-between px-3 py-1.5 text-[13px] text-left cursor-pointer transition-colors hover:bg-[var(--color-neutral-3)] ${current === m ? 'text-[var(--color-accent-9)] font-medium' : 'text-[var(--color-neutral-11)]'}`}>
               {m || 'None'}
+              {!m && <X size={12} className="text-[var(--color-neutral-7)] shrink-0" />}
             </button>
           </Popover.Close>
         ))}
@@ -3429,7 +3430,11 @@ function CreatePMPageContent() {
                                                 {['', ...TEAMS.map(t => t.value)].map(team => (
                                                   <Popover.Close key={team || 'none'} asChild>
                                                     <button type="button" onClick={() => setTriggers(ts => ts.map(t => t.id === trigger.id ? { ...t, assignments: t.assignments.map(x => x.id === a.id ? { ...x, team } : x) } : t))} className={`w-full flex items-center gap-2 px-3 py-1.5 text-[13px] text-left cursor-pointer transition-colors hover:bg-[var(--color-neutral-3)] ${a.team === team ? 'text-[var(--color-accent-9)] font-medium' : 'text-[var(--color-neutral-11)]'}`}>
-                                                      {team && <span style={{ background: TEAM_COLORS[team] }} className="w-4 h-4 rounded-full flex items-center justify-center text-white text-[8px] font-bold shrink-0">{team[0]}</span>}
+                                                      {team ? (
+                                                        <span style={{ background: TEAM_COLORS[team] }} className="w-4 h-4 rounded-full flex items-center justify-center text-white text-[8px] font-bold shrink-0">{team[0]}</span>
+                                                      ) : (
+                                                        <span className="w-4 h-4 rounded-full border border-[var(--color-neutral-6)] flex items-center justify-center shrink-0"><X size={8} className="text-[var(--color-neutral-7)]" /></span>
+                                                      )}
                                                       {team || 'None'}
                                                     </button>
                                                   </Popover.Close>
