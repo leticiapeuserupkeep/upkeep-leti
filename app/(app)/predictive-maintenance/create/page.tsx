@@ -131,6 +131,31 @@ const TEAMS = ['Maintenance', 'Electrical', 'Safety', 'Operations'].map(name => 
   ),
 }))
 
+/* ── Date utilities ── */
+
+const MONTH_NAMES = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec']
+
+function displayDate(iso: string): string {
+  if (!iso) return ''
+  const parts = iso.split('-')
+  if (parts.length !== 3) return iso
+  const [y, m, d] = parts
+  const mi = parseInt(m, 10) - 1
+  if (mi < 0 || mi > 11) return iso
+  return `${MONTH_NAMES[mi]} ${parseInt(d, 10)}, ${y}`
+}
+
+function validateDateRange(start: string, end: string): string {
+  const checkYear = (d: string) => {
+    if (!d) return true
+    const y = parseInt(d.split('-')[0], 10)
+    return y >= 1000 && y <= 9999
+  }
+  if (!checkYear(start) || !checkYear(end)) return 'Please enter a valid year (1000–9999)'
+  if (start && end && end < start) return 'End date must be on or after start date'
+  return ''
+}
+
 /* ── Select field component ── */
 
 type SelectOption = string | { value: string; label: string; icon?: React.ReactNode }
@@ -339,7 +364,7 @@ function CreateCalendarTriggerModal({
 
   return (
     <Modal open={open} onOpenChange={v => !v && handleClose()} maxWidth="720px">
-      <ModalHeader title="Create Trigger" />
+      <ModalHeader title="New Schedule" />
       <ModalBody className="flex flex-col gap-3 p-6">
 
         {/* Calendar Based card */}
@@ -719,7 +744,7 @@ function CreateCalendarTriggerModal({
           const hasValidTrigger = calendarValid || meterComplete
           return (
             <Button variant="primary" size="md" onClick={handleSubmit} disabled={!hasValidTrigger || meterPartial || calendarPartial}>
-              Create Trigger
+              Create Schedule
             </Button>
           )
         })()}
@@ -1495,15 +1520,20 @@ function AssignAssetModal({
   }, [appliesToSelected])
 
   const canSubmit = !!(form.asset.length || form.location.length || form.meter.length || form.primaryAssignee || form.additionalAssignee.length || form.team)
+  const [dateError, setDateError] = useState('')
 
   function handleSubmit() {
     if (!canSubmit) return
+    const err = validateDateRange(form.startDate, form.endDate)
+    if (err) { setDateError(err); return }
+    setDateError('')
     onSubmit(form)
     setForm(EMPTY_FORM)
     setAppliesToType('Asset')
   }
 
   function handleClose() {
+    setDateError('')
     setForm(EMPTY_FORM)
     setAppliesToType('Asset')
     onClose()
@@ -1664,15 +1694,16 @@ function AssignAssetModal({
             label="Start"
             type="date"
             value={form.startDate}
-            onChange={e => setForm(f => ({ ...f, startDate: (e.target as HTMLInputElement).value }))}
+            onChange={e => { setDateError(''); setForm(f => ({ ...f, startDate: (e.target as HTMLInputElement).value })) }}
           />
           <TextInput
             label="End"
             type="date"
             value={form.endDate}
-            onChange={e => setForm(f => ({ ...f, endDate: (e.target as HTMLInputElement).value }))}
+            onChange={e => { setDateError(''); setForm(f => ({ ...f, endDate: (e.target as HTMLInputElement).value })) }}
           />
         </div>
+        {dateError && <p className="mt-2 text-[12px] text-[var(--color-error,#CE2C31)]">{dateError}</p>}
 
       </ModalBody>
       <ModalFooter className="flex items-center justify-end gap-2 px-6 py-4">
@@ -1987,7 +2018,7 @@ function TriggerSetupModal({ type, onClose, onSave }: {
           const label = type === 'meter' ? `Less than ${meterThreshold || '0'} ${meterUnit}` : `Every ${interval} ${period}`
           onSave(label)
         }}>
-          Create Trigger
+          Create Schedule
         </Button>
       </ModalFooter>
     </Modal>
@@ -2474,6 +2505,22 @@ function CreatePMPageContent() {
       assets: triggers.flatMap(t => t.assignments.map(a => ({
         asset: a.name, location: a.subtext, assignee: a.assignees[0], team: a.team,
       }))),
+      schedules: triggers.map(t => ({
+        id: t.id,
+        calendarTrigger: formatScheduleText(t.calendarTrigger) || (t.calendarTrigger.meterCondition ? `Meter reading` : ''),
+        meterTrigger: t.calendarTrigger.meterCondition ? `${t.calendarTrigger.meterCondition} ${t.calendarTrigger.meterValue} ${t.calendarTrigger.meterUnit}`.trim() : undefined,
+        assignments: t.assignments.map(a => ({
+          id: a.id,
+          asset: a.name,
+          assetType: (a.type === 'Location' ? 'Location' : 'Asset') as 'Asset' | 'Location',
+          location: a.subtext || '',
+          meter: a.meter || undefined,
+          startDate: a.startDate || undefined,
+          endDate: a.endDate || undefined,
+          assignee: a.assignees[0],
+          team: a.team,
+        })),
+      })),
       schedule,
       status,
       priority: priority || 'None',
@@ -2501,7 +2548,6 @@ function CreatePMPageContent() {
   }
 
   function handleAssignToTrigger(triggerId: string, form: AssignAssetForm) {
-    const fmt = (d: string) => d ? new Date(d).toLocaleDateString('en-US', { month: '2-digit', day: '2-digit', year: '2-digit' }) : ''
     let items: TriggerAssignment[] = []
     if (form.asset.length > 0) {
       items = form.asset.map(a => {
@@ -2514,8 +2560,8 @@ function CreatePMPageContent() {
           meter: form.meter[0] || db?.meter || '',
           assignees: [form.primaryAssignee, ...form.additionalAssignee].filter(Boolean),
           team: form.team || db?.team || '',
-          startDate: fmt(form.startDate),
-          endDate: fmt(form.endDate),
+          startDate: form.startDate,
+          endDate: form.endDate,
         }
       })
     } else if (form.location.length > 0) {
@@ -2529,8 +2575,8 @@ function CreatePMPageContent() {
           meter: form.meter[0] || '',
           assignees: [form.primaryAssignee, ...form.additionalAssignee].filter(Boolean),
           team: form.team || db?.team || '',
-          startDate: fmt(form.startDate),
-          endDate: fmt(form.endDate),
+          startDate: form.startDate,
+          endDate: form.endDate,
         }
       })
     } else if (form.meter.length > 0) {
@@ -2544,8 +2590,8 @@ function CreatePMPageContent() {
           meter: m,
           assignees: [form.primaryAssignee, ...form.additionalAssignee].filter(Boolean),
           team: form.team || '',
-          startDate: fmt(form.startDate),
-          endDate: fmt(form.endDate),
+          startDate: form.startDate,
+          endDate: form.endDate,
         }
       })
     }
@@ -2561,8 +2607,8 @@ function CreatePMPageContent() {
           meter: '',
           assignees,
           team: form.team || '',
-          startDate: fmt(form.startDate),
-          endDate: fmt(form.endDate),
+          startDate: form.startDate,
+          endDate: form.endDate,
         }]
       }
     }
@@ -3243,11 +3289,11 @@ function CreatePMPageContent() {
                           <DropdownMenuContent align="end">
                             <DropdownMenuItem onSelect={() => { setEditingTriggerId(trigger.id); setCalendarModalKey(k => k + 1); setShowCalendarModal(true) }}>
                               <Pencil size={13} className="mr-2 text-[var(--color-neutral-8)]" />
-                              Edit Trigger
+                              Edit Schedule
                             </DropdownMenuItem>
                             <DropdownMenuItem onSelect={() => setTriggers(ts => ts.filter(t => t.id !== trigger.id))}>
                               <Trash2 size={13} className="mr-2 text-[var(--color-error)]" />
-                              <span className="text-[var(--color-error)]">Delete Trigger</span>
+                              <span className="text-[var(--color-error)]">Delete Schedule</span>
                             </DropdownMenuItem>
                           </DropdownMenuContent>
                         </DropdownMenu>
@@ -3266,7 +3312,7 @@ function CreatePMPageContent() {
                             {trigger.assignments.length === 0 ? (
                               <div className="flex flex-col items-center justify-center p-4 gap-2 text-center assign-content-fadein">
                                 <p className="text-[13px] font-semibold text-[var(--color-neutral-11)]">Assign to this schedule</p>
-                                <p className="text-[12px] text-[var(--color-neutral-8)]">Choose assets, locations, or meters for this trigger to act on.</p>
+                                <p className="text-[12px] text-[var(--color-neutral-8)]">Choose assets, locations, or meters for this schedule to apply to.</p>
                                 <div className="assign-cta-glow rounded-[var(--radius-md)]">
                                   <Button variant="primary" size="sm" onClick={() => setShowAssignModal(trigger.id)}>
                                     Assign
@@ -3555,8 +3601,8 @@ function CreatePMPageContent() {
                                           <Popover.Root>
                                             <Popover.Trigger asChild>
                                               <button className="w-[110px] shrink-0 flex flex-col justify-center items-start h-7 px-1.5 rounded-[var(--radius-md)] hover:bg-[var(--color-neutral-3)] transition-colors cursor-pointer outline-none text-[11px] text-[var(--color-neutral-8)]">
-                                                {a.startDate && <span>Start: {a.startDate}</span>}
-                                                {a.endDate && <span>End: {a.endDate}</span>}
+                                                {a.startDate && <span>Start: {displayDate(a.startDate)}</span>}
+                                                {a.endDate && <span>End: {displayDate(a.endDate)}</span>}
                                                 {!a.startDate && !a.endDate && <span>—</span>}
                                               </button>
                                             </Popover.Trigger>

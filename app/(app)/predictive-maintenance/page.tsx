@@ -60,6 +60,10 @@ interface PMItem {
 interface LegacyPMItem {
   id: string; title: string
   assets?: Array<{ asset: string; location: string; assignee?: string; team?: string }>
+  schedules?: Array<{
+    id: string; calendarTrigger: string; meterTrigger?: string
+    assignments: Array<{ id: string; asset: string; assetType: string; location: string; meter?: string; startDate?: string; endDate?: string; assignee?: string; team?: string }>
+  }>
   schedule?: string; status?: string; priority?: string; woCount?: number
 }
 
@@ -73,26 +77,56 @@ function totalAssignments(pm: PMItem) {
   return pm.schedules.reduce((n, s) => n + s.assignments.length, 0)
 }
 
+const MONTH_NAMES_SHORT = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec']
+function displayDate(iso: string): string {
+  if (!iso) return ''
+  const parts = iso.split('-')
+  if (parts.length !== 3) return iso
+  const [y, m, d] = parts
+  const mi = parseInt(m, 10) - 1
+  if (mi < 0 || mi > 11) return iso
+  return `${MONTH_NAMES_SHORT[mi]} ${parseInt(d, 10)}, ${y}`
+}
+
 function convertLegacy(item: LegacyPMItem): PMItem {
+  const makeTech = (name?: string): TechAvatar[] =>
+    name ? [{ initials: name.split(' ').map((n: string) => n[0]).join('').slice(0,2).toUpperCase(), bg: '#374151' }] : []
+
+  const schedules: PMSchedule[] = item.schedules && item.schedules.length > 0
+    ? item.schedules.map(s => ({
+        id: s.id,
+        calendarTrigger: s.calendarTrigger,
+        meterTrigger: s.meterTrigger,
+        assignments: s.assignments.map(a => ({
+          id: a.id,
+          asset: a.asset,
+          assetType: (a.assetType === 'Location' ? 'Location' : 'Asset') as 'Asset' | 'Location',
+          location: a.location ?? '',
+          meter: a.meter,
+          startDate: a.startDate,
+          endDate: a.endDate,
+          technicians: makeTech(a.assignee),
+        })),
+      }))
+    : [{
+        id: `${item.id}-s1`,
+        calendarTrigger: item.schedule ?? 'Scheduled trigger',
+        assignments: (item.assets ?? []).map((a, i) => ({
+          id: `${item.id}-a${i}`,
+          asset: a.asset,
+          assetType: 'Asset' as const,
+          location: a.location ?? '',
+          technicians: makeTech(a.assignee),
+        })),
+      }]
+
   return {
     id: item.id,
     title: item.title || 'Untitled PM',
     category: 'Maintenance',
     priority: (['None','Low','Medium','High'].includes(item.priority ?? '') ? item.priority as PMPriority : 'None'),
     status: (['Active','Inactive','Completed','Draft'].includes(item.status ?? '') ? item.status as PMStatus : 'Active'),
-    schedules: [{
-      id: `${item.id}-s1`,
-      calendarTrigger: item.schedule ?? 'Scheduled trigger',
-      assignments: (item.assets ?? []).map((a, i) => ({
-        id: `${item.id}-a${i}`,
-        asset: a.asset,
-        assetType: 'Asset' as const,
-        location: a.location ?? '',
-        technicians: a.assignee
-          ? [{ initials: a.assignee.split(' ').map((n: string) => n[0]).join('').slice(0,2).toUpperCase(), bg: '#374151' }]
-          : [],
-      })),
-    }],
+    schedules,
   }
 }
 
@@ -545,7 +579,7 @@ export default function PreventiveMaintenancePage() {
                                     {pm.schedules.filter(s => s.assignments.length > 0).map((sched, si) => (
                                       <div key={sched.id}>
                                         <div className="text-[11px] font-semibold text-white/50 uppercase tracking-wide mb-1">
-                                          {sched.calendarTrigger || sched.meterTrigger || `Trigger ${si + 1}`}
+                                          {sched.calendarTrigger || sched.meterTrigger || `Schedule ${si + 1}`}
                                         </div>
                                         {sched.assignments.map(a => (
                                           <div key={a.id} className="text-[12px] text-white/90 py-0.5">{a.asset}</div>
@@ -751,8 +785,8 @@ export default function PreventiveMaintenancePage() {
                                           <div className="bg-[var(--surface-primary)]">
                                             {sched.assignments.length === 0 ? (
                                               <div className="flex flex-col items-center justify-center p-6 gap-2 text-center">
-                                                <p className="text-[13px] font-semibold text-[var(--color-neutral-11)]">Assign to this trigger</p>
-                                                <p className="text-[12px] text-[var(--color-neutral-8)]">Choose assets or locations for this trigger to act on.</p>
+                                                <p className="text-[13px] font-semibold text-[var(--color-neutral-11)]">Assign to this schedule</p>
+                                                <p className="text-[12px] text-[var(--color-neutral-8)]">Choose assets or locations for this schedule to apply to.</p>
                                                 <button onClick={() => router.push('/predictive-maintenance/create?assign=1')} className="flex items-center gap-1 px-3 h-8 rounded-[var(--radius-md)] bg-[var(--color-accent-9)] text-white text-[13px] font-medium cursor-pointer hover:opacity-90 transition-opacity">
                                                   <Plus size={13} /> Assign
                                                 </button>
@@ -788,8 +822,8 @@ export default function PreventiveMaintenancePage() {
                                                       }
                                                     </div>
                                                     <div className="w-[100px] shrink-0 flex flex-col gap-0.5">
-                                                      {a.startDate && <span className="text-[11px] text-[var(--color-neutral-8)] leading-4">Start: {a.startDate}</span>}
-                                                      {a.endDate && <span className="text-[11px] text-[var(--color-neutral-8)] leading-4">End: {a.endDate}</span>}
+                                                      {a.startDate && <span className="text-[11px] text-[var(--color-neutral-8)] leading-4">Start: {displayDate(a.startDate)}</span>}
+                                                      {a.endDate && <span className="text-[11px] text-[var(--color-neutral-8)] leading-4">End: {displayDate(a.endDate)}</span>}
                                                     </div>
                                                     <div className="w-[140px] shrink-0 flex flex-col gap-0.5">
                                                       {a.lastWO && <span className="text-[11px] text-[var(--color-neutral-8)] leading-4">Last: {a.lastWO}</span>}

@@ -11,6 +11,16 @@ import { Avatar } from '@/app/components/ui'
 import { Button } from '@/app/components/ui/Button'
 import { pmItems, type PMItem, type TechAvatar } from '@/app/lib/pm-data'
 
+function displayDate(iso: string): string {
+  if (!iso) return ''
+  const parts = iso.split('-')
+  if (parts.length !== 3) return iso
+  const [y, m, d] = parts
+  const mi = parseInt(m, 10) - 1
+  if (mi < 0 || mi > 11) return iso
+  return ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'][mi] + ` ${parseInt(d, 10)}, ${y}`
+}
+
 const PRIORITY_DOT: Record<string, string> = {
   High: 'bg-[var(--color-error)]',
   Medium: 'bg-[var(--color-warning)]',
@@ -285,8 +295,8 @@ function SchedulesContent({ pm, expandedSchedules, onToggle }: {
                             : <span className="text-[var(--color-error)] text-[12px] font-medium">Add</span>}
                         </div>
                         <div className="w-[100px] shrink-0 flex flex-col gap-0.5">
-                          {a.startDate && <span className="text-[11px] text-[var(--color-neutral-8)]">Start: {a.startDate}</span>}
-                          {a.endDate && <span className="text-[11px] text-[var(--color-neutral-8)]">End: {a.endDate}</span>}
+                          {a.startDate && <span className="text-[11px] text-[var(--color-neutral-8)]">Start: {displayDate(a.startDate)}</span>}
+                          {a.endDate && <span className="text-[11px] text-[var(--color-neutral-8)]">End: {displayDate(a.endDate)}</span>}
                         </div>
                         <div className="w-[130px] shrink-0 flex flex-col gap-0.5">
                           {a.lastWO && <span className="text-[11px] text-[var(--color-neutral-8)]">Last: {a.lastWO}</span>}
