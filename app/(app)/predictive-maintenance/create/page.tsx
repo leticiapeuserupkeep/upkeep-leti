@@ -2578,17 +2578,18 @@ function CreatePMPageContent() {
   const hasUnassignedTriggers = triggers.length > 0 && triggers.some(t => t.assignments.length === 0)
   const hasMissingMeters = triggers.some(t => t.calendarTrigger.meterCondition && t.assignments.some(a => !a.meter))
   const hasAnyError = triggers.length === 0 || hasUnassignedTriggers || hasMissingMeters
+  const isTitleValid = title.trim() !== '' && title.trim().toLowerCase() !== 'untitled pm' && title.trim().toLowerCase() !== 'untitled'
   const missingFields: string[] = [
-    ...(!title.trim() ? ['Title is required'] : []),
+    ...(!isTitleValid ? ['Title is required'] : []),
     ...(triggers.length === 0 ? ['At least one schedule is required'] : []),
     ...(hasUnassignedTriggers ? ['All schedules need at least one assignment'] : []),
     ...(hasMissingMeters ? ['Some assignments are missing a meter reading'] : []),
   ]
-  const createDisabled = !title.trim() || hasAnyError
+  const createDisabled = !isTitleValid || hasAnyError
 
 
   function handleCreatePM() {
-    if (!title || hasAnyError) return
+    if (!isTitleValid || hasAnyError) return
     persistPM('Active')
     router.push('/predictive-maintenance')
   }
@@ -2809,7 +2810,7 @@ function CreatePMPageContent() {
                           error={titleError}
                           errorMessage={titleError ? 'Title is required' : undefined}
                           onChange={e => { setTitle((e.target as HTMLInputElement).value); if (titleError) setTitleError(false) }}
-                          onBlur={() => { if (!title.trim()) setTitleError(true) }}
+                          onBlur={() => { if (!isTitleValid) setTitleError(true) }}
                         />
                       </div>
                       <Textarea
