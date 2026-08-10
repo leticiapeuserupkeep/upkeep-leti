@@ -5,10 +5,12 @@ import { type InputHTMLAttributes, type TextareaHTMLAttributes, forwardRef, type
 interface TextInputProps extends InputHTMLAttributes<HTMLInputElement> {
   label?: string
   suffix?: ReactNode
+  error?: boolean
+  errorMessage?: string
 }
 
 export const TextInput = forwardRef<HTMLInputElement, TextInputProps>(
-  ({ label, suffix, className = '', id, ...props }, ref) => {
+  ({ label, suffix, error, errorMessage, className = '', id, ...props }, ref) => {
     const inputId = id || label?.toLowerCase().replace(/\s+/g, '-')
     return (
       <div className="flex flex-col gap-[var(--space-xs)]">
@@ -21,7 +23,7 @@ export const TextInput = forwardRef<HTMLInputElement, TextInputProps>(
             {props.required && <span className="ml-0.5 text-[var(--color-error)]">*</span>}
           </label>
         )}
-        <div className="flex items-center rounded-[var(--radius-lg)] border border-[var(--border-default)] overflow-hidden focus-within:border-[var(--color-accent-7)] transition-colors duration-[var(--duration-fast)]">
+        <div className={`flex items-center rounded-[var(--radius-lg)] border overflow-hidden transition-colors duration-[var(--duration-fast)] ${error ? 'border-[var(--color-error)] focus-within:border-[var(--color-error)]' : 'border-[var(--border-default)] focus-within:border-[var(--color-accent-7)]'}`}>
           <input
             ref={ref}
             id={inputId}
@@ -34,6 +36,7 @@ export const TextInput = forwardRef<HTMLInputElement, TextInputProps>(
             </span>
           )}
         </div>
+        {errorMessage && <p className="text-[12px] text-[var(--color-error)] font-medium -mt-1">{errorMessage}</p>}
       </div>
     )
   }

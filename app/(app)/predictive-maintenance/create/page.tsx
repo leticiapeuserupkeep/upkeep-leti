@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState, useRef, useEffect, useCallback } from 'react'
+import React, { useState, useRef, useEffect, useCallback, Suspense } from 'react'
 import * as Popover from '@radix-ui/react-popover'
 import Link from 'next/link'
 import { useRouter, useSearchParams } from 'next/navigation'
@@ -2349,7 +2349,7 @@ function BulkTechniciansContent({ selectedAssignments, onToggle }: {
   )
 }
 
-export default function CreatePMPage() {
+function CreatePMPageContent() {
   const [title, setTitle] = useState('')
   const [description, setDescription] = useState('')
   const [category, setCategory] = useState('')
@@ -2382,6 +2382,10 @@ export default function CreatePMPage() {
   const [assignmentSort, setAssignmentSort] = useState<Record<string, { col: string; dir: 'asc' | 'desc' }>>({})
   const [novaOpen, setNovaOpen] = useState(false)
   const [submitted, setSubmitted] = useState(false)
+  const [newTriggerIds, setNewTriggerIds] = useState<Set<string>>(new Set())
+  const [pulseTriggerIds, setPulseTriggerIds] = useState<Set<string>>(new Set())
+  const [titleError, setTitleError] = useState(false)
+  const titleContainerRef = useRef<HTMLDivElement>(null)
   const router = useRouter()
   const searchParams = useSearchParams()
 
@@ -2548,6 +2552,10 @@ export default function CreatePMPage() {
       setTriggers(ts => ts.map(t => t.id === triggerId ? { ...t, assignments: [...t.assignments, ...items] } : t))
     }
     setShowAssignModal(null)
+    if (!title.trim()) {
+      setTitleError(true)
+      setTimeout(() => titleContainerRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' }), 300)
+    }
   }
 
   const hasUnassignedTriggers = triggers.length > 0 && triggers.some(t => t.assignments.length === 0)
@@ -2625,6 +2633,23 @@ export default function CreatePMPage() {
 
   return (
     <div className="flex flex-col h-full overflow-hidden">
+      <style>{`
+        @keyframes trigger-card-slide-in {
+          from { opacity: 0; transform: translateY(10px) scale(0.98); }
+          to { opacity: 1; transform: translateY(0) scale(1); }
+        }
+        .trigger-card-new {
+          animation: trigger-card-slide-in 400ms cubic-bezier(0.32, 0.72, 0, 1) forwards;
+        }
+        @keyframes assign-cta-pulse-kf {
+          0% { box-shadow: 0 0 0 0 rgba(0, 106, 220, 0.5); }
+          50% { box-shadow: 0 0 0 7px rgba(0, 106, 220, 0); }
+          100% { box-shadow: 0 0 0 0 rgba(0, 106, 220, 0); }
+        }
+        .assign-cta-pulse {
+          animation: assign-cta-pulse-kf 600ms ease-out 3;
+        }
+      `}</style>
       {/* Header */}
       <div className="h-[60px] flex items-center gap-3 px-4 bg-[var(--surface-primary)] border-b border-[var(--border-subtle)] shrink-0">
         <button
@@ -2710,14 +2735,18 @@ export default function CreatePMPage() {
                   <div className="grid grid-cols-2 gap-5">
                     {/* Left column */}
                     <div className="flex flex-col gap-5">
-                      <TextInput
-                        label="Title"
-                        required
-                        autoFocus
-                        placeholder="e.g. Monthly HVAC filter replacement"
-                        value={title}
-                        onChange={e => setTitle((e.target as HTMLInputElement).value)}
-                      />
+                      <div ref={titleContainerRef}>
+                        <TextInput
+                          label="Title"
+                          required
+                          autoFocus
+                          placeholder="e.g. Monthly HVAC filter replacement"
+                          value={title}
+                          error={titleError}
+                          errorMessage={titleError ? 'Title is required' : undefined}
+                          onChange={e => { setTitle((e.target as HTMLInputElement).value); if (titleError) setTitleError(false) }}
+                        />
+                      </div>
                       <Textarea
                         label="Description"
                         placeholder="Describe this maintenance task…"
@@ -3022,7 +3051,7 @@ export default function CreatePMPage() {
               ) : (
                 <div className="flex flex-col gap-2 p-4">
                   {triggers.map(trigger => (
-                    <div key={trigger.id} id={`trigger-card-${trigger.id}`} className={`rounded-[8px] border overflow-hidden ${trigger.calendarTrigger.meterCondition && trigger.assignments.some(a => !a.meter) ? 'border-[var(--color-error,#CE2C31)]' : trigger.expanded ? 'border-[var(--color-accent-4)]' : 'border-[var(--border-default)]'}`}>
+                    <div key={trigger.id} id={`trigger-card-${trigger.id}`} className={`rounded-[8px] border overflow-hidden ${trigger.calendarTrigger.meterCondition && trigger.assignments.some(a => !a.meter) ? 'border-[var(--color-error,#CE2C31)]' : trigger.expanded ? 'border-[var(--color-accent-4)]' : 'border-[var(--border-default)]'} ${newTriggerIds.has(trigger.id) ? 'trigger-card-new' : ''}`}>
                       {/* Trigger row */}
                       <div
                         className={`flex items-center gap-3 p-4 cursor-pointer select-none transition-colors ${trigger.expanded ? 'bg-[var(--color-accent-1)]' : 'bg-[var(--surface-primary)] hover:bg-[var(--color-neutral-2)]'}`}
@@ -3112,9 +3141,11 @@ export default function CreatePMPage() {
                               <div className="flex flex-col items-center justify-center p-4 gap-2 text-center">
                                 <p className="text-[13px] font-semibold text-[var(--color-neutral-11)]">Assign to this schedule</p>
                                 <p className="text-[12px] text-[var(--color-neutral-8)]">Choose assets, locations, or meters for this trigger to act on.</p>
-                                <Button variant="primary" size="sm" onClick={() => setShowAssignModal(trigger.id)}>
-                                  Assign
-                                </Button>
+                                <div className={pulseTriggerIds.has(trigger.id) ? 'assign-cta-pulse rounded-[var(--radius-md)]' : ''}>
+                                  <Button variant="primary" size="sm" onClick={() => setShowAssignModal(trigger.id)}>
+                                    Assign
+                                  </Button>
+                                </div>
                               </div>
                             ) : (
                               <>
@@ -3464,7 +3495,14 @@ export default function CreatePMPage() {
           if (editingTriggerId) {
             setTriggers(ts => ts.map(tr => tr.id === editingTriggerId ? { ...tr, calendarTrigger: t } : tr))
           } else {
-            setTriggers(ts => [...ts.map(tr => ({ ...tr, expanded: false })), { id: crypto.randomUUID(), calendarTrigger: t, assignments: [], expanded: true }])
+            const newId = crypto.randomUUID()
+            setTriggers(ts => [...ts.map(tr => ({ ...tr, expanded: false })), { id: newId, calendarTrigger: t, assignments: [], expanded: true }])
+            setNewTriggerIds(s => new Set([...s, newId]))
+            setTimeout(() => setNewTriggerIds(s => { const next = new Set(s); next.delete(newId); return next }), 600)
+            setTimeout(() => {
+              setPulseTriggerIds(s => new Set([...s, newId]))
+              setTimeout(() => setPulseTriggerIds(s => { const next = new Set(s); next.delete(newId); return next }), 1800)
+            }, 2000)
           }
           setShowCalendarModal(false)
           setEditingTriggerId(null)
@@ -3551,5 +3589,13 @@ export default function CreatePMPage() {
       )}
 
     </div>
+  )
+}
+
+export default function CreatePMPage() {
+  return (
+    <Suspense>
+      <CreatePMPageContent />
+    </Suspense>
   )
 }
