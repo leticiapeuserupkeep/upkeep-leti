@@ -3135,7 +3135,7 @@ function CreatePMPageContent() {
                             )}
                             {missingTech > 0 && (
                               <span className="flex items-center gap-1 rounded-full bg-[var(--color-error-3,#FFEFEF)] text-[var(--color-error,#CE2C31)] text-[11px] px-2.5 py-0.5 font-medium shrink-0">
-                                <UserX size={10} /> {missingTech} missing technician{missingTech > 1 ? 's' : ''}
+                                {missingTech} missing technician{missingTech > 1 ? 's' : ''}
                               </span>
                             )}
                           </>)
