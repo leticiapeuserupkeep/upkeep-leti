@@ -114,7 +114,16 @@ const ASSETS = ASSET_NAMES
 const LOCATIONS = LOCATION_NAMES
 const METERS = METER_NAMES
 const TRIGGERS = ['Every Wednesday', 'Daily', 'Weekly', 'Monthly', 'On Meter Reading']
-const ASSIGNEES = ['Leticia Peuser', 'John Smith', 'Maria Garcia', 'David Chen']
+const ASSIGNEE_ROLES: Record<string, string> = {
+  'Leticia Peuser': 'Technician',
+  'John Smith': 'Technician',
+  'Maria Garcia': 'Technician',
+  'David Chen': 'Supervisor',
+}
+const ASSIGNEES = Object.keys(ASSIGNEE_ROLES).sort((a, b) => {
+  const order = { Technician: 0, Supervisor: 1 }
+  return (order[ASSIGNEE_ROLES[a] as keyof typeof order] ?? 9) - (order[ASSIGNEE_ROLES[b] as keyof typeof order] ?? 9)
+})
 const TEAM_COLORS: Record<string, string> = {
   Maintenance: '#3B82F6',
   Electrical: '#F59E0B',
@@ -313,8 +322,11 @@ function CreateCalendarTriggerModal({
   initial?: CalendarTrigger
 }) {
   const [form, setForm] = useState<Omit<CalendarTrigger, 'id'>>(initial ?? EMPTY_TRIGGER)
-  const set = <K extends keyof typeof form>(k: K) => (v: (typeof form)[K]) =>
+  const [fieldsTouched, setFieldsTouched] = useState(false)
+  const set = <K extends keyof typeof form>(k: K) => (v: (typeof form)[K]) => {
+    setFieldsTouched(true)
     setForm(f => ({ ...f, [k]: v }))
+  }
 
   const [showInactivePeriods, setShowInactivePeriods] = useState(false)
   const [showMeterTrigger, setShowMeterTrigger] = useState(!!(initial?.meterValue || initial?.meterCondition))
@@ -475,18 +487,18 @@ function CreateCalendarTriggerModal({
                     <div className="flex flex-col gap-1">
                       <div className="flex items-center gap-2">
                         <span className="text-[13px] text-[var(--color-neutral-10)] shrink-0">Every</span>
-                        <NumberInput value={form.every} onChange={set('every')} min={1} className="w-[80px] shrink-0" error={!form.every} />
+                        <NumberInput value={form.every} onChange={set('every')} min={1} className="w-[80px] shrink-0" error={fieldsTouched && !form.every} />
                         <InlineSelect value={form.period}
                           onChange={set('period')}
                           options={PERIODS.map(p => ({ value: p, label: `${p}(s)` }))}
                           placeholder="Period"
                           className="flex-1 justify-between"
-                          error={!form.period} />
+                          error={fieldsTouched && !form.period} />
                         {form.period === 'Week' && (
                           <>
                             <span className="text-[13px] text-[var(--color-neutral-10)] shrink-0">On</span>
                             <InlineSelect value={form.weekday} onChange={set('weekday')}
-                              options={WEEKDAY_LETTERS.map((wd, i) => ({ value: wd.value, label: FULL_WEEKDAYS[i] }))} placeholder="Day" className="justify-between" error={!form.weekday} />
+                              options={WEEKDAY_LETTERS.map((wd, i) => ({ value: wd.value, label: FULL_WEEKDAYS[i] }))} placeholder="Day" className="justify-between" error={fieldsTouched && !form.weekday} />
                           </>
                         )}
                         {form.period === 'Month' && (
@@ -1436,7 +1448,7 @@ function AssignAssetModal({
   open: boolean
   onClose: () => void
   onSubmit: (data: AssignAssetForm) => void
-  existingAssets?: AssignedAsset[]
+  existingAssets?: Array<{ name: string; location?: string; meter?: string }>
   initialValues?: AssignAssetForm
 }) {
   const [form, setForm] = useState<AssignAssetForm>(EMPTY_FORM)
@@ -2306,8 +2318,10 @@ interface TriggerAssignment {
   type: 'Asset' | 'Location' | 'Meter' | 'Person'
   subtext: string
   meter?: string
+  meterInherited?: boolean
   assignees: string[]
   team?: string
+  teamInherited?: boolean
   startDate: string
   endDate: string
 }
@@ -2409,6 +2423,7 @@ function CreatePMPageContent() {
   const [showAssignModal, setShowAssignModal] = useState<string | null>(null)
   const [editingAssignmentId, setEditingAssignmentId] = useState<{ triggerId: string; assignmentId: string } | null>(null)
   const [bulkDeleteConfirm, setBulkDeleteConfirm] = useState<string | null>(null)
+  const [pendingRemove, setPendingRemove] = useState<{ triggerId: string; assignmentId: string; name: string } | null>(null)
   const [isSaving, setIsSaving] = useState(false)
   const [draftSavedAt, setDraftSavedAt] = useState<Date | null>(null)
   const [hasSavedDraft, setHasSavedDraft] = useState(false)
@@ -2567,8 +2582,10 @@ function CreatePMPageContent() {
           type: 'Asset' as const,
           subtext: form.location[0] || db?.location || '',
           meter: form.meter[0] || db?.meter || '',
+          meterInherited: !form.meter[0] && !!db?.meter,
           assignees: [form.primaryAssignee, ...form.additionalAssignee].filter(Boolean),
           team: form.team || db?.team || '',
+          teamInherited: !form.team && !!db?.team,
           startDate: form.startDate,
           endDate: form.endDate,
         }
@@ -2668,6 +2685,11 @@ function CreatePMPageContent() {
   function handleCreatePM() {
     if (!isTitleValid || hasAnyError) return
     persistPM('Active')
+    const scheduleCount = triggers.length
+    const assignmentCount = triggers.reduce((n, t) => n + t.assignments.length, 0)
+    try {
+      localStorage.setItem('upkeep_pm_created_toast', JSON.stringify({ title: title || 'PM', scheduleCount, assignmentCount }))
+    } catch {}
     router.push('/predictive-maintenance')
   }
 
@@ -3300,6 +3322,15 @@ function CreatePMPageContent() {
                               <Pencil size={13} className="mr-2 text-[var(--color-neutral-8)]" />
                               Edit Schedule
                             </DropdownMenuItem>
+                            <DropdownMenuItem onSelect={() => setTriggers(ts => {
+                              const idx = ts.findIndex(t => t.id === trigger.id)
+                              if (idx === -1) return ts
+                              const dup = { ...trigger, id: crypto.randomUUID(), assignments: trigger.assignments.map(a => ({ ...a, id: crypto.randomUUID() })) }
+                              return [...ts.slice(0, idx + 1), dup, ...ts.slice(idx + 1)]
+                            })}>
+                              <svg width="13" height="13" viewBox="0 0 13 13" fill="none" className="mr-2 text-[var(--color-neutral-8)]"><rect x="1" y="4" width="8" height="8" rx="1.5" stroke="currentColor" strokeWidth="1.2"/><path d="M4 3V2.5A1.5 1.5 0 0 1 5.5 1h5A1.5 1.5 0 0 1 12 2.5v5A1.5 1.5 0 0 1 10.5 9H10" stroke="currentColor" strokeWidth="1.2"/></svg>
+                              Duplicate Schedule
+                            </DropdownMenuItem>
                             <DropdownMenuItem onSelect={() => setTriggers(ts => ts.filter(t => t.id !== trigger.id))}>
                               <Trash2 size={13} className="mr-2 text-[var(--color-error)]" />
                               <span className="text-[var(--color-error)]">Delete Schedule</span>
@@ -3515,8 +3546,9 @@ function CreatePMPageContent() {
                                           {/* Meter — inline edit */}
                                           <Popover.Root>
                                             <Popover.Trigger asChild>
-                                              <button title={a.meter || undefined} className={`w-[120px] shrink-0 flex items-center px-1.5 h-7 rounded-[var(--radius-md)] hover:bg-[var(--color-neutral-3)] transition-colors cursor-pointer text-[12px] outline-none ${isMeterTrigger && !a.meter ? 'text-[var(--color-error,#CE2C31)] font-medium' : 'text-[var(--color-neutral-8)]'}`}>
-                                                <span className="truncate">{a.meter || (isMeterTrigger ? 'Assign Meter' : '—')}</span>
+                                              <button title={a.meter || undefined} className={`w-[120px] shrink-0 flex flex-col items-start justify-center px-1.5 h-7 rounded-[var(--radius-md)] hover:bg-[var(--color-neutral-3)] transition-colors cursor-pointer text-[12px] outline-none ${isMeterTrigger && !a.meter ? 'text-[var(--color-error,#CE2C31)] font-medium' : 'text-[var(--color-neutral-8)]'}`}>
+                                                <span className="truncate max-w-full">{a.meter || (isMeterTrigger ? 'Assign Meter' : '—')}</span>
+                                                {a.meterInherited && <span className="text-[9px] text-[var(--color-neutral-6)] leading-none">inherited</span>}
                                               </button>
                                             </Popover.Trigger>
                                             <Popover.Portal>
@@ -3560,7 +3592,10 @@ function CreatePMPageContent() {
                                                     return (
                                                       <button key={name} type="button" onClick={() => setTriggers(ts => ts.map(t => t.id === trigger.id ? { ...t, assignments: t.assignments.map(x => x.id === a.id ? { ...x, assignees: checked ? x.assignees.filter(n => n !== name) : [...x.assignees, name] } : x) } : t))} className="w-full flex items-center gap-2 px-2.5 py-1.5 text-[13px] text-left cursor-pointer hover:bg-[var(--color-neutral-3)] transition-colors">
                                                         <Avatar name={name} size="xs" className="shrink-0" />
-                                                        <span className="flex-1 text-[var(--color-neutral-11)] truncate">{name}</span>
+                                                        <div className="flex flex-col flex-1 min-w-0">
+                                                          <span className="text-[var(--color-neutral-11)] truncate">{name}</span>
+                                                          {ASSIGNEE_ROLES[name] && <span className="text-[11px] text-[var(--color-neutral-7)] truncate">{ASSIGNEE_ROLES[name]}</span>}
+                                                        </div>
                                                         <div className={`w-4 h-4 rounded border flex items-center justify-center shrink-0 transition-colors ${checked ? 'bg-[var(--color-accent-9)] border-[var(--color-accent-9)]' : 'border-[var(--border-default)]'}`}>
                                                           {checked && <svg width="9" height="9" viewBox="0 0 9 9" fill="none"><path d="M1.5 4.5L3.5 6.5L7.5 2.5" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>}
                                                         </div>
@@ -3576,8 +3611,11 @@ function CreatePMPageContent() {
                                             <div className="group/team w-[80px] shrink-0 flex items-center justify-between h-7">
                                               {a.team ? (
                                                 <TooltipProvider delayDuration={300}>
-                                                  <Tooltip content={a.team} side="top">
-                                                    <span style={{ background: TEAM_COLORS[a.team] }} className="w-6 h-6 rounded-full flex items-center justify-center text-white text-[10px] font-bold shrink-0 cursor-default">{a.team[0]}</span>
+                                                  <Tooltip content={`${a.team}${a.teamInherited ? ' (inherited)' : ''}`} side="top">
+                                                    <div className="flex flex-col items-start">
+                                                      <span style={{ background: TEAM_COLORS[a.team] }} className="w-6 h-6 rounded-full flex items-center justify-center text-white text-[10px] font-bold shrink-0 cursor-default">{a.team[0]}</span>
+                                                      {a.teamInherited && <span className="text-[9px] text-[var(--color-neutral-6)] leading-none">inherited</span>}
+                                                    </div>
                                                   </Tooltip>
                                                 </TooltipProvider>
                                               ) : (
@@ -3640,7 +3678,7 @@ function CreatePMPageContent() {
                                                 <Pencil size={13} className="mr-2 text-[var(--color-neutral-8)]" />
                                                 Edit {a.type}
                                               </DropdownMenuItem>
-                                              <DropdownMenuItem onSelect={() => setTriggers(ts => ts.map(t => t.id === trigger.id ? { ...t, assignments: t.assignments.filter(x => x.id !== a.id) } : t))}>
+                                              <DropdownMenuItem onSelect={() => setPendingRemove({ triggerId: trigger.id, assignmentId: a.id, name: a.name })}>
                                                 <Trash2 size={13} className="mr-2 text-[var(--color-error)]" />
                                                 <span className="text-[var(--color-error)]">Remove {a.type}</span>
                                               </DropdownMenuItem>
@@ -3720,22 +3758,38 @@ function CreatePMPageContent() {
           open={!!showAssignModal}
           onClose={() => { setShowAssignModal(null); setEditingAssignmentId(null) }}
           onSubmit={form => handleAssignToTrigger(showAssignModal, form)}
-          existingAssets={[]}
+          existingAssets={(() => {
+            const t = triggers.find(t => t.id === showAssignModal)
+            return (t?.assignments ?? []).map(a => ({ name: a.name, location: a.subtext, meter: a.meter }))
+          })()}
           initialValues={(() => {
-            if (!editingAssignmentId) return undefined
-            const t = triggers.find(t => t.id === editingAssignmentId.triggerId)
-            const a = t?.assignments.find(a => a.id === editingAssignmentId.assignmentId)
-            if (!a) return undefined
+            const t = triggers.find(t => t.id === showAssignModal)
+            if (editingAssignmentId) {
+              const a = t?.assignments.find(a => a.id === editingAssignmentId.assignmentId)
+              if (!a) return undefined
+              return {
+                asset: a.type === 'Asset' ? [a.name] : [],
+                location: a.type === 'Location' ? [a.name] : [],
+                meter: a.type === 'Meter' ? [a.name] : [],
+                primaryAssignee: a.assignees[0] || '',
+                additionalAssignee: a.assignees.slice(1),
+                team: a.team || '',
+                trigger: '',
+                startDate: a.startDate || '',
+                endDate: a.endDate || '',
+              }
+            }
+            // Pre-fill from last assignment when adding to a schedule that already has assignments
+            const last = t?.assignments[t.assignments.length - 1]
+            if (!last) return undefined
             return {
-              asset: a.type === 'Asset' ? [a.name] : [],
-              location: a.type === 'Location' ? [a.name] : [],
-              meter: a.type === 'Meter' ? [a.name] : [],
-              primaryAssignee: a.assignees[0] || '',
-              additionalAssignee: a.assignees.slice(1),
-              team: a.team || '',
+              asset: [], location: [], meter: [],
+              primaryAssignee: last.assignees[0] || '',
+              additionalAssignee: last.assignees.slice(1),
+              team: last.team || '',
               trigger: '',
-              startDate: '',
-              endDate: '',
+              startDate: last.startDate || '',
+              endDate: last.endDate || '',
             }
           })()}
         />
@@ -3788,6 +3842,27 @@ function CreatePMPageContent() {
               <Button variant="primary" size="md" onClick={handleLeaveModalSave}>
                 {isEditing ? 'Save Changes' : 'Save Draft'}
               </Button>
+            </div>
+          </div>
+        </Modal>
+      )}
+
+      {/* Remove assignment confirm */}
+      {pendingRemove && (
+        <Modal open={!!pendingRemove} onOpenChange={v => !v && setPendingRemove(null)} maxWidth="400px">
+          <div className="p-6 flex flex-col gap-4">
+            <div className="flex flex-col gap-1">
+              <h2 className="text-[16px] font-semibold text-[var(--color-neutral-12)]">Remove assignment?</h2>
+              <p className="text-[14px] text-[var(--color-neutral-10)]">
+                <strong>{pendingRemove.name}</strong> will be removed from this schedule. This cannot be undone.
+              </p>
+            </div>
+            <div className="flex justify-end gap-2">
+              <Button variant="secondary" size="md" onClick={() => setPendingRemove(null)}>Cancel</Button>
+              <Button variant="danger" size="md" onClick={() => {
+                setTriggers(ts => ts.map(t => t.id === pendingRemove.triggerId ? { ...t, assignments: t.assignments.filter(x => x.id !== pendingRemove.assignmentId) } : t))
+                setPendingRemove(null)
+              }}>Remove</Button>
             </div>
           </div>
         </Modal>

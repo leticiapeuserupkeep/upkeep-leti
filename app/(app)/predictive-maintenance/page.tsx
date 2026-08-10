@@ -238,6 +238,7 @@ export default function PreventiveMaintenancePage() {
   const bulkMenuRef = useRef<HTMLDivElement>(null)
   const [bulkDeleteConfirm, setBulkDeleteConfirm] = useState(false)
   const [selectedPM, setSelectedPM] = useState<PMItem | null>(null)
+  const [createdToast, setCreatedToast] = useState<{ title: string; scheduleCount: number; assignmentCount: number } | null>(null)
   const router = useRouter()
 
   const PM_CATEGORIES = ['Maintenance', 'Safety', 'Electrical', 'Fleet', 'Operations', 'Facilities', 'Compliance', 'Other']
@@ -272,6 +273,13 @@ export default function PreventiveMaintenancePage() {
         setSkeletonRowId(skelId)
         setTimeout(() => { setSkeletonRowId(null); setFadingInId(skelId) }, 1500)
         setTimeout(() => setFadingInId(null), 2500)
+      }
+      const toastRaw = localStorage.getItem('upkeep_pm_created_toast')
+      if (toastRaw) {
+        localStorage.removeItem('upkeep_pm_created_toast')
+        const t = JSON.parse(toastRaw)
+        setCreatedToast(t)
+        setTimeout(() => setCreatedToast(null), 5000)
       }
     } catch {}
   }, [])
@@ -943,6 +951,21 @@ export default function PreventiveMaintenancePage() {
       onClose={() => setSelectedPM(null)}
       onExpand={(pm) => router.push(`/predictive-maintenance/${pm.id}`)}
     />
+
+    {/* Success toast after Create PM */}
+    {createdToast && (
+      <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-[200] flex items-center gap-3 px-4 py-3 rounded-[var(--radius-xl)] bg-[var(--color-neutral-12)] text-white shadow-[var(--shadow-lg)] text-[13px] animate-[pm-row-in_250ms_ease-out_forwards]">
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="8" fill="#22c55e"/><path d="M4.5 8.5l2.5 2.5 4.5-5" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>
+        <span>
+          <strong>{createdToast.title}</strong> created
+          {createdToast.scheduleCount > 0 && <> · {createdToast.scheduleCount} schedule{createdToast.scheduleCount !== 1 ? 's' : ''}</>}
+          {createdToast.assignmentCount > 0 && <> · {createdToast.assignmentCount} assignment{createdToast.assignmentCount !== 1 ? 's' : ''}</>}
+        </span>
+        <button onClick={() => setCreatedToast(null)} className="opacity-60 hover:opacity-100 transition-opacity cursor-pointer">
+          <X size={14} />
+        </button>
+      </div>
+    )}
     </TooltipProvider>
   )
 }
