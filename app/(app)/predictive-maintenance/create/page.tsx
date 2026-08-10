@@ -2409,7 +2409,7 @@ function CreatePMPageContent() {
       if (pm.id !== editId) return
       draftIdRef.current = pm.id
       setEditingPmStatus((pm.status === 'Draft' ? 'Draft' : 'Active'))
-      if (pm.title) setTitle(pm.title)
+      if (pm.title && pm.title.toLowerCase() !== 'untitled pm' && pm.title.toLowerCase() !== 'untitled') setTitle(pm.title)
       if (pm.category) setCategory(pm.category)
       if (pm.priority) setPriority(pm.priority)
       if (pm.schedules?.length) {
@@ -2467,7 +2467,7 @@ function CreatePMPageContent() {
       : 'No schedule'
     const item = {
       id: draftIdRef.current,
-      title: title || 'Untitled PM',
+      title: title,
       assets: triggers.flatMap(t => t.assignments.map(a => ({
         asset: a.name, location: a.subtext, assignee: a.assignees[0], team: a.team,
       }))),
