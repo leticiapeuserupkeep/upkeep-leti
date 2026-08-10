@@ -2383,7 +2383,7 @@ function CreatePMPageContent() {
   const [novaOpen, setNovaOpen] = useState(false)
   const [submitted, setSubmitted] = useState(false)
   const [newTriggerIds, setNewTriggerIds] = useState<Set<string>>(new Set())
-  const [pulseTriggerIds, setPulseTriggerIds] = useState<Set<string>>(new Set())
+  const [skeletonTriggerIds, setSkeletonTriggerIds] = useState<Set<string>>(new Set())
   const [titleError, setTitleError] = useState(false)
   const titleContainerRef = useRef<HTMLDivElement>(null)
   const router = useRouter()
@@ -2641,13 +2641,27 @@ function CreatePMPageContent() {
         .trigger-card-new {
           animation: trigger-card-slide-in 400ms cubic-bezier(0.32, 0.72, 0, 1) forwards;
         }
-        @keyframes assign-cta-pulse-kf {
-          0% { box-shadow: 0 0 0 0 rgba(0, 106, 220, 0.5); }
-          50% { box-shadow: 0 0 0 7px rgba(0, 106, 220, 0); }
-          100% { box-shadow: 0 0 0 0 rgba(0, 106, 220, 0); }
+        @keyframes skeleton-shimmer-kf {
+          0% { opacity: 1; }
+          50% { opacity: 0.4; }
+          100% { opacity: 1; }
         }
-        .assign-cta-pulse {
-          animation: assign-cta-pulse-kf 600ms ease-out 3;
+        .skeleton-shimmer {
+          animation: skeleton-shimmer-kf 1.4s ease-in-out infinite;
+        }
+        @keyframes assign-content-in {
+          from { opacity: 0; transform: translateY(6px); }
+          to { opacity: 1; transform: translateY(0); }
+        }
+        .assign-content-fadein {
+          animation: assign-content-in 500ms cubic-bezier(0.32, 0.72, 0, 1) forwards;
+        }
+        @keyframes assign-cta-glow-kf {
+          0%, 100% { box-shadow: 0 0 0 0px rgba(0, 106, 220, 0); }
+          50% { box-shadow: 0 0 0 3px rgba(0, 106, 220, 0.35); }
+        }
+        .assign-cta-glow {
+          animation: assign-cta-glow-kf 2s ease-in-out infinite;
         }
       `}</style>
       {/* Header */}
@@ -3138,15 +3152,23 @@ function CreatePMPageContent() {
                         <div className="p-4 flex flex-col gap-4 bg-[var(--surface-primary)]">
                           <div className="overflow-hidden">
                             {trigger.assignments.length === 0 ? (
-                              <div className="flex flex-col items-center justify-center p-4 gap-2 text-center">
+                              skeletonTriggerIds.has(trigger.id) ? (
+                                <div className="flex flex-col items-center justify-center p-6 gap-3">
+                                  <div className="w-[160px] h-3 rounded-full bg-[var(--color-neutral-3)] skeleton-shimmer" />
+                                  <div className="w-[260px] h-2.5 rounded-full bg-[var(--color-neutral-3)] skeleton-shimmer" />
+                                  <div className="w-[80px] h-7 rounded-[var(--radius-md)] bg-[var(--color-neutral-3)] skeleton-shimmer mt-1" />
+                                </div>
+                              ) : (
+                              <div className="flex flex-col items-center justify-center p-4 gap-2 text-center assign-content-fadein">
                                 <p className="text-[13px] font-semibold text-[var(--color-neutral-11)]">Assign to this schedule</p>
                                 <p className="text-[12px] text-[var(--color-neutral-8)]">Choose assets, locations, or meters for this trigger to act on.</p>
-                                <div className={pulseTriggerIds.has(trigger.id) ? 'assign-cta-pulse rounded-[var(--radius-md)]' : ''}>
+                                <div className="assign-cta-glow rounded-[var(--radius-md)]">
                                   <Button variant="primary" size="sm" onClick={() => setShowAssignModal(trigger.id)}>
                                     Assign
                                   </Button>
                                 </div>
                               </div>
+                              )
                             ) : (
                               <>
                                 {/* Toolbar + Column headers */}
@@ -3334,7 +3356,7 @@ function CreatePMPageContent() {
                                             <Popover.Trigger asChild>
                                               <div className="group/user w-[96px] shrink-0 flex items-center gap-1 h-7 cursor-pointer rounded-[var(--radius-md)] hover:bg-[var(--color-neutral-3)] transition-colors px-1 -mx-1">
                                                 {a.assignees.length === 0 ? (
-                                                  <span className="text-[12px] text-[var(--color-neutral-8)] truncate">Add Technicians</span>
+                                                  <span className={`text-[12px] font-medium ${!a.team ? 'text-[var(--color-error,#CE2C31)]' : 'text-[var(--color-neutral-8)]'}`}>Add</span>
                                                 ) : (
                                                   a.assignees.slice(0, 3).map((name, idx) => (
                                                     <TooltipProvider key={name} delayDuration={300}>
@@ -3385,7 +3407,7 @@ function CreatePMPageContent() {
                                                   </Tooltip>
                                                 </TooltipProvider>
                                               ) : (
-                                                <span className="text-[11px] text-[var(--color-neutral-6)] truncate">Assign team</span>
+                                                <span className={`text-[11px] font-medium truncate ${a.assignees.length === 0 ? 'text-[var(--color-error,#CE2C31)]' : 'text-[var(--color-neutral-6)]'}`}>Assign team</span>
                                               )}
                                               <Popover.Trigger asChild>
                                                 <IconButton label={a.team ? 'Edit team' : 'Assign team'} variant="secondary" size="sm" className="opacity-0 group-hover/team:opacity-100 transition-opacity shrink-0">
@@ -3498,11 +3520,9 @@ function CreatePMPageContent() {
             const newId = crypto.randomUUID()
             setTriggers(ts => [...ts.map(tr => ({ ...tr, expanded: false })), { id: newId, calendarTrigger: t, assignments: [], expanded: true }])
             setNewTriggerIds(s => new Set([...s, newId]))
+            setSkeletonTriggerIds(s => new Set([...s, newId]))
             setTimeout(() => setNewTriggerIds(s => { const next = new Set(s); next.delete(newId); return next }), 600)
-            setTimeout(() => {
-              setPulseTriggerIds(s => new Set([...s, newId]))
-              setTimeout(() => setPulseTriggerIds(s => { const next = new Set(s); next.delete(newId); return next }), 1800)
-            }, 2000)
+            setTimeout(() => setSkeletonTriggerIds(s => { const next = new Set(s); next.delete(newId); return next }), 4000)
           }
           setShowCalendarModal(false)
           setEditingTriggerId(null)
