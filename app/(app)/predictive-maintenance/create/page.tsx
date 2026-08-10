@@ -2723,9 +2723,22 @@ function CreatePMPageContent() {
         </button>
         {/* Edit active PM: just "Save" as primary, no draft button */}
         {isEditing && editingPmStatus === 'Active' ? (
-          <Button variant="primary" size="md" onClick={handleSaveEdit} disabled={!title}>
-            Save
-          </Button>
+          <div className="relative group/create">
+            <Button variant="primary" size="md" onClick={handleSaveEdit} disabled={createDisabled}>
+              Save
+            </Button>
+            {createDisabled && missingFields.length > 0 && (
+              <div className="absolute bottom-full right-0 mb-2 hidden group-hover/create:flex flex-col gap-1 bg-[var(--color-neutral-12)] text-white rounded-[var(--radius-lg)] px-3 py-2.5 shadow-lg pointer-events-none z-50 min-w-[220px]">
+                <span className="text-[11px] font-semibold uppercase tracking-wide text-white/60 mb-0.5">Required to save</span>
+                {missingFields.map(f => (
+                  <span key={f} className="flex items-center gap-1.5 text-[12px]">
+                    <span className="w-1 h-1 rounded-full bg-[var(--color-error-8,#FF6369)] shrink-0" />
+                    {f}
+                  </span>
+                ))}
+              </div>
+            )}
+          </div>
         ) : (
           <>
             {/* Draft save button: hidden when editing an active PM */}
