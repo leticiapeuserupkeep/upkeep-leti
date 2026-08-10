@@ -2797,7 +2797,7 @@ function CreatePMPageContent() {
                   {/* Signature Required — full-width row */}
                   <div
                     onClick={() => setSignature(v => !v)}
-                    className={`flex items-center justify-between gap-3 p-3 rounded-2xl border cursor-pointer transition-colors ${signature ? 'border-[var(--color-accent-7)] bg-[var(--color-accent-1)] hover:bg-[var(--color-accent-2)]' : 'border-[#E0E1E6] bg-[#F9F9FB] hover:bg-[var(--color-neutral-3)]'}`}
+                    className="flex items-center justify-between gap-3 p-3 rounded-2xl border cursor-pointer transition-colors border-[#E0E1E6] bg-[#F9F9FB] hover:bg-[var(--color-neutral-3)]"
                   >
                     <div className="flex-1 min-w-0">
                       <p className="text-[14px] font-semibold text-[var(--color-neutral-12)]">Signature Required</p>
@@ -3065,7 +3065,7 @@ function CreatePMPageContent() {
               ) : (
                 <div className="flex flex-col gap-2 p-4">
                   {triggers.map(trigger => (
-                    <div key={trigger.id} id={`trigger-card-${trigger.id}`} className={`rounded-[8px] border overflow-hidden ${trigger.calendarTrigger.meterCondition && trigger.assignments.some(a => !a.meter) ? 'border-[var(--color-error,#CE2C31)]' : trigger.expanded ? 'border-[var(--color-accent-4)]' : 'border-[var(--border-default)]'} ${newTriggerIds.has(trigger.id) ? 'trigger-card-new' : ''}`}>
+                    <div key={trigger.id} id={`trigger-card-${trigger.id}`} className={`rounded-[8px] border overflow-hidden ${trigger.calendarTrigger.meterCondition && trigger.assignments.some(a => !a.meter) ? 'border-[var(--color-error,#CE2C31)]' : trigger.expanded ? 'border-[var(--color-accent-4)]' : !trigger.expanded && trigger.assignments.length === 0 ? 'border-[var(--color-error,#CE2C31)]' : 'border-[var(--border-default)]'} ${!trigger.expanded && trigger.assignments.length === 0 ? 'shadow-[0_0_0_4px_rgba(206,44,49,0.4)]' : ''} ${newTriggerIds.has(trigger.id) ? 'trigger-card-new' : ''}`}>
                       {skeletonTriggerIds.has(trigger.id) ? (
                         <div className="flex flex-col bg-[var(--surface-primary)]">
                           <div className="flex items-center gap-3 px-4 py-4 bg-[var(--color-neutral-2)]">
