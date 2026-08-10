@@ -8,7 +8,7 @@ import {
   ChevronLeft, ChevronRight, ChevronUp, ChevronDown, ChevronsUpDown, FileText, Box,
   Plus, X, MapPin, Gauge, Clock, Users, Upload, Trash2, PanelLeft,
   Calendar, ArrowRight, ArrowDown, Sparkle, MoreHorizontal, Pencil, Activity, CalendarClock,
-  User, RotateCcw, RefreshCw, Camera, Link2, Search, Ban, Flag, SlidersHorizontal,
+  User, UserX, RotateCcw, RefreshCw, Camera, Link2, Search, Ban, Flag, SlidersHorizontal,
 } from 'lucide-react'
 import { Button } from '@/app/components/ui/Button'
 import { IconButton } from '@/app/components/ui/IconButton'
@@ -3066,8 +3066,15 @@ function CreatePMPageContent() {
                 </div>
               ) : (
                 <div className="flex flex-col gap-2 p-4">
-                  {triggers.map(trigger => (
-                    <div key={trigger.id} id={`trigger-card-${trigger.id}`} className={`rounded-[8px] border overflow-hidden ${trigger.calendarTrigger.meterCondition && trigger.assignments.some(a => !a.meter) ? 'border-[var(--color-error,#CE2C31)]' : trigger.expanded ? 'border-[var(--color-accent-4)]' : !trigger.expanded && trigger.assignments.length === 0 ? 'border-[var(--color-error,#CE2C31)]' : 'border-[var(--border-default)]'} ${!trigger.expanded && trigger.assignments.length === 0 ? 'shadow-[0_0_1px_3px_rgba(206,44,49,0.2)]' : ''} ${newTriggerIds.has(trigger.id) ? 'trigger-card-new' : ''}`}>
+                  {triggers.map(trigger => {
+                    const hasMissingMeters = !!trigger.calendarTrigger.meterCondition && trigger.assignments.some(a => !a.meter)
+                    const hasMissingTech = trigger.assignments.some(a => a.assignees.length === 0 && !a.team)
+                    const hasNoAssignments = !trigger.expanded && trigger.assignments.length === 0
+                    const hasError = hasMissingMeters || hasMissingTech || hasNoAssignments
+                    const borderClass = hasError ? 'border-[var(--color-error,#CE2C31)]' : trigger.expanded ? 'border-[var(--color-accent-4)]' : 'border-[var(--border-default)]'
+                    const shadowClass = hasError ? 'shadow-[0_0_1px_3px_rgba(206,44,49,0.2)]' : ''
+                    return (
+                    <div key={trigger.id} id={`trigger-card-${trigger.id}`} className={`rounded-[8px] border overflow-hidden ${borderClass} ${shadowClass} ${newTriggerIds.has(trigger.id) ? 'trigger-card-new' : ''}`}>
                       {skeletonTriggerIds.has(trigger.id) ? (
                         <div className="flex flex-col bg-[var(--surface-primary)]">
                           <div className="flex items-center gap-3 px-4 py-4 bg-[var(--color-neutral-2)]">
@@ -3119,11 +3126,19 @@ function CreatePMPageContent() {
                         {(() => {
                           const isMeter = !!trigger.calendarTrigger.meterCondition
                           const missingMeters = isMeter ? trigger.assignments.filter(a => !a.meter).length : 0
-                          return missingMeters > 0 ? (
-                            <span className="flex items-center gap-1 rounded-full bg-[var(--color-error-3,#FFEFEF)] text-[var(--color-error,#CE2C31)] text-[11px] px-2.5 py-0.5 font-medium shrink-0">
-                              <Ban size={10} /> {missingMeters} missing meter{missingMeters > 1 ? 's' : ''}
-                            </span>
-                          ) : null
+                          const missingTech = trigger.assignments.filter(a => a.assignees.length === 0 && !a.team).length
+                          return (<>
+                            {missingMeters > 0 && (
+                              <span className="flex items-center gap-1 rounded-full bg-[var(--color-error-3,#FFEFEF)] text-[var(--color-error,#CE2C31)] text-[11px] px-2.5 py-0.5 font-medium shrink-0">
+                                <Ban size={10} /> {missingMeters} missing meter{missingMeters > 1 ? 's' : ''}
+                              </span>
+                            )}
+                            {missingTech > 0 && (
+                              <span className="flex items-center gap-1 rounded-full bg-[var(--color-error-3,#FFEFEF)] text-[var(--color-error,#CE2C31)] text-[11px] px-2.5 py-0.5 font-medium shrink-0">
+                                <UserX size={10} /> {missingTech} missing technician{missingTech > 1 ? 's' : ''}
+                              </span>
+                            )}
+                          </>)
                         })()}
                         {trigger.assignments.length === 0 ? (
                           <span className="rounded-full bg-[var(--color-error-3,#FFEFEF)] text-[var(--color-error,#CE2C31)] text-[11px] px-2.5 py-0.5 font-medium shrink-0">
@@ -3493,7 +3508,8 @@ function CreatePMPageContent() {
                         </div>
                       </div>
                     </div>
-                  ))}
+                    )
+                  })}
                 </div>
               )}
 
