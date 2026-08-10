@@ -2759,6 +2759,7 @@ function CreatePMPageContent() {
                           error={titleError}
                           errorMessage={titleError ? 'Title is required' : undefined}
                           onChange={e => { setTitle((e.target as HTMLInputElement).value); if (titleError) setTitleError(false) }}
+                          onBlur={() => { if (!title.trim()) setTitleError(true) }}
                         />
                       </div>
                       <Textarea
