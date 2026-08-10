@@ -2263,7 +2263,7 @@ interface PMTrigger {
 interface TriggerAssignment {
   id: string
   name: string
-  type: 'Asset' | 'Location' | 'Meter'
+  type: 'Asset' | 'Location' | 'Meter' | 'Person'
   subtext: string
   meter?: string
   assignees: string[]
@@ -2545,6 +2545,23 @@ function CreatePMPageContent() {
         }
       })
     }
+    if (items.length === 0) {
+      const assignees = [form.primaryAssignee, ...form.additionalAssignee].filter(Boolean)
+      const name = assignees[0] || form.team || ''
+      if (name) {
+        items = [{
+          id: crypto.randomUUID(),
+          name,
+          type: 'Person' as const,
+          subtext: '',
+          meter: '',
+          assignees,
+          team: form.team || '',
+          startDate: fmt(form.startDate),
+          endDate: fmt(form.endDate),
+        }]
+      }
+    }
     if (editingAssignmentId?.triggerId === triggerId && editingAssignmentId.assignmentId) {
       const editId = editingAssignmentId.assignmentId
       setTriggers(ts => ts.map(t => t.id === triggerId ? { ...t, assignments: t.assignments.map(a => a.id === editId ? (items[0] ? { ...items[0], id: editId } : a) : a) } : t))
@@ -2555,13 +2572,19 @@ function CreatePMPageContent() {
     setShowAssignModal(null)
     if (!title.trim()) {
       setTitleError(true)
-      setTimeout(() => titleContainerRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' }), 300)
     }
   }
 
   const hasUnassignedTriggers = triggers.length > 0 && triggers.some(t => t.assignments.length === 0)
   const hasMissingMeters = triggers.some(t => t.calendarTrigger.meterCondition && t.assignments.some(a => !a.meter))
   const hasAnyError = triggers.length === 0 || hasUnassignedTriggers || hasMissingMeters
+  const missingFields: string[] = [
+    ...(!title.trim() ? ['Title is required'] : []),
+    ...(triggers.length === 0 ? ['At least one schedule is required'] : []),
+    ...(hasUnassignedTriggers ? ['All schedules need at least one assignment'] : []),
+    ...(hasMissingMeters ? ['Some assignments are missing a meter reading'] : []),
+  ]
+  const createDisabled = !title.trim() || hasAnyError
 
 
   function handleCreatePM() {
@@ -2713,9 +2736,22 @@ function CreatePMPageContent() {
             >
               Save Draft
             </button>
-            <Button variant="primary" size="md" onClick={handleCreatePM} disabled={!title || hasAnyError}>
-              Create PM
-            </Button>
+            <div className="relative group/create">
+              <Button variant="primary" size="md" onClick={handleCreatePM} disabled={createDisabled}>
+                Create PM
+              </Button>
+              {createDisabled && missingFields.length > 0 && (
+                <div className="absolute bottom-full right-0 mb-2 hidden group-hover/create:flex flex-col gap-1 bg-[var(--color-neutral-12)] text-white rounded-[var(--radius-lg)] px-3 py-2.5 shadow-lg pointer-events-none z-50 min-w-[220px]">
+                  <span className="text-[11px] font-semibold uppercase tracking-wide text-white/60 mb-0.5">Required to create</span>
+                  {missingFields.map(f => (
+                    <span key={f} className="flex items-center gap-1.5 text-[12px]">
+                      <span className="w-1 h-1 rounded-full bg-[var(--color-error-8,#FF6369)] shrink-0" />
+                      {f}
+                    </span>
+                  ))}
+                </div>
+              )}
+            </div>
           </>
         )}
       </div>
@@ -3356,12 +3392,14 @@ function CreatePMPageContent() {
                                             {sel.has(a.id) && <svg width="10" height="8" viewBox="0 0 10 8" fill="none"><path d="M1 4L3.5 6.5L9 1" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>}
                                           </button>
                                           {/* Name + type badge + subtext */}
-                                          <div className="flex flex-col flex-1 min-w-0">
-                                            <div className="flex items-center gap-2">
-                                              <span className="font-medium text-[var(--color-neutral-12)] truncate">{a.name}</span>
-                                              <Badge severity={a.type === 'Asset' ? 'neutral' : a.type === 'Location' ? 'info' : 'warning'} variant="subtle" size="sm">{a.type}</Badge>
+                                          <div className="flex items-center gap-2 flex-1 min-w-0">
+                                            {a.type === 'Person' && <Avatar name={a.name} size="xs" className="shrink-0" />}
+                                            <div className="flex flex-col min-w-0">
+                                              <div className="flex items-center gap-2">
+                                                <span className="font-medium text-[var(--color-neutral-12)] truncate">{a.name}</span>
+                                              </div>
+                                              {a.subtext && <span className="text-[11px] text-[var(--color-neutral-7)] truncate">{a.subtext}</span>}
                                             </div>
-                                            {a.subtext && <span className="text-[11px] text-[var(--color-neutral-7)] truncate">{a.subtext}</span>}
                                           </div>
                                           {/* Meter — inline edit */}
                                           <Popover.Root>
