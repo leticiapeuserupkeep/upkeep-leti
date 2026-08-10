@@ -2577,12 +2577,14 @@ function CreatePMPageContent() {
 
   const hasUnassignedTriggers = triggers.length > 0 && triggers.some(t => t.assignments.length === 0)
   const hasMissingMeters = triggers.some(t => t.calendarTrigger.meterCondition && t.assignments.some(a => !a.meter))
-  const hasAnyError = triggers.length === 0 || hasUnassignedTriggers || hasMissingMeters
+  const hasMissingTechnicians = triggers.some(t => t.assignments.some(a => a.assignees.length === 0 && !a.team))
+  const hasAnyError = triggers.length === 0 || hasUnassignedTriggers || hasMissingMeters || hasMissingTechnicians
   const isTitleValid = title.trim() !== '' && title.trim().toLowerCase() !== 'untitled pm' && title.trim().toLowerCase() !== 'untitled'
   const missingFields: string[] = [
     ...(!isTitleValid ? ['Title is required'] : []),
     ...(triggers.length === 0 ? ['At least one schedule is required'] : []),
     ...(hasUnassignedTriggers ? ['All schedules need at least one assignment'] : []),
+    ...(hasMissingTechnicians ? ['Some assignments are missing a technician or team'] : []),
     ...(hasMissingMeters ? ['Some assignments are missing a meter reading'] : []),
   ]
   const createDisabled = !isTitleValid || hasAnyError
