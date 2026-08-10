@@ -4,6 +4,7 @@ import React, { useState, useEffect, useRef } from 'react'
 import { createPortal } from 'react-dom'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
+import * as Popover from '@radix-ui/react-popover'
 import {
   SlidersHorizontal, MoreHorizontal, X, Flag,
   ChevronDown, ChevronUp, CalendarClock, CircleDot,
@@ -241,6 +242,11 @@ export default function PreventiveMaintenancePage() {
   const [createdToast, setCreatedToast] = useState<{ title: string; scheduleCount: number; assignmentCount: number } | null>(null)
   const router = useRouter()
 
+  const [filterPriority, setFilterPriority] = useState<string[]>([])
+  const [filterLocation, setFilterLocation] = useState<string[]>([])
+  const [filterAsset, setFilterAsset] = useState<string[]>([])
+  const [filterAssignee, setFilterAssignee] = useState<string[]>([])
+
   const PM_CATEGORIES = ['Maintenance', 'Safety', 'Electrical', 'Fleet', 'Operations', 'Facilities', 'Compliance', 'Other']
 
   useEffect(() => {
@@ -288,12 +294,22 @@ export default function PreventiveMaintenancePage() {
     .filter(pm => !deletedIds.has(pm.id))
     .filter((pm, idx, arr) => arr.findIndex(x => x.id === pm.id) === idx)
 
+  const allAssignments = allItems.flatMap(pm => pm.schedules.flatMap(s => s.assignments))
+  const priorityOptions: string[] = ['None', 'Low', 'Medium', 'High']
+  const locationOptions = Array.from(new Set(allAssignments.map(a => a.location).filter(Boolean))).sort()
+  const assetOptions = Array.from(new Set(allAssignments.map(a => a.asset).filter(Boolean))).sort()
+  const assigneeOptions = Array.from(new Set(allAssignments.flatMap(a => a.technicians.map(t => t.initials)))).sort()
+
   const filtered = allItems.filter(pm => {
+    const effectivePriority = (pmOverrides[pm.id]?.priority ?? pm.priority) as string
     const q = search.toLowerCase()
-    return !q
-      || pm.title.toLowerCase().includes(q)
-      || pm.category.toLowerCase().includes(q)
-      || pm.schedules.some(s => s.assignments.some(a => a.asset.toLowerCase().includes(q) || a.location.toLowerCase().includes(q)))
+    if (q && !pm.title.toLowerCase().includes(q) && !pm.category.toLowerCase().includes(q)
+      && !pm.schedules.some(s => s.assignments.some(a => a.asset.toLowerCase().includes(q) || a.location.toLowerCase().includes(q)))) return false
+    if (filterPriority.length && !filterPriority.includes(effectivePriority)) return false
+    if (filterLocation.length && !pm.schedules.some(s => s.assignments.some(a => filterLocation.includes(a.location)))) return false
+    if (filterAsset.length && !pm.schedules.some(s => s.assignments.some(a => filterAsset.includes(a.asset)))) return false
+    if (filterAssignee.length && !pm.schedules.some(s => s.assignments.some(a => a.technicians.some(t => filterAssignee.includes(t.initials))))) return false
+    return true
   })
 
   function togglePM(id: string) {
@@ -437,20 +453,51 @@ export default function PreventiveMaintenancePage() {
         <div className="w-full px-[var(--space-2xl)] py-[var(--space-xl)] max-w-[1300px] mx-auto">
 
           {/* Filter chips row */}
-          <div className="flex items-center gap-2 mb-4 flex-wrap">
-            <FilterChip active icon={<SlidersHorizontal size={13} />}>Filters (2)</FilterChip>
-            <FilterChip active icon={<CircleDot size={13} />} onRemove={() => {}}>Status: Open +2</FilterChip>
-            <FilterChip hasDropdown>Priority</FilterChip>
-            <FilterChip hasDropdown>Location</FilterChip>
-            <FilterChip hasDropdown>Asset</FilterChip>
-            <FilterChip hasDropdown>Assigned To</FilterChip>
-            <div className="flex-1" />
-            <button type="button" className="text-[13px] font-medium text-[var(--color-neutral-8)] hover:text-[var(--color-neutral-11)] transition-colors cursor-pointer">Reset</button>
-            <button type="button" className="text-[13px] font-medium text-[var(--color-accent-9)] hover:text-[var(--color-accent-10)] transition-colors cursor-pointer">Save View</button>
-            <button type="button" className="inline-flex items-center gap-1 h-7 px-3 rounded-[var(--radius-md)] border border-[var(--border-default)] text-[13px] font-medium text-[var(--color-neutral-9)] bg-[var(--surface-primary)] hover:bg-[var(--color-neutral-3)] transition-colors cursor-pointer">
-              Saved Views<ChevronDown size={12} />
-            </button>
-          </div>
+          {(() => {
+            const anyFilter = filterPriority.length || filterLocation.length || filterAsset.length || filterAssignee.length
+            function FilterDropdown({ label, options, selected, onToggle, onClear }: { label: string; options: string[]; selected: string[]; onToggle: (v: string) => void; onClear: () => void }) {
+              return (
+                <Popover.Root>
+                  <Popover.Trigger asChild>
+                    <FilterChip hasDropdown active={selected.length > 0}>
+                      {label}{selected.length > 0 && <span className="flex items-center justify-center px-1.5 h-4 rounded-full bg-[var(--color-accent-9)] text-white text-[9px] font-bold min-w-[16px]">{selected.length}</span>}
+                    </FilterChip>
+                  </Popover.Trigger>
+                  <Popover.Portal>
+                    <Popover.Content sideOffset={4} align="start" className="z-[var(--z-dropdown)] w-[200px] rounded-[var(--radius-xl)] border border-[var(--border-default)] bg-[var(--surface-primary)] shadow-[var(--shadow-lg)] outline-none py-1" onOpenAutoFocus={e => e.preventDefault()}>
+                      <button type="button" onClick={onClear} className={`w-full flex items-center gap-2.5 px-3 py-1.5 text-[12px] cursor-pointer transition-colors hover:bg-[var(--color-neutral-3)] ${selected.length === 0 ? 'font-semibold text-[var(--color-neutral-12)]' : 'text-[var(--color-neutral-11)]'}`}>All</button>
+                      <div className="my-1 mx-3 border-t border-[var(--border-subtle)]" />
+                      {options.map(o => (
+                        <button key={o} type="button" onClick={() => onToggle(o)} className="w-full flex items-center gap-2.5 px-3 py-1.5 text-[12px] cursor-pointer transition-colors hover:bg-[var(--color-neutral-3)] text-[var(--color-neutral-11)]">
+                          <span className={`shrink-0 flex items-center justify-center w-4 h-4 rounded-[3px] border transition-colors ${selected.includes(o) ? 'bg-[var(--color-accent-9)] border-[var(--color-accent-9)]' : 'border-[var(--color-neutral-6)] bg-[var(--surface-primary)]'}`}>
+                            {selected.includes(o) && <svg width="10" height="8" viewBox="0 0 10 8" fill="none"><path d="M1 4L3.5 6.5L9 1" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>}
+                          </span>
+                          {o}
+                        </button>
+                      ))}
+                    </Popover.Content>
+                  </Popover.Portal>
+                </Popover.Root>
+              )
+            }
+            function toggle(set: string[], val: string): string[] { return set.includes(val) ? set.filter(x => x !== val) : [...set, val] }
+            return (
+              <div className="flex items-center gap-2 mb-4 flex-wrap">
+                <FilterChip active icon={<SlidersHorizontal size={13} />}>Filters (2)</FilterChip>
+                <FilterChip active icon={<CircleDot size={13} />} onRemove={() => {}}>Status: Open +2</FilterChip>
+                <FilterDropdown label="Priority" options={priorityOptions} selected={filterPriority} onToggle={v => setFilterPriority(p => toggle(p, v))} onClear={() => setFilterPriority([])} />
+                <FilterDropdown label="Location" options={locationOptions} selected={filterLocation} onToggle={v => setFilterLocation(p => toggle(p, v))} onClear={() => setFilterLocation([])} />
+                <FilterDropdown label="Asset" options={assetOptions} selected={filterAsset} onToggle={v => setFilterAsset(p => toggle(p, v))} onClear={() => setFilterAsset([])} />
+                <FilterDropdown label="Assigned To" options={assigneeOptions} selected={filterAssignee} onToggle={v => setFilterAssignee(p => toggle(p, v))} onClear={() => setFilterAssignee([])} />
+                <div className="flex-1" />
+                <button type="button" disabled={!anyFilter} onClick={() => { setFilterPriority([]); setFilterLocation([]); setFilterAsset([]); setFilterAssignee([]) }} className={`text-[13px] font-medium transition-colors ${anyFilter ? 'text-[var(--color-neutral-8)] hover:text-[var(--color-neutral-11)] cursor-pointer' : 'text-[var(--color-neutral-4)] cursor-not-allowed'}`}>Reset</button>
+                <button type="button" className="text-[13px] font-medium text-[var(--color-accent-9)] hover:text-[var(--color-accent-10)] transition-colors cursor-pointer">Save View</button>
+                <button type="button" className="inline-flex items-center gap-1 h-7 px-3 rounded-[var(--radius-md)] border border-[var(--border-default)] text-[13px] font-medium text-[var(--color-neutral-9)] bg-[var(--surface-primary)] hover:bg-[var(--color-neutral-3)] transition-colors cursor-pointer">
+                  Saved Views<ChevronDown size={12} />
+                </button>
+              </div>
+            )
+          })()}
 
           {/* Table card */}
           <div className="bg-[var(--surface-primary)] rounded-[8px] border border-[var(--border-default)] overflow-hidden">
@@ -513,7 +560,7 @@ export default function PreventiveMaintenancePage() {
                             ${selectedPMs.has(pm.id) ? 'bg-[var(--color-accent-1)]' : isExpanded ? 'bg-[#F9F9FB]' : 'hover:bg-[#FCFCFD]'}
                             ${fadingInId === pm.id ? 'animate-[fadeInRow_600ms_ease-out_forwards]' : ''}
                             ${pageReady && fadingInId !== pm.id ? 'pm-row-entry' : ''}`}
-                          style={pageReady && fadingInId !== pm.id ? { animationDelay: `${pmIdx * 35}ms` } : {}}
+                          style={{ ...(pageReady && fadingInId !== pm.id ? { animationDelay: `${pmIdx * 35}ms` } : {}), ...((openMenu === pm.id || inlineEdit?.pmId === pm.id) ? { position: 'relative', zIndex: 10 } : {}) }}
                           onClick={() => setSelectedPM(pm)}
                         >
                           {/* Checkbox */}
@@ -686,7 +733,7 @@ export default function PreventiveMaintenancePage() {
                           </td>
 
                           {/* Actions */}
-                          <td className="px-2 py-4 align-middle" onClick={e => e.stopPropagation()}>
+                          <td className="px-2 py-4 align-middle" style={{ position: 'relative', zIndex: openMenu === pm.id ? 200 : undefined }} onClick={e => e.stopPropagation()}>
                             <div className="relative" ref={openMenu === pm.id ? menuRef : undefined}>
                               <button
                                 className="flex items-center justify-center w-7 h-7 rounded-[var(--radius-md)] hover:bg-[var(--color-neutral-3)] text-[var(--color-neutral-8)] transition-all cursor-pointer"
@@ -771,7 +818,7 @@ export default function PreventiveMaintenancePage() {
                                           </span>
                                           {!isSchedExp && (
                                             <button
-                                              onClick={e => { e.stopPropagation(); router.push('/predictive-maintenance/create?assign=1') }}
+                                              onClick={e => { e.stopPropagation(); try { localStorage.setItem('upkeep_editing_pm', JSON.stringify(pm)) } catch {}; router.push(`/predictive-maintenance/create?edit=${pm.id}`) }}
                                               className="shrink-0 flex items-center gap-1 px-2 h-7 rounded-[var(--radius-md)] bg-[#EDF2FE] hover:bg-[#dce8fd] transition-colors cursor-pointer text-[12px] font-medium text-[var(--color-accent-11)]"
                                             >
                                               <Plus size={12} /> Assign
@@ -792,7 +839,7 @@ export default function PreventiveMaintenancePage() {
                                               <div className="flex flex-col items-center justify-center p-6 gap-2 text-center">
                                                 <p className="text-[13px] font-semibold text-[var(--color-neutral-11)]">Assign to this schedule</p>
                                                 <p className="text-[12px] text-[var(--color-neutral-8)]">Choose assets or locations for this schedule to apply to.</p>
-                                                <button onClick={() => router.push('/predictive-maintenance/create?assign=1')} className="flex items-center gap-1 px-3 h-8 rounded-[var(--radius-md)] bg-[var(--color-accent-9)] text-white text-[13px] font-medium cursor-pointer hover:opacity-90 transition-opacity">
+                                                <button onClick={() => { try { localStorage.setItem('upkeep_editing_pm', JSON.stringify(pm)) } catch {}; router.push(`/predictive-maintenance/create?edit=${pm.id}`) }} className="flex items-center gap-1 px-3 h-8 rounded-[var(--radius-md)] bg-[var(--color-accent-9)] text-white text-[13px] font-medium cursor-pointer hover:opacity-90 transition-opacity">
                                                   <Plus size={13} /> Assign
                                                 </button>
                                               </div>
@@ -823,7 +870,7 @@ export default function PreventiveMaintenancePage() {
                                                     <div className="w-[90px] shrink-0">
                                                       {a.technicians.length > 0
                                                         ? <AvatarStack techs={a.technicians} extra={a.extraTechs} />
-                                                        : <button type="button" onClick={e => { e.stopPropagation(); router.push(`/predictive-maintenance/create?edit=${pm.id}`) }} className="text-[var(--color-error)] text-[12px] font-medium hover:underline cursor-pointer">Add</button>
+                                                        : <button type="button" onClick={e => { e.stopPropagation(); try { localStorage.setItem('upkeep_editing_pm', JSON.stringify(pm)) } catch {}; router.push(`/predictive-maintenance/create?edit=${pm.id}`) }} className="text-[var(--color-error)] text-[12px] font-medium hover:underline cursor-pointer">Add</button>
                                                       }
                                                     </div>
                                                     <div className="w-[100px] shrink-0 flex flex-col gap-0.5">

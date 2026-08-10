@@ -43,12 +43,22 @@ export function SearchableSelect({
         <Popover.Trigger asChild>
           <button
             type="button"
-            className="w-full h-10 flex items-center pl-3 pr-2 rounded-[var(--radius-lg)] border border-[var(--border-default)] bg-[var(--surface-primary)] hover:bg-[var(--color-neutral-2)] data-[state=open]:border-[var(--color-accent-7)] data-[state=open]:shadow-[0_0_1px_3px_rgba(0,106,220,0.1)] transition-colors cursor-pointer outline-none"
+            className="w-full h-10 flex items-center gap-2 pl-3 pr-2 rounded-[var(--radius-lg)] border border-[var(--border-default)] bg-[var(--surface-primary)] hover:bg-[var(--color-neutral-2)] data-[state=open]:border-[var(--color-accent-7)] data-[state=open]:shadow-[0_0_1px_3px_rgba(0,106,220,0.1)] transition-colors cursor-pointer outline-none"
           >
+            {showAvatar && value && <Avatar name={value} size="xs" className="shrink-0" />}
             <span className={`flex-1 text-left text-[13px] truncate ${value ? 'text-[var(--color-neutral-11)]' : 'text-[var(--color-neutral-7)]'}`}>
               {value || placeholder}
             </span>
-            <ChevronDown size={14} className="shrink-0 text-[var(--color-neutral-7)] ml-1" />
+            {value && (
+              <span
+                role="button"
+                onClick={e => { e.stopPropagation(); onChange('') }}
+                className="shrink-0 flex items-center justify-center w-4 h-4 rounded-full hover:bg-[var(--color-neutral-4)] text-[var(--color-neutral-7)] transition-colors cursor-pointer"
+              >
+                <X size={11} />
+              </span>
+            )}
+            <ChevronDown size={14} className="shrink-0 text-[var(--color-neutral-7)]" />
           </button>
         </Popover.Trigger>
         <Popover.Portal>

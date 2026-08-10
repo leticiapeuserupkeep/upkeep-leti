@@ -150,6 +150,124 @@ function displayDate(iso: string): string {
   return `${m.padStart(2,'0')}/${d.padStart(2,'0')}/${y}`
 }
 
+function isoToMDY(iso: string): string {
+  if (!iso) return ''
+  const [y, m, d] = iso.split('-')
+  if (!y || !m || !d) return iso
+  return `${m.padStart(2,'0')}/${d.padStart(2,'0')}/${y}`
+}
+
+function mdyToIso(mdy: string): string {
+  const clean = mdy.replace(/[^\d/]/g, '')
+  const parts = clean.split('/')
+  if (parts.length !== 3) return ''
+  const [m, d, y] = parts
+  if (!m || !d || !y || y.length < 4) return ''
+  return `${y}-${m.padStart(2,'0')}-${d.padStart(2,'0')}`
+}
+
+function MiniCalendar({ iso, onSelect }: { iso: string; onSelect: (iso: string) => void }) {
+  const today = new Date()
+  const initYear = iso ? parseInt(iso.split('-')[0], 10) : today.getFullYear()
+  const initMonth = iso ? parseInt(iso.split('-')[1], 10) - 1 : today.getMonth()
+  const [viewYear, setViewYear] = React.useState(initYear)
+  const [viewMonth, setViewMonth] = React.useState(initMonth)
+  const MONTHS = ['January','February','March','April','May','June','July','August','September','October','November','December']
+  const DAYS = ['Su','Mo','Tu','We','Th','Fr','Sa']
+  const firstDay = new Date(viewYear, viewMonth, 1).getDay()
+  const daysInMonth = new Date(viewYear, viewMonth + 1, 0).getDate()
+  const cells: (number | null)[] = [...Array(firstDay).fill(null), ...Array.from({ length: daysInMonth }, (_, i) => i + 1)]
+  while (cells.length % 7 !== 0) cells.push(null)
+  const selParts = iso ? iso.split('-') : []
+  const selY = selParts[0] ? parseInt(selParts[0], 10) : -1
+  const selM = selParts[1] ? parseInt(selParts[1], 10) - 1 : -1
+  const selD = selParts[2] ? parseInt(selParts[2], 10) : -1
+  const todayY = today.getFullYear(), todayM = today.getMonth(), todayD = today.getDate()
+  return (
+    <div className="p-3 w-[256px] select-none">
+      <div className="flex items-center justify-between mb-2">
+        <button type="button" onClick={() => { const d = new Date(viewYear, viewMonth - 1, 1); setViewMonth(d.getMonth()); setViewYear(d.getFullYear()) }} className="w-6 h-6 flex items-center justify-center rounded-[var(--radius-sm)] hover:bg-[var(--color-neutral-3)] cursor-pointer text-[var(--color-neutral-8)] transition-colors"><ChevronLeft size={14} /></button>
+        <span className="text-[13px] font-semibold text-[var(--color-neutral-11)]">{MONTHS[viewMonth]} {viewYear}</span>
+        <button type="button" onClick={() => { const d = new Date(viewYear, viewMonth + 1, 1); setViewMonth(d.getMonth()); setViewYear(d.getFullYear()) }} className="w-6 h-6 flex items-center justify-center rounded-[var(--radius-sm)] hover:bg-[var(--color-neutral-3)] cursor-pointer text-[var(--color-neutral-8)] transition-colors"><ChevronRight size={14} /></button>
+      </div>
+      <div className="grid grid-cols-7 mb-1">
+        {DAYS.map(d => <span key={d} className="text-[10px] font-medium text-[var(--color-neutral-7)] text-center py-0.5">{d}</span>)}
+      </div>
+      <div className="grid grid-cols-7 gap-y-0.5">
+        {cells.map((day, i) => {
+          if (!day) return <span key={i} />
+          const isSelected = day === selD && viewMonth === selM && viewYear === selY
+          const isToday = day === todayD && viewMonth === todayM && viewYear === todayY
+          return (
+            <button key={i} type="button" onClick={() => { const m = String(viewMonth + 1).padStart(2,'0'); const d = String(day).padStart(2,'0'); onSelect(`${viewYear}-${m}-${d}`) }} className={`h-7 w-full flex items-center justify-center rounded-[var(--radius-sm)] text-[12px] cursor-pointer transition-colors ${isSelected ? 'bg-[var(--color-accent-9)] text-white font-semibold' : isToday ? 'border border-[var(--color-accent-7)] text-[var(--color-accent-11)] font-semibold hover:bg-[var(--color-accent-2)]' : 'text-[var(--color-neutral-11)] hover:bg-[var(--color-neutral-3)]'}`}>{day}</button>
+          )
+        })}
+      </div>
+    </div>
+  )
+}
+
+function todayIso(): string {
+  const d = new Date()
+  const y = d.getFullYear()
+  const m = String(d.getMonth() + 1).padStart(2, '0')
+  const day = String(d.getDate()).padStart(2, '0')
+  return `${y}-${m}-${day}`
+}
+
+function DateInputMDY({ value, onChange, label, className, defaultToday }: { value: string; onChange: (iso: string) => void; label?: string; className?: string; defaultToday?: boolean }) {
+  const getInitial = (v: string) => {
+    if (v) return isoToMDY(v)
+    if (defaultToday) { const iso = todayIso(); return isoToMDY(iso) }
+    return ''
+  }
+  const [raw, setRaw] = React.useState(() => getInitial(value))
+  const [open, setOpen] = React.useState(false)
+  const [focused, setFocused] = React.useState(false)
+  React.useEffect(() => {
+    if (value) setRaw(isoToMDY(value))
+    else if (defaultToday) { const iso = todayIso(); onChange(iso); setRaw(isoToMDY(iso)) }
+    else setRaw('')
+  }, [value])
+  const commit = (text: string) => {
+    const iso = mdyToIso(text)
+    if (iso) { onChange(iso); setRaw(isoToMDY(iso)) }
+    else if (!text.trim()) { onChange(''); setRaw('') }
+  }
+  return (
+    <div className={`flex flex-col gap-[var(--space-xs)] ${className ?? ''}`}>
+      {label && <label className="text-[length:var(--font-size-sm)] font-medium text-[var(--color-neutral-12)]">{label}</label>}
+      <Popover.Root open={open} onOpenChange={setOpen}>
+        <Popover.Trigger asChild>
+          <div className={`flex items-center h-9 px-2.5 gap-2 rounded-[var(--radius-md)] border bg-[var(--surface-primary)] cursor-text transition-colors ${focused || open ? 'border-[var(--color-accent-7)] shadow-[0_0_1px_3px_rgba(0,106,220,0.1)]' : 'border-[var(--border-default)]'}`}
+            onClick={() => { setOpen(false) }}>
+            <input
+              type="text"
+              placeholder="MM/DD/YYYY"
+              value={raw}
+              onClick={e => e.stopPropagation()}
+              onChange={e => setRaw(e.target.value)}
+              onFocus={() => setFocused(true)}
+              onBlur={() => { setFocused(false); commit(raw) }}
+              onKeyDown={e => { if (e.key === 'Enter') { commit(raw); setOpen(true) } }}
+              className="flex-1 min-w-0 bg-transparent outline-none text-[13px] text-[var(--color-neutral-11)] placeholder:text-[var(--color-neutral-6)]"
+            />
+            {raw && !(defaultToday && raw === isoToMDY(todayIso())) && (
+              <button type="button" onClick={e => { e.stopPropagation(); if (defaultToday) { const iso = todayIso(); onChange(iso); setRaw(isoToMDY(iso)) } else { onChange(''); setRaw('') } }} className="shrink-0 text-[var(--color-neutral-8)] hover:text-[var(--color-neutral-11)] transition-colors cursor-pointer"><X size={12} /></button>
+            )}
+            <button type="button" onClick={e => { e.stopPropagation(); setOpen(o => !o) }} className="shrink-0 text-[var(--color-neutral-6)] hover:text-[var(--color-neutral-9)] transition-colors cursor-pointer"><Calendar size={14} /></button>
+          </div>
+        </Popover.Trigger>
+        <Popover.Portal>
+          <Popover.Content sideOffset={4} align="start" className="z-[var(--z-dropdown)] rounded-[var(--radius-xl)] border border-[var(--border-default)] bg-[var(--surface-primary)] shadow-[var(--shadow-lg)] outline-none" onOpenAutoFocus={e => e.preventDefault()}>
+            <MiniCalendar iso={value} onSelect={iso => { onChange(iso); setRaw(isoToMDY(iso)); setOpen(false) }} />
+          </Popover.Content>
+        </Popover.Portal>
+      </Popover.Root>
+    </div>
+  )
+}
+
 function validateDateRange(start: string, end: string): string {
   const checkYear = (d: string) => {
     if (!d) return true
@@ -169,7 +287,7 @@ function normalizeOption(o: SelectOption): { value: string; label: string; icon?
 }
 
 function Select({
-  label, required, value, onChange, options, placeholder = 'Select…',
+  label, required, value, onChange, options, placeholder = 'Select…', clearable = false,
 }: {
   label?: string
   required?: boolean
@@ -177,6 +295,7 @@ function Select({
   onChange: (v: string) => void
   options: SelectOption[]
   placeholder?: string
+  clearable?: boolean
 }) {
   const normalized = options.map(normalizeOption)
   const selected = normalized.find(o => o.value === value)
@@ -190,12 +309,21 @@ function Select({
       )}
       <DropdownMenu modal={false}>
         <DropdownMenuTrigger asChild>
-          <button className="w-full h-10 flex items-center pl-3 pr-2 rounded-[var(--radius-lg)] border border-[var(--border-default)] bg-[var(--surface-primary)] hover:bg-[var(--color-neutral-2)] hover:border-[var(--color-neutral-7)] data-[state=open]:border-[var(--color-accent-7)] data-[state=open]:shadow-[0_0_1px_3px_rgba(0,106,220,0.1)] transition-colors cursor-pointer outline-none">
-            {selected?.icon && <span className="mr-1.5 shrink-0 flex items-center">{selected.icon}</span>}
+          <button className="w-full h-10 flex items-center gap-2 pl-3 pr-2 rounded-[var(--radius-lg)] border border-[var(--border-default)] bg-[var(--surface-primary)] hover:bg-[var(--color-neutral-2)] hover:border-[var(--color-neutral-7)] data-[state=open]:border-[var(--color-accent-7)] data-[state=open]:shadow-[0_0_1px_3px_rgba(0,106,220,0.1)] transition-colors cursor-pointer outline-none">
+            {selected?.icon && <span className="shrink-0 flex items-center">{selected.icon}</span>}
             <span className={`flex-1 text-left text-[13px] truncate ${value ? 'text-[var(--color-neutral-11)]' : 'text-[var(--color-neutral-7)]'}`}>
               {selected?.label ?? placeholder}
             </span>
-            <ChevronDown size={14} className="shrink-0 text-[var(--color-neutral-7)] ml-1" />
+            {clearable && value && (
+              <span
+                role="button"
+                onClick={e => { e.stopPropagation(); onChange('') }}
+                className="shrink-0 flex items-center justify-center w-4 h-4 rounded-full hover:bg-[var(--color-neutral-4)] text-[var(--color-neutral-7)] transition-colors cursor-pointer"
+              >
+                <X size={11} />
+              </span>
+            )}
+            <ChevronDown size={14} className="shrink-0 text-[var(--color-neutral-7)]" />
           </button>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="start" minWidth="var(--radix-dropdown-menu-trigger-width)">
@@ -965,7 +1093,7 @@ function InlineAssignForm({ onSubmit, onCancel }: { onSubmit: (f: AssignAssetFor
       <div className="grid grid-cols-3 gap-4">
         <SearchableSelect label="Primary Assignee" value={form.primaryAssignee} onChange={set('primaryAssignee')} options={ASSIGNEES} showAvatar />
         <SearchableMultiSelect label="Additional Assignee" values={form.additionalAssignee} onChange={v => setForm(f => ({ ...f, additionalAssignee: v }))} options={ASSIGNEES} showAvatar />
-        <Select label="Team" value={form.team} onChange={set('team')} options={TEAMS} />
+        <Select label="Team" value={form.team} onChange={set('team')} options={TEAMS} clearable />
       </div>
 
       <div className="flex items-center justify-end gap-2 pt-1">
@@ -1675,17 +1803,16 @@ function AssignAssetModal({
                           key={o}
                           type="button"
                           onClick={() => !alreadyUsed && toggleAppliesToValue(o)}
-                          className={`w-full flex items-center gap-2.5 px-3 py-2 text-[13px] text-left transition-colors ${alreadyUsed ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer hover:bg-[var(--color-neutral-3)]'} ${checked ? 'text-[var(--color-neutral-12)] bg-[var(--color-accent-1)]' : 'text-[var(--color-neutral-11)]'}`}
+                          className={`w-full flex items-start gap-2.5 px-3 py-2 text-[13px] text-left transition-colors ${alreadyUsed ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer hover:bg-[var(--color-neutral-3)]'} ${checked ? 'text-[var(--color-neutral-12)] bg-[var(--color-accent-1)]' : 'text-[var(--color-neutral-11)]'}`}
                         >
                           <span className={`flex-shrink-0 w-4 h-4 rounded-[var(--radius-sm)] border flex items-center justify-center transition-colors ${alreadyUsed ? 'border-[var(--color-neutral-4)] bg-[var(--color-neutral-3)]' : checked ? 'bg-[var(--color-accent-9)] border-[var(--color-accent-9)]' : 'border-[var(--color-neutral-6)] bg-[var(--surface-primary)]'}`}>
                             {(checked && !alreadyUsed) && <svg width="10" height="8" viewBox="0 0 10 8" fill="none"><path d="M1 4L3.5 6.5L9 1" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>}
-                            {alreadyUsed && <svg width="8" height="8" viewBox="0 0 8 8" fill="none"><circle cx="4" cy="4" r="2.5" fill="var(--color-neutral-7)"/></svg>}
+                            {alreadyUsed && <svg width="10" height="8" viewBox="0 0 10 8" fill="none"><path d="M1 4L3.5 6.5L9 1" stroke="var(--color-neutral-6)" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>}
                           </span>
                           <div className="flex-1 flex flex-col min-w-0">
                             <span className="truncate">{o}</span>
                             {assetLocation && <span className="text-[11px] text-[var(--color-neutral-7)] truncate">{assetLocation}</span>}
                           </div>
-                          {alreadyUsed && <span className="text-[10px] font-medium text-[var(--color-neutral-7)] shrink-0 ml-1">Assigned</span>}
                         </button>
                       )
                     })}
@@ -1704,25 +1831,15 @@ function AssignAssetModal({
           <div className={form.primaryAssignee ? '' : 'opacity-40 pointer-events-none'}>
             <SearchableMultiSelect label="Additional Assignee" values={form.additionalAssignee} onChange={v => setForm(f => ({ ...f, additionalAssignee: v }))} options={ASSIGNEES} showAvatar />
           </div>
-          <Select label="Team" value={form.team} onChange={set('team')} options={TEAMS} />
+          <Select label="Team" value={form.team} onChange={set('team')} options={TEAMS} clearable />
         </div>
 
         <div className="h-px bg-[var(--border-subtle)] mb-6" />
 
         {/* DATES */}
         <div className="grid grid-cols-2 gap-4">
-          <TextInput
-            label="Start"
-            type="date"
-            value={form.startDate}
-            onChange={e => { setDateError(''); setForm(f => ({ ...f, startDate: (e.target as HTMLInputElement).value })) }}
-          />
-          <TextInput
-            label="End"
-            type="date"
-            value={form.endDate}
-            onChange={e => { setDateError(''); setForm(f => ({ ...f, endDate: (e.target as HTMLInputElement).value })) }}
-          />
+          <DateInputMDY defaultToday label="Start" value={form.startDate} onChange={v => { setDateError(''); setForm(f => ({ ...f, startDate: v })) }} />
+          <DateInputMDY label="End" value={form.endDate} onChange={v => { setDateError(''); setForm(f => ({ ...f, endDate: v })) }} />
         </div>
         {dateError && <p className="mt-2 text-[12px] text-[var(--color-error,#CE2C31)]">{dateError}</p>}
 
@@ -2434,6 +2551,7 @@ function CreatePMPageContent() {
   const dirtyTrackingRef = useRef(false)
   const draftIdRef = useRef(`pm-new-${Date.now()}`)
   const [assignmentSearch, setAssignmentSearch] = useState<Record<string, string>>({})
+  const [assignmentFilters, setAssignmentFilters] = useState<Record<string, { technicians: string[]; meters: string[]; teams: string[] }>>({})
   const [assignmentSelected, setAssignmentSelected] = useState<Record<string, Set<string>>>({})
   const [assignmentSort, setAssignmentSort] = useState<Record<string, { col: string; dir: 'asc' | 'desc' }>>({})
   const [novaOpen, setNovaOpen] = useState(false)
@@ -2554,7 +2672,7 @@ function CreatePMPageContent() {
       const existing = JSON.parse(localStorage.getItem('upkeep_new_pms') ?? '[]')
       const updated = [item, ...existing.filter((x: { id: string }) => x.id !== item.id)]
       localStorage.setItem('upkeep_new_pms', JSON.stringify(updated))
-      localStorage.setItem('upkeep_pm_skeleton_id', item.id)
+      if (!isEditing) localStorage.setItem('upkeep_pm_skeleton_id', item.id)
     } catch {}
   }
 
@@ -3366,8 +3484,16 @@ function CreatePMPageContent() {
                                   const isMeterTrigger = !!trigger.calendarTrigger.meterCondition
                                   const q = (assignmentSearch[trigger.id] ?? '').toLowerCase()
                                   const sort = assignmentSort[trigger.id]
+                                  const af = assignmentFilters[trigger.id] ?? { technicians: [], meters: [], teams: [] }
+                                  const hasFilters = q || af.technicians?.length || af.meters?.length || af.teams?.length
                                   const filtered = trigger.assignments
-                                    .filter(a => a.name.toLowerCase().includes(q) || (a.subtext || '').toLowerCase().includes(q))
+                                    .filter(a => {
+                                      if (q && !a.name.toLowerCase().includes(q) && !(a.subtext || '').toLowerCase().includes(q)) return false
+                                      if (af.technicians?.length && !af.technicians.some(t => a.assignees.includes(t))) return false
+                                      if (af.meters?.length && !af.meters.includes(a.meter || '')) return false
+                                      if (af.teams?.length && !af.teams.includes(a.team || '')) return false
+                                      return true
+                                    })
                                     .sort((a, b) => {
                                       if (!sort) return 0
                                       const dir = sort.dir === 'asc' ? 1 : -1
@@ -3393,21 +3519,139 @@ function CreatePMPageContent() {
                                   })
                                   const someChecked = !allChecked && filtered.some(a => sel.has(a.id))
                                   return (<>
-                                    {/* Title / search / assign row — always visible */}
-                                    <div className="flex items-center gap-2 px-3 h-10 w-full">
-                                      <span className="text-[14px] font-semibold text-[var(--color-neutral-11)] flex-1">
+                                    {/* Title / search / filters / assign row — always visible */}
+                                    <div className="flex flex-wrap items-center gap-4 px-3 py-2 w-full min-h-[40px]">
+                                      <span className="text-[14px] font-semibold text-[var(--color-neutral-11)] shrink-0">
                                         Assignments ({trigger.assignments.length})
                                       </span>
-                                      <div className="flex items-center gap-1.5 flex-1 mx-2 max-w-[260px] h-6 px-2 rounded-[var(--radius-md)] border border-[var(--border-default)] bg-[var(--surface-primary)]">
+                                      <div className="flex-1" />
+                                      <div className="flex items-center gap-1.5 max-w-[180px] h-6 px-2 rounded-[var(--radius-md)] border border-[var(--border-default)] bg-[var(--surface-primary)]">
                                         <Search size={11} className="text-[var(--color-neutral-6)] shrink-0" />
                                         <input
                                           type="text"
                                           value={assignmentSearch[trigger.id] ?? ''}
                                           onChange={e => setAssignmentSearch(s => ({ ...s, [trigger.id]: e.target.value }))}
-                                          placeholder="Filter assignments…"
+                                          placeholder="Search"
                                           className="flex-1 min-w-0 bg-transparent outline-none text-[12px] text-[var(--color-neutral-11)] placeholder:text-[var(--color-neutral-6)]"
                                         />
                                       </div>
+                                      <div className="w-px self-stretch bg-[var(--border-default)] shrink-0" />
+                                      <div className="flex items-center gap-1.5">
+                                      {/* Filter: Technician */}
+                                      {(() => {
+                                        const techs = Array.from(new Set(trigger.assignments.flatMap(a => a.assignees))).sort()
+                                        if (techs.length === 0) return null
+                                        const sel = af.technicians ?? []
+                                        const toggle = (name: string) => setAssignmentFilters(f => {
+                                          const cur = f[trigger.id]?.technicians ?? []
+                                          return { ...f, [trigger.id]: { technicians: cur.includes(name) ? cur.filter(n => n !== name) : [...cur, name], meters: f[trigger.id]?.meters ?? [], teams: f[trigger.id]?.teams ?? [] } }
+                                        })
+                                        return (
+                                          <Popover.Root>
+                                            <Popover.Trigger asChild>
+                                              <button type="button" className={`shrink-0 flex items-center gap-1 px-2 h-6 rounded-[var(--radius-md)] border text-[11px] font-medium transition-colors cursor-pointer border-[var(--border-default)] bg-[var(--surface-primary)] text-[var(--color-neutral-8)] hover:bg-[var(--color-neutral-3)]`}>
+                                                Technicians: {sel.length ? <span className="ml-1 flex items-center justify-center px-2 h-4 rounded-full bg-[var(--color-accent-9)] text-white text-[9px] font-bold">{sel.length}</span> : 'All'}
+                                                <ChevronDown size={10} />
+                                              </button>
+                                            </Popover.Trigger>
+                                            <Popover.Portal>
+                                              <Popover.Content sideOffset={4} align="start" className="z-[var(--z-dropdown)] w-[200px] rounded-[var(--radius-xl)] border border-[var(--border-default)] bg-[var(--surface-primary)] shadow-[var(--shadow-lg)] outline-none py-1" onOpenAutoFocus={e => e.preventDefault()}>
+                                                <button type="button" onClick={() => setAssignmentFilters(f => ({ ...f, [trigger.id]: { ...f[trigger.id], technicians: [] } }))} className={`w-full flex items-center gap-2.5 px-3 py-1.5 text-[12px] cursor-pointer transition-colors hover:bg-[var(--color-neutral-3)] ${sel.length === 0 ? 'font-semibold text-[var(--color-neutral-12)]' : 'text-[var(--color-neutral-11)]'}`}>
+                                                  All
+                                                </button>
+                                                <div className="my-1 mx-3 border-t border-[var(--border-subtle)]" />
+                                                {techs.map(name => (
+                                                  <button key={name} type="button" onClick={() => toggle(name)} className="w-full flex items-center gap-2.5 px-3 py-1.5 text-[12px] cursor-pointer transition-colors hover:bg-[var(--color-neutral-3)] text-[var(--color-neutral-11)]">
+                                                    <span className={`shrink-0 flex items-center justify-center w-4 h-4 rounded-[3px] border transition-colors ${sel.includes(name) ? 'bg-[var(--color-accent-9)] border-[var(--color-accent-9)]' : 'border-[var(--color-neutral-6)] bg-[var(--surface-primary)]'}`}>
+                                                      {sel.includes(name) && <svg width="10" height="8" viewBox="0 0 10 8" fill="none"><path d="M1 4L3.5 6.5L9 1" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>}
+                                                    </span>
+                                                    {name}
+                                                  </button>
+                                                ))}
+                                              </Popover.Content>
+                                            </Popover.Portal>
+                                          </Popover.Root>
+                                        )
+                                      })()}
+                                      {/* Filter: Meter */}
+                                      {(() => {
+                                        const meters = Array.from(new Set(trigger.assignments.map(a => a.meter).filter(Boolean))) as string[]
+                                        if (meters.length === 0) return null
+                                        const sel = af.meters ?? []
+                                        const toggle = (m: string) => setAssignmentFilters(f => {
+                                          const cur = f[trigger.id]?.meters ?? []
+                                          return { ...f, [trigger.id]: { technicians: f[trigger.id]?.technicians ?? [], meters: cur.includes(m) ? cur.filter(x => x !== m) : [...cur, m], teams: f[trigger.id]?.teams ?? [] } }
+                                        })
+                                        return (
+                                          <Popover.Root>
+                                            <Popover.Trigger asChild>
+                                              <button type="button" className={`shrink-0 flex items-center gap-1 px-2 h-6 rounded-[var(--radius-md)] border text-[11px] font-medium transition-colors cursor-pointer border-[var(--border-default)] bg-[var(--surface-primary)] text-[var(--color-neutral-8)] hover:bg-[var(--color-neutral-3)]`}>
+                                                Meter{sel.length ? <span className="ml-1 flex items-center justify-center w-4 h-4 rounded-full bg-[var(--color-accent-9)] text-white text-[9px] font-bold">{sel.length}</span> : null}
+                                                <ChevronDown size={10} />
+                                              </button>
+                                            </Popover.Trigger>
+                                            <Popover.Portal>
+                                              <Popover.Content sideOffset={4} align="start" className="z-[var(--z-dropdown)] w-[200px] rounded-[var(--radius-xl)] border border-[var(--border-default)] bg-[var(--surface-primary)] shadow-[var(--shadow-lg)] outline-none py-1" onOpenAutoFocus={e => e.preventDefault()}>
+                                                <button type="button" onClick={() => setAssignmentFilters(f => ({ ...f, [trigger.id]: { ...f[trigger.id], meters: [] } }))} className={`w-full flex items-center gap-2.5 px-3 py-1.5 text-[12px] cursor-pointer transition-colors hover:bg-[var(--color-neutral-3)] ${sel.length === 0 ? 'font-semibold text-[var(--color-neutral-12)]' : 'text-[var(--color-neutral-11)]'}`}>
+                                                  All
+                                                </button>
+                                                <div className="my-1 mx-3 border-t border-[var(--border-subtle)]" />
+                                                {meters.map(m => (
+                                                  <button key={m} type="button" onClick={() => toggle(m)} className="w-full flex items-center gap-2.5 px-3 py-1.5 text-[12px] cursor-pointer transition-colors hover:bg-[var(--color-neutral-3)] text-[var(--color-neutral-11)]">
+                                                    <span className={`shrink-0 flex items-center justify-center w-4 h-4 rounded-[3px] border transition-colors ${sel.includes(m) ? 'bg-[var(--color-accent-9)] border-[var(--color-accent-9)]' : 'border-[var(--color-neutral-6)] bg-[var(--surface-primary)]'}`}>
+                                                      {sel.includes(m) && <svg width="10" height="8" viewBox="0 0 10 8" fill="none"><path d="M1 4L3.5 6.5L9 1" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>}
+                                                    </span>
+                                                    {m}
+                                                  </button>
+                                                ))}
+                                              </Popover.Content>
+                                            </Popover.Portal>
+                                          </Popover.Root>
+                                        )
+                                      })()}
+                                      {/* Filter: Team */}
+                                      {(() => {
+                                        const teams = Array.from(new Set(trigger.assignments.map(a => a.team).filter(Boolean))) as string[]
+                                        if (teams.length === 0) return null
+                                        const sel = af.teams ?? []
+                                        const toggle = (t: string) => setAssignmentFilters(f => {
+                                          const cur = f[trigger.id]?.teams ?? []
+                                          return { ...f, [trigger.id]: { technicians: f[trigger.id]?.technicians ?? [], meters: f[trigger.id]?.meters ?? [], teams: cur.includes(t) ? cur.filter(x => x !== t) : [...cur, t] } }
+                                        })
+                                        return (
+                                          <Popover.Root>
+                                            <Popover.Trigger asChild>
+                                              <button type="button" className={`shrink-0 flex items-center gap-1 px-2 h-6 rounded-[var(--radius-md)] border text-[11px] font-medium transition-colors cursor-pointer border-[var(--border-default)] bg-[var(--surface-primary)] text-[var(--color-neutral-8)] hover:bg-[var(--color-neutral-3)]`}>
+                                                Teams: {sel.length ? <span className="ml-1 flex items-center justify-center px-2 h-4 rounded-full bg-[var(--color-accent-9)] text-white text-[9px] font-bold">{sel.length}</span> : 'All'}
+                                                <ChevronDown size={10} />
+                                              </button>
+                                            </Popover.Trigger>
+                                            <Popover.Portal>
+                                              <Popover.Content sideOffset={4} align="start" className="z-[var(--z-dropdown)] w-[200px] rounded-[var(--radius-xl)] border border-[var(--border-default)] bg-[var(--surface-primary)] shadow-[var(--shadow-lg)] outline-none py-1" onOpenAutoFocus={e => e.preventDefault()}>
+                                                <button type="button" onClick={() => setAssignmentFilters(f => ({ ...f, [trigger.id]: { ...f[trigger.id], teams: [] } }))} className={`w-full flex items-center gap-2.5 px-3 py-1.5 text-[12px] cursor-pointer transition-colors hover:bg-[var(--color-neutral-3)] ${sel.length === 0 ? 'font-semibold text-[var(--color-neutral-12)]' : 'text-[var(--color-neutral-11)]'}`}>
+                                                  All
+                                                </button>
+                                                <div className="my-1 mx-3 border-t border-[var(--border-subtle)]" />
+                                                {teams.map(t => (
+                                                  <button key={t} type="button" onClick={() => toggle(t)} className="w-full flex items-center gap-2.5 px-3 py-1.5 text-[12px] cursor-pointer transition-colors hover:bg-[var(--color-neutral-3)] text-[var(--color-neutral-11)]">
+                                                    <span className={`shrink-0 flex items-center justify-center w-4 h-4 rounded-[3px] border transition-colors ${sel.includes(t) ? 'bg-[var(--color-accent-9)] border-[var(--color-accent-9)]' : 'border-[var(--color-neutral-6)] bg-[var(--surface-primary)]'}`}>
+                                                      {sel.includes(t) && <svg width="10" height="8" viewBox="0 0 10 8" fill="none"><path d="M1 4L3.5 6.5L9 1" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>}
+                                                    </span>
+                                                    <span style={{ background: TEAM_COLORS[t] }} className="w-3 h-3 rounded-full shrink-0" />
+                                                    {t}
+                                                  </button>
+                                                ))}
+                                              </Popover.Content>
+                                            </Popover.Portal>
+                                          </Popover.Root>
+                                        )
+                                      })()}
+                                      {/* Reset all filters */}
+                                      <button type="button" disabled={!hasFilters} onClick={() => { setAssignmentSearch(s => ({ ...s, [trigger.id]: '' })); setAssignmentFilters(f => ({ ...f, [trigger.id]: { technicians: [], meters: [], teams: [] } })) }} className={`shrink-0 text-[11px] font-[500] transition-colors ${hasFilters ? 'text-[var(--color-accent-9)] hover:text-[var(--color-accent-11)] cursor-pointer' : 'text-[var(--color-neutral-5)] cursor-not-allowed'}`}>
+                                        Reset
+                                      </button>
+                                      </div>
+                                      <div className="w-px self-stretch bg-[var(--border-default)] shrink-0" />
                                       <button type="button" onClick={() => setShowAssignModal(trigger.id)} className="shrink-0 flex items-center gap-1 px-2 h-7 rounded-[var(--radius-md)] bg-[#EDF2FE] hover:bg-[#dce8fd] transition-colors cursor-pointer text-[12px] font-medium text-[var(--color-accent-11)]">
                                         <Plus size={12} /> Assign
                                       </button>
@@ -3467,14 +3711,8 @@ function CreatePMPageContent() {
                                             </Popover.Trigger>
                                             <Popover.Portal>
                                               <Popover.Content sideOffset={8} align="start" className="z-[var(--z-dropdown)] w-[200px] rounded-[var(--radius-xl)] border border-[var(--border-default)] bg-[var(--surface-primary)] shadow-[var(--shadow-lg)] outline-none p-3 flex flex-col gap-3" onOpenAutoFocus={e => e.preventDefault()}>
-                                                <div className="flex flex-col gap-1">
-                                                  <label className="text-[11px] font-medium text-[var(--color-neutral-8)]">Start</label>
-                                                  <input type="date" onChange={e => setTriggers(ts => ts.map(t => t.id === trigger.id ? { ...t, assignments: t.assignments.map(a => sel.has(a.id) ? { ...a, startDate: e.target.value } : a) } : t))} className="h-8 w-full px-2 rounded-[var(--radius-md)] border border-[var(--border-default)] bg-[var(--surface-primary)] text-[12px] text-[var(--color-neutral-11)] outline-none focus:border-[var(--color-accent-7)] focus:shadow-[0_0_1px_3px_rgba(0,106,220,0.1)]" />
-                                                </div>
-                                                <div className="flex flex-col gap-1">
-                                                  <label className="text-[11px] font-medium text-[var(--color-neutral-8)]">End</label>
-                                                  <input type="date" onChange={e => setTriggers(ts => ts.map(t => t.id === trigger.id ? { ...t, assignments: t.assignments.map(a => sel.has(a.id) ? { ...a, endDate: e.target.value } : a) } : t))} className="h-8 w-full px-2 rounded-[var(--radius-md)] border border-[var(--border-default)] bg-[var(--surface-primary)] text-[12px] text-[var(--color-neutral-11)] outline-none focus:border-[var(--color-accent-7)] focus:shadow-[0_0_1px_3px_rgba(0,106,220,0.1)]" />
-                                                </div>
+                                                <DateInputMDY defaultToday label="Start" value={''} onChange={v => setTriggers(ts => ts.map(t => t.id === trigger.id ? { ...t, assignments: t.assignments.map(a => sel.has(a.id) ? { ...a, startDate: v } : a) } : t))} />
+                                                <DateInputMDY label="End" value={''} onChange={v => setTriggers(ts => ts.map(t => t.id === trigger.id ? { ...t, assignments: t.assignments.map(a => sel.has(a.id) ? { ...a, endDate: v } : a) } : t))} />
                                               </Popover.Content>
                                             </Popover.Portal>
                                           </Popover.Root>
@@ -3516,6 +3754,12 @@ function CreatePMPageContent() {
                                     </div>
                                     {/* Scrollable assignment list */}
                                     <div className="overflow-y-auto max-h-[380px]">
+                                      {filtered.length === 0 && (q || af.technician || af.meter || af.team) && (
+                                        <div className="flex flex-col items-center justify-center py-10 gap-1 text-center">
+                                          <p className="text-[13px] font-semibold text-[var(--color-neutral-11)]">No results found</p>
+                                          <p className="text-[12px] text-[var(--color-neutral-7)]">Try resetting your filters or adjusting your search.</p>
+                                        </div>
+                                      )}
                                       {filtered.map(a => skeletonAssignmentIds.has(a.id) ? (
                                         <div key={a.id} id={`assignment-row-${a.id}`} className="flex items-center gap-5 px-3 py-4 border-b border-[#F0F0F3] last:border-0 bg-white skeleton-shimmer">
                                           <div className="flex-shrink-0 w-4 h-4 rounded-[var(--radius-sm)] bg-[var(--color-neutral-3)]" />
@@ -3540,7 +3784,7 @@ function CreatePMPageContent() {
                                               <div className="flex items-center gap-2">
                                                 <span className="font-medium text-[var(--color-neutral-12)] truncate">{a.name}</span>
                                               </div>
-                                              {a.subtext && <span className="text-[11px] text-[var(--color-neutral-7)] truncate">{a.subtext}</span>}
+                                              {a.subtext && <span className="text-[11px] text-[var(--color-neutral-9)] truncate">{a.subtext}</span>}
                                             </div>
                                           </div>
                                           {/* Meter — inline edit */}
@@ -3548,7 +3792,6 @@ function CreatePMPageContent() {
                                             <Popover.Trigger asChild>
                                               <button title={a.meter || undefined} className={`w-[120px] shrink-0 flex flex-col items-start justify-center px-1.5 h-7 rounded-[var(--radius-md)] hover:bg-[var(--color-neutral-3)] transition-colors cursor-pointer text-[12px] outline-none ${isMeterTrigger && !a.meter ? 'text-[var(--color-error,#CE2C31)] font-medium' : 'text-[var(--color-neutral-8)]'}`}>
                                                 <span className="truncate max-w-full">{a.meter || (isMeterTrigger ? 'Assign Meter' : '—')}</span>
-                                                {a.meterInherited && <span className="text-[9px] text-[var(--color-neutral-6)] leading-none">inherited</span>}
                                               </button>
                                             </Popover.Trigger>
                                             <Popover.Portal>
@@ -3614,7 +3857,6 @@ function CreatePMPageContent() {
                                                   <Tooltip content={`${a.team}${a.teamInherited ? ' (inherited)' : ''}`} side="top">
                                                     <div className="flex flex-col items-start">
                                                       <span style={{ background: TEAM_COLORS[a.team] }} className="w-6 h-6 rounded-full flex items-center justify-center text-white text-[10px] font-bold shrink-0 cursor-default">{a.team[0]}</span>
-                                                      {a.teamInherited && <span className="text-[9px] text-[var(--color-neutral-6)] leading-none">inherited</span>}
                                                     </div>
                                                   </Tooltip>
                                                 </TooltipProvider>
@@ -3655,14 +3897,8 @@ function CreatePMPageContent() {
                                             </Popover.Trigger>
                                             <Popover.Portal>
                                               <Popover.Content sideOffset={4} align="start" className="z-[var(--z-dropdown)] w-[200px] rounded-[var(--radius-xl)] border border-[var(--border-default)] bg-[var(--surface-primary)] shadow-[var(--shadow-lg)] outline-none p-3 flex flex-col gap-3" onOpenAutoFocus={e => e.preventDefault()}>
-                                                <div className="flex flex-col gap-1">
-                                                  <label className="text-[11px] font-medium text-[var(--color-neutral-8)]">Start</label>
-                                                  <input type="date" value={a.startDate} onChange={e => setTriggers(ts => ts.map(t => t.id === trigger.id ? { ...t, assignments: t.assignments.map(x => x.id === a.id ? { ...x, startDate: e.target.value } : x) } : t))} className="h-8 px-2 rounded-[var(--radius-md)] border border-[var(--border-default)] bg-[var(--surface-primary)] text-[12px] text-[var(--color-neutral-11)] outline-none focus:border-[var(--color-accent-7)] focus:shadow-[0_0_1px_3px_rgba(0,106,220,0.1)]" />
-                                                </div>
-                                                <div className="flex flex-col gap-1">
-                                                  <label className="text-[11px] font-medium text-[var(--color-neutral-8)]">End</label>
-                                                  <input type="date" value={a.endDate} onChange={e => setTriggers(ts => ts.map(t => t.id === trigger.id ? { ...t, assignments: t.assignments.map(x => x.id === a.id ? { ...x, endDate: e.target.value } : x) } : t))} className="h-8 px-2 rounded-[var(--radius-md)] border border-[var(--border-default)] bg-[var(--surface-primary)] text-[12px] text-[var(--color-neutral-11)] outline-none focus:border-[var(--color-accent-7)] focus:shadow-[0_0_1px_3px_rgba(0,106,220,0.1)]" />
-                                                </div>
+                                                <DateInputMDY defaultToday label="Start" value={a.startDate} onChange={v => setTriggers(ts => ts.map(t => t.id === trigger.id ? { ...t, assignments: t.assignments.map(x => x.id === a.id ? { ...x, startDate: v } : x) } : t))} />
+                                                <DateInputMDY label="End" value={a.endDate} onChange={v => setTriggers(ts => ts.map(t => t.id === trigger.id ? { ...t, assignments: t.assignments.map(x => x.id === a.id ? { ...x, endDate: v } : x) } : t))} />
                                               </Popover.Content>
                                             </Popover.Portal>
                                           </Popover.Root>
@@ -3779,18 +4015,7 @@ function CreatePMPageContent() {
                 endDate: a.endDate || '',
               }
             }
-            // Pre-fill from last assignment when adding to a schedule that already has assignments
-            const last = t?.assignments[t.assignments.length - 1]
-            if (!last) return undefined
-            return {
-              asset: [], location: [], meter: [],
-              primaryAssignee: last.assignees[0] || '',
-              additionalAssignee: last.assignees.slice(1),
-              team: last.team || '',
-              trigger: '',
-              startDate: last.startDate || '',
-              endDate: last.endDate || '',
-            }
+            return undefined
           })()}
         />
       )}
