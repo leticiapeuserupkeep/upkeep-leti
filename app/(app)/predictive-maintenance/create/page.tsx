@@ -262,7 +262,7 @@ function InlineSelect({ value, onChange, options, placeholder, className, error 
       <DropdownMenuTrigger asChild>
         <button
           type="button"
-          className={`inline-flex items-center gap-1.5 h-8 px-3 rounded-[var(--radius-md)] border bg-[var(--surface-primary)] text-[13px] font-medium hover:bg-[var(--color-neutral-3)] transition-colors cursor-pointer ${error ? 'border-[#CE2C31]' : 'border-[var(--border-default)]'} ${value ? 'text-[var(--color-neutral-11)]' : 'text-[var(--color-neutral-7)]'} ${className ?? ''}`}
+          className={`inline-flex items-center gap-1.5 h-8 px-3 rounded-[var(--radius-md)] border bg-[var(--surface-primary)] text-[13px] font-medium hover:bg-[var(--color-neutral-3)] transition-colors cursor-pointer ${error ? 'border-[#CE2C31] shadow-[0_0_1px_3px_rgba(206,44,49,0.1)]' : 'border-[var(--border-default)]'} ${value ? 'text-[var(--color-neutral-11)]' : 'text-[var(--color-neutral-7)]'} ${className ?? ''}`}
         >
           <span>{displayLabel}</span>
           <ChevronDown size={12} className="text-[var(--color-neutral-7)]" />
@@ -345,7 +345,7 @@ function CreateCalendarTriggerModal({
         {/* Calendar Based card */}
         <div className="rounded-[var(--radius-xl)] border border-[var(--border-default)]">
           <button type="button" onClick={() => setShowCalendarBased(v => !v)}
-            className="flex items-center gap-3 px-4 py-3 bg-[var(--color-neutral-2)] w-full text-left cursor-pointer hover:bg-[var(--color-neutral-3)] transition-colors rounded-[var(--radius-xl)]">
+            className="flex items-center gap-3 px-4 py-3 bg-[var(--color-neutral-2)] w-full text-left cursor-pointer hover:bg-[var(--color-neutral-3)] transition-colors rounded-t-[var(--radius-xl)] rounded-b-none">
             <div className="w-10 h-10 rounded-[var(--radius-md)] bg-[var(--color-neutral-3)] flex items-center justify-center shrink-0">
               <Calendar size={15} className="text-[var(--color-neutral-9)]" />
             </div>
@@ -688,13 +688,13 @@ function CreateCalendarTriggerModal({
                       <input type="date" value={p.fromDate}
                         ref={el => { if (el) inactiveInputRefs.current.set(p.id, el); else inactiveInputRefs.current.delete(p.id) }}
                         onChange={e => setInactivePeriods(ps => ps.map(x => x.id === p.id ? { ...x, fromDate: e.target.value } : x))}
-                        className={`h-8 px-3 rounded-[var(--radius-md)] border bg-[var(--surface-primary)] text-[13px] text-[var(--color-neutral-11)] outline-none focus:border-[var(--color-accent-7)] focus:shadow-[0_0_1px_3px_rgba(0,106,220,0.1)] transition-colors w-full ${!p.fromDate ? 'border-[#CE2C31]' : 'border-[var(--border-default)]'}`} />
+                        className={`h-8 px-3 rounded-[var(--radius-md)] border bg-[var(--surface-primary)] text-[13px] text-[var(--color-neutral-11)] outline-none focus:border-[var(--color-accent-7)] focus:shadow-[0_0_1px_3px_rgba(0,106,220,0.1)] transition-colors w-full ${!p.fromDate ? 'border-[#CE2C31] shadow-[0_0_1px_3px_rgba(206,44,49,0.1)]' : 'border-[var(--border-default)]'}`} />
                     </div>
                     <div className="flex flex-col gap-1.5">
                       <label className="text-[13px] font-medium text-[var(--color-neutral-11)]">To</label>
                       <input type="date" value={p.toDate}
                         onChange={e => setInactivePeriods(ps => ps.map(x => x.id === p.id ? { ...x, toDate: e.target.value } : x))}
-                        className={`h-8 px-3 rounded-[var(--radius-md)] border bg-[var(--surface-primary)] text-[13px] text-[var(--color-neutral-11)] outline-none focus:border-[var(--color-accent-7)] focus:shadow-[0_0_1px_3px_rgba(0,106,220,0.1)] transition-colors w-full ${!p.toDate ? 'border-[#CE2C31]' : 'border-[var(--border-default)]'}`} />
+                        className={`h-8 px-3 rounded-[var(--radius-md)] border bg-[var(--surface-primary)] text-[13px] text-[var(--color-neutral-11)] outline-none focus:border-[var(--color-accent-7)] focus:shadow-[0_0_1px_3px_rgba(0,106,220,0.1)] transition-colors w-full ${!p.toDate ? 'border-[#CE2C31] shadow-[0_0_1px_3px_rgba(206,44,49,0.1)]' : 'border-[var(--border-default)]'}`} />
                     </div>
                     <button type="button"
                       onClick={() => { setInactivePeriods(ps => ps.filter(x => x.id !== p.id)); if (inactivePeriods.length === 1) setShowInactivePeriods(false) }}
