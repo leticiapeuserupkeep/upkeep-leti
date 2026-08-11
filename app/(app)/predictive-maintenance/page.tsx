@@ -25,7 +25,7 @@ interface TechAvatar { initials: string; bg: string }
 interface AssignmentRow {
   id: string
   asset: string
-  assetType: 'Asset' | 'Location'
+  assetType: 'Asset' | 'Location' | 'Meter'
   location: string
   meter?: string
   technicians: TechAvatar[]
