@@ -163,7 +163,49 @@ function mdyToIso(mdy: string): string {
   if (parts.length !== 3) return ''
   const [m, d, y] = parts
   if (!m || !d || !y || y.length < 4) return ''
-  return `${y}-${m.padStart(2,'0')}-${d.padStart(2,'0')}`
+  const month = parseInt(m, 10)
+  const day = parseInt(d, 10)
+  const year = parseInt(y, 10)
+  if (month < 1 || month > 12) return ''
+  const maxDay = new Date(year, month, 0).getDate()
+  if (day < 1 || day > maxDay) return ''
+  return `${year}-${String(month).padStart(2,'0')}-${String(day).padStart(2,'0')}`
+}
+
+function autoFormatMDY(prev: string, next: string): string {
+  const prevDigits = prev.replace(/\D/g, '')
+  const nextDigits = next.replace(/\D/g, '')
+  if (nextDigits.length < prevDigits.length) {
+    // Deleting: strip trailing slash so backspace feels natural
+    return next.endsWith('/') ? next.slice(0, -1) : next
+  }
+  const digits = nextDigits.slice(0, 8)
+  if (digits.length === 0) return ''
+
+  // Month part (positions 0-1)
+  let mm = digits.slice(0, Math.min(2, digits.length))
+  if (mm.length === 2) {
+    const m = parseInt(mm, 10)
+    if (m < 1) mm = '01'
+    else if (m > 12) mm = '12'
+  }
+  if (digits.length <= 2) return mm
+
+  // Day part (positions 2-3)
+  const month = parseInt(mm, 10) || 1
+  let dd = digits.slice(2, Math.min(4, digits.length))
+  if (dd.length === 2) {
+    const yyyy = digits.length >= 8 ? parseInt(digits.slice(4, 8), 10) : new Date().getFullYear()
+    const maxD = new Date(yyyy, month, 0).getDate()
+    const d = parseInt(dd, 10)
+    if (d < 1) dd = '01'
+    else if (d > maxD) dd = String(maxD).padStart(2, '0')
+  }
+  if (digits.length <= 4) return `${mm}/${dd}`
+
+  // Year part (positions 4-7)
+  const yyyy = digits.slice(4, 8)
+  return `${mm}/${dd}/${yyyy}`
 }
 
 function MiniCalendar({ iso, onSelect }: { iso: string; onSelect: (iso: string) => void }) {
@@ -216,7 +258,7 @@ function todayIso(): string {
   return `${y}-${m}-${day}`
 }
 
-function DateInputMDY({ value, onChange, label, className, defaultToday }: { value: string; onChange: (iso: string) => void; label?: string; className?: string; defaultToday?: boolean }) {
+function DateInputMDY({ value, onChange, label, className, defaultToday, minIso }: { value: string; onChange: (iso: string) => void; label?: string; className?: string; defaultToday?: boolean; minIso?: string }) {
   const getInitial = (v: string) => {
     if (v) return isoToMDY(v)
     if (defaultToday) { const iso = todayIso(); return isoToMDY(iso) }
@@ -225,46 +267,50 @@ function DateInputMDY({ value, onChange, label, className, defaultToday }: { val
   const [raw, setRaw] = React.useState(() => getInitial(value))
   const [open, setOpen] = React.useState(false)
   const [focused, setFocused] = React.useState(false)
+  const [error, setError] = React.useState('')
   React.useEffect(() => {
-    if (value) setRaw(isoToMDY(value))
+    if (value) { setRaw(isoToMDY(value)); setError('') }
     else if (defaultToday) { const iso = todayIso(); onChange(iso); setRaw(isoToMDY(iso)) }
     else setRaw('')
   }, [value])
   const commit = (text: string) => {
+    if (!text.trim()) { onChange(''); setRaw(''); setError(''); return }
     const iso = mdyToIso(text)
-    if (iso) { onChange(iso); setRaw(isoToMDY(iso)) }
-    else if (!text.trim()) { onChange(''); setRaw('') }
+    if (!iso) { setError('Invalid date'); return }
+    if (minIso && iso < minIso) { setError('Must be after start date'); return }
+    onChange(iso); setRaw(isoToMDY(iso)); setError('')
   }
   return (
     <div className={`flex flex-col gap-[var(--space-xs)] ${className ?? ''}`}>
       {label && <label className="text-[length:var(--font-size-sm)] font-medium text-[var(--color-neutral-12)]">{label}</label>}
       <Popover.Root open={open} onOpenChange={setOpen}>
         <Popover.Trigger asChild>
-          <div className={`flex items-center h-9 px-2.5 gap-2 rounded-[var(--radius-md)] border bg-[var(--surface-primary)] cursor-text transition-colors ${focused || open ? 'border-[var(--color-accent-7)] shadow-[0_0_1px_3px_rgba(0,106,220,0.1)]' : 'border-[var(--border-default)]'}`}
+          <div className={`flex items-center h-9 px-2.5 gap-2 rounded-[var(--radius-md)] border bg-[var(--surface-primary)] cursor-text transition-colors ${error ? 'border-[var(--color-error)] shadow-[0_0_1px_3px_rgba(206,44,49,0.12)]' : focused || open ? 'border-[var(--color-accent-7)] shadow-[0_0_1px_3px_rgba(0,106,220,0.1)]' : 'border-[var(--border-default)]'}`}
             onClick={() => { setOpen(false) }}>
             <input
               type="text"
               placeholder="MM/DD/YYYY"
               value={raw}
               onClick={e => e.stopPropagation()}
-              onChange={e => setRaw(e.target.value)}
+              onChange={e => { const v = e.target.value; setError(''); setRaw(prev => autoFormatMDY(prev, v)) }}
               onFocus={() => setFocused(true)}
               onBlur={() => { setFocused(false); commit(raw) }}
               onKeyDown={e => { if (e.key === 'Enter') { commit(raw); setOpen(true) } }}
               className="flex-1 min-w-0 bg-transparent outline-none text-[13px] text-[var(--color-neutral-11)] placeholder:text-[var(--color-neutral-6)]"
             />
             {raw && !(defaultToday && raw === isoToMDY(todayIso())) && (
-              <button type="button" onClick={e => { e.stopPropagation(); if (defaultToday) { const iso = todayIso(); onChange(iso); setRaw(isoToMDY(iso)) } else { onChange(''); setRaw('') } }} className="shrink-0 text-[var(--color-neutral-8)] hover:text-[var(--color-neutral-11)] transition-colors cursor-pointer"><X size={12} /></button>
+              <button type="button" onClick={e => { e.stopPropagation(); setError(''); if (defaultToday) { const iso = todayIso(); onChange(iso); setRaw(isoToMDY(iso)) } else { onChange(''); setRaw('') } }} className="shrink-0 text-[var(--color-neutral-8)] hover:text-[var(--color-neutral-11)] transition-colors cursor-pointer"><X size={12} /></button>
             )}
             <button type="button" onClick={e => { e.stopPropagation(); setOpen(o => !o) }} className="shrink-0 text-[var(--color-neutral-6)] hover:text-[var(--color-neutral-9)] transition-colors cursor-pointer"><Calendar size={14} /></button>
           </div>
         </Popover.Trigger>
         <Popover.Portal>
           <Popover.Content sideOffset={4} align="start" className="z-[var(--z-dropdown)] rounded-[var(--radius-xl)] border border-[var(--border-default)] bg-[var(--surface-primary)] shadow-[var(--shadow-lg)] outline-none" onOpenAutoFocus={e => e.preventDefault()}>
-            <MiniCalendar iso={value} onSelect={iso => { onChange(iso); setRaw(isoToMDY(iso)); setOpen(false) }} />
+            <MiniCalendar iso={value} onSelect={iso => { if (minIso && iso < minIso) { setError('Must be after start date'); setOpen(false); return } onChange(iso); setRaw(isoToMDY(iso)); setError(''); setOpen(false) }} />
           </Popover.Content>
         </Popover.Portal>
       </Popover.Root>
+      {error && <p className="text-[11px] text-[var(--color-error)] mt-0.5">{error}</p>}
     </div>
   )
 }
@@ -413,13 +459,14 @@ const WEEKDAY_LETTERS = [
 
 type InlineOption = string | { value: string; label: string }
 
-function InlineSelect({ value, onChange, options, placeholder, className, error }: { value: string; onChange: (v: string) => void; options: InlineOption[]; placeholder?: string; className?: string; error?: boolean }) {
+const InlineSelect = React.forwardRef<HTMLButtonElement, { value: string; onChange: (v: string) => void; options: InlineOption[]; placeholder?: string; className?: string; error?: boolean; onBlur?: () => void }>(function InlineSelect({ value, onChange, options, placeholder, className, error, onBlur }, ref) {
   const items = options.map(o => typeof o === 'string' ? { value: o, label: o } : o)
   const displayLabel = value ? (items.find(i => i.value === value)?.label ?? value) : (placeholder ?? '')
   return (
-    <DropdownMenu modal={false}>
+    <DropdownMenu modal={false} onOpenChange={open => { if (!open) onBlur?.() }}>
       <DropdownMenuTrigger asChild>
         <button
+          ref={ref}
           type="button"
           className={`inline-flex items-center gap-1.5 h-8 px-3 rounded-[var(--radius-md)] border bg-[var(--surface-primary)] text-[13px] font-medium hover:bg-[var(--color-neutral-3)] transition-colors cursor-pointer ${error ? 'border-[#CE2C31] shadow-[0_0_1px_3px_rgba(206,44,49,0.1)]' : 'border-[var(--border-default)]'} ${value ? 'text-[var(--color-neutral-11)]' : 'text-[var(--color-neutral-7)]'} ${className ?? ''}`}
         >
@@ -440,20 +487,26 @@ function InlineSelect({ value, onChange, options, placeholder, className, error 
       </DropdownMenuContent>
     </DropdownMenu>
   )
-}
+})
 
 function CreateCalendarTriggerModal({
-  open, onClose, onSubmit, initial,
+  open, onClose, onSubmit, initial, isEditing,
 }: {
   open: boolean
   onClose: () => void
   onSubmit: (t: CalendarTrigger) => void
   initial?: CalendarTrigger
+  isEditing?: boolean
 }) {
   const [form, setForm] = useState<Omit<CalendarTrigger, 'id'>>(initial ?? EMPTY_TRIGGER)
+  const [hasChanges, setHasChanges] = useState(false)
   const [fieldsTouched, setFieldsTouched] = useState(false)
+  const [woRelativeNTouched, setWoRelativeNTouched] = useState(false)
+  const [woRelativePeriodTouched, setWoRelativePeriodTouched] = useState(false)
+  const [woOnThePeriodTouched, setWoOnThePeriodTouched] = useState(false)
   const set = <K extends keyof typeof form>(k: K) => (v: (typeof form)[K]) => {
     setFieldsTouched(true)
+    setHasChanges(true)
     setForm(f => ({ ...f, [k]: v }))
   }
 
@@ -478,6 +531,17 @@ function CreateCalendarTriggerModal({
   const [meterCondition, setMeterCondition] = useState(initial?.meterCondition ?? '')
   const [meterValue, setMeterValue] = useState(initial?.meterValue ?? '')
   const [meterUnit, setMeterUnit] = useState(initial?.meterUnit ?? 'Units')
+  const [everyTouched, setEveryTouched] = useState(false)
+  const everyInputRef = useRef<HTMLInputElement>(null)
+  const periodTriggerRef = useRef<HTMLButtonElement>(null)
+  useEffect(() => {
+    if (open && showCalendarBased) {
+      setTimeout(() => everyInputRef.current?.focus(), 150)
+    }
+  }, [open, showCalendarBased])
+  const [meterConditionTouched, setMeterConditionTouched] = useState(false)
+  const [meterValueTouched, setMeterValueTouched] = useState(false)
+  const meterValueInputRef = useRef<HTMLInputElement>(null)
   const [meterDueN, setMeterDueN] = useState(initial?.meterDueN ?? '')
   const [meterDuePeriod, setMeterDuePeriod] = useState(initial?.meterDuePeriod ?? '')
   const meterComplete = meterCondition !== '' && meterValue.trim() !== ''
@@ -501,7 +565,7 @@ function CreateCalendarTriggerModal({
 
   return (
     <Modal open={open} onOpenChange={v => !v && handleClose()} maxWidth="720px">
-      <ModalHeader title="New Schedule" />
+      <ModalHeader title={isEditing ? 'Edit Schedule' : 'New Schedule'} />
       <ModalBody className="flex flex-col gap-3 p-6">
 
         {/* Calendar Based card */}
@@ -606,8 +670,8 @@ function CreateCalendarTriggerModal({
                   {form.scheduleType === 'After Completion' ? (
                     <div className="flex items-center gap-2">
                       <span className="text-[13px] text-[var(--color-neutral-10)] shrink-0">Every</span>
-                      <NumberInput value={form.every} onChange={set('every')} min={1} className="w-[80px] shrink-0" error={!form.every} />
-                      <InlineSelect value={form.period} onChange={set('period')} options={PERIODS.map(p => ({ value: p, label: `${p}(s)` }))} className="flex-1 justify-between" error={!form.period} />
+                      <NumberInput value={form.every} onChange={set('every')} min={1} className="w-[80px] shrink-0" onBlur={() => setFieldsTouched(true)} error={fieldsTouched && !form.every} />
+                      <InlineSelect value={form.period} onChange={set('period')} options={PERIODS.map(p => ({ value: p, label: `${p}(s)` }))} className="flex-1 justify-between" onBlur={() => setFieldsTouched(true)} error={fieldsTouched && !form.period} />
                       <span className="text-[12px] text-[var(--color-neutral-10)]">After previous WO<br />is completed</span>
                       <span className="text-[13px] text-[var(--color-neutral-10)] shrink-0">At</span>
                       {timeInput(form.atTime, set('atTime'), 'flex-1 min-w-0')}
@@ -616,8 +680,8 @@ function CreateCalendarTriggerModal({
                     <div className="flex flex-col gap-1">
                       <div className="flex items-center gap-2">
                         <span className="text-[13px] text-[var(--color-neutral-10)] shrink-0">Every</span>
-                        <NumberInput value={form.every} onChange={set('every')} min={1} className="w-[80px] shrink-0" error={fieldsTouched && !form.every} />
-                        <InlineSelect value={form.period}
+                        <NumberInput ref={everyInputRef} value={form.every} onChange={set('every')} min={1} className="w-[80px] shrink-0" onBlur={() => { setEveryTouched(true); if (form.every) setTimeout(() => periodTriggerRef.current?.click(), 50) }} error={everyTouched && !form.every} />
+                        <InlineSelect ref={periodTriggerRef} value={form.period}
                           onChange={set('period')}
                           options={PERIODS.map(p => ({ value: p, label: `${p}(s)` }))}
                           placeholder="Period"
@@ -667,8 +731,8 @@ function CreateCalendarTriggerModal({
                             {mode === 'relative' ? (
                               <div className="flex flex-col gap-2">
                                 <div className="flex items-center gap-2">
-                                  <NumberInput value={form.woRelativeN} onChange={set('woRelativeN')} min={1} className="w-[80px] shrink-0" error={isSelected && !form.woRelativeN} />
-                                  <InlineSelect value={form.woRelativePeriod} onChange={set('woRelativePeriod')} options={woPeriodOptions} placeholder="Period" className="flex-1 justify-between" error={isSelected && !form.woRelativePeriod} />
+                                  <NumberInput value={form.woRelativeN} onChange={set('woRelativeN')} min={1} className="w-[80px] shrink-0" onBlur={() => setWoRelativeNTouched(true)} error={isSelected && woRelativeNTouched && !form.woRelativeN} />
+                                  <InlineSelect value={form.woRelativePeriod} onChange={set('woRelativePeriod')} options={woPeriodOptions} placeholder="Period" className="flex-1 justify-between" onBlur={() => setWoRelativePeriodTouched(true)} error={isSelected && woRelativePeriodTouched && !form.woRelativePeriod} />
                                 </div>
                                 <div className="flex items-center gap-2">
                                   <span className="text-[12px] text-[var(--color-neutral-9)] shrink-0">Before the due date</span>
@@ -680,7 +744,7 @@ function CreateCalendarTriggerModal({
                               <div className="flex flex-col gap-2">
                                 <div className="flex items-center gap-2">
                                   <span className="text-[12px] font-medium text-[var(--color-neutral-9)] shrink-0">On</span>
-                                  <InlineSelect value={form.woOnThePeriod} onChange={set('woOnThePeriod')} options={FULL_WEEKDAYS} placeholder="Day" className="flex-1 justify-between" error={isSelected && !form.woOnThePeriod} />
+                                  <InlineSelect value={form.woOnThePeriod} onChange={set('woOnThePeriod')} options={FULL_WEEKDAYS} placeholder="Day" className="flex-1 justify-between" onBlur={() => setWoOnThePeriodTouched(true)} error={isSelected && woOnThePeriodTouched && !form.woOnThePeriod} />
                                 </div>
                                 <div className="flex items-center gap-2">
                                   <span className="text-[12px] text-[var(--color-neutral-9)] shrink-0">Before the due date</span>
@@ -765,12 +829,13 @@ function CreateCalendarTriggerModal({
                     <div className="flex flex-1 gap-4">
                       <div className="flex flex-col gap-1.5 flex-1">
                         <label className="text-[13px] font-medium text-[var(--color-neutral-11)]">When Meter</label>
-                        <InlineSelect value={meterCondition} onChange={setMeterCondition}
-                          options={['is above', 'is below', 'equals']} placeholder="Condition" className="w-full justify-between" error={!meterCondition} />
+                        <InlineSelect value={meterCondition}
+                          onChange={v => { setMeterCondition(v); setMeterConditionTouched(true); setTimeout(() => meterValueInputRef.current?.focus(), 50) }}
+                          options={['is above', 'is below', 'equals']} placeholder="Condition" className="w-full justify-between" onBlur={() => setMeterConditionTouched(true)} error={meterConditionTouched && !meterCondition} />
                       </div>
                       <div className="flex flex-col gap-1.5 flex-1">
                         <label className="text-[13px] font-medium text-[var(--color-neutral-11)]">Units</label>
-                        <NumberInput value={meterValue} onChange={setMeterValue} min={0} placeholder="0" className="w-full" error={!meterValue.trim()} />
+                        <NumberInput ref={meterValueInputRef} value={meterValue} onChange={setMeterValue} min={0} placeholder="0" className="w-full" onBlur={() => setMeterValueTouched(true)} error={meterValueTouched && !meterValue.trim()} />
                       </div>
                     </div>
                     <div className={`flex flex-col gap-1.5 border-l border-[var(--border-default)] pl-4 min-w-[220px] transition-opacity ${meterCondition && meterValue.trim() ? '' : 'opacity-40 pointer-events-none'}`}>
@@ -880,8 +945,8 @@ function CreateCalendarTriggerModal({
           const meterPartial = (meterCondition !== '' || meterValue.trim() !== '') && !meterComplete
           const hasValidTrigger = calendarValid || meterComplete
           return (
-            <Button variant="primary" size="md" onClick={handleSubmit} disabled={!hasValidTrigger || meterPartial || calendarPartial}>
-              Create Schedule
+            <Button variant="primary" size="md" onClick={handleSubmit} disabled={!hasValidTrigger || meterPartial || calendarPartial || (isEditing && !hasChanges)}>
+              {isEditing ? 'Save Changes' : 'Create Schedule'}
             </Button>
           )
         })()}
@@ -1092,8 +1157,8 @@ function InlineAssignForm({ onSubmit, onCancel }: { onSubmit: (f: AssignAssetFor
       )}
 
       <div className="grid grid-cols-3 gap-4">
-        <SearchableSelect label="Primary Assignee" value={form.primaryAssignee} onChange={set('primaryAssignee')} options={ASSIGNEES} showAvatar />
-        <SearchableMultiSelect label="Additional Assignee" values={form.additionalAssignee} onChange={v => setForm(f => ({ ...f, additionalAssignee: v }))} options={ASSIGNEES} showAvatar />
+        <SearchableSelect label="Technician" value={form.primaryAssignee} onChange={set('primaryAssignee')} options={ASSIGNEES} showAvatar />
+        <SearchableMultiSelect label="Additional Technicians" values={form.additionalAssignee} onChange={v => setForm(f => ({ ...f, additionalAssignee: v }))} options={ASSIGNEES} showAvatar />
         <Select label="Team" value={form.team} onChange={set('team')} options={TEAMS} clearable />
       </div>
 
@@ -1567,18 +1632,19 @@ type AppliesToType = typeof APPLIES_TO_TYPES[number]
 
 function ModalSectionLabel({ children }: { children: React.ReactNode }) {
   return (
-    <p className="text-[length:var(--font-size-sm)] font-medium text-[var(--color-neutral-12)] mb-2">{children}</p>
+    <p className="text-[11px] font-semibold uppercase tracking-wide text-[var(--color-neutral-7)] mb-2">{children}</p>
   )
 }
 
 function AssignAssetModal({
-  open, onClose, onSubmit, existingAssets = [], initialValues,
+  open, onClose, onSubmit, existingAssets = [], initialValues, previousAssignment,
 }: {
   open: boolean
   onClose: () => void
   onSubmit: (data: AssignAssetForm) => void
   existingAssets?: Array<{ name: string; location?: string; meter?: string }>
   initialValues?: AssignAssetForm
+  previousAssignment?: { primaryAssignee?: string; additionalAssignee?: string[]; team?: string; startDate?: string; endDate?: string }
 }) {
   const [form, setForm] = useState<AssignAssetForm>(EMPTY_FORM)
   const [appliesToType, setAppliesToType] = useState<AppliesToType>('Asset')
@@ -1601,6 +1667,7 @@ function AssignAssetModal({
   const appliesToMeasureRef = useRef<HTMLDivElement>(null)
   const [appliesToVisibleCount, setAppliesToVisibleCount] = useState(99)
   const set = (k: keyof AssignAssetForm) => (v: string) => setForm(f => ({ ...f, [k]: v }))
+  const [techAutoFilled, setTechAutoFilled] = useState(false)
 
   const usedAssets = existingAssets.map(a => a.name).filter(Boolean)
   const usedLocations = existingAssets.map(a => a.location).filter(Boolean)
@@ -1641,6 +1708,34 @@ function AssignAssetModal({
   }, [valueOpen])
 
   useEffect(() => {
+    if (appliesToSelected.length === 1) {
+      const name = appliesToSelected[0]
+      const data = appliesToType === 'Asset' ? getAssetData(name) : appliesToType === 'Location' ? getLocationData(name) : undefined
+      const assignee = (data as { assignee?: string; assignees?: string[] } | undefined)?.assignee
+        ?? (data as { assignees?: string[] } | undefined)?.assignees?.[0]
+      const team = (data as { team?: string } | undefined)?.team
+      if (assignee || team) {
+        // Always update auto-filled fields when the single selection changes
+        setForm(f => ({
+          ...f,
+          primaryAssignee: techAutoFilled || !f.primaryAssignee ? (assignee ?? '') : f.primaryAssignee,
+          team: techAutoFilled || !f.team ? (team ?? '') : f.team,
+        }))
+        setTechAutoFilled(true)
+      } else if (techAutoFilled) {
+        // Item changed to one with no assignments — clear auto-filled fields
+        setForm(f => ({ ...f, primaryAssignee: '', team: '' }))
+        setTechAutoFilled(false)
+      }
+    } else if (techAutoFilled) {
+      // Going to 0 or 2+ items — clear auto-filled values
+      setForm(f => ({ ...f, primaryAssignee: '', team: '' }))
+      setTechAutoFilled(false)
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [appliesToSelected.join(','), appliesToType])
+
+  useEffect(() => {
     const trigger = appliesToTriggerRef.current
     const measure = appliesToMeasureRef.current
     const compute = () => {
@@ -1662,6 +1757,13 @@ function AssignAssetModal({
     return () => ro.disconnect()
   }, [appliesToSelected])
 
+  const multiItemsWithTech = appliesToSelected.length > 1 && appliesToSelected.some(name => {
+    const data = appliesToType === 'Asset' ? getAssetData(name) : appliesToType === 'Location' ? getLocationData(name) : undefined
+    return !!(data as { assignee?: string; assignees?: string[]; team?: string } | undefined)?.team
+      || !!(data as { assignee?: string } | undefined)?.assignee
+      || !!((data as { assignees?: string[] } | undefined)?.assignees?.length)
+  })
+
   const canSubmit = !!(form.asset.length || form.location.length || form.meter.length || form.primaryAssignee || form.additionalAssignee.length || form.team)
   const [dateError, setDateError] = useState('')
 
@@ -1679,14 +1781,15 @@ function AssignAssetModal({
     setDateError('')
     setForm(EMPTY_FORM)
     setAppliesToType('Asset')
+    setTechAutoFilled(false)
     onClose()
   }
 
   return (
     <Modal open={open} onOpenChange={v => !v && handleClose()} maxWidth="520px">
       <ModalHeader
-        title="Assignments"
-        description="Choose where or to whom this preventive maintenance should be assigned."
+        title="Add to Schedule"
+        description="Choose where this schedule applies and optionally assign technicians or a team."
       />
       <ModalBody className="flex flex-col p-6">
 
@@ -1824,30 +1927,65 @@ function AssignAssetModal({
           </div>
         </div>
 
+        {multiItemsWithTech && (
+          <p className="text-[12px] text-[var(--color-neutral-8)] mb-6 -mt-2 leading-5">
+            We'll use the technicians and teams already assigned to these items. You can change them below.
+          </p>
+        )}
+
         <div className="h-px bg-[var(--border-subtle)] mb-6" />
 
         {/* PEOPLE */}
+        <div className="flex items-center justify-between mb-2">
+          <p className="text-[11px] font-semibold uppercase tracking-wide text-[var(--color-neutral-7)]">Assigned To</p>
+          {(previousAssignment?.primaryAssignee || previousAssignment?.team) && (
+            <button type="button"
+              onClick={() => setForm(f => ({ ...f, primaryAssignee: previousAssignment.primaryAssignee!, additionalAssignee: previousAssignment.additionalAssignee ?? [], team: previousAssignment.team ?? '' }))}
+              className="text-[11px] text-[var(--color-accent-9)] hover:underline cursor-pointer font-medium">
+              Use Last Assigned To
+            </button>
+          )}
+        </div>
         <div className="flex flex-col gap-4 mb-6">
-          <SearchableSelect label="Primary Assignee" value={form.primaryAssignee} onChange={set('primaryAssignee')} options={ASSIGNEES} showAvatar />
-          <div className={form.primaryAssignee ? '' : 'opacity-40 pointer-events-none'}>
-            <SearchableMultiSelect label="Additional Assignee" values={form.additionalAssignee} onChange={v => setForm(f => ({ ...f, additionalAssignee: v }))} options={ASSIGNEES} showAvatar />
+          <div className="flex flex-col gap-[var(--space-xs)]">
+            <div className="flex items-center justify-between">
+              <label className="text-[length:var(--font-size-sm)] font-medium text-[var(--color-neutral-12)]">Technician</label>
+            </div>
+            <SearchableSelect value={form.primaryAssignee} onChange={set('primaryAssignee')} options={ASSIGNEES} showAvatar />
           </div>
-          <Select label="Team" value={form.team} onChange={set('team')} options={TEAMS} clearable />
+          <div className="flex gap-4">
+            <div className={`flex-1 min-w-0 ${form.primaryAssignee ? '' : 'opacity-40 pointer-events-none'}`}>
+              <SearchableMultiSelect label="Additional Technicians" values={form.additionalAssignee} onChange={v => setForm(f => ({ ...f, additionalAssignee: v }))} options={ASSIGNEES} showAvatar />
+            </div>
+            <div className="flex-1 min-w-0">
+              <Select label="Team" value={form.team} onChange={set('team')} options={TEAMS} clearable placeholder="" />
+            </div>
+          </div>
         </div>
 
         <div className="h-px bg-[var(--border-subtle)] mb-6" />
 
         {/* DATES */}
+        <div className="flex items-center justify-between mb-2">
+          <p className="text-[11px] font-semibold uppercase tracking-wide text-[var(--color-neutral-7)]">Active Dates</p>
+          {(previousAssignment?.startDate || previousAssignment?.endDate) && (
+            <button type="button"
+              onClick={() => { setDateError(''); setForm(f => ({ ...f, startDate: previousAssignment.startDate ?? '', endDate: previousAssignment.endDate ?? '' })) }}
+              className="text-[11px] text-[var(--color-accent-9)] hover:underline cursor-pointer font-medium">
+              Use Last Active Dates
+            </button>
+          )}
+        </div>
         <div className="grid grid-cols-2 gap-4">
           <DateInputMDY defaultToday label="Start" value={form.startDate} onChange={v => { setDateError(''); setForm(f => ({ ...f, startDate: v })) }} />
-          <DateInputMDY label="End" value={form.endDate} onChange={v => { setDateError(''); setForm(f => ({ ...f, endDate: v })) }} />
+          <DateInputMDY label="End" value={form.endDate} minIso={form.startDate || undefined} onChange={v => { setDateError(''); setForm(f => ({ ...f, endDate: v })) }} />
         </div>
         {dateError && <p className="mt-2 text-[12px] text-[var(--color-error,#CE2C31)]">{dateError}</p>}
 
       </ModalBody>
       <ModalFooter className="flex items-center justify-end gap-2 px-6 py-4">
         <Button variant="secondary" size="lg" onClick={handleClose}>Cancel</Button>
-        <Button variant="primary" size="lg" onClick={handleSubmit} disabled={!canSubmit}>Assign</Button>
+        <Button variant="primary" size="lg" onClick={handleSubmit} disabled={!canSubmit}>Add</Button>
       </ModalFooter>
     </Modal>
   )
@@ -2581,7 +2719,7 @@ function CreatePMPageContent() {
       if (!stored) return
       const pm = JSON.parse(stored) as {
         id: string; title?: string; category?: string; priority?: string; status?: string
-        schedules?: Array<{ id: string; calendarTrigger: string; meterTrigger?: string; assignments: Array<{ id: string; asset: string; assetType: string; location: string; meter?: string; startDate?: string; endDate?: string }> }>
+        schedules?: Array<{ id: string; calendarTrigger: string; meterTrigger?: string; assignments: Array<{ id: string; asset: string; assetType: string; location: string; meter?: string; startDate?: string; endDate?: string; assignees?: string[]; assignee?: string; team?: string }> }>
       }
       if (pm.id !== editId) return
       draftIdRef.current = pm.id
@@ -2611,12 +2749,12 @@ function CreatePMPageContent() {
             type: (a.assetType || 'Asset') as 'Asset' | 'Location' | 'Meter',
             subtext: a.location || '',
             meter: a.meter || '',
-            assignees: [],
-            team: '',
+            assignees: a.assignees ?? (a.assignee ? [a.assignee] : []),
+            team: a.team || '',
             startDate: a.startDate || '',
             endDate: a.endDate || '',
           })),
-          expanded: false,
+          expanded: true,
         })))
       }
     } catch {}
@@ -2646,7 +2784,7 @@ function CreatePMPageContent() {
       id: draftIdRef.current,
       title: title,
       assets: triggers.flatMap(t => t.assignments.map(a => ({
-        asset: a.name, location: a.subtext, assignee: a.assignees[0], team: a.team,
+        asset: a.name, location: a.subtext, assignees: a.assignees, team: a.team,
       }))),
       schedules: triggers.map(t => ({
         id: t.id,
@@ -2660,7 +2798,7 @@ function CreatePMPageContent() {
           meter: a.meter || undefined,
           startDate: a.startDate || undefined,
           endDate: a.endDate || undefined,
-          assignee: a.assignees[0],
+          assignees: a.assignees,
           team: a.team,
         })),
       })),
@@ -2794,7 +2932,7 @@ function CreatePMPageContent() {
   const missingFields: string[] = [
     ...(!isTitleValid ? ['Title is required'] : []),
     ...(triggers.length === 0 ? ['At least one schedule is required'] : []),
-    ...(hasUnassignedTriggers ? ['All schedules need at least one assignment'] : []),
+    ...(hasUnassignedTriggers ? ['All schedules need at least one asset, location, or meter'] : []),
     ...(hasMissingTechnicians ? ['Some assignments are missing a technician or team'] : []),
     ...(hasMissingMeters ? ['Some assignments are missing a meter reading'] : []),
   ]
@@ -3415,19 +3553,34 @@ function CreatePMPageContent() {
                             )}
                           </>)
                         })()}
-                        {trigger.assignments.length === 0 ? (
-                          <span className="rounded-full bg-[var(--color-error-3,#FFEFEF)] text-[var(--color-error,#CE2C31)] text-[11px] px-2.5 py-0.5 font-medium shrink-0">
-                            No Assignments
-                          </span>
-                        ) : (
-                          <span className="rounded-full bg-[var(--color-accent-2)] text-[var(--color-accent-9)] text-[11px] px-2.5 py-0.5 font-medium shrink-0">
-                            {trigger.assignments.length} Assignment{trigger.assignments.length !== 1 ? 's' : ''}
-                          </span>
+                        {trigger.assignments.length > 0 && (
+                          <div className="flex items-center gap-1 shrink-0">
+                            {(() => {
+                              const assets = trigger.assignments.filter(a => a.type === 'Asset').length
+                              const locations = trigger.assignments.filter(a => a.type === 'Location').length
+                              const meters = trigger.assignments.filter(a => a.type === 'Meter').length
+                              const techs = new Set(trigger.assignments.flatMap(a => a.assignees)).size
+                              const pills = [
+                                assets > 0 && `${assets} Asset${assets !== 1 ? 's' : ''}`,
+                                locations > 0 && `${locations} Location${locations !== 1 ? 's' : ''}`,
+                                meters > 0 && `${meters} Meter${meters !== 1 ? 's' : ''}`,
+                                techs > 0 && `${techs} Technician${techs !== 1 ? 's' : ''}`,
+                              ].filter(Boolean) as string[]
+                              return pills.map(label => (
+                                <span key={label} className="rounded-full bg-[var(--color-accent-2)] text-[var(--color-accent-9)] text-[11px] px-2 py-0.5 font-medium">
+                                  {label}
+                                </span>
+                              ))
+                            })()}
+                          </div>
+                        )}
+                        {!trigger.expanded && trigger.assignments.length === 0 && (
+                          <span className="text-[11px] text-[var(--color-error,#CE2C31)] font-medium shrink-0">At least one item is required.</span>
                         )}
                         {!trigger.expanded && (
                           <Button variant="secondary" size="sm" onClick={e => { e.stopPropagation(); setShowAssignModal(trigger.id) }}>
                             <Plus size={12} />
-                            Assign
+                            Add
                           </Button>
                         )}
                         <DropdownMenu modal={false}>
@@ -3470,11 +3623,11 @@ function CreatePMPageContent() {
                           <div className="overflow-hidden">
                             {trigger.assignments.length === 0 ? (
                               <div className="flex flex-col items-center justify-center p-4 gap-2 text-center assign-content-fadein">
-                                <p className="text-[13px] font-semibold text-[var(--color-neutral-11)]">Assign to this schedule</p>
-                                <p className="text-[12px] text-[var(--color-neutral-8)]">Choose assets, locations, or meters for this schedule to apply to.</p>
+                                <p className="text-[13px] font-semibold text-[var(--color-neutral-11)]">Assets, Locations & Meters</p>
+                                <p className="text-[12px] text-[var(--color-neutral-8)]">Choose where this schedule applies</p>
                                 <div className="assign-cta-glow rounded-[var(--radius-md)]">
                                   <Button variant="primary" size="sm" onClick={() => setShowAssignModal(trigger.id)}>
-                                    Assign
+                                    Add
                                   </Button>
                                 </div>
                               </div>
@@ -3523,7 +3676,7 @@ function CreatePMPageContent() {
                                     {/* Title / search / filters / assign row — always visible */}
                                     <div className="flex flex-wrap items-center gap-4 px-3 py-2 w-full min-h-[40px]">
                                       <span className="text-[14px] font-semibold text-[var(--color-neutral-11)] shrink-0">
-                                        Assignments ({trigger.assignments.length})
+                                        Assets, Locations & Meters ({trigger.assignments.length})
                                       </span>
                                       <div className="flex-1" />
                                       <div className="flex items-center gap-1.5 max-w-[180px] h-6 px-2 rounded-[var(--radius-md)] border border-[var(--border-default)] bg-[var(--surface-primary)]">
@@ -3574,8 +3727,8 @@ function CreatePMPageContent() {
                                           </Popover.Root>
                                         )
                                       })()}
-                                      {/* Filter: Meter */}
-                                      {(() => {
+                                      {/* Filter: Meter — hidden */}
+                                      {false && (() => {
                                         const meters = Array.from(new Set(trigger.assignments.map(a => a.meter).filter(Boolean))) as string[]
                                         if (meters.length === 0) return null
                                         const sel = af.meters ?? []
@@ -3654,7 +3807,7 @@ function CreatePMPageContent() {
                                       </div>
                                       <div className="w-px self-stretch bg-[var(--border-default)] shrink-0" />
                                       <button type="button" onClick={() => setShowAssignModal(trigger.id)} className="shrink-0 flex items-center gap-1 px-2 h-7 rounded-[var(--radius-md)] bg-[#EDF2FE] hover:bg-[#dce8fd] transition-colors cursor-pointer text-[12px] font-medium text-[var(--color-accent-11)]">
-                                        <Plus size={12} /> Assign
+                                        <Plus size={12} /> Add
                                       </button>
                                     </div>
                                     {/* Bulk bar — fixed bottom bar when rows are selected */}
@@ -3665,7 +3818,7 @@ function CreatePMPageContent() {
                                           {/* Bulk: Add Meter */}
                                           <Popover.Root>
                                             <Popover.Trigger asChild>
-                                              <button type="button" className="flex items-center gap-1 text-[13px] font-semibold text-white cursor-pointer hover:opacity-80 transition-opacity shrink-0">Add Meter</button>
+                                              <button type="button" className="flex items-center gap-1 text-[13px] font-semibold text-white cursor-pointer hover:opacity-80 transition-opacity shrink-0">Update Meter</button>
                                             </Popover.Trigger>
                                             <Popover.Portal>
                                               <Popover.Content sideOffset={8} align="start" className="z-[var(--z-dropdown)] w-[200px] rounded-[var(--radius-xl)] border border-[var(--border-default)] bg-[var(--surface-primary)] shadow-[var(--shadow-lg)] outline-none overflow-hidden" onOpenAutoFocus={e => e.preventDefault()}>
@@ -3744,8 +3897,8 @@ function CreatePMPageContent() {
                                           )
                                         }
                                         return (<>
-                                          <SortHeader col="name" label="Assignment" className="flex-1 min-w-0" />
-                                          <SortHeader col="meter" label="Meter" className="w-[120px] shrink-0" />
+                                          <SortHeader col="name" label="Applies To" className="flex-1 min-w-0" />
+                                          {false && <SortHeader col="meter" label="Meter" className="w-[120px] shrink-0" />}
                                           <SortHeader col="user" label="Technicians" className="w-[96px] shrink-0" />
                                           <SortHeader col="team" label="Team" className="w-[80px] shrink-0" />
                                           <SortHeader col="start" label="Start / End" className="w-[140px] shrink-0" />
@@ -3780,27 +3933,81 @@ function CreatePMPageContent() {
                                           </button>
                                           {/* Name + type badge + subtext */}
                                           <div className="flex items-center gap-2 flex-1 min-w-0">
-                                            {a.type === 'Person' && <Avatar name={a.name} size="xs" className="shrink-0" />}
-                                            <div className="flex flex-col min-w-0">
-                                              <div className="flex items-center gap-2">
-                                                <span className="font-medium text-[var(--color-neutral-12)] truncate">{a.name}</span>
+                                            {a.type === 'Meter' ? (
+                                              /* Meter row: name · Meter badge, then Asset: —, Location: subtext */
+                                              <div className="flex flex-col min-w-0">
+                                                <div className="flex items-center gap-1.5 min-w-0">
+                                                  <span className="font-medium text-[var(--color-neutral-12)] truncate">{a.name}</span>
+                                                  <span className="shrink-0 inline-flex items-center h-[18px] px-1.5 rounded-[4px] text-[10px] font-medium bg-[var(--color-neutral-3)] text-[var(--color-neutral-9)]">Meter</span>
+                                                </div>
+                                                <span className="text-[11px] text-[var(--color-neutral-11)] truncate"><span className="text-[10px] text-[var(--color-neutral-7)] uppercase tracking-wide">Asset:</span> —</span>
+                                                <span className="text-[11px] text-[var(--color-neutral-11)] truncate"><span className="text-[10px] text-[var(--color-neutral-7)] uppercase tracking-wide">Location:</span> {a.subtext || '—'}</span>
                                               </div>
-                                              {a.subtext && <span className="text-[11px] text-[var(--color-neutral-9)] truncate">{a.subtext}</span>}
-                                            </div>
+                                            ) : a.type === 'Location' ? (
+                                              /* Location row: name · Location badge, then Asset: —, Meter: ... */
+                                              <div className="flex flex-col min-w-0">
+                                                <div className="flex items-center gap-1.5 min-w-0">
+                                                  <span className="font-medium text-[var(--color-neutral-12)] truncate">{a.name}</span>
+                                                  <span className="shrink-0 inline-flex items-center h-[18px] px-1.5 rounded-[4px] text-[10px] font-medium bg-[var(--color-neutral-3)] text-[var(--color-neutral-9)]">Location</span>
+                                                </div>
+                                                <span className="text-[11px] text-[var(--color-neutral-11)] truncate"><span className="text-[10px] text-[var(--color-neutral-7)] uppercase tracking-wide">Asset:</span> —</span>
+                                                <Popover.Root>
+                                                  <Popover.Trigger asChild>
+                                                    <button title={a.meter || undefined} className={`text-left text-[11px] outline-none cursor-pointer ${isMeterTrigger && !a.meter ? 'text-[var(--color-error,#CE2C31)] font-medium' : 'text-[var(--color-neutral-11)] hover:underline'}`}>
+                                                      <span className="text-[10px] text-[var(--color-neutral-7)] uppercase tracking-wide">Meter:</span>{' '}
+                                                      {isMeterTrigger && !a.meter ? <span className="underline">Add</span> : (a.meter || '—')}
+                                                    </button>
+                                                  </Popover.Trigger>
+                                                  <Popover.Portal>
+                                                    <Popover.Content sideOffset={4} align="start" className="z-[var(--z-dropdown)] w-[200px] rounded-[var(--radius-xl)] border border-[var(--border-default)] bg-[var(--surface-primary)] shadow-[var(--shadow-lg)] outline-none overflow-hidden" onOpenAutoFocus={e => e.preventDefault()}>
+                                                      <MeterPopoverContent current={a.meter || ''} onSelect={m => setTriggers(ts => ts.map(t => t.id === trigger.id ? { ...t, assignments: t.assignments.map(x => x.id === a.id ? { ...x, meter: m } : x) } : t))} />
+                                                    </Popover.Content>
+                                                  </Popover.Portal>
+                                                </Popover.Root>
+                                              </div>
+                                            ) : a.type === 'Asset' ? (
+                                              /* Asset row: name · Asset badge, then Location: subtext, Meter: ... */
+                                              <div className="flex flex-col min-w-0">
+                                                <div className="flex items-center gap-1.5 min-w-0">
+                                                  <span className="font-medium text-[var(--color-neutral-12)] truncate">{a.name}</span>
+                                                  <span className="shrink-0 inline-flex items-center h-[18px] px-1.5 rounded-[4px] text-[10px] font-medium bg-[var(--color-neutral-3)] text-[var(--color-neutral-9)]">Asset</span>
+                                                </div>
+                                                <span className="text-[11px] text-[var(--color-neutral-11)] truncate"><span className="text-[10px] text-[var(--color-neutral-7)] uppercase tracking-wide">Location:</span> {a.subtext || '—'}</span>
+                                                <Popover.Root>
+                                                  <Popover.Trigger asChild>
+                                                    <button title={a.meter || undefined} className={`text-left text-[11px] outline-none cursor-pointer ${isMeterTrigger && !a.meter ? 'text-[var(--color-error,#CE2C31)] font-medium' : 'text-[var(--color-neutral-11)] hover:underline'}`}>
+                                                      <span className="text-[10px] text-[var(--color-neutral-7)] uppercase tracking-wide">Meter:</span>{' '}
+                                                      {isMeterTrigger && !a.meter ? <span className="underline">Add</span> : (a.meter || '—')}
+                                                    </button>
+                                                  </Popover.Trigger>
+                                                  <Popover.Portal>
+                                                    <Popover.Content sideOffset={4} align="start" className="z-[var(--z-dropdown)] w-[200px] rounded-[var(--radius-xl)] border border-[var(--border-default)] bg-[var(--surface-primary)] shadow-[var(--shadow-lg)] outline-none overflow-hidden" onOpenAutoFocus={e => e.preventDefault()}>
+                                                      <MeterPopoverContent current={a.meter || ''} onSelect={m => setTriggers(ts => ts.map(t => t.id === trigger.id ? { ...t, assignments: t.assignments.map(x => x.id === a.id ? { ...x, meter: m } : x) } : t))} />
+                                                    </Popover.Content>
+                                                  </Popover.Portal>
+                                                </Popover.Root>
+                                              </div>
+                                            ) : (
+                                              /* Person-only row: show empty applies-to block */
+                                              <div className="flex flex-col min-w-0">
+                                                <span className="text-[11px] text-[var(--color-neutral-11)] truncate"><span className="text-[10px] text-[var(--color-neutral-7)] uppercase tracking-wide">Asset:</span> —</span>
+                                                <span className="text-[11px] text-[var(--color-neutral-11)] truncate"><span className="text-[10px] text-[var(--color-neutral-7)] uppercase tracking-wide">Location:</span> —</span>
+                                                <Popover.Root>
+                                                  <Popover.Trigger asChild>
+                                                    <button title={a.meter || undefined} className={`text-left text-[11px] outline-none cursor-pointer ${isMeterTrigger && !a.meter ? 'text-[var(--color-error,#CE2C31)] font-medium' : 'text-[var(--color-neutral-11)] hover:underline'}`}>
+                                                      <span className="text-[10px] text-[var(--color-neutral-7)] uppercase tracking-wide">Meter:</span>{' '}
+                                                      {isMeterTrigger && !a.meter ? <span className="underline">Add</span> : (a.meter || '—')}
+                                                    </button>
+                                                  </Popover.Trigger>
+                                                  <Popover.Portal>
+                                                    <Popover.Content sideOffset={4} align="start" className="z-[var(--z-dropdown)] w-[200px] rounded-[var(--radius-xl)] border border-[var(--border-default)] bg-[var(--surface-primary)] shadow-[var(--shadow-lg)] outline-none overflow-hidden" onOpenAutoFocus={e => e.preventDefault()}>
+                                                      <MeterPopoverContent current={a.meter || ''} onSelect={m => setTriggers(ts => ts.map(t => t.id === trigger.id ? { ...t, assignments: t.assignments.map(x => x.id === a.id ? { ...x, meter: m } : x) } : t))} />
+                                                    </Popover.Content>
+                                                  </Popover.Portal>
+                                                </Popover.Root>
+                                              </div>
+                                            )}
                                           </div>
-                                          {/* Meter — inline edit */}
-                                          <Popover.Root>
-                                            <Popover.Trigger asChild>
-                                              <button title={a.meter || undefined} className={`w-[120px] shrink-0 flex flex-col items-start justify-center px-1.5 h-7 rounded-[var(--radius-md)] hover:bg-[var(--color-neutral-3)] transition-colors cursor-pointer text-[12px] outline-none ${isMeterTrigger && !a.meter ? 'text-[var(--color-error,#CE2C31)] font-medium' : 'text-[var(--color-neutral-8)]'}`}>
-                                                <span className="truncate max-w-full">{a.meter || (isMeterTrigger ? 'Assign Meter' : '—')}</span>
-                                              </button>
-                                            </Popover.Trigger>
-                                            <Popover.Portal>
-                                              <Popover.Content sideOffset={4} align="start" className="z-[var(--z-dropdown)] w-[200px] rounded-[var(--radius-xl)] border border-[var(--border-default)] bg-[var(--surface-primary)] shadow-[var(--shadow-lg)] outline-none overflow-hidden" onOpenAutoFocus={e => e.preventDefault()}>
-                                                <MeterPopoverContent current={a.meter || ''} onSelect={m => setTriggers(ts => ts.map(t => t.id === trigger.id ? { ...t, assignments: t.assignments.map(x => x.id === a.id ? { ...x, meter: m } : x) } : t))} />
-                                              </Popover.Content>
-                                            </Popover.Portal>
-                                          </Popover.Root>
                                           {/* Assignee avatars — inline edit */}
                                           <Popover.Root>
                                             <Popover.Trigger asChild>
@@ -3891,15 +4098,15 @@ function CreatePMPageContent() {
                                           <Popover.Root>
                                             <Popover.Trigger asChild>
                                               <button className="w-[140px] shrink-0 flex flex-col justify-center items-start h-7 px-1.5 rounded-[var(--radius-md)] hover:bg-[var(--color-neutral-3)] transition-colors cursor-pointer outline-none text-[11px] text-[var(--color-neutral-8)]">
-                                                {a.startDate && <span>Start: {displayDate(a.startDate)}</span>}
-                                                {a.endDate && <span>End: {displayDate(a.endDate)}</span>}
+                                                {a.startDate && <span><span className="text-[10px] text-[var(--color-neutral-7)] uppercase tracking-wide">Start:</span> {displayDate(a.startDate)}</span>}
+                                                {a.endDate && <span><span className="text-[10px] text-[var(--color-neutral-7)] uppercase tracking-wide">End:</span> {displayDate(a.endDate)}</span>}
                                                 {!a.startDate && !a.endDate && <span>—</span>}
                                               </button>
                                             </Popover.Trigger>
                                             <Popover.Portal>
                                               <Popover.Content sideOffset={4} align="start" className="z-[var(--z-dropdown)] w-[200px] rounded-[var(--radius-xl)] border border-[var(--border-default)] bg-[var(--surface-primary)] shadow-[var(--shadow-lg)] outline-none p-3 flex flex-col gap-3" onOpenAutoFocus={e => e.preventDefault()}>
                                                 <DateInputMDY defaultToday label="Start" value={a.startDate} onChange={v => setTriggers(ts => ts.map(t => t.id === trigger.id ? { ...t, assignments: t.assignments.map(x => x.id === a.id ? { ...x, startDate: v } : x) } : t))} />
-                                                <DateInputMDY label="End" value={a.endDate} onChange={v => setTriggers(ts => ts.map(t => t.id === trigger.id ? { ...t, assignments: t.assignments.map(x => x.id === a.id ? { ...x, endDate: v } : x) } : t))} />
+                                                <DateInputMDY label="End" value={a.endDate} minIso={a.startDate || undefined} onChange={v => setTriggers(ts => ts.map(t => t.id === trigger.id ? { ...t, assignments: t.assignments.map(x => x.id === a.id ? { ...x, endDate: v } : x) } : t))} />
                                               </Popover.Content>
                                             </Popover.Portal>
                                           </Popover.Root>
@@ -3913,11 +4120,11 @@ function CreatePMPageContent() {
                                             <DropdownMenuContent align="end">
                                               <DropdownMenuItem onSelect={() => { setEditingAssignmentId({ triggerId: trigger.id, assignmentId: a.id }); setShowAssignModal(trigger.id) }}>
                                                 <Pencil size={13} className="mr-2 text-[var(--color-neutral-8)]" />
-                                                Edit {a.type}
+                                                Edit Assignment
                                               </DropdownMenuItem>
                                               <DropdownMenuItem onSelect={() => setPendingRemove({ triggerId: trigger.id, assignmentId: a.id, name: a.name })}>
                                                 <Trash2 size={13} className="mr-2 text-[var(--color-error)]" />
-                                                <span className="text-[var(--color-error)]">Remove {a.type}</span>
+                                                <span className="text-[var(--color-error)]">Remove Assignment</span>
                                               </DropdownMenuItem>
                                             </DropdownMenuContent>
                                           </DropdownMenu>
@@ -3966,6 +4173,7 @@ function CreatePMPageContent() {
         key={calendarModalKey}
         open={showCalendarModal}
         onClose={() => { setShowCalendarModal(false); setEditingTriggerId(null) }}
+        isEditing={!!editingTriggerId}
         initial={editingTriggerId ? triggers.find(t => t.id === editingTriggerId)?.calendarTrigger : undefined}
         onSubmit={t => {
           if (editingTriggerId) {
@@ -3977,7 +4185,7 @@ function CreatePMPageContent() {
             setSkeletonTriggerIds(s => new Set([...s, newId]))
             setFocusedTriggerIds(s => new Set([...s, newId]))
             setTimeout(() => setNewTriggerIds(s => { const next = new Set(s); next.delete(newId); return next }), 600)
-            setTimeout(() => setSkeletonTriggerIds(s => { const next = new Set(s); next.delete(newId); return next }), 2000)
+            setTimeout(() => setSkeletonTriggerIds(s => { const next = new Set(s); next.delete(newId); return next }), 1000)
             setTimeout(() => setFocusedTriggerIds(s => { const next = new Set(s); next.delete(newId); return next }), 2500)
             setTimeout(() => {
               const el = document.getElementById(`trigger-card-${newId}`)
@@ -3998,6 +4206,15 @@ function CreatePMPageContent() {
           existingAssets={(() => {
             const t = triggers.find(t => t.id === showAssignModal)
             return (t?.assignments ?? []).map(a => ({ name: a.name, location: a.subtext, meter: a.meter }))
+          })()}
+          previousAssignment={(() => {
+            const t = triggers.find(t => t.id === showAssignModal)
+            const assignments = t?.assignments ?? []
+            const prev = editingAssignmentId
+              ? assignments.filter(a => a.id !== editingAssignmentId.assignmentId).at(-1)
+              : assignments.at(-1)
+            if (!prev) return undefined
+            return { primaryAssignee: prev.assignees[0] || '', additionalAssignee: prev.assignees.slice(1), team: prev.team || '', startDate: prev.startDate || '', endDate: prev.endDate || '' }
           })()}
           initialValues={(() => {
             const t = triggers.find(t => t.id === showAssignModal)
@@ -4031,7 +4248,7 @@ function CreatePMPageContent() {
                 {(() => {
                   const sel = assignmentSelected[bulkDeleteConfirm]
                   const count = sel?.size ?? 0
-                  return `This will permanently delete ${count} selected assignment${count === 1 ? '' : 's'}. This action cannot be undone.`
+                  return `This will permanently delete ${count} selected item${count === 1 ? '' : 's'}. This action cannot be undone.`
                 })()}
               </p>
             </div>
@@ -4078,7 +4295,7 @@ function CreatePMPageContent() {
         <Modal open={!!pendingRemove} onOpenChange={v => !v && setPendingRemove(null)} maxWidth="400px">
           <div className="p-6 flex flex-col gap-4">
             <div className="flex flex-col gap-1">
-              <h2 className="text-[16px] font-semibold text-[var(--color-neutral-12)]">Remove assignment?</h2>
+              <h2 className="text-[16px] font-semibold text-[var(--color-neutral-12)]">Remove item?</h2>
               <p className="text-[14px] text-[var(--color-neutral-10)]">
                 <strong>{pendingRemove.name}</strong> will be removed from this schedule. This cannot be undone.
               </p>

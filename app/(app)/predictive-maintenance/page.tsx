@@ -60,10 +60,10 @@ interface PMItem {
 // For localStorage items from create page
 interface LegacyPMItem {
   id: string; title: string
-  assets?: Array<{ asset: string; location: string; assignee?: string; team?: string }>
+  assets?: Array<{ asset: string; location: string; assignees?: string[]; assignee?: string; team?: string }>
   schedules?: Array<{
     id: string; calendarTrigger: string; meterTrigger?: string
-    assignments: Array<{ id: string; asset: string; assetType: string; location: string; meter?: string; startDate?: string; endDate?: string; assignee?: string; team?: string }>
+    assignments: Array<{ id: string; asset: string; assetType: string; location: string; meter?: string; startDate?: string; endDate?: string; assignees?: string[]; assignee?: string; team?: string }>
   }>
   schedule?: string; status?: string; priority?: string; woCount?: number
 }
@@ -87,8 +87,10 @@ function displayDate(iso: string): string {
 }
 
 function convertLegacy(item: LegacyPMItem): PMItem {
-  const makeTech = (name?: string): TechAvatar[] =>
-    name ? [{ initials: name.split(' ').map((n: string) => n[0]).join('').slice(0,2).toUpperCase(), bg: '#374151' }] : []
+  const makeTechs = (names?: string[], fallback?: string): TechAvatar[] => {
+    const list = names?.length ? names : (fallback ? [fallback] : [])
+    return list.map(n => ({ initials: n.split(' ').map((p: string) => p[0]).join('').slice(0,2).toUpperCase(), bg: '#374151' }))
+  }
 
   const schedules: PMSchedule[] = item.schedules && item.schedules.length > 0
     ? item.schedules.map(s => ({
@@ -103,7 +105,7 @@ function convertLegacy(item: LegacyPMItem): PMItem {
           meter: a.meter,
           startDate: a.startDate,
           endDate: a.endDate,
-          technicians: makeTech(a.assignee),
+          technicians: makeTechs(a.assignees, a.assignee),
         })),
       }))
     : [{
@@ -114,7 +116,7 @@ function convertLegacy(item: LegacyPMItem): PMItem {
           asset: a.asset,
           assetType: 'Asset' as const,
           location: a.location ?? '',
-          technicians: makeTech(a.assignee),
+          technicians: makeTechs(a.assignees, a.assignee),
         })),
       }]
 
@@ -126,6 +128,15 @@ function convertLegacy(item: LegacyPMItem): PMItem {
     status: (['Active','Inactive','Completed','Draft'].includes(item.status ?? '') ? item.status as PMStatus : 'Active'),
     schedules,
   }
+}
+
+function getEditPayload(pm: PMItem): object {
+  try {
+    const stored: LegacyPMItem[] = JSON.parse(localStorage.getItem('upkeep_new_pms') ?? '[]')
+    const original = stored.find(x => x.id === pm.id)
+    if (original) return original
+  } catch {}
+  return pm
 }
 
 // ── Sub-components ────────────────────────────────────────────────────────
@@ -747,7 +758,7 @@ export default function PreventiveMaintenancePage() {
                                     className="w-full flex items-center gap-2.5 px-3 py-2 text-[13px] text-[var(--color-neutral-11)] hover:bg-[var(--color-neutral-2)] transition-colors cursor-pointer"
                                     onClick={() => {
                                       setOpenMenu(null)
-                                      try { localStorage.setItem('upkeep_editing_pm', JSON.stringify(pm)) } catch {}
+                                      try { localStorage.setItem('upkeep_editing_pm', JSON.stringify(getEditPayload(pm))) } catch {}
                                       router.push(`/predictive-maintenance/create?edit=${pm.id}`)
                                     }}
                                   >
@@ -813,12 +824,27 @@ export default function PreventiveMaintenancePage() {
                                               {missingTechCount} missing technician{missingTechCount !== 1 ? 's' : ''}
                                             </span>
                                           )}
-                                          <span className={`rounded-full text-[11px] px-2.5 py-0.5 font-medium shrink-0 ${sched.assignments.length === 0 ? 'bg-[#FFEFEF] text-[var(--color-error)]' : 'bg-[var(--color-accent-2)] text-[var(--color-accent-9)]'}`}>
-                                            {sched.assignments.length === 0 ? 'No Assignments' : `${sched.assignments.length} Assignment${sched.assignments.length !== 1 ? 's' : ''}`}
-                                          </span>
+                                          {sched.assignments.length === 0 ? (
+                                            <span className="rounded-full text-[11px] px-2.5 py-0.5 font-medium shrink-0 bg-[#FFEFEF] text-[var(--color-error)]">
+                                              No Assignments
+                                            </span>
+                                          ) : (() => {
+                                            const assets = sched.assignments.filter(a => a.assetType === 'Asset').length
+                                            const locations = sched.assignments.filter(a => a.assetType === 'Location').length
+                                            const meters = sched.assignments.filter(a => a.assetType === 'Meter').length
+                                            return [
+                                              assets > 0 && `${assets} Asset${assets !== 1 ? 's' : ''}`,
+                                              locations > 0 && `${locations} Location${locations !== 1 ? 's' : ''}`,
+                                              meters > 0 && `${meters} Meter${meters !== 1 ? 's' : ''}`,
+                                            ].filter(Boolean).map(label => (
+                                              <span key={label as string} className="rounded-full bg-[var(--color-accent-2)] text-[var(--color-accent-9)] text-[11px] px-2 py-0.5 font-medium shrink-0">
+                                                {label}
+                                              </span>
+                                            ))
+                                          })()}
                                           {!isSchedExp && (
                                             <button
-                                              onClick={e => { e.stopPropagation(); try { localStorage.setItem('upkeep_editing_pm', JSON.stringify(pm)) } catch {}; router.push(`/predictive-maintenance/create?edit=${pm.id}`) }}
+                                              onClick={e => { e.stopPropagation(); try { localStorage.setItem('upkeep_editing_pm', JSON.stringify(getEditPayload(pm))) } catch {}; router.push(`/predictive-maintenance/create?edit=${pm.id}`) }}
                                               className="shrink-0 flex items-center gap-1 px-2 h-7 rounded-[var(--radius-md)] bg-[#EDF2FE] hover:bg-[#dce8fd] transition-colors cursor-pointer text-[12px] font-medium text-[var(--color-accent-11)]"
                                             >
                                               <Plus size={12} /> Assign
@@ -839,7 +865,7 @@ export default function PreventiveMaintenancePage() {
                                               <div className="flex flex-col items-center justify-center p-6 gap-2 text-center">
                                                 <p className="text-[13px] font-semibold text-[var(--color-neutral-11)]">Assign to this schedule</p>
                                                 <p className="text-[12px] text-[var(--color-neutral-8)]">Choose assets or locations for this schedule to apply to.</p>
-                                                <button onClick={() => { try { localStorage.setItem('upkeep_editing_pm', JSON.stringify(pm)) } catch {}; router.push(`/predictive-maintenance/create?edit=${pm.id}`) }} className="flex items-center gap-1 px-3 h-8 rounded-[var(--radius-md)] bg-[var(--color-accent-9)] text-white text-[13px] font-medium cursor-pointer hover:opacity-90 transition-opacity">
+                                                <button onClick={() => { try { localStorage.setItem('upkeep_editing_pm', JSON.stringify(getEditPayload(pm))) } catch {}; router.push(`/predictive-maintenance/create?edit=${pm.id}`) }} className="flex items-center gap-1 px-3 h-8 rounded-[var(--radius-md)] bg-[var(--color-accent-9)] text-white text-[13px] font-medium cursor-pointer hover:opacity-90 transition-opacity">
                                                   <Plus size={13} /> Assign
                                                 </button>
                                               </div>
@@ -847,8 +873,7 @@ export default function PreventiveMaintenancePage() {
                                               <>
                                                 {/* Column headers */}
                                                 <div className="flex items-center gap-5 px-3 h-[40px] bg-[#F9F9FB]">
-                                                  <span className="text-[11px] font-medium uppercase tracking-wide text-[var(--color-neutral-8)] flex-1 min-w-0">Assignment</span>
-                                                  <span className="text-[11px] font-medium uppercase tracking-wide text-[var(--color-neutral-8)] w-[110px] shrink-0">Meter</span>
+                                                  <span className="text-[11px] font-medium uppercase tracking-wide text-[var(--color-neutral-8)] flex-1 min-w-0">Applies To</span>
                                                   <span className="text-[11px] font-medium uppercase tracking-wide text-[var(--color-neutral-8)] w-[90px] shrink-0">Technicians</span>
                                                   <span className="text-[11px] font-medium uppercase tracking-wide text-[var(--color-neutral-8)] w-[100px] shrink-0">Start / End</span>
                                                   <span className="text-[11px] font-medium uppercase tracking-wide text-[var(--color-neutral-8)] w-[140px] shrink-0">Work Orders</span>
@@ -860,17 +885,31 @@ export default function PreventiveMaintenancePage() {
                                                   return (
                                                   <div key={a.id} className={`flex items-center gap-5 px-3 py-3 border-b border-[#F0F0F3] last:border-0 transition-colors ${missingTech ? 'bg-[#FFF8F8] hover:bg-[#FFF0F0]' : 'hover:bg-[#F9FAFB]'}`}>
                                                     <div className="flex flex-col flex-1 min-w-0">
-                                                      <div className="flex items-center gap-2">
-                                                        <span className="text-[13px] font-medium text-[var(--color-neutral-12)] truncate">{a.asset}</span>
-                                                        <span className="px-1.5 py-0.5 rounded-[var(--radius-sm)] bg-[var(--color-neutral-3)] text-[10px] font-medium text-[var(--color-neutral-8)] shrink-0">{a.assetType}</span>
+                                                      <div className="flex items-center gap-1.5 min-w-0">
+                                                        <span className="font-medium text-[var(--color-neutral-12)] truncate">{a.asset}</span>
+                                                        <span className="shrink-0 inline-flex items-center h-[18px] px-1.5 rounded-[4px] text-[10px] font-medium bg-[var(--color-neutral-3)] text-[var(--color-neutral-9)]">{a.assetType}</span>
                                                       </div>
-                                                      {a.location && <span className="text-[11px] text-[var(--color-neutral-7)] truncate">{a.location}</span>}
+                                                      {a.assetType === 'Meter' ? (
+                                                        <>
+                                                          <span className="text-[11px] text-[var(--color-neutral-11)] truncate"><span className="text-[10px] text-[var(--color-neutral-7)] uppercase tracking-wide">Asset:</span> —</span>
+                                                          <span className="text-[11px] text-[var(--color-neutral-11)] truncate"><span className="text-[10px] text-[var(--color-neutral-7)] uppercase tracking-wide">Location:</span> {a.location || '—'}</span>
+                                                        </>
+                                                      ) : a.assetType === 'Location' ? (
+                                                        <>
+                                                          <span className="text-[11px] text-[var(--color-neutral-11)] truncate"><span className="text-[10px] text-[var(--color-neutral-7)] uppercase tracking-wide">Asset:</span> —</span>
+                                                          <span className="text-[11px] text-[var(--color-neutral-11)] truncate"><span className="text-[10px] text-[var(--color-neutral-7)] uppercase tracking-wide">Meter:</span> {a.meter || '—'}</span>
+                                                        </>
+                                                      ) : (
+                                                        <>
+                                                          <span className="text-[11px] text-[var(--color-neutral-11)] truncate"><span className="text-[10px] text-[var(--color-neutral-7)] uppercase tracking-wide">Location:</span> {a.location || '—'}</span>
+                                                          <span className="text-[11px] text-[var(--color-neutral-11)] truncate"><span className="text-[10px] text-[var(--color-neutral-7)] uppercase tracking-wide">Meter:</span> {a.meter || '—'}</span>
+                                                        </>
+                                                      )}
                                                     </div>
-                                                    <span className="w-[110px] shrink-0 text-[12px] text-[var(--color-neutral-8)] truncate">{a.meter ?? '—'}</span>
                                                     <div className="w-[90px] shrink-0">
                                                       {a.technicians.length > 0
                                                         ? <AvatarStack techs={a.technicians} extra={a.extraTechs} />
-                                                        : <button type="button" onClick={e => { e.stopPropagation(); try { localStorage.setItem('upkeep_editing_pm', JSON.stringify(pm)) } catch {}; router.push(`/predictive-maintenance/create?edit=${pm.id}`) }} className="text-[var(--color-error)] text-[12px] font-medium hover:underline cursor-pointer">Add</button>
+                                                        : <button type="button" onClick={e => { e.stopPropagation(); try { localStorage.setItem('upkeep_editing_pm', JSON.stringify(getEditPayload(pm))) } catch {}; router.push(`/predictive-maintenance/create?edit=${pm.id}`) }} className="text-[var(--color-error)] text-[12px] font-medium hover:underline cursor-pointer">Add</button>
                                                       }
                                                     </div>
                                                     <div className="w-[100px] shrink-0 flex flex-col gap-0.5">
@@ -879,7 +918,7 @@ export default function PreventiveMaintenancePage() {
                                                     </div>
                                                     <div className="w-[140px] shrink-0 flex flex-col gap-0.5">
                                                       {a.lastWO && <span className="text-[11px] text-[var(--color-neutral-8)] leading-4">Last: {a.lastWO}</span>}
-                                                      {a.nextWO && <span className="text-[11px] text-[var(--color-neutral-8)] leading-4">Next: {a.nextWO}</span>}
+                                                      {a.nextWO && <span className="text-[11px] text-[var(--color-neutral-12)] font-medium leading-4">Next: {a.nextWO}</span>}
                                                     </div>
                                                   </div>
                                                   )

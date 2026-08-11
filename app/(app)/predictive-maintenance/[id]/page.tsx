@@ -41,11 +41,18 @@ function AvatarStack({ techs, extra = 0 }: { techs: TechAvatar[]; extra?: number
   )
 }
 
+function makeTechAvatar(name: string): TechAvatar {
+  return { initials: name.split(' ').map((p: string) => p[0]).join('').slice(0, 2).toUpperCase(), bg: '#374151' }
+}
+
 function loadPM(id: string): PMItem | null {
-  // Try localStorage first (user-created PMs)
   try {
     const stored = JSON.parse(localStorage.getItem('upkeep_new_pms') ?? '[]') as Array<{
-      id: string; title?: string; category?: string; priority?: string; status?: string; schedules?: PMItem['schedules']
+      id: string; title?: string; category?: string; priority?: string; status?: string
+      schedules?: Array<{
+        id: string; calendarTrigger: string; meterTrigger?: string
+        assignments: Array<{ id: string; asset: string; assetType: string; location: string; meter?: string; startDate?: string; endDate?: string; assignees?: string[]; assignee?: string; team?: string }>
+      }>
     }>
     const found = stored.find(p => p.id === id)
     if (found) {
@@ -55,11 +62,24 @@ function loadPM(id: string): PMItem | null {
         category: found.category ?? 'Maintenance',
         priority: found.priority ?? 'None',
         status: found.status ?? 'Active',
-        schedules: found.schedules ?? [],
+        schedules: (found.schedules ?? []).map(s => ({
+          id: s.id,
+          calendarTrigger: s.calendarTrigger,
+          meterTrigger: s.meterTrigger,
+          assignments: s.assignments.map(a => ({
+            id: a.id,
+            asset: a.asset,
+            assetType: (a.assetType === 'Location' ? 'Location' : 'Asset') as 'Asset' | 'Location',
+            location: a.location ?? '',
+            meter: a.meter,
+            startDate: a.startDate,
+            endDate: a.endDate,
+            technicians: (a.assignees?.length ? a.assignees : a.assignee ? [a.assignee] : []).map(makeTechAvatar),
+          })),
+        })),
       }
     }
   } catch {}
-  // Fall back to mock data
   return pmItems.find(p => p.id === id) ?? null
 }
 
