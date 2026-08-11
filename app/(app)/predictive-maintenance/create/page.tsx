@@ -356,7 +356,7 @@ function Select({
       )}
       <DropdownMenu modal={false}>
         <DropdownMenuTrigger asChild>
-          <button className="w-full h-10 flex items-center gap-2 pl-3 pr-2 rounded-[var(--radius-lg)] border border-[var(--border-default)] bg-[var(--surface-primary)] hover:bg-[var(--color-neutral-2)] hover:border-[var(--color-neutral-7)] data-[state=open]:border-[var(--color-accent-7)] data-[state=open]:shadow-[0_0_1px_3px_rgba(0,106,220,0.1)] transition-colors cursor-pointer outline-none">
+          <button className="w-full h-10 flex items-center gap-2 pl-3 pr-2 rounded-[var(--radius-lg)] border border-[var(--border-default)] bg-[var(--surface-primary)] hover:bg-[var(--color-neutral-2)] hover:border-[var(--color-accent-7)] hover:shadow-[0_0_1px_3px_rgba(0,106,220,0.1)] data-[state=open]:border-[var(--color-accent-7)] data-[state=open]:shadow-[0_0_1px_3px_rgba(0,106,220,0.1)] transition-colors cursor-pointer outline-none">
             {selected?.icon && <span className="shrink-0 flex items-center">{selected.icon}</span>}
             <span className={`flex-1 text-left text-[13px] truncate ${value ? 'text-[var(--color-neutral-11)]' : 'text-[var(--color-neutral-7)]'}`}>
               {selected?.label ?? placeholder}
@@ -468,7 +468,7 @@ const InlineSelect = React.forwardRef<HTMLButtonElement, { value: string; onChan
         <button
           ref={ref}
           type="button"
-          className={`inline-flex items-center gap-1.5 h-8 px-3 rounded-[var(--radius-md)] border bg-[var(--surface-primary)] text-[13px] font-medium hover:bg-[var(--color-neutral-3)] transition-colors cursor-pointer ${error ? 'border-[#CE2C31] shadow-[0_0_1px_3px_rgba(206,44,49,0.1)]' : 'border-[var(--border-default)]'} ${value ? 'text-[var(--color-neutral-11)]' : 'text-[var(--color-neutral-7)]'} ${className ?? ''}`}
+          className={`inline-flex items-center gap-1.5 h-8 px-3 rounded-[var(--radius-md)] border bg-[var(--surface-primary)] text-[13px] font-medium hover:bg-[var(--color-neutral-3)] transition-colors cursor-pointer ${error ? 'border-[#CE2C31] shadow-[0_0_1px_3px_rgba(206,44,49,0.1)]' : 'border-[var(--border-default)] hover:border-[var(--color-accent-7)] hover:shadow-[0_0_1px_3px_rgba(0,106,220,0.1)] data-[state=open]:border-[var(--color-accent-7)] data-[state=open]:shadow-[0_0_1px_3px_rgba(0,106,220,0.1)]'} ${value ? 'text-[var(--color-neutral-11)]' : 'text-[var(--color-neutral-7)]'} ${className ?? ''}`}
         >
           <span>{displayLabel}</span>
           <ChevronDown size={12} className="text-[var(--color-neutral-7)]" />
@@ -915,13 +915,13 @@ function CreateCalendarTriggerModal({
                       <input type="date" value={p.fromDate}
                         ref={el => { if (el) inactiveInputRefs.current.set(p.id, el); else inactiveInputRefs.current.delete(p.id) }}
                         onChange={e => setInactivePeriods(ps => ps.map(x => x.id === p.id ? { ...x, fromDate: e.target.value } : x))}
-                        className={`h-8 px-3 rounded-[var(--radius-md)] border bg-[var(--surface-primary)] text-[13px] text-[var(--color-neutral-11)] outline-none focus:border-[var(--color-accent-7)] focus:shadow-[0_0_1px_3px_rgba(0,106,220,0.1)] transition-colors w-full ${!p.fromDate ? 'border-[#CE2C31] shadow-[0_0_1px_3px_rgba(206,44,49,0.1)]' : 'border-[var(--border-default)]'}`} />
+                        className={`h-8 px-3 rounded-[var(--radius-md)] border bg-[var(--surface-primary)] text-[13px] text-[var(--color-neutral-11)] outline-none hover:border-[var(--color-accent-7)] hover:shadow-[0_0_1px_3px_rgba(0,106,220,0.1)] focus:border-[var(--color-accent-7)] focus:shadow-[0_0_1px_3px_rgba(0,106,220,0.1)] transition-colors w-full ${!p.fromDate ? 'border-[#CE2C31] shadow-[0_0_1px_3px_rgba(206,44,49,0.1)]' : 'border-[var(--border-default)]'}`} />
                     </div>
                     <div className="flex flex-col gap-1.5">
                       <label className="text-[13px] font-medium text-[var(--color-neutral-11)]">To</label>
                       <input type="date" value={p.toDate}
                         onChange={e => setInactivePeriods(ps => ps.map(x => x.id === p.id ? { ...x, toDate: e.target.value } : x))}
-                        className={`h-8 px-3 rounded-[var(--radius-md)] border bg-[var(--surface-primary)] text-[13px] text-[var(--color-neutral-11)] outline-none focus:border-[var(--color-accent-7)] focus:shadow-[0_0_1px_3px_rgba(0,106,220,0.1)] transition-colors w-full ${!p.toDate ? 'border-[#CE2C31] shadow-[0_0_1px_3px_rgba(206,44,49,0.1)]' : 'border-[var(--border-default)]'}`} />
+                        className={`h-8 px-3 rounded-[var(--radius-md)] border bg-[var(--surface-primary)] text-[13px] text-[var(--color-neutral-11)] outline-none hover:border-[var(--color-accent-7)] hover:shadow-[0_0_1px_3px_rgba(0,106,220,0.1)] focus:border-[var(--color-accent-7)] focus:shadow-[0_0_1px_3px_rgba(0,106,220,0.1)] transition-colors w-full ${!p.toDate ? 'border-[#CE2C31] shadow-[0_0_1px_3px_rgba(206,44,49,0.1)]' : 'border-[var(--border-default)]'}`} />
                     </div>
                     <button type="button"
                       onClick={() => { setInactivePeriods(ps => ps.filter(x => x.id !== p.id)); if (inactivePeriods.length === 1) setShowInactivePeriods(false) }}
@@ -1041,7 +1041,7 @@ function MultiAssetSelect({ selected, onChange }: { selected: string[]; onChange
         Asset <span className="ml-0.5 text-[var(--color-error)]">*</span>
       </label>
       <div
-        className="relative flex items-center min-h-10 px-3 pr-8 rounded-[var(--radius-lg)] border border-[var(--border-default)] bg-[var(--surface-primary)] text-[13px] cursor-pointer transition-colors focus-within:border-[var(--color-accent-7)] focus-within:shadow-[0_0_1px_3px_rgba(0,106,220,0.1)] hover:border-[var(--color-neutral-6)]"
+        className="relative flex items-center min-h-10 px-3 pr-8 rounded-[var(--radius-lg)] border border-[var(--border-default)] bg-[var(--surface-primary)] text-[13px] cursor-pointer transition-colors focus-within:border-[var(--color-accent-7)] focus-within:shadow-[0_0_1px_3px_rgba(0,106,220,0.1)] hover:border-[var(--color-accent-7)] hover:shadow-[0_0_1px_3px_rgba(0,106,220,0.1)]"
         onClick={() => setOpen(o => !o)}
       >
         {selected.length === 0 ? (
@@ -2109,7 +2109,7 @@ function TriggerSetupModal({ type, onClose, onSave }: {
                 <select
                   value={meterUnit}
                   onChange={e => setMeterUnit(e.target.value)}
-                  className="h-10 px-3 pr-8 rounded-[var(--radius-lg)] border border-[var(--border-default)] bg-[var(--surface-primary)] text-[13px] text-[var(--color-neutral-11)] outline-none focus:border-[var(--color-accent-7)] focus:shadow-[0_0_1px_3px_rgba(0,106,220,0.1)] transition-colors appearance-none cursor-pointer"
+                  className="h-10 px-3 pr-8 rounded-[var(--radius-lg)] border border-[var(--border-default)] bg-[var(--surface-primary)] text-[13px] text-[var(--color-neutral-11)] outline-none hover:border-[var(--color-accent-7)] hover:shadow-[0_0_1px_3px_rgba(0,106,220,0.1)] focus:border-[var(--color-accent-7)] focus:shadow-[0_0_1px_3px_rgba(0,106,220,0.1)] transition-colors appearance-none cursor-pointer"
                 >
                   {['hours', 'miles', 'km', 'cycles', 'PSI'].map(u => <option key={u}>{u}</option>)}
                 </select>
@@ -2178,13 +2178,13 @@ function TriggerSetupModal({ type, onClose, onSave }: {
                   type="number"
                   value={interval}
                   onChange={e => setInterval(e.target.value)}
-                  className="w-14 h-9 px-2 text-center rounded-[var(--radius-lg)] border border-[var(--border-default)] bg-[var(--surface-primary)] text-[13px] text-[var(--color-neutral-11)] outline-none focus:border-[var(--color-accent-7)] focus:shadow-[0_0_1px_3px_rgba(0,106,220,0.1)] transition-colors shrink-0"
+                  className="w-14 h-9 px-2 text-center rounded-[var(--radius-lg)] border border-[var(--border-default)] bg-[var(--surface-primary)] text-[13px] text-[var(--color-neutral-11)] outline-none hover:border-[var(--color-accent-7)] hover:shadow-[0_0_1px_3px_rgba(0,106,220,0.1)] focus:border-[var(--color-accent-7)] focus:shadow-[0_0_1px_3px_rgba(0,106,220,0.1)] transition-colors shrink-0"
                 />
                 <div className="relative shrink-0">
                   <select
                     value={period}
                     onChange={e => setPeriod(e.target.value)}
-                    className="h-9 pl-3 pr-8 rounded-[var(--radius-lg)] border border-[var(--border-default)] bg-[var(--surface-primary)] text-[13px] text-[var(--color-neutral-11)] outline-none focus:border-[var(--color-accent-7)] focus:shadow-[0_0_1px_3px_rgba(0,106,220,0.1)] transition-colors appearance-none cursor-pointer"
+                    className="h-9 pl-3 pr-8 rounded-[var(--radius-lg)] border border-[var(--border-default)] bg-[var(--surface-primary)] text-[13px] text-[var(--color-neutral-11)] outline-none hover:border-[var(--color-accent-7)] hover:shadow-[0_0_1px_3px_rgba(0,106,220,0.1)] focus:border-[var(--color-accent-7)] focus:shadow-[0_0_1px_3px_rgba(0,106,220,0.1)] transition-colors appearance-none cursor-pointer"
                   >
                     {['Day', 'Week', 'Month', 'Year'].map(p => <option key={p}>{p}</option>)}
                   </select>
@@ -2197,7 +2197,7 @@ function TriggerSetupModal({ type, onClose, onSave }: {
                       <select
                         value={activeDay}
                         onChange={e => setActiveDay(e.target.value)}
-                        className="h-8 pl-3 pr-7 rounded-[var(--radius-md)] border border-[var(--border-default)] bg-[var(--surface-primary)] text-[13px] text-[var(--color-neutral-11)] outline-none focus:border-[var(--color-accent-7)] focus:shadow-[0_0_1px_3px_rgba(0,106,220,0.1)] transition-colors appearance-none cursor-pointer"
+                        className="h-8 pl-3 pr-7 rounded-[var(--radius-md)] border border-[var(--border-default)] bg-[var(--surface-primary)] text-[13px] text-[var(--color-neutral-11)] outline-none hover:border-[var(--color-accent-7)] hover:shadow-[0_0_1px_3px_rgba(0,106,220,0.1)] focus:border-[var(--color-accent-7)] focus:shadow-[0_0_1px_3px_rgba(0,106,220,0.1)] transition-colors appearance-none cursor-pointer"
                       >
                         {FULL_WEEKDAYS.map(d => <option key={d}>{d}</option>)}
                       </select>
@@ -2237,7 +2237,7 @@ function TriggerSetupModal({ type, onClose, onSave }: {
                       <select
                         value={advancePeriod}
                         onChange={e => setAdvancePeriod(e.target.value)}
-                        className="h-8 pl-3 pr-7 rounded-[var(--radius-md)] border border-[var(--border-default)] bg-[var(--surface-primary)] text-[13px] text-[var(--color-neutral-11)] outline-none focus:border-[var(--color-accent-7)] focus:shadow-[0_0_1px_3px_rgba(0,106,220,0.1)] transition-colors appearance-none cursor-pointer"
+                        className="h-8 pl-3 pr-7 rounded-[var(--radius-md)] border border-[var(--border-default)] bg-[var(--surface-primary)] text-[13px] text-[var(--color-neutral-11)] outline-none hover:border-[var(--color-accent-7)] hover:shadow-[0_0_1px_3px_rgba(0,106,220,0.1)] focus:border-[var(--color-accent-7)] focus:shadow-[0_0_1px_3px_rgba(0,106,220,0.1)] transition-colors appearance-none cursor-pointer"
                       >
                         {['Day', 'Week', 'Month', 'Year'].map(p => <option key={p}>{p}</option>)}
                       </select>
@@ -2268,7 +2268,7 @@ function TriggerSetupModal({ type, onClose, onSave }: {
                       <select
                         value={dayOfWeek}
                         onChange={e => setDayOfWeek(e.target.value)}
-                        className="h-8 pl-3 pr-7 min-w-[120px] rounded-[var(--radius-md)] border border-[var(--border-default)] bg-[var(--surface-primary)] text-[13px] text-[var(--color-neutral-11)] outline-none focus:border-[var(--color-accent-7)] focus:shadow-[0_0_1px_3px_rgba(0,106,220,0.1)] transition-colors appearance-none cursor-pointer"
+                        className="h-8 pl-3 pr-7 min-w-[120px] rounded-[var(--radius-md)] border border-[var(--border-default)] bg-[var(--surface-primary)] text-[13px] text-[var(--color-neutral-11)] outline-none hover:border-[var(--color-accent-7)] hover:shadow-[0_0_1px_3px_rgba(0,106,220,0.1)] focus:border-[var(--color-accent-7)] focus:shadow-[0_0_1px_3px_rgba(0,106,220,0.1)] transition-colors appearance-none cursor-pointer"
                       >
                         {['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'].map(p => <option key={p}>{p}</option>)}
                       </select>
@@ -3173,7 +3173,6 @@ function CreatePMPageContent() {
                           error={titleError}
                           errorMessage={titleError ? 'Title is required' : undefined}
                           onChange={e => { setTitle((e.target as HTMLInputElement).value); if (titleError) setTitleError(false) }}
-                          onBlur={() => { if (!isTitleValid) setTitleError(true) }}
                         />
                       </div>
                       <Textarea
@@ -3420,7 +3419,7 @@ function CreatePMPageContent() {
                                   ) : (
                                     <input type="text" placeholder="Response" value={task.value}
                                       onChange={e => setChecklists(cs => cs.map(c => ({ ...c, tasks: c.tasks.map(t => t.id === task.id ? { ...t, value: e.target.value } : t) })))}
-                                      className="w-full h-9 px-3 rounded-[var(--radius-md)] border border-[var(--border-default)] bg-[var(--surface-primary)] text-[13px] outline-none focus:border-[var(--color-accent-7)] focus:shadow-[0_0_1px_3px_rgba(0,106,220,0.1)] transition-colors" />
+                                      className="w-full h-9 px-3 rounded-[var(--radius-md)] border border-[var(--border-default)] bg-[var(--surface-primary)] text-[13px] outline-none hover:border-[var(--color-accent-7)] hover:shadow-[0_0_1px_3px_rgba(0,106,220,0.1)] focus:border-[var(--color-accent-7)] focus:shadow-[0_0_1px_3px_rgba(0,106,220,0.1)] transition-colors" />
                                   )}
                                   <div className="flex items-center gap-4">
                                     {[{ icon: Camera, label: 'Photo' }, { icon: FileText, label: 'Note' }, { icon: Link2, label: 'URL' }].map(({ icon: Icon, label }) => (
