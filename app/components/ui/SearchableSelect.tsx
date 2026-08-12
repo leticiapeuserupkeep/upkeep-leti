@@ -30,8 +30,7 @@ export function SearchableSelect({
   const filtered = options.filter(o => o.toLowerCase().includes(query.toLowerCase()))
 
   useEffect(() => {
-    if (open) setTimeout(() => inputRef.current?.focus(), 0)
-    else setQuery('')
+    if (!open) setQuery('')
   }, [open])
 
   return (
@@ -72,6 +71,7 @@ export function SearchableSelect({
             sideOffset={4}
             align="start"
             className="z-[var(--z-dropdown)] w-[var(--radix-popover-trigger-width)] rounded-[var(--radius-xl)] border border-[var(--border-default)] bg-[var(--surface-primary)] shadow-[var(--shadow-lg)] outline-none dropdown-animate overflow-hidden"
+            onOpenAutoFocus={e => { e.preventDefault(); inputRef.current?.focus() }}
           >
             <div className="flex items-center gap-2 px-3 py-2 border-b border-[var(--border-subtle)]">
               <Search size={13} className="shrink-0 text-[var(--color-neutral-7)]" />
@@ -80,7 +80,7 @@ export function SearchableSelect({
                 value={query}
                 onChange={e => setQuery(e.target.value)}
                 placeholder="Search…"
-                className="flex-1 text-[13px] text-[var(--color-neutral-11)] bg-transparent outline-none placeholder:text-[var(--color-neutral-7)]"
+                className="flex-1 text-[13px] text-[var(--color-neutral-11)] bg-transparent outline-none focus-visible:outline-none placeholder:text-[var(--color-neutral-7)]"
               />
             </div>
             <div className="py-1 max-h-[200px] overflow-y-auto">
@@ -227,6 +227,7 @@ export function SearchableMultiSelect({
             sideOffset={4}
             align="start"
             className="z-[var(--z-dropdown)] w-[var(--radix-popover-trigger-width)] rounded-[var(--radius-xl)] border border-[var(--border-default)] bg-[var(--surface-primary)] shadow-[var(--shadow-lg)] outline-none dropdown-animate overflow-hidden"
+            onOpenAutoFocus={e => { e.preventDefault(); inputRef.current?.focus() }}
           >
             <div className="flex items-center gap-2 px-3 py-2 border-b border-[var(--border-subtle)]">
               <Search size={13} className="shrink-0 text-[var(--color-neutral-7)]" />
@@ -235,7 +236,7 @@ export function SearchableMultiSelect({
                 value={query}
                 onChange={e => setQuery(e.target.value)}
                 placeholder="Search…"
-                className="flex-1 text-[13px] text-[var(--color-neutral-11)] bg-transparent outline-none placeholder:text-[var(--color-neutral-7)]"
+                className="flex-1 text-[13px] text-[var(--color-neutral-11)] bg-transparent outline-none focus-visible:outline-none placeholder:text-[var(--color-neutral-7)]"
               />
             </div>
             <div className="py-1 max-h-[200px] overflow-y-auto">

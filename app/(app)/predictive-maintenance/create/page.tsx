@@ -299,12 +299,12 @@ function DateInputMDY({ value, onChange, label, className, defaultToday, minIso 
               onFocus={() => setFocused(true)}
               onBlur={() => { setFocused(false); commit(raw) }}
               onKeyDown={e => { if (e.key === 'Enter') { commit(raw); setOpen(true) } }}
-              className="flex-1 min-w-0 bg-transparent outline-none text-[13px] text-[var(--color-neutral-11)] placeholder:text-[var(--color-neutral-6)]"
+              className="flex-1 min-w-0 bg-transparent outline-none focus-visible:outline-none text-[13px] text-[var(--color-neutral-11)] placeholder:text-[var(--color-neutral-6)]"
             />
             {raw && !(defaultToday && raw === isoToMDY(todayIso())) && (
-              <button type="button" onClick={e => { e.stopPropagation(); setError(''); if (defaultToday) { const iso = todayIso(); onChange(iso); setRaw(isoToMDY(iso)) } else { onChange(''); setRaw('') } }} className="shrink-0 text-[var(--color-neutral-8)] hover:text-[var(--color-neutral-11)] transition-colors cursor-pointer"><X size={12} /></button>
+              <button type="button" onClick={e => { e.stopPropagation(); setError(''); if (defaultToday) { const iso = todayIso(); onChange(iso); setRaw(isoToMDY(iso)) } else { onChange(''); setRaw('') } }} className="shrink-0 text-[var(--color-neutral-8)] hover:text-[var(--color-neutral-11)] transition-colors cursor-pointer focus-visible:outline-none"><X size={12} /></button>
             )}
-            <button type="button" onClick={e => { e.stopPropagation(); setOpen(o => !o) }} className="shrink-0 text-[var(--color-neutral-6)] hover:text-[var(--color-neutral-9)] transition-colors cursor-pointer"><Calendar size={14} /></button>
+            <button type="button" onClick={e => { e.stopPropagation(); setOpen(o => !o) }} className="shrink-0 text-[var(--color-neutral-6)] hover:text-[var(--color-neutral-9)] transition-colors cursor-pointer focus-visible:outline-none"><Calendar size={14} /></button>
           </div>
         </Popover.Trigger>
         <Popover.Portal>
