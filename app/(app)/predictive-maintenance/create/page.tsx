@@ -710,16 +710,19 @@ function CreateCalendarTriggerModal({
                         )}
                       </div>
                       {form.period === 'Month' && (
-                        <div className="flex items-center gap-2 pl-[134px]">
+                        <div className="flex items-center gap-2 pl-[134px] row-fade-in">
                           <InlineSelect
                             value={form.monthMode}
                             onChange={v => setForm(f => ({ ...f, monthMode: v as 'on-day' | 'on-the' }))}
                             options={[{ value: 'on-day', label: 'On day' }, { value: 'on-the', label: 'On the' }]}
+                            className="min-w-[75px]"
                           />
                           {form.monthMode === 'on-day' ? (
-                            <InlineSelect value={form.monthDay} onChange={set('monthDay')} options={MONTH_DAYS} />
+                            <div key="on-day" className="row-fade-in inline-flex items-center gap-2">
+                              <InlineSelect value={form.monthDay} onChange={set('monthDay')} options={MONTH_DAYS} />
+                            </div>
                           ) : (
-                            <>
+                            <div key="on-the" className="row-fade-in inline-flex items-center gap-2">
                               <InlineSelect value={form.monthOrdinal} onChange={set('monthOrdinal')} options={MONTH_ORDINALS} />
                               <InlineSelect
                                 value={form.monthWeekday}
@@ -729,42 +732,51 @@ function CreateCalendarTriggerModal({
                                   label: w === 'Day' ? 'Day' : w === 'Sun' ? 'Sunday' : w === 'Mon' ? 'Monday' : w === 'Tue' ? 'Tuesday' : w === 'Wed' ? 'Wednesday' : w === 'Thu' ? 'Thursday' : w === 'Fri' ? 'Friday' : 'Saturday',
                                 }))}
                               />
-                            </>
+                            </div>
                           )}
                           <span className="text-[13px] text-[var(--color-neutral-10)] shrink-0">At</span>
                           {timeInput(form.atTime, set('atTime'), 'w-[130px] shrink-0')}
                         </div>
                       )}
                       {form.period === 'Year' && (
-                        <div className="flex items-center gap-2 pl-[134px]">
-                          <InlineSelect
-                            value={form.yearMode}
-                            onChange={v => setForm(f => ({ ...f, yearMode: v as 'on-day' | 'on-the' }))}
-                            options={[{ value: 'on-day', label: 'On' }, { value: 'on-the', label: 'On the' }]}
-                          />
-                          {form.yearMode === 'on-day' ? (
-                            <>
-                              <InlineSelect value={form.yearMonth} onChange={set('yearMonth')} options={MONTH_NAMES} />
-                              <InlineSelect value={form.yearDay} onChange={set('yearDay')} options={MONTH_DAYS} />
-                            </>
-                          ) : (
-                            <>
-                              <InlineSelect value={form.yearOrdinal} onChange={set('yearOrdinal')} options={MONTH_ORDINALS} />
-                              <InlineSelect
-                                value={form.yearWeekday}
-                                onChange={set('yearWeekday')}
-                                options={MONTH_WEEKDAYS.map(w => ({
-                                  value: w,
-                                  label: w === 'Day' ? 'Day' : w === 'Sun' ? 'Sunday' : w === 'Mon' ? 'Monday' : w === 'Tue' ? 'Tuesday' : w === 'Wed' ? 'Wednesday' : w === 'Thu' ? 'Thursday' : w === 'Fri' ? 'Friday' : 'Saturday',
-                                }))}
-                              />
-                              <span className="text-[13px] text-[var(--color-neutral-10)] shrink-0">of</span>
-                              <InlineSelect value={form.yearMonth} onChange={set('yearMonth')} options={MONTH_NAMES} />
-                            </>
+                        <>
+                          <div className="flex items-center gap-2 pl-[134px] row-fade-in">
+                            <InlineSelect
+                              value={form.yearMode}
+                              onChange={v => setForm(f => ({ ...f, yearMode: v as 'on-day' | 'on-the' }))}
+                              options={[{ value: 'on-day', label: 'On' }, { value: 'on-the', label: 'On the' }]}
+                              className="min-w-[75px]"
+                            />
+                            {form.yearMode === 'on-day' ? (
+                              <div key="on-day" className="row-fade-in inline-flex items-center gap-2">
+                                <InlineSelect value={form.yearMonth} onChange={set('yearMonth')} options={MONTH_NAMES} />
+                                <InlineSelect value={form.yearDay} onChange={set('yearDay')} options={MONTH_DAYS} />
+                                <span className="text-[13px] text-[var(--color-neutral-10)] shrink-0">At</span>
+                                {timeInput(form.atTime, set('atTime'), 'w-[130px] shrink-0')}
+                              </div>
+                            ) : (
+                              <div key="on-the" className="row-fade-in inline-flex items-center gap-2">
+                                <InlineSelect value={form.yearOrdinal} onChange={set('yearOrdinal')} options={MONTH_ORDINALS} />
+                                <InlineSelect
+                                  value={form.yearWeekday}
+                                  onChange={set('yearWeekday')}
+                                  options={MONTH_WEEKDAYS.map(w => ({
+                                    value: w,
+                                    label: w === 'Day' ? 'Day' : w === 'Sun' ? 'Sunday' : w === 'Mon' ? 'Monday' : w === 'Tue' ? 'Tuesday' : w === 'Wed' ? 'Wednesday' : w === 'Thu' ? 'Thursday' : w === 'Fri' ? 'Friday' : 'Saturday',
+                                  }))}
+                                />
+                                <span className="text-[13px] text-[var(--color-neutral-10)] shrink-0">of</span>
+                                <InlineSelect value={form.yearMonth} onChange={set('yearMonth')} options={MONTH_NAMES} />
+                              </div>
+                            )}
+                          </div>
+                          {form.yearMode === 'on-the' && (
+                            <div className="flex items-center gap-2 ml-[135px] row-fade-in">
+                              <span className="text-[13px] text-[var(--color-neutral-10)] shrink-0">At</span>
+                              {timeInput(form.atTime, set('atTime'), 'w-[130px] shrink-0')}
+                            </div>
                           )}
-                          <span className="text-[13px] text-[var(--color-neutral-10)] shrink-0">At</span>
-                          {timeInput(form.atTime, set('atTime'), 'w-[130px] shrink-0')}
-                        </div>
+                        </>
                       )}
                     </div>
                   )}

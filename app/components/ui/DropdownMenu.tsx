@@ -26,12 +26,19 @@ export function DropdownMenuContent({
     <DropdownMenuPrimitive.Portal>
       <DropdownMenuPrimitive.Content
         className={`z-[var(--z-dropdown)] rounded-[var(--radius-xl)] border border-[var(--border-default)] bg-[var(--surface-primary)] shadow-[var(--shadow-lg)] py-[var(--space-2xs)] dropdown-animate outline-none ${className}`}
-        style={{ minWidth, ...(maxHeight ? { maxHeight, overflowY: 'auto' } : {}) }}
+        style={{ minWidth }}
         sideOffset={sideOffset}
         align={align}
         {...props}
       >
-        {children}
+        {maxHeight ? (
+          <div
+            style={{ maxHeight, overflowY: 'auto' }}
+            onWheel={e => { e.stopPropagation(); (e.currentTarget as HTMLDivElement).scrollTop += e.deltaY }}
+          >
+            {children}
+          </div>
+        ) : children}
       </DropdownMenuPrimitive.Content>
     </DropdownMenuPrimitive.Portal>
   )
