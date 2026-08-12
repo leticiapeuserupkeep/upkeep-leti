@@ -52,6 +52,16 @@ function parseInputTime(raw: string): string | null {
       return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`
   }
 
+  // Bare digits + AM/PM: 917AM, 1230PM
+  const digitsAmPm = s.match(/^(\d{3,4})(AM|PM)$/)
+  if (digitsAmPm) {
+    const d = digitsAmPm[1], per = digitsAmPm[2]
+    const h = parseInt(d.length === 3 ? d[0] : d.slice(0, 2), 10)
+    const m = parseInt(d.length === 3 ? d.slice(1) : d.slice(2), 10)
+    if (h >= 1 && h <= 12 && m >= 0 && m <= 59)
+      return toTime24(String(h).padStart(2, '0'), String(m).padStart(2, '0'), per)
+  }
+
   // Bare digits: 930 → 09:30, 1430 → 14:30
   const digits = s.replace(/\D/g, '')
   if (digits.length === 3) {
@@ -133,8 +143,19 @@ export function TimePicker({ value, onChange, className = '' }: TimePickerProps)
   function setPeriod(p: string) { onChange(toTime24(hour, minute, p)) }
 
   function handleInputChange(raw: string) {
-    // Only allow digits; auto-insert colon after 2nd digit
-    const digits = raw.replace(/\D/g, '').slice(0, 4)
+    // Allow digits, colon, space, and AM/PM letters; uppercase letters as typed
+    const sanitized = raw.toUpperCase().replace(/[^0-9: AMP]/g, '')
+
+    if (/[AMP]/.test(sanitized)) {
+      // User is typing AM/PM — pass through, let parseInputTime handle it
+      setInputVal(sanitized)
+      const parsed = parseInputTime(sanitized)
+      if (parsed) onChange(parsed)
+      return
+    }
+
+    // Pure digit input — auto-insert colon after 2nd digit
+    const digits = sanitized.replace(/\D/g, '').slice(0, 4)
     let display = digits
     if (digits.length >= 3) display = digits.slice(0, 2) + ':' + digits.slice(2)
     setInputVal(display)
