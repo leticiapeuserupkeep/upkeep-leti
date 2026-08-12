@@ -138,7 +138,7 @@ export function TimePicker({ value, onChange, className = '' }: TimePickerProps)
     <Popover.Root open={open} onOpenChange={setOpen}>
       <Popover.Trigger asChild>
         <div
-          className={`h-8 min-w-[100px] flex items-center gap-1 px-2 rounded-[var(--radius-md)] border border-[var(--border-default)] bg-[var(--surface-primary)] hover:bg-[var(--color-neutral-2)] hover:border-[var(--color-accent-7)] hover:shadow-[0_0_1px_3px_rgba(0,106,220,0.1)] data-[state=open]:border-[var(--color-accent-7)] data-[state=open]:shadow-[0_0_1px_3px_rgba(0,106,220,0.1)] transition-colors cursor-text ${className}`}
+          className={`h-8 w-[130px] flex items-center gap-1 px-2 rounded-[var(--radius-md)] border border-[var(--border-default)] bg-[var(--surface-primary)] hover:bg-[var(--color-neutral-2)] hover:border-[var(--color-accent-7)] hover:shadow-[0_0_1px_3px_rgba(0,106,220,0.1)] data-[state=open]:border-[var(--color-accent-7)] data-[state=open]:shadow-[0_0_1px_3px_rgba(0,106,220,0.1)] transition-colors cursor-text ${className}`}
         >
           <input
             ref={inputRef}

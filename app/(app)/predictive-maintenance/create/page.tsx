@@ -66,6 +66,12 @@ interface CalendarTrigger {
   monthDay: string
   monthOrdinal: string
   monthWeekday: string
+  // year
+  yearMode: 'on-day' | 'on-the'
+  yearMonth: string
+  yearDay: string
+  yearOrdinal: string
+  yearWeekday: string
   atTime: string
   // WO creation
   woCreationMode: 'relative' | 'on-the' | ''
@@ -434,6 +440,7 @@ const PERIODS = ['Day', 'Week', 'Month', 'Year']
 const WEEKDAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']
 const MONTH_ORDINALS = ['first', 'second', 'third', 'fourth', 'last']
 const MONTH_WEEKDAYS = ['Day', 'Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
+const MONTH_NAMES = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December']
 const FULL_WEEKDAYS = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday']
 const MONTH_DAYS = Array.from({ length: 31 }, (_, i) => String(i + 1))
 
@@ -441,6 +448,7 @@ const EMPTY_TRIGGER: Omit<CalendarTrigger, 'id'> = {
   scheduleType: 'Regular Interval', every: '', period: '',
   weekday: '',
   monthMode: 'on-day', monthDay: '1', monthOrdinal: 'first', monthWeekday: 'Day',
+  yearMode: 'on-day', yearMonth: 'January', yearDay: '1', yearOrdinal: 'first', yearWeekday: 'Day',
   atTime: '',
   woCreationMode: '', woRelativeN: '', woRelativePeriod: '',
   woOnThePeriod: '', woAtTime: '', woOnTheAtTime: '',
@@ -474,7 +482,7 @@ const InlineSelect = React.forwardRef<HTMLButtonElement, { value: string; onChan
           <ChevronDown size={12} className="text-[var(--color-neutral-7)]" />
         </button>
       </DropdownMenuTrigger>
-      <DropdownMenuContent align="start" minWidth="140px">
+      <DropdownMenuContent align="start" minWidth="140px" maxHeight={items.length > 8 ? '220px' : undefined}>
         {items.map(o => (
           <DropdownMenuItem
             key={o.value}
@@ -677,7 +685,7 @@ function CreateCalendarTriggerModal({
                       {timeInput(form.atTime, set('atTime'), 'flex-1 min-w-0')}
                     </div>
                   ) : (
-                    <div className="flex flex-col gap-1">
+                    <div className="flex flex-col gap-2">
                       <div className="flex items-center gap-2">
                         <span className="text-[13px] text-[var(--color-neutral-10)] shrink-0">Every</span>
                         <NumberInput ref={everyInputRef} value={form.every} onChange={set('every')} min={1} className="w-[80px] shrink-0" onBlur={() => { setEveryTouched(true); if (form.every) setTimeout(() => periodTriggerRef.current?.click(), 50) }} error={everyTouched && !form.every} />
@@ -694,15 +702,70 @@ function CreateCalendarTriggerModal({
                               options={WEEKDAY_LETTERS.map((wd, i) => ({ value: wd.value, label: FULL_WEEKDAYS[i] }))} placeholder="Day" className="justify-between" error={fieldsTouched && !form.weekday} />
                           </>
                         )}
-                        {form.period === 'Month' && (
+                        {(form.period !== 'Month' && form.period !== 'Year') && (
                           <>
-                            <span className="text-[13px] text-[var(--color-neutral-10)] shrink-0">On Day</span>
-                            <InlineSelect value={form.monthDay} onChange={set('monthDay')} options={MONTH_DAYS} />
+                            <span className="text-[13px] text-[var(--color-neutral-10)] shrink-0">At</span>
+                            {timeInput(form.atTime, set('atTime'), 'w-[130px] shrink-0')}
                           </>
                         )}
-                        <span className="text-[13px] text-[var(--color-neutral-10)] shrink-0">At</span>
-                        {timeInput(form.atTime, set('atTime'), 'flex-1 min-w-0')}
                       </div>
+                      {form.period === 'Month' && (
+                        <div className="flex items-center gap-2 pl-[134px]">
+                          <InlineSelect
+                            value={form.monthMode}
+                            onChange={v => setForm(f => ({ ...f, monthMode: v as 'on-day' | 'on-the' }))}
+                            options={[{ value: 'on-day', label: 'On day' }, { value: 'on-the', label: 'On the' }]}
+                          />
+                          {form.monthMode === 'on-day' ? (
+                            <InlineSelect value={form.monthDay} onChange={set('monthDay')} options={MONTH_DAYS} />
+                          ) : (
+                            <>
+                              <InlineSelect value={form.monthOrdinal} onChange={set('monthOrdinal')} options={MONTH_ORDINALS} />
+                              <InlineSelect
+                                value={form.monthWeekday}
+                                onChange={set('monthWeekday')}
+                                options={MONTH_WEEKDAYS.map(w => ({
+                                  value: w,
+                                  label: w === 'Day' ? 'Day' : w === 'Sun' ? 'Sunday' : w === 'Mon' ? 'Monday' : w === 'Tue' ? 'Tuesday' : w === 'Wed' ? 'Wednesday' : w === 'Thu' ? 'Thursday' : w === 'Fri' ? 'Friday' : 'Saturday',
+                                }))}
+                              />
+                            </>
+                          )}
+                          <span className="text-[13px] text-[var(--color-neutral-10)] shrink-0">At</span>
+                          {timeInput(form.atTime, set('atTime'), 'w-[130px] shrink-0')}
+                        </div>
+                      )}
+                      {form.period === 'Year' && (
+                        <div className="flex items-center gap-2 pl-[134px]">
+                          <InlineSelect
+                            value={form.yearMode}
+                            onChange={v => setForm(f => ({ ...f, yearMode: v as 'on-day' | 'on-the' }))}
+                            options={[{ value: 'on-day', label: 'On' }, { value: 'on-the', label: 'On the' }]}
+                          />
+                          {form.yearMode === 'on-day' ? (
+                            <>
+                              <InlineSelect value={form.yearMonth} onChange={set('yearMonth')} options={MONTH_NAMES} />
+                              <InlineSelect value={form.yearDay} onChange={set('yearDay')} options={MONTH_DAYS} />
+                            </>
+                          ) : (
+                            <>
+                              <InlineSelect value={form.yearOrdinal} onChange={set('yearOrdinal')} options={MONTH_ORDINALS} />
+                              <InlineSelect
+                                value={form.yearWeekday}
+                                onChange={set('yearWeekday')}
+                                options={MONTH_WEEKDAYS.map(w => ({
+                                  value: w,
+                                  label: w === 'Day' ? 'Day' : w === 'Sun' ? 'Sunday' : w === 'Mon' ? 'Monday' : w === 'Tue' ? 'Tuesday' : w === 'Wed' ? 'Wednesday' : w === 'Thu' ? 'Thursday' : w === 'Fri' ? 'Friday' : 'Saturday',
+                                }))}
+                              />
+                              <span className="text-[13px] text-[var(--color-neutral-10)] shrink-0">of</span>
+                              <InlineSelect value={form.yearMonth} onChange={set('yearMonth')} options={MONTH_NAMES} />
+                            </>
+                          )}
+                          <span className="text-[13px] text-[var(--color-neutral-10)] shrink-0">At</span>
+                          {timeInput(form.atTime, set('atTime'), 'w-[130px] shrink-0')}
+                        </div>
+                      )}
                     </div>
                   )}
                 </div>
@@ -961,8 +1024,9 @@ function TriggerRow({ trigger, onRemove, onEdit, meterMissing }: { trigger: Cale
   const onLabel = trigger.period === 'Week'
     ? `On ${trigger.weekday === 'Mon' ? 'Mondays' : trigger.weekday === 'Tue' ? 'Tuesdays' : trigger.weekday === 'Wed' ? 'Wednesdays' : trigger.weekday === 'Thu' ? 'Thursdays' : trigger.weekday === 'Fri' ? 'Fridays' : trigger.weekday === 'Sat' ? 'Saturdays' : 'Sundays'}`
     : trigger.period === 'Month' ? (trigger.monthMode === 'on-day' ? `On day ${trigger.monthDay}` : `On the ${trigger.monthOrdinal} ${trigger.monthWeekday}`)
+    : trigger.period === 'Year' ? (trigger.yearMode === 'on-day' ? `On ${trigger.yearMonth} ${trigger.yearDay}` : `On the ${trigger.yearOrdinal} ${trigger.yearWeekday} of ${trigger.yearMonth}`)
     : ''
-  const everyPart = `Every ${trigger.every} ${trigger.period === 'Day' ? (Number(trigger.every) === 1 ? 'day' : 'days') : trigger.period === 'Week' ? (Number(trigger.every) === 1 ? 'week' : 'weeks') : (Number(trigger.every) === 1 ? 'month' : 'months')}`
+  const everyPart = `Every ${trigger.every} ${trigger.period === 'Day' ? (Number(trigger.every) === 1 ? 'day' : 'days') : trigger.period === 'Week' ? (Number(trigger.every) === 1 ? 'week' : 'weeks') : trigger.period === 'Year' ? (Number(trigger.every) === 1 ? 'year' : 'years') : (Number(trigger.every) === 1 ? 'month' : 'months')}`
   const timePart = trigger.atTime ? ` - At ${trigger.atTime}` : ''
   const calSummary = [everyPart, onLabel].filter(Boolean).join(', ') + timePart
 
@@ -2384,6 +2448,7 @@ function NovaPanel(props: NovaPanelProps) {
         every: '3', period: 'Month',
         weekday: '', monthMode: 'on-day', monthDay: '1',
         monthOrdinal: 'first', monthWeekday: 'Day',
+        yearMode: 'on-day', yearMonth: 'January', yearDay: '1', yearOrdinal: 'first', yearWeekday: 'Day',
         atTime: '08:00 AM',
         woCreationMode: 'relative', woRelativeN: '2', woRelativePeriod: 'Week',
         woOnThePeriod: '', woAtTime: '07:00 AM', woOnTheAtTime: '',
@@ -2422,6 +2487,7 @@ function NovaPanel(props: NovaPanelProps) {
         every: '', period: '', weekday: '',
         monthMode: 'on-day', monthDay: '1',
         monthOrdinal: 'first', monthWeekday: 'Day',
+        yearMode: 'on-day', yearMonth: 'January', yearDay: '1', yearOrdinal: 'first', yearWeekday: 'Day',
         atTime: '',
         woCreationMode: '', woRelativeN: '', woRelativePeriod: '',
         woOnThePeriod: '', woAtTime: '', woOnTheAtTime: '',
@@ -2734,6 +2800,7 @@ function CreatePMPageContent() {
           every: '1', period: 'Month',
           weekday: '', monthMode: 'on-day' as const, monthDay: '1',
           monthOrdinal: 'first', monthWeekday: 'Day',
+          yearMode: 'on-day' as const, yearMonth: 'January', yearDay: '1', yearOrdinal: 'first', yearWeekday: 'Day',
           atTime: '08:00 AM',
           woCreationMode: '' as const, woRelativeN: '', woRelativePeriod: '',
           woOnThePeriod: '', woAtTime: '', woOnTheAtTime: '',

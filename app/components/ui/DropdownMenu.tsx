@@ -10,12 +10,14 @@ export const DropdownMenuTrigger = DropdownMenuPrimitive.Trigger
 interface DropdownMenuContentProps extends ComponentPropsWithoutRef<typeof DropdownMenuPrimitive.Content> {
   children: ReactNode
   minWidth?: string
+  maxHeight?: string
 }
 
 export function DropdownMenuContent({
   children,
   className = '',
   minWidth = '180px',
+  maxHeight,
   sideOffset = 4,
   align = 'start',
   ...props
@@ -24,7 +26,7 @@ export function DropdownMenuContent({
     <DropdownMenuPrimitive.Portal>
       <DropdownMenuPrimitive.Content
         className={`z-[var(--z-dropdown)] rounded-[var(--radius-xl)] border border-[var(--border-default)] bg-[var(--surface-primary)] shadow-[var(--shadow-lg)] py-[var(--space-2xs)] dropdown-animate outline-none ${className}`}
-        style={{ minWidth }}
+        style={{ minWidth, ...(maxHeight ? { maxHeight, overflowY: 'auto' } : {}) }}
         sideOffset={sideOffset}
         align={align}
         {...props}
