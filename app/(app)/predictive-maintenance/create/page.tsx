@@ -8,7 +8,7 @@ import {
   ChevronLeft, ChevronRight, ChevronUp, ChevronDown, ChevronsUpDown, FileText, Box,
   Plus, X, MapPin, Gauge, Clock, Users, Upload, Trash2, PanelLeft,
   Calendar, ArrowRight, ArrowDown, Sparkle, MoreHorizontal, Pencil, Activity, CalendarClock,
-  User, UserX, RotateCcw, RefreshCw, Camera, Link2, Search, Ban, Flag, SlidersHorizontal, AlertCircle,
+  User, UserX, RotateCcw, RefreshCw, Camera, Link2, Search, Ban, Flag, SlidersHorizontal,
 } from 'lucide-react'
 import { Button } from '@/app/components/ui/Button'
 import { IconButton } from '@/app/components/ui/IconButton'
@@ -1715,7 +1715,7 @@ function ModalSectionLabel({ children }: { children: React.ReactNode }) {
 }
 
 function AssignAssetModal({
-  open, onClose, onSubmit, existingAssets = [], initialValues, previousAssignment, isMeterBased = false, missingMeterCount = 0,
+  open, onClose, onSubmit, existingAssets = [], initialValues, previousAssignment, isMeterBased = false,
 }: {
   open: boolean
   onClose: () => void
@@ -1724,7 +1724,7 @@ function AssignAssetModal({
   initialValues?: AssignAssetForm
   previousAssignment?: { primaryAssignee?: string; additionalAssignee?: string[]; team?: string; startDate?: string; endDate?: string }
   isMeterBased?: boolean
-  missingMeterCount?: number
+
 }) {
   const [form, setForm] = useState<AssignAssetForm>(EMPTY_FORM)
   const [appliesToType, setAppliesToType] = useState<AppliesToType>('Asset')
@@ -2024,14 +2024,6 @@ function AssignAssetModal({
         {needsMeterInput && (() => {
           return (
             <div className="mb-6">
-              {missingMeterCount > 0 && (
-                <div className="flex items-start gap-2 px-3 py-2.5 mb-3 rounded-[var(--radius-lg)] bg-[var(--color-warning-2,#FEF9EC)] border border-[var(--color-warning-6,#F5A623)]">
-                  <AlertCircle size={14} className="shrink-0 mt-0.5 text-[var(--color-warning-9,#AD5700)]" />
-                  <p className="text-[12px] text-[var(--color-warning-11,#6F3800)] leading-[1.5]">
-                    {missingMeterCount} assignment{missingMeterCount !== 1 ? 's are' : ' is'} missing a meter — assign one so the schedule can run.
-                  </p>
-                </div>
-              )}
               <ModalSectionLabel>Meter Reading <span className="text-[var(--color-error)]">*</span></ModalSectionLabel>
               <SearchableSelect
                 value={form.meter[0] || ''}
@@ -4458,11 +4450,6 @@ function CreatePMPageContent() {
             return undefined
           })()}
           isMeterBased={!!(triggers.find(t => t.id === showAssignModal)?.calendarTrigger?.meterCondition)}
-          missingMeterCount={(() => {
-            const t = triggers.find(t => t.id === showAssignModal)
-            if (!t?.calendarTrigger?.meterCondition) return 0
-            return t.assignments.filter(a => !a.meter).length
-          })()}
         />
       )}
 
