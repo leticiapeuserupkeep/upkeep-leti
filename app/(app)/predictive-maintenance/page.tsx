@@ -1035,7 +1035,10 @@ export default function PreventiveMaintenancePage() {
     <PMDrawer
       pm={selectedPM}
       onClose={() => setSelectedPM(null)}
-      onExpand={(pm) => router.push(`/predictive-maintenance/${pm.id}`)}
+      onEdit={(pm) => {
+        try { localStorage.setItem('upkeep_editing_pm', JSON.stringify(getEditPayload(pm))) } catch {}
+        router.push(`/predictive-maintenance/create?edit=${pm.id}`)
+      }}
     />
 
     {/* Success toast after Create PM */}

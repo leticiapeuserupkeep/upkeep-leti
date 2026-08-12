@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { X, Maximize2, Pencil, CalendarClock, ChevronRight, Plus, Image as ImageIcon, FileText, ListChecks, Clock, Calendar } from 'lucide-react'
+import { X, Pencil, CalendarClock, Plus, Image as ImageIcon, FileText, ListChecks, Clock } from 'lucide-react'
 import { Avatar } from '@/app/components/ui'
 
 // ── Types shared with the list page (minimal) ────────────────────────────────
@@ -27,7 +27,7 @@ interface PMItem {
 interface PMDrawerProps {
   pm: PMItem | null
   onClose: () => void
-  onExpand: (pm: PMItem) => void
+  onEdit: (pm: PMItem) => void
 }
 
 type DrawerTab = 'Details' | 'Tasks' | 'Schedules' | 'Work Orders'
@@ -54,7 +54,7 @@ function AvatarRow({ techs, extra = 0 }: { techs: TechAvatar[]; extra?: number }
   )
 }
 
-export function PMDrawer({ pm, onClose, onExpand }: PMDrawerProps) {
+export function PMDrawer({ pm, onClose, onEdit }: PMDrawerProps) {
   const [tab, setTab] = useState<DrawerTab>('Details')
   const [descExpanded, setDescExpanded] = useState(false)
 
@@ -85,11 +85,11 @@ export function PMDrawer({ pm, onClose, onExpand }: PMDrawerProps) {
                 </h2>
                 <div className="flex items-center gap-1 shrink-0">
                   <button
-                    onClick={() => onExpand(pm)}
+                    onClick={() => onEdit(pm)}
                     className="flex items-center justify-center w-7 h-7 rounded-[var(--radius-md)] text-[var(--color-neutral-7)] hover:bg-[var(--color-neutral-3)] hover:text-[var(--color-neutral-11)] transition-colors cursor-pointer"
-                    title="Open full page"
+                    title="Edit"
                   >
-                    <Maximize2 size={14} />
+                    <Pencil size={14} />
                   </button>
                   <button
                     onClick={onClose}
