@@ -32,6 +32,8 @@ function formatDisplay(value: string): string {
 
 function parseInputTime(raw: string): string | null {
   const s = raw.trim().toUpperCase()
+
+  // HH:MM AM/PM  or  H:MM AM/PM
   const full = s.match(/^(\d{1,2}):(\d{2})\s*(AM|PM)$/)
   if (full) {
     const h = parseInt(full[1], 10)
@@ -40,6 +42,8 @@ function parseInputTime(raw: string): string | null {
     if (h >= 1 && h <= 12 && m >= 0 && m <= 59)
       return toTime24(String(h).padStart(2, '0'), String(m).padStart(2, '0'), per)
   }
+
+  // HH:MM (24h or 12h without period)
   const noAmPm = s.match(/^(\d{1,2}):(\d{2})$/)
   if (noAmPm) {
     const h = parseInt(noAmPm[1], 10)
@@ -47,6 +51,22 @@ function parseInputTime(raw: string): string | null {
     if (h >= 0 && h <= 23 && m >= 0 && m <= 59)
       return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`
   }
+
+  // Bare digits: 930 → 09:30, 1430 → 14:30
+  const digits = s.replace(/\D/g, '')
+  if (digits.length === 3) {
+    const h = parseInt(digits[0], 10)
+    const m = parseInt(digits.slice(1), 10)
+    if (h <= 9 && m >= 0 && m <= 59)
+      return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`
+  }
+  if (digits.length === 4) {
+    const h = parseInt(digits.slice(0, 2), 10)
+    const m = parseInt(digits.slice(2), 10)
+    if (h >= 0 && h <= 23 && m >= 0 && m <= 59)
+      return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`
+  }
+
   return null
 }
 
@@ -113,19 +133,41 @@ export function TimePicker({ value, onChange, className = '' }: TimePickerProps)
   function setPeriod(p: string) { onChange(toTime24(hour, minute, p)) }
 
   function handleInputChange(raw: string) {
-    setInputVal(raw)
-    const parsed = parseInputTime(raw)
+    // Only allow digits; auto-insert colon after 2nd digit
+    const digits = raw.replace(/\D/g, '').slice(0, 4)
+    let display = digits
+    if (digits.length >= 3) display = digits.slice(0, 2) + ':' + digits.slice(2)
+    setInputVal(display)
+    const parsed = parseInputTime(display)
     if (parsed) onChange(parsed)
+  }
+
+  function commitInput() {
+    const parsed = parseInputTime(inputVal)
+    if (parsed) {
+      onChange(parsed)
+      setInputVal(formatDisplay(parsed))
+    } else {
+      setInputVal(value ? formatDisplay(value) : '')
+    }
+  }
+
+  function handleKeyDown(e: React.KeyboardEvent<HTMLInputElement>) {
+    if (e.key === 'Enter') {
+      e.preventDefault()
+      e.stopPropagation()
+      commitInput()
+      setOpen(false)
+    } else if (e.key === 'Escape') {
+      e.stopPropagation()
+      setOpen(false)
+      setInputVal(value ? formatDisplay(value) : '')
+    }
   }
 
   function handleInputBlur() {
     blurTimerRef.current = setTimeout(() => {
-      const parsed = parseInputTime(inputVal)
-      if (parsed) {
-        onChange(parsed)
-      } else {
-        setInputVal(value ? formatDisplay(value) : '')
-      }
+      commitInput()
     }, 150)
   }
 
@@ -145,6 +187,7 @@ export function TimePicker({ value, onChange, className = '' }: TimePickerProps)
             type="text"
             value={inputVal}
             onChange={e => handleInputChange(e.target.value)}
+            onKeyDown={handleKeyDown}
             onBlur={handleInputBlur}
             onFocus={handleInputFocus}
             onMouseDown={e => e.stopPropagation()}

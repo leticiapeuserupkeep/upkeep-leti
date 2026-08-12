@@ -8,7 +8,7 @@ import {
   ChevronLeft, ChevronRight, ChevronUp, ChevronDown, ChevronsUpDown, FileText, Box,
   Plus, X, MapPin, Gauge, Clock, Users, Upload, Trash2, PanelLeft,
   Calendar, ArrowRight, ArrowDown, Sparkle, MoreHorizontal, Pencil, Activity, CalendarClock,
-  User, UserX, RotateCcw, RefreshCw, Camera, Link2, Search, Ban, Flag, SlidersHorizontal,
+  User, UserX, RotateCcw, RefreshCw, Camera, Link2, Search, Ban, Flag, SlidersHorizontal, AlertCircle,
 } from 'lucide-react'
 import { Button } from '@/app/components/ui/Button'
 import { IconButton } from '@/app/components/ui/IconButton'
@@ -575,68 +575,69 @@ function CreateCalendarTriggerModal({
 
         {/* Calendar Based card */}
         <div className="rounded-[var(--radius-xl)] border border-[var(--border-default)]">
-          <button type="button" onClick={() => setShowCalendarBased(v => !v)}
-            className="flex items-center gap-3 px-4 py-3 bg-[var(--color-neutral-2)] w-full text-left cursor-pointer hover:bg-[var(--color-neutral-3)] transition-colors rounded-t-[var(--radius-xl)] rounded-b-none">
-            <div className="w-10 h-10 rounded-[var(--radius-md)] bg-[var(--color-neutral-3)] flex items-center justify-center shrink-0">
-              <Calendar size={15} className="text-[var(--color-neutral-9)]" />
-            </div>
-            <div className="flex-1 min-w-0">
-              <span className="text-[14px] font-medium text-[var(--color-neutral-12)]">Calendar Based</span>
-              {(() => {
-                const parts: string[] = []
-                if (form.scheduleType) {
-                  parts.push(form.scheduleType === 'After Completion' ? 'After completion' : 'Fixed schedule')
-                }
-                if (form.every && form.period) {
-                  parts.push(`Every ${form.every} ${form.period.toLowerCase()}(s)`)
-                }
-                if (form.woCreationMode === 'relative' && form.woRelativeN) {
-                  parts.push(`Create WO ${form.woRelativeN} ${(form.woRelativePeriod || '').toLowerCase()} before`)
-                } else if (form.woCreationMode === 'on-the') {
-                  parts.push(`Create WO ${form.woOnThePeriod} before`)
-                }
-                const maintenanceFilled = !!(form.every && form.period && (form.period !== 'Week' || form.weekday))
-                const touched = !!(form.every || form.period || form.woCreationMode)
-                const woMissing: string[] = form.woCreationMode === 'relative'
-                  ? [!form.woRelativeN && 'number', !form.woRelativePeriod && 'period'].filter(Boolean) as string[]
-                  : form.woCreationMode === 'on-the'
-                  ? [!form.woOnThePeriod && 'day'].filter(Boolean) as string[]
-                  : []
-                const mainMissing: string[] = [
-                  ...(!form.every || !form.period ? ['maintenance frequency'] : []),
-                  ...(form.period === 'Week' && !form.weekday ? ['day'] : []),
-                ]
-                const allMissing = [...mainMissing, ...woMissing]
-                if (touched && allMissing.length > 0 && !showCalendarBased) {
-                  return <p className="text-[11px] font-[500] text-[var(--color-error-9,#CE2C31)] mt-0.5 leading-4">Missing: {allMissing.join(', ')}</p>
-                }
-                if (touched && parts.length > 0) {
-                  return <p className="text-[11px] font-[500] text-[var(--color-neutral-9)] truncate mt-0.5 leading-4">{parts.join(' · ')}</p>
-                }
-                return <p className="text-[11px] font-[500] text-[var(--color-neutral-8)] mt-0.5 leading-4">Schedule work orders on set dates or after completion</p>
-              })()}
-            </div>
+          <div className="flex items-center gap-3 px-4 py-3 bg-[var(--color-neutral-2)] rounded-t-[var(--radius-xl)] hover:bg-[var(--color-neutral-3)] transition-colors">
+            <button type="button" onClick={() => setShowCalendarBased(v => !v)}
+              className="flex items-center gap-3 flex-1 min-w-0 text-left cursor-pointer">
+              <div className="w-10 h-10 rounded-[var(--radius-md)] bg-[var(--color-neutral-3)] flex items-center justify-center shrink-0">
+                <Calendar size={15} className="text-[var(--color-neutral-9)]" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <span className="text-[14px] font-medium text-[var(--color-neutral-12)]">Calendar Based</span>
+                {(() => {
+                  const parts: string[] = []
+                  if (form.scheduleType) {
+                    parts.push(form.scheduleType === 'After Completion' ? 'After completion' : 'Fixed schedule')
+                  }
+                  if (form.every && form.period) {
+                    parts.push(`Every ${form.every} ${form.period.toLowerCase()}(s)`)
+                  }
+                  if (form.woCreationMode === 'relative' && form.woRelativeN) {
+                    parts.push(`Create WO ${form.woRelativeN} ${(form.woRelativePeriod || '').toLowerCase()} before`)
+                  } else if (form.woCreationMode === 'on-the') {
+                    parts.push(`Create WO ${form.woOnThePeriod} before`)
+                  }
+                  const touched = !!(form.every || form.period || form.woCreationMode)
+                  const woMissing: string[] = form.woCreationMode === 'relative'
+                    ? [!form.woRelativeN && 'number', !form.woRelativePeriod && 'period'].filter(Boolean) as string[]
+                    : form.woCreationMode === 'on-the'
+                    ? [!form.woOnThePeriod && 'day'].filter(Boolean) as string[]
+                    : []
+                  const mainMissing: string[] = [
+                    ...(!form.every || !form.period ? ['maintenance frequency'] : []),
+                    ...(form.period === 'Week' && !form.weekday ? ['day'] : []),
+                  ]
+                  const allMissing = [...mainMissing, ...woMissing]
+                  if (touched && allMissing.length > 0 && !showCalendarBased) {
+                    return <p className="text-[11px] font-[500] text-[var(--color-error-9,#CE2C31)] mt-0.5 leading-4">Missing: {allMissing.join(', ')}</p>
+                  }
+                  if (touched && parts.length > 0) {
+                    return <p className="text-[11px] font-[500] text-[var(--color-neutral-9)] truncate mt-0.5 leading-4">{parts.join(' · ')}</p>
+                  }
+                  return <p className="text-[11px] font-[500] text-[var(--color-neutral-8)] mt-0.5 leading-4">Schedule work orders on set dates or after completion</p>
+                })()}
+              </div>
+            </button>
             {(form.every || form.period || form.woCreationMode) ? (
               <button type="button"
-                onClick={e => { e.stopPropagation(); setForm(f => ({ ...f, scheduleType: 'Regular Interval', every: '', period: '', atTime: '', weekday: '', monthDay: '1', woCreationMode: '', woRelativeN: '', woRelativePeriod: '', woOnThePeriod: '', woAtTime: '', woOnTheAtTime: '' })) }}
+                onClick={() => setForm(f => ({ ...f, scheduleType: 'Regular Interval', every: '', period: '', atTime: '', weekday: '', monthDay: '1', woCreationMode: '', woRelativeN: '', woRelativePeriod: '', woOnThePeriod: '', woAtTime: '', woOnTheAtTime: '' }))}
                 className="h-6 px-2 rounded-[var(--radius-sm)] border border-[var(--border-default)] bg-[var(--surface-primary)] text-[12px] font-medium text-[var(--color-neutral-11)] hover:bg-[var(--color-neutral-3)] transition-colors cursor-pointer shrink-0">
                 Reset
               </button>
             ) : null}
             {(form.every && form.period && form.woCreationMode) ? (
-              <div className="w-6 h-6 rounded-[var(--radius-sm)] bg-[var(--color-neutral-3)] flex items-center justify-center shrink-0">
+              <div onClick={() => setShowCalendarBased(v => !v)} className="w-6 h-6 rounded-[var(--radius-sm)] bg-[var(--color-neutral-3)] flex items-center justify-center shrink-0 cursor-pointer">
                 {showCalendarBased ? <ChevronUp size={13} className="text-[var(--color-neutral-9)]" /> : <ChevronDown size={13} className="text-[var(--color-neutral-9)]" />}
               </div>
             ) : showCalendarBased ? (
-              <div className="w-6 h-6 rounded-[var(--radius-sm)] bg-[var(--color-neutral-3)] flex items-center justify-center shrink-0">
+              <div onClick={() => setShowCalendarBased(v => !v)} className="w-6 h-6 rounded-[var(--radius-sm)] bg-[var(--color-neutral-3)] flex items-center justify-center shrink-0 cursor-pointer">
                 <ChevronUp size={13} className="text-[var(--color-neutral-9)]" />
               </div>
             ) : (
-              <div className="w-8 h-8 rounded-[var(--radius-lg)] bg-[var(--color-accent-9)] flex items-center justify-center shrink-0">
+              <div onClick={() => setShowCalendarBased(v => !v)} className="w-8 h-8 rounded-[var(--radius-lg)] bg-[var(--color-accent-9)] flex items-center justify-center shrink-0 cursor-pointer">
                 <Plus size={13} className="text-white" />
               </div>
             )}
-          </button>
+          </div>
           <div style={{ display: 'grid', gridTemplateRows: showCalendarBased ? '1fr' : '0fr', transition: 'grid-template-rows 220ms ease' }}>
             <div style={{ overflow: 'hidden' }}>
               <div className="p-4 flex flex-col gap-6">
@@ -793,13 +794,13 @@ function CreateCalendarTriggerModal({
                       return (
                         <div key={mode}
                           className={`flex flex-col rounded-lg border overflow-hidden transition-colors ${isSelected ? 'border-[var(--color-accent-7)] bg-[var(--color-accent-1)]' : 'border-[#F0F0F3] bg-[#FCFCFD]'}`}>
-                          <div onClick={() => set('woCreationMode')(isSelected ? '' : mode)} className={`flex items-center gap-[10px] px-4 h-[52px] shrink-0 cursor-pointer ${isSelected ? 'bg-[var(--color-accent-2)]' : 'bg-[#F0F0F3]'}`}>
+                          <button type="button" onClick={() => set('woCreationMode')(isSelected ? '' : mode)} className={`flex items-center gap-[10px] px-4 h-[52px] shrink-0 cursor-pointer w-full text-left ${isSelected ? 'bg-[var(--color-accent-2)]' : 'bg-[#F0F0F3]'}`}>
                             <span className={`flex-shrink-0 w-4 h-4 rounded-[var(--radius-sm)] border flex items-center justify-center transition-colors ${isSelected ? 'bg-[var(--color-accent-9)] border-[var(--color-accent-9)]' : 'border-[var(--color-neutral-6)] bg-[var(--surface-primary)]'}`}>
                               {isSelected && <svg width="10" height="8" viewBox="0 0 10 8" fill="none"><path d="M1 4L3.5 6.5L9 1" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>}
                             </span>
                             <span className="text-[14px] text-[var(--color-neutral-12)]">{label}</span>
-                          </div>
-                          <div className="p-4 flex-1" onClick={() => { if (!isSelected) set('woCreationMode')(mode) }}>
+                          </button>
+                          <div className="p-4 flex-1" onClick={e => { e.stopPropagation(); if (!isSelected) set('woCreationMode')(mode) }}>
                             {mode === 'relative' ? (
                               <div className="flex flex-col gap-2">
                                 <div className="flex items-center gap-2">
@@ -1710,7 +1711,7 @@ function ModalSectionLabel({ children }: { children: React.ReactNode }) {
 }
 
 function AssignAssetModal({
-  open, onClose, onSubmit, existingAssets = [], initialValues, previousAssignment,
+  open, onClose, onSubmit, existingAssets = [], initialValues, previousAssignment, isMeterBased = false, missingMeterCount = 0,
 }: {
   open: boolean
   onClose: () => void
@@ -1718,9 +1719,12 @@ function AssignAssetModal({
   existingAssets?: Array<{ name: string; location?: string; meter?: string }>
   initialValues?: AssignAssetForm
   previousAssignment?: { primaryAssignee?: string; additionalAssignee?: string[]; team?: string; startDate?: string; endDate?: string }
+  isMeterBased?: boolean
+  missingMeterCount?: number
 }) {
   const [form, setForm] = useState<AssignAssetForm>(EMPTY_FORM)
   const [appliesToType, setAppliesToType] = useState<AppliesToType>('Asset')
+  const [meterTouched, setMeterTouched] = useState(false)
 
   useEffect(() => {
     if (open) {
@@ -1731,6 +1735,7 @@ function AssignAssetModal({
         setForm(EMPTY_FORM)
         setAppliesToType('Asset')
       }
+      setMeterTouched(false)
     }
   }, [open])
   const [valueOpen, setValueOpen] = useState(false)
@@ -1837,7 +1842,11 @@ function AssignAssetModal({
       || !!((data as { assignees?: string[] } | undefined)?.assignees?.length)
   })
 
+  const needsMeterInput = isMeterBased && appliesToType !== 'Meter'
+    && appliesToSelected.length > 0
+    && appliesToSelected.some(name => appliesToType === 'Asset' ? !getAssetData(name)?.meter : true)
   const canSubmit = !!(form.asset.length || form.location.length || form.meter.length || form.primaryAssignee || form.additionalAssignee.length || form.team)
+    && !(needsMeterInput && !form.meter[0])
   const [dateError, setDateError] = useState('')
 
   function handleSubmit() {
@@ -2000,11 +2009,36 @@ function AssignAssetModal({
           </div>
         </div>
 
+        {/* "We'll use existing tech" hint — right after Applies To */}
         {multiItemsWithTech && (
           <p className="text-[12px] text-[var(--color-neutral-8)] mb-6 -mt-2 leading-5">
             We'll use the technicians and teams already assigned to these items. You can change them below.
           </p>
         )}
+
+        {/* Meter field — only when meter-based trigger and selected items are missing a meter */}
+        {needsMeterInput && (() => {
+          return (
+            <div className="mb-6">
+              {missingMeterCount > 0 && (
+                <div className="flex items-start gap-2 px-3 py-2.5 mb-3 rounded-[var(--radius-lg)] bg-[var(--color-warning-2,#FEF9EC)] border border-[var(--color-warning-6,#F5A623)]">
+                  <AlertCircle size={14} className="shrink-0 mt-0.5 text-[var(--color-warning-9,#AD5700)]" />
+                  <p className="text-[12px] text-[var(--color-warning-11,#6F3800)] leading-[1.5]">
+                    {missingMeterCount} assignment{missingMeterCount !== 1 ? 's are' : ' is'} missing a meter — assign one so the schedule can run.
+                  </p>
+                </div>
+              )}
+              <ModalSectionLabel>Meter Reading <span className="text-[var(--color-error)]">*</span></ModalSectionLabel>
+              <SearchableSelect
+                value={form.meter[0] || ''}
+                onChange={v => { setForm(f => ({ ...f, meter: v ? [v] : [] })); setMeterTouched(false) }}
+                options={METERS}
+                error={meterTouched && !form.meter[0]}
+                onBlur={() => setMeterTouched(true)}
+              />
+            </div>
+          )
+        })()}
 
         <div className="h-px bg-[var(--border-subtle)] mb-6" />
 
@@ -2041,7 +2075,7 @@ function AssignAssetModal({
         {/* DATES */}
         <div className="flex items-center justify-between mb-2">
           <p className="text-[11px] font-semibold uppercase tracking-wide text-[var(--color-neutral-7)]">Active Dates</p>
-          {(previousAssignment?.startDate || previousAssignment?.endDate) && (
+          {previousAssignment && (
             <button type="button"
               onClick={() => { setDateError(''); setForm(f => ({ ...f, startDate: previousAssignment.startDate ?? '', endDate: previousAssignment.endDate ?? '' })) }}
               className="text-[11px] text-[var(--color-accent-9)] hover:underline cursor-pointer font-medium">
@@ -2735,6 +2769,106 @@ function BulkTechniciansContent({ selectedAssignments, onToggle }: {
   )
 }
 
+function FillMissingModal({
+  open,
+  onClose,
+  type,
+  assignments,
+  onSave,
+}: {
+  open: boolean
+  onClose: () => void
+  type: 'meter' | 'tech'
+  assignments: TriggerAssignment[]
+  onSave: (updates: Array<{ id: string; meter?: string; assignees?: string[] }>) => void
+}) {
+  const [values, setValues] = React.useState<Record<string, string>>(() =>
+    Object.fromEntries(assignments.map(a => [a.id, '']))
+  )
+
+  const allFilled = assignments.every(a => !!(values[a.id]))
+
+  // ID of the first assignment that has a value filled
+  const firstFilledId = assignments.find(a => values[a.id])?.id
+  const firstFilledValue = firstFilledId ? values[firstFilledId] : ''
+
+  function applyToAll() {
+    if (!firstFilledValue) return
+    setValues(Object.fromEntries(assignments.map(a => [a.id, firstFilledValue])))
+  }
+
+  function saveAll() {
+    const updates = assignments
+      .filter(a => values[a.id])
+      .map(a => type === 'meter' ? { id: a.id, meter: values[a.id] } : { id: a.id, assignees: [values[a.id]] })
+    if (updates.length) onSave(updates)
+    onClose()
+  }
+
+  return (
+    <Modal open={open} onOpenChange={v => !v && onClose()} maxWidth="560px">
+      <div className="p-6 flex flex-col">
+        <h2 className="text-[16px] font-semibold text-[var(--color-neutral-12)] mb-4">
+          Fill Missing {type === 'meter' ? 'Meters' : 'Technicians'}
+        </h2>
+
+        <div className="overflow-y-auto -mx-6 px-6" style={{ maxHeight: '380px' }}>
+          {assignments.map((a, i) => {
+            const isFirst = a.id === assignments[0].id
+            const showApplyToAll = isFirst && assignments.length > 1 && !!values[a.id]
+            return (
+              <div
+                key={a.id}
+                className={`flex items-center gap-3 py-3 ${i < assignments.length - 1 ? 'border-b border-[var(--border-subtle)]' : ''}`}
+              >
+                <div className="flex items-center gap-1.5 shrink-0 w-[160px] min-w-0">
+                  <span className="text-[13px] font-medium text-[var(--color-neutral-12)] truncate">{a.name}</span>
+                  <span className="text-[10px] font-medium px-1.5 py-0.5 rounded-full bg-[var(--color-neutral-3)] text-[var(--color-neutral-9)] shrink-0">{a.type}</span>
+                </div>
+                <div className="flex-1 min-w-0">
+                  <SearchableSelect
+                    value={values[a.id]}
+                    onChange={v => setValues(s => ({ ...s, [a.id]: v }))}
+                    options={type === 'meter' ? METERS : ASSIGNEES}
+                    placeholder={type === 'meter' ? 'Select meter…' : 'Select technician…'}
+                    showAvatar={type === 'tech'}
+                  />
+                </div>
+                <button
+                  type="button"
+                  onClick={applyToAll}
+                  style={{
+                    opacity: showApplyToAll ? 1 : 0,
+                    transform: showApplyToAll ? 'translateX(0)' : 'translateX(6px)',
+                    pointerEvents: showApplyToAll ? 'auto' : 'none',
+                    transition: 'opacity 180ms ease, transform 180ms ease',
+                    whiteSpace: 'nowrap',
+                  }}
+                  className="text-[12px] text-[var(--color-accent-9)] font-medium hover:underline shrink-0"
+                >
+                  Apply to all
+                </button>
+              </div>
+            )
+          })}
+        </div>
+
+        <div className="flex items-center justify-end gap-2 mt-5 pt-4 border-t border-[var(--border-subtle)]">
+          <Button variant="secondary" size="md" onClick={onClose}>Cancel</Button>
+          <Button
+            variant="primary"
+            size="md"
+            onClick={saveAll}
+            disabled={!allFilled}
+          >
+            Save All
+          </Button>
+        </div>
+      </div>
+    </Modal>
+  )
+}
+
 function CreatePMPageContent() {
   const [title, setTitle] = useState('')
   const [description, setDescription] = useState('')
@@ -2753,6 +2887,7 @@ function CreatePMPageContent() {
   const [editingTriggerId, setEditingTriggerId] = useState<string | null>(null)
   const [showAssignModal, setShowAssignModal] = useState<string | null>(null)
   const [editingAssignmentId, setEditingAssignmentId] = useState<{ triggerId: string; assignmentId: string } | null>(null)
+  const [showFillMissingModal, setShowFillMissingModal] = useState<{ triggerId: string; type: 'meter' | 'tech' } | null>(null)
   const [bulkDeleteConfirm, setBulkDeleteConfirm] = useState<string | null>(null)
   const [pendingRemove, setPendingRemove] = useState<{ triggerId: string; assignmentId: string; name: string } | null>(null)
   const [isSaving, setIsSaving] = useState(false)
@@ -2776,6 +2911,9 @@ function CreatePMPageContent() {
   const [newAssignmentIds, setNewAssignmentIds] = useState<Set<string>>(new Set())
   const [skeletonTriggerIds, setSkeletonTriggerIds] = useState<Set<string>>(new Set())
   const [titleError, setTitleError] = useState(false)
+  const [showCreateErrors, setShowCreateErrors] = useState(false)
+  const createBtnRef = useRef<HTMLDivElement>(null)
+  const [createErrorPos, setCreateErrorPos] = useState<{ top: number; right: number } | null>(null)
   const titleContainerRef = useRef<HTMLDivElement>(null)
   const router = useRouter()
   const searchParams = useSearchParams()
@@ -3167,17 +3305,6 @@ function CreatePMPageContent() {
             <Button variant="primary" size="md" onClick={handleSaveEdit} disabled={createDisabled}>
               Save
             </Button>
-            {createDisabled && missingFields.length > 0 && (
-              <div className="absolute top-full right-0 mt-2 hidden group-hover/create:flex flex-col gap-1 bg-[var(--color-neutral-12)] text-white rounded-[var(--radius-lg)] px-3 py-2.5 shadow-lg pointer-events-none z-50 min-w-[220px]">
-                <span className="text-[11px] font-semibold uppercase tracking-wide text-white/60 mb-0.5">Required to save</span>
-                {missingFields.map(f => (
-                  <span key={f} className="flex items-center gap-1.5 text-[12px]">
-                    <span className="w-1 h-1 rounded-full bg-[var(--color-error-8,#FF6369)] shrink-0" />
-                    {f}
-                  </span>
-                ))}
-              </div>
-            )}
           </div>
         ) : (
           <>
@@ -3189,22 +3316,32 @@ function CreatePMPageContent() {
             >
               Save Draft
             </button>
-            <div className="relative group/create">
+            <div ref={createBtnRef} className="relative">
               <Button variant="primary" size="md" onClick={handleCreatePM} disabled={createDisabled}>
                 Create PM
               </Button>
-              {createDisabled && missingFields.length > 0 && (
-                <div className="absolute top-full right-0 mt-2 hidden group-hover/create:flex flex-col gap-1 bg-[var(--color-neutral-12)] text-white rounded-[var(--radius-lg)] px-3 py-2.5 shadow-lg pointer-events-none z-50 min-w-[220px]">
-                  <span className="text-[11px] font-semibold uppercase tracking-wide text-white/60 mb-0.5">Required to create</span>
-                  {missingFields.map(f => (
-                    <span key={f} className="flex items-center gap-1.5 text-[12px]">
-                      <span className="w-1 h-1 rounded-full bg-[var(--color-error-8,#FF6369)] shrink-0" />
-                      {f}
-                    </span>
-                  ))}
-                </div>
+              {createDisabled && (
+                <div className="absolute inset-0 cursor-pointer" onClick={() => {
+                  if (createBtnRef.current) {
+                    const r = createBtnRef.current.getBoundingClientRect()
+                    setCreateErrorPos({ top: r.bottom + 8, right: window.innerWidth - r.right })
+                  }
+                  setShowCreateErrors(true)
+                  setTimeout(() => setShowCreateErrors(false), 3000)
+                }} />
               )}
             </div>
+            {showCreateErrors && createErrorPos && missingFields.length > 0 && (
+              <div style={{ position: 'fixed', top: createErrorPos.top, right: createErrorPos.right }} className="flex flex-col gap-1 bg-[var(--color-neutral-12)] text-white rounded-[var(--radius-lg)] px-3 py-2.5 shadow-lg pointer-events-none z-[9999] min-w-[220px]">
+                <span className="text-[11px] font-semibold uppercase tracking-wide text-white/60 mb-0.5">Required to create</span>
+                {missingFields.map(f => (
+                  <span key={f} className="flex items-center gap-1.5 text-[12px]">
+                    <span className="w-1 h-1 rounded-full bg-[var(--color-error-8,#FF6369)] shrink-0" />
+                    {f}
+                  </span>
+                ))}
+              </div>
+            )}
           </>
         )}
       </div>
@@ -3617,14 +3754,22 @@ function CreatePMPageContent() {
                           const missingTech = trigger.assignments.filter(a => a.assignees.length === 0 && !a.team).length
                           return (<>
                             {missingMeters > 0 && (
-                              <span className="flex items-center gap-1 rounded-full bg-[var(--color-error-3,#FFEFEF)] text-[var(--color-error,#CE2C31)] text-[11px] px-2.5 py-0.5 font-medium shrink-0">
+                              <button
+                                type="button"
+                                onClick={e => { e.stopPropagation(); setShowFillMissingModal({ triggerId: trigger.id, type: 'meter' }) }}
+                                className="flex items-center gap-1 rounded-full bg-[var(--color-error-3,#FFEFEF)] text-[var(--color-error,#CE2C31)] text-[11px] px-2.5 py-0.5 font-medium shrink-0 hover:bg-[#FFDCDC] transition-colors cursor-pointer"
+                              >
                                 {missingMeters} missing meter{missingMeters > 1 ? 's' : ''}
-                              </span>
+                              </button>
                             )}
                             {missingTech > 0 && (
-                              <span className="flex items-center gap-1 rounded-full bg-[var(--color-error-3,#FFEFEF)] text-[var(--color-error,#CE2C31)] text-[11px] px-2.5 py-0.5 font-medium shrink-0">
+                              <button
+                                type="button"
+                                onClick={e => { e.stopPropagation(); setShowFillMissingModal({ triggerId: trigger.id, type: 'tech' }) }}
+                                className="flex items-center gap-1 rounded-full bg-[var(--color-error-3,#FFEFEF)] text-[var(--color-error,#CE2C31)] text-[11px] px-2.5 py-0.5 font-medium shrink-0 hover:bg-[#FFDCDC] transition-colors cursor-pointer"
+                              >
                                 {missingTech} missing technician{missingTech > 1 ? 's' : ''}
-                              </span>
+                              </button>
                             )}
                           </>)
                         })()}
@@ -4297,7 +4442,7 @@ function CreatePMPageContent() {
               return {
                 asset: a.type === 'Asset' ? [a.name] : [],
                 location: a.type === 'Location' ? [a.name] : [],
-                meter: a.type === 'Meter' ? [a.name] : [],
+                meter: a.type === 'Meter' ? [a.name] : (a.meter ? [a.meter] : []),
                 primaryAssignee: a.assignees[0] || '',
                 additionalAssignee: a.assignees.slice(1),
                 team: a.team || '',
@@ -4308,8 +4453,45 @@ function CreatePMPageContent() {
             }
             return undefined
           })()}
+          isMeterBased={!!(triggers.find(t => t.id === showAssignModal)?.calendarTrigger?.meterCondition)}
+          missingMeterCount={(() => {
+            const t = triggers.find(t => t.id === showAssignModal)
+            if (!t?.calendarTrigger?.meterCondition) return 0
+            return t.assignments.filter(a => !a.meter).length
+          })()}
         />
       )}
+
+      {/* Fill missing meters / technicians modal */}
+      {showFillMissingModal && (() => {
+        const trigger = triggers.find(t => t.id === showFillMissingModal.triggerId)
+        if (!trigger) return null
+        const missingAssignments = showFillMissingModal.type === 'meter'
+          ? trigger.assignments.filter(a => !a.meter)
+          : trigger.assignments.filter(a => a.assignees.length === 0 && !a.team)
+        return (
+          <FillMissingModal
+            key={`${showFillMissingModal.triggerId}-${showFillMissingModal.type}`}
+            open={!!showFillMissingModal}
+            onClose={() => setShowFillMissingModal(null)}
+            type={showFillMissingModal.type}
+            assignments={missingAssignments}
+            onSave={updates => {
+              setTriggers(ts => ts.map(t => t.id === showFillMissingModal.triggerId
+                ? {
+                    ...t,
+                    assignments: t.assignments.map(a => {
+                      const u = updates.find(u => u.id === a.id)
+                      if (!u) return a
+                      return { ...a, ...(u.meter !== undefined ? { meter: u.meter } : {}), ...(u.assignees ? { assignees: u.assignees } : {}) }
+                    }),
+                  }
+                : t
+              ))
+            }}
+          />
+        )
+      })()}
 
       {/* Bulk delete confirmation modal */}
       {bulkDeleteConfirm && (
