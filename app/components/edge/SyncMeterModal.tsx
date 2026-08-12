@@ -120,12 +120,12 @@ export function SyncMeterModal({ open, onOpenChange, sensorName, totalRuntime }:
           <label className="block text-[length:var(--font-size-sm)] font-medium text-[var(--color-neutral-12)] mb-[var(--space-sm)] pb-1">
             Total runtime
           </label>
-          <div className="flex items-center rounded-[var(--radius-lg)] border border-[var(--border-default)] overflow-hidden">
+          <div className="flex items-center rounded-[var(--radius-lg)] border border-[var(--border-default)] overflow-hidden transition-colors hover:border-[var(--color-accent-7)] hover:shadow-[0_0_1px_3px_rgba(0,106,220,0.1)] focus-within:border-[var(--color-accent-7)] focus-within:shadow-[0_0_1px_3px_rgba(0,106,220,0.1)]">
             <input
               type="number"
               value={runtimeValue}
               onChange={(e) => setRuntimeValue(e.target.value)}
-              className="flex-1 px-[var(--space-md)] py-[10px] bg-[var(--surface-primary)] text-[length:var(--font-size-sm)] text-[var(--color-neutral-11)] outline-none min-w-0"
+              className="flex-1 px-[var(--space-md)] py-[10px] bg-[var(--surface-primary)] text-[length:var(--font-size-sm)] text-[var(--color-neutral-11)] outline-none focus-visible:outline-none min-w-0"
             />
             <span className="px-[var(--space-md)] py-[10px] text-[length:var(--font-size-sm)] text-[var(--color-neutral-7)] bg-[var(--surface-secondary)] border-l border-[var(--border-default)]">
               hours

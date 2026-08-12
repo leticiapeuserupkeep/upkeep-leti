@@ -67,7 +67,9 @@
 }
 
 /* ── Focus ring ── */
-:focus-visible {
+/* Form fields render their own focus chrome (blue border + shadow), so the
+   generic ring is limited to everything else to avoid a doubled outline. */
+:focus-visible:not(input):not(textarea):not(select) {
   outline: 2px solid var(--color-accent-9);
   outline-offset: 2px;
   border-radius: var(--radius-sm);

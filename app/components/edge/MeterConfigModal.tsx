@@ -136,12 +136,12 @@ export function MeterConfigModal({
                     <Info size={14} className="text-[var(--color-neutral-7)]" />
                   </div>
                   <div className="flex items-center gap-[var(--space-sm)] pt-1 pb-3">
-                    <div className="flex items-center flex-1 h-9 rounded-[var(--radius-lg)] border border-[var(--border-default)] overflow-hidden">
+                    <div className="flex items-center flex-1 h-9 rounded-[var(--radius-lg)] border border-[var(--border-default)] overflow-hidden transition-colors hover:border-[var(--color-accent-7)] hover:shadow-[0_0_1px_3px_rgba(0,106,220,0.1)] focus-within:border-[var(--color-accent-7)] focus-within:shadow-[0_0_1px_3px_rgba(0,106,220,0.1)]">
                       <input
                         type="number"
                         value={threshold}
                         onChange={(e) => setThreshold(Number(e.target.value))}
-                        className="flex-1 px-[var(--space-md)] h-full bg-[var(--surface-primary)] text-[length:var(--font-size-sm)] text-[var(--color-neutral-11)] outline-none min-w-0"
+                        className="flex-1 px-[var(--space-md)] h-full bg-[var(--surface-primary)] text-[length:var(--font-size-sm)] text-[var(--color-neutral-11)] outline-none focus-visible:outline-none min-w-0"
                       />
                       <div className="relative h-full border-l border-[var(--border-default)]">
                         <select

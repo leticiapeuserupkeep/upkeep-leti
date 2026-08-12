@@ -2281,7 +2281,7 @@ function TriggerSetupModal({ type, onClose, onSave }: {
                   type="number"
                   value={interval}
                   onChange={e => setInterval(e.target.value)}
-                  className="w-14 h-9 px-2 text-center rounded-[var(--radius-lg)] border border-[var(--border-default)] bg-[var(--surface-primary)] text-[13px] text-[var(--color-neutral-11)] outline-none hover:border-[var(--color-accent-7)] hover:shadow-[0_0_1px_3px_rgba(0,106,220,0.1)] focus:border-[var(--color-accent-7)] focus:shadow-[0_0_1px_3px_rgba(0,106,220,0.1)] transition-colors shrink-0"
+                  className="w-14 h-9 px-2 text-center rounded-[var(--radius-lg)] border border-[var(--border-default)] bg-[var(--surface-primary)] text-[13px] text-[var(--color-neutral-11)] outline-none focus-visible:outline-none hover:border-[var(--color-accent-7)] hover:shadow-[0_0_1px_3px_rgba(0,106,220,0.1)] focus:border-[var(--color-accent-7)] focus:shadow-[0_0_1px_3px_rgba(0,106,220,0.1)] transition-colors shrink-0"
                 />
                 <div className="relative shrink-0">
                   <select
