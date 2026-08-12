@@ -116,9 +116,9 @@ const PRIORITY_OPTIONS: { value: string; label: string; color: string }[] = [
   { value: 'Medium', label: 'Medium', color: '#F76B15' },
   { value: 'High',   label: 'High',   color: '#CE2C31' },
 ]
-const ASSETS = ASSET_NAMES
-const LOCATIONS = LOCATION_NAMES
-const METERS = METER_NAMES
+const ASSETS = [...ASSET_NAMES].sort((a, b) => a.localeCompare(b))
+const LOCATIONS = [...LOCATION_NAMES].sort((a, b) => a.localeCompare(b))
+const METERS = [...METER_NAMES].sort((a, b) => a.localeCompare(b))
 const TRIGGERS = ['Every Wednesday', 'Daily', 'Weekly', 'Monthly', 'On Meter Reading']
 const ASSIGNEE_ROLES: Record<string, string> = {
   'Leticia Peuser': 'Technician',
@@ -126,10 +126,7 @@ const ASSIGNEE_ROLES: Record<string, string> = {
   'Maria Garcia': 'Technician',
   'David Chen': 'Supervisor',
 }
-const ASSIGNEES = Object.keys(ASSIGNEE_ROLES).sort((a, b) => {
-  const order = { Technician: 0, Supervisor: 1 }
-  return (order[ASSIGNEE_ROLES[a] as keyof typeof order] ?? 9) - (order[ASSIGNEE_ROLES[b] as keyof typeof order] ?? 9)
-})
+const ASSIGNEES = Object.keys(ASSIGNEE_ROLES).sort((a, b) => a.localeCompare(b))
 const TEAM_COLORS: Record<string, string> = {
   Maintenance: '#3B82F6',
   Electrical: '#F59E0B',
