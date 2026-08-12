@@ -38,7 +38,7 @@ function getPageTitle(pathname: string): string {
 }
 
 export default function AppLayout({ children }: { children: React.ReactNode }) {
-  const [sidebarCollapsed, setSidebarCollapsed] = useState(false)
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(true)
   const [role, setRole] = useState<Role>('supervisor')
   const [site, setSite] = useState('All Sites')
   const [timeRange, setTimeRange] = useState('Today')
