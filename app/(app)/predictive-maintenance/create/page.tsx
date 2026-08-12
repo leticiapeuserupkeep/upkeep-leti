@@ -619,7 +619,11 @@ function CreateCalendarTriggerModal({
             </button>
             {(form.every || form.period || form.woCreationMode) ? (
               <button type="button"
-                onClick={() => setForm(f => ({ ...f, scheduleType: 'Regular Interval', every: '', period: '', atTime: '', weekday: '', monthDay: '1', woCreationMode: '', woRelativeN: '', woRelativePeriod: '', woOnThePeriod: '', woAtTime: '', woOnTheAtTime: '' }))}
+                onClick={() => {
+                  setForm(f => ({ ...f, scheduleType: 'Regular Interval', every: '', period: '', atTime: '', weekday: '', monthDay: '1', woCreationMode: '', woRelativeN: '', woRelativePeriod: '', woOnThePeriod: '', woAtTime: '', woOnTheAtTime: '' }))
+                  setEveryTouched(false)
+                  setShowCalendarBased(false)
+                }}
                 className="h-6 px-2 rounded-[var(--radius-sm)] border border-[var(--border-default)] bg-[var(--surface-primary)] text-[12px] font-medium text-[var(--color-neutral-11)] hover:bg-[var(--color-neutral-3)] transition-colors cursor-pointer shrink-0">
                 Reset
               </button>
