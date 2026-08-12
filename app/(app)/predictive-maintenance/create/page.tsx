@@ -288,7 +288,7 @@ function DateInputMDY({ value, onChange, label, className, defaultToday, minIso 
       {label && <label className="text-[length:var(--font-size-sm)] font-medium text-[var(--color-neutral-12)]">{label}</label>}
       <Popover.Root open={open} onOpenChange={setOpen}>
         <Popover.Trigger asChild>
-          <div className={`flex items-center h-9 px-2.5 gap-2 rounded-[var(--radius-md)] border bg-[var(--surface-primary)] cursor-text transition-colors ${error ? 'border-[var(--color-error)] shadow-[0_0_1px_3px_rgba(206,44,49,0.12)]' : focused || open ? 'border-[var(--color-accent-7)] shadow-[0_0_1px_3px_rgba(0,106,220,0.1)]' : 'border-[var(--border-default)]'}`}
+          <div className={`flex items-center h-9 px-2.5 gap-2 rounded-[var(--radius-md)] border bg-[var(--surface-primary)] cursor-text transition-colors outline-none ${error ? 'border-[var(--color-error)] shadow-[0_0_1px_3px_rgba(206,44,49,0.12)]' : focused || open ? 'border-[var(--color-accent-7)] shadow-[0_0_1px_3px_rgba(0,106,220,0.1)]' : 'border-[var(--border-default)]'}`}
             onClick={() => { setOpen(false) }}>
             <input
               type="text"
