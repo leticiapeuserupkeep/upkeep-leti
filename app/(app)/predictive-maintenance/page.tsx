@@ -1036,7 +1036,8 @@ export default function PreventiveMaintenancePage() {
       pm={selectedPM}
       onClose={() => setSelectedPM(null)}
       onEdit={(pm) => {
-        try { localStorage.setItem('upkeep_editing_pm', JSON.stringify(getEditPayload(pm))) } catch {}
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        try { localStorage.setItem('upkeep_editing_pm', JSON.stringify(getEditPayload(pm as any))) } catch {}
         router.push(`/predictive-maintenance/create?edit=${pm.id}`)
       }}
     />
