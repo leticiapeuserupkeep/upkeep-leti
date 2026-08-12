@@ -3947,7 +3947,7 @@ function CreatePMPageContent() {
                                           </Popover.Root>
                                           <span className="flex-1" />
                                           <span className="w-[50px] shrink-0" />
-                                          <button type="button" onClick={() => setBulkDeleteConfirm(trigger.id)} className="flex items-center gap-1 text-[13px] font-semibold text-white/60 hover:text-white cursor-pointer transition-colors shrink-0">
+                                          <button type="button" onClick={() => setBulkDeleteConfirm(trigger.id)} className="flex items-center gap-1 text-[13px] font-semibold text-red-400 hover:text-red-300 cursor-pointer transition-colors shrink-0">
                                             Delete
                                           </button>
                                           <div className="w-px h-4 bg-white/20 shrink-0 mx-1" />
