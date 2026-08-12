@@ -9,9 +9,15 @@ interface ModalProps {
   onOpenChange: (open: boolean) => void
   children: ReactNode
   maxWidth?: string
+  /**
+   * Accessible name for modals that render their own heading instead of
+   * <ModalHeader>. Radix requires exactly one Dialog.Title per dialog, so
+   * only pass this when the content does NOT include a <ModalHeader>.
+   */
+  srTitle?: string
 }
 
-export function Modal({ open, onOpenChange, children, maxWidth = '480px' }: ModalProps) {
+export function Modal({ open, onOpenChange, children, maxWidth = '480px', srTitle }: ModalProps) {
   return (
     <Dialog.Root open={open} onOpenChange={onOpenChange}>
       <Dialog.Portal>
@@ -20,6 +26,7 @@ export function Modal({ open, onOpenChange, children, maxWidth = '480px' }: Moda
           className="modal-content fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-[var(--z-modal)] w-full max-h-[85vh] rounded-[var(--radius-2xl)] border border-[var(--border-default)] bg-[var(--surface-primary)] shadow-[var(--shadow-xl)] focus:outline-none flex flex-col overflow-visible"
           style={{ maxWidth }}
         >
+          {srTitle && <Dialog.Title className="sr-only">{srTitle}</Dialog.Title>}
           <div className="flex flex-col overflow-hidden rounded-[var(--radius-2xl)] max-h-[85vh]">
             {children}
           </div>

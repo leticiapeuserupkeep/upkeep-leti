@@ -2802,7 +2802,7 @@ function FillMissingModal({
   }
 
   return (
-    <Modal open={open} onOpenChange={v => !v && onClose()} maxWidth="560px">
+    <Modal open={open} onOpenChange={v => !v && onClose()} maxWidth="560px" srTitle={`Fill Missing ${type === 'meter' ? 'Meters' : 'Technicians'}`}>
       <div className="p-6 flex flex-col">
         <h2 className="text-[16px] font-semibold text-[var(--color-neutral-12)] mb-4">
           Fill Missing {type === 'meter' ? 'Meters' : 'Technicians'}
@@ -4486,7 +4486,7 @@ function CreatePMPageContent() {
 
       {/* Bulk delete confirmation modal */}
       {bulkDeleteConfirm && (
-        <Modal open={!!bulkDeleteConfirm} onOpenChange={v => !v && setBulkDeleteConfirm(null)} maxWidth="400px">
+        <Modal open={!!bulkDeleteConfirm} onOpenChange={v => !v && setBulkDeleteConfirm(null)} maxWidth="400px" srTitle="Delete assignments?">
           <div className="p-6 flex flex-col gap-4">
             <div className="flex flex-col gap-1">
               <h2 className="text-[16px] font-semibold text-[var(--color-neutral-12)]">Delete assignments?</h2>
@@ -4514,7 +4514,7 @@ function CreatePMPageContent() {
 
       {/* Leave without saving modal */}
       {showLeaveModal && (
-        <Modal open={showLeaveModal} onOpenChange={v => !v && setShowLeaveModal(false)} maxWidth="420px">
+        <Modal open={showLeaveModal} onOpenChange={v => !v && setShowLeaveModal(false)} maxWidth="420px" srTitle={isEditing ? 'Save changes to this PM?' : 'Save before leaving?'}>
           <div className="p-6 flex flex-col gap-4">
             <div>
               <h2 className="text-[16px] font-semibold text-[var(--color-neutral-12)]">
@@ -4538,7 +4538,7 @@ function CreatePMPageContent() {
 
       {/* Remove assignment confirm */}
       {pendingRemove && (
-        <Modal open={!!pendingRemove} onOpenChange={v => !v && setPendingRemove(null)} maxWidth="400px">
+        <Modal open={!!pendingRemove} onOpenChange={v => !v && setPendingRemove(null)} maxWidth="400px" srTitle="Remove item?">
           <div className="p-6 flex flex-col gap-4">
             <div className="flex flex-col gap-1">
               <h2 className="text-[16px] font-semibold text-[var(--color-neutral-12)]">Remove item?</h2>

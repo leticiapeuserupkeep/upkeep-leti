@@ -361,7 +361,7 @@ export default function WorkflowDetailPage() {
       <RunHistoryModal open={historyModalOpen} onClose={() => setHistoryModalOpen(false)} wf={wf} />
 
       {/* ── Delete confirm modal ── */}
-      <Modal open={showDeleteConfirm} onOpenChange={(v) => { if (!v) setShowDeleteConfirm(false) }} maxWidth="400px">
+      <Modal open={showDeleteConfirm} onOpenChange={(v) => { if (!v) setShowDeleteConfirm(false) }} maxWidth="400px" srTitle={`Delete "${wf.title}"?`}>
         <ModalBody className="!pt-6 !pb-5">
           <div className="flex flex-col gap-4">
             <div className="flex items-start gap-3">
