@@ -3887,7 +3887,7 @@ function CreatePMPageContent() {
                                     </div>
                                     {/* Bulk bar — fixed bottom bar when rows are selected */}
                                     {sel.size > 0 && (
-                                      <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 flex items-center gap-5 h-[60px] px-4 rounded-[4px] bg-[var(--color-neutral-12)] shadow-[var(--shadow-lg)] text-white">
+                                      <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 flex items-center gap-5 h-[60px] px-4 rounded-[4px] bg-[var(--color-neutral-12)] shadow-[var(--shadow-lg)] text-white max-w-[calc(100vw-2rem)] overflow-x-auto">
                                           <span className="text-[12px] font-semibold text-white/80 shrink-0">{sel.size} selected</span>
                                           <div className="w-px h-4 bg-white/20 shrink-0" />
                                           {/* Bulk: Add Meter */}
@@ -3945,8 +3945,6 @@ function CreatePMPageContent() {
                                               </Popover.Content>
                                             </Popover.Portal>
                                           </Popover.Root>
-                                          <span className="flex-1" />
-                                          <span className="w-[50px] shrink-0" />
                                           <button type="button" onClick={() => setBulkDeleteConfirm(trigger.id)} className="flex items-center gap-1 text-[13px] font-semibold text-red-400 hover:text-red-300 cursor-pointer transition-colors shrink-0">
                                             Delete
                                           </button>
