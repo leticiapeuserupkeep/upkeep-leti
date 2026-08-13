@@ -570,7 +570,7 @@ export default function PreventiveMaintenancePage() {
                             ${fadingInId === pm.id ? 'animate-[fadeInRow_600ms_ease-out_forwards]' : ''}
                             ${pageReady && fadingInId !== pm.id ? 'pm-row-entry' : ''}`}
                           style={{ ...(pageReady && fadingInId !== pm.id ? { animationDelay: `${pmIdx * 35}ms` } : {}), ...((openMenu === pm.id || inlineEdit?.pmId === pm.id) ? { position: 'relative', zIndex: 10 } : {}) }}
-                          onClick={() => setSelectedPM(pm)}
+                          onClick={() => { if (pm.schedules.length > 0) togglePM(pm.id) }}
                         >
                           {/* Checkbox */}
                           <td className="py-4 pl-6 pr-3 w-[52px] align-middle" onClick={e => e.stopPropagation()}>
@@ -659,9 +659,9 @@ export default function PreventiveMaintenancePage() {
                           <td className="px-4 py-4 align-middle" onClick={e => e.stopPropagation()}>
                             <div className="relative" ref={isEditingCategory ? inlineEditRef : undefined}>
                               <button onClick={() => setInlineEdit(isEditingCategory ? null : { pmId: pm.id, field: 'category' })}
-                                className="group/cat inline-flex items-center gap-1 text-[13px] text-[var(--color-neutral-9)] hover:bg-[var(--color-neutral-3)] px-1.5 py-0.5 rounded-[var(--radius-md)] transition-colors cursor-pointer">
+                                className="inline-flex items-center gap-1 text-[13px] text-[var(--color-neutral-9)] hover:bg-[var(--color-neutral-3)] px-1.5 py-0.5 rounded-[var(--radius-md)] transition-colors cursor-pointer">
                                 {effectiveCategory}
-                                <ChevronDown size={12} className="text-[var(--color-neutral-8)] opacity-0 group-hover/cat:opacity-100 transition-opacity shrink-0" />
+                                <ChevronDown size={12} className="text-[var(--color-neutral-8)] shrink-0" />
                               </button>
                               {isEditingCategory && (
                                 <div className="absolute left-0 top-full mt-1 z-50 w-[180px] rounded-[var(--radius-lg)] border border-[var(--border-default)] bg-[var(--surface-primary)] shadow-[var(--shadow-lg)] py-1">
@@ -680,9 +680,9 @@ export default function PreventiveMaintenancePage() {
                           <td className="px-4 py-4 align-middle" onClick={e => e.stopPropagation()}>
                             <div className="relative" ref={isEditingPriority ? inlineEditRef : undefined}>
                               <button onClick={() => setInlineEdit(isEditingPriority ? null : { pmId: pm.id, field: 'priority' })}
-                                className="group/pri inline-flex items-center gap-1 hover:bg-[var(--color-neutral-3)] px-1.5 py-0.5 rounded-[var(--radius-md)] transition-colors cursor-pointer">
+                                className="inline-flex items-center gap-1 hover:bg-[var(--color-neutral-3)] px-1.5 py-0.5 rounded-[var(--radius-md)] transition-colors cursor-pointer">
                                 <PriorityCell priority={effectivePriority} />
-                                <ChevronDown size={12} className="text-[var(--color-neutral-8)] opacity-0 group-hover/pri:opacity-100 transition-opacity shrink-0" />
+                                <ChevronDown size={12} className="text-[var(--color-neutral-8)] shrink-0" />
                               </button>
                               {isEditingPriority && (
                                 <div className="absolute left-0 top-full mt-1 z-50 w-[150px] rounded-[var(--radius-lg)] border border-[var(--border-default)] bg-[var(--surface-primary)] shadow-[var(--shadow-lg)] py-1">
@@ -701,9 +701,9 @@ export default function PreventiveMaintenancePage() {
                           <td className="px-4 py-4 align-middle" onClick={e => e.stopPropagation()}>
                             <div className="relative" ref={isEditingStatus ? inlineEditRef : undefined}>
                               <button onClick={() => setInlineEdit(isEditingStatus ? null : { pmId: pm.id, field: 'status' })}
-                                className="group/st inline-flex items-center gap-1 hover:opacity-80 transition-opacity cursor-pointer rounded-full">
+                                className="inline-flex items-center gap-1 hover:opacity-80 transition-opacity cursor-pointer rounded-full">
                                 <StatusBadge status={effectiveStatus} />
-                                <ChevronDown size={12} className="text-[var(--color-neutral-8)] opacity-0 group-hover/st:opacity-100 transition-opacity shrink-0" />
+                                <ChevronDown size={12} className="text-[var(--color-neutral-8)] shrink-0" />
                               </button>
                               {isEditingStatus && (
                                 <div className="absolute left-0 top-full mt-1 z-50 w-[150px] rounded-[var(--radius-lg)] border border-[var(--border-default)] bg-[var(--surface-primary)] shadow-[var(--shadow-lg)] py-1">
