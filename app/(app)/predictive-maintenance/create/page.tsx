@@ -24,7 +24,7 @@ import { SearchableSelect, SearchableMultiSelect } from '@/app/components/ui/Sea
 import { NumberInput } from '@/app/components/ui/NumberInput'
 import { TimePicker } from '@/app/components/ui/TimePicker'
 import { DatePicker } from '@/app/components/ui/DatePicker'
-import { ASSET_NAMES, LOCATION_NAMES, METER_NAMES, PM_TEAMS, getAssetData, getLocationData, getMeterData } from '@/app/lib/pm-database'
+import { ASSET_NAMES, LOCATION_NAMES, METER_NAMES, PM_TEAMS, getAssetData, getLocationData } from '@/app/lib/pm-database'
 
 /* ── Types ── */
 
@@ -1705,7 +1705,9 @@ const EMPTY_FORM: AssignAssetForm = {
   startDate: '', endDate: '',
 }
 
-const APPLIES_TO_TYPES = ['Asset', 'Location', 'Meter'] as const
+// Meter is not a thing a schedule applies to — it's an attribute of the asset or
+// location it applies to, captured by its own field when the trigger is meter-based.
+const APPLIES_TO_TYPES = ['Asset', 'Location'] as const
 type AppliesToType = typeof APPLIES_TO_TYPES[number]
 
 function ModalSectionLabel({ children }: { children: React.ReactNode }) {
@@ -1734,7 +1736,7 @@ function AssignAssetModal({
     if (open) {
       if (initialValues) {
         setForm(initialValues)
-        setAppliesToType(initialValues.asset.length ? 'Asset' : initialValues.location.length ? 'Location' : initialValues.meter.length ? 'Meter' : 'Asset')
+        setAppliesToType(initialValues.location.length && !initialValues.asset.length ? 'Location' : 'Asset')
       } else {
         setForm(EMPTY_FORM)
         setAppliesToType('Asset')
@@ -1753,13 +1755,10 @@ function AssignAssetModal({
 
   const usedAssets = existingAssets.map(a => a.name).filter(Boolean)
   const usedLocations = existingAssets.map(a => a.location).filter(Boolean)
-  const usedMeters = existingAssets.map(a => a.meter).filter(Boolean)
-  const usedList = appliesToType === 'Asset' ? usedAssets : appliesToType === 'Location' ? usedLocations : usedMeters
-  const allAppliesToOptions = appliesToType === 'Asset' ? ASSETS : appliesToType === 'Location' ? LOCATIONS : METERS
+  const usedList = appliesToType === 'Asset' ? usedAssets : usedLocations
+  const allAppliesToOptions = appliesToType === 'Asset' ? ASSETS : LOCATIONS
   const appliesToOptions = allAppliesToOptions
-  const appliesToSelected: string[] = appliesToType === 'Asset' ? form.asset
-    : appliesToType === 'Location' ? form.location
-    : form.meter
+  const appliesToSelected: string[] = appliesToType === 'Asset' ? form.asset : form.location
   const filteredAppliesToOptions = appliesToOptions.filter(o => {
     const q = valueQuery.toLowerCase()
     if (!q) return true
@@ -1774,8 +1773,7 @@ function AssignAssetModal({
   function toggleAppliesToValue(v: string) {
     const update = (arr: string[]) => arr.includes(v) ? arr.filter(x => x !== v) : [...arr, v]
     if (appliesToType === 'Asset') setForm(f => ({ ...f, asset: update(f.asset) }))
-    else if (appliesToType === 'Location') setForm(f => ({ ...f, location: update(f.location) }))
-    else setForm(f => ({ ...f, meter: update(f.meter) }))
+    else setForm(f => ({ ...f, location: update(f.location) }))
   }
 
   function handleTypeChange(type: AppliesToType) {
@@ -1792,8 +1790,8 @@ function AssignAssetModal({
   useEffect(() => {
     if (appliesToSelected.length === 1) {
       const name = appliesToSelected[0]
-      const data = appliesToType === 'Asset' ? getAssetData(name) : appliesToType === 'Location' ? getLocationData(name) : undefined
-      const assignee = (data as { assignee?: string; assignees?: string[] } | undefined)?.assignee
+      const data = appliesToType === 'Asset' ? getAssetData(name) : getLocationData(name)
+      const assignee =(data as { assignee?: string; assignees?: string[] } | undefined)?.assignee
         ?? (data as { assignees?: string[] } | undefined)?.assignees?.[0]
       const team = (data as { team?: string } | undefined)?.team
       if (assignee || team) {
@@ -1840,16 +1838,18 @@ function AssignAssetModal({
   }, [appliesToSelected])
 
   const multiItemsWithTech = appliesToSelected.length > 1 && appliesToSelected.some(name => {
-    const data = appliesToType === 'Asset' ? getAssetData(name) : appliesToType === 'Location' ? getLocationData(name) : undefined
+    const data = appliesToType === 'Asset' ? getAssetData(name) : getLocationData(name)
     return !!(data as { assignee?: string; assignees?: string[]; team?: string } | undefined)?.team
       || !!(data as { assignee?: string } | undefined)?.assignee
       || !!((data as { assignees?: string[] } | undefined)?.assignees?.length)
   })
 
-  const needsMeterInput = isMeterBased && appliesToType !== 'Meter'
+  // Meter is mandatory only for meter-triggered schedules, and only when the
+  // selected items don't already carry one from the database.
+  const needsMeterInput = isMeterBased
     && appliesToSelected.length > 0
     && appliesToSelected.some(name => appliesToType === 'Asset' ? !getAssetData(name)?.meter : true)
-  const canSubmit = !!(form.asset.length || form.location.length || form.meter.length || form.primaryAssignee || form.additionalAssignee.length || form.team)
+  const canSubmit = !!(form.asset.length || form.location.length || form.primaryAssignee || form.additionalAssignee.length || form.team)
     && !(needsMeterInput && !form.meter[0])
   const [dateError, setDateError] = useState('')
 
@@ -1889,7 +1889,6 @@ function AssignAssetModal({
                 <button className="h-10 w-[130px] flex items-center gap-1.5 pl-3 pr-2 border-r border-[var(--border-default)] bg-[var(--color-neutral-2)] hover:bg-[var(--color-neutral-3)] text-[13px] font-medium text-[var(--color-neutral-11)] cursor-pointer outline-none transition-colors">
                   {appliesToType === 'Asset' && <Box size={18} className="shrink-0 text-[var(--color-neutral-8)]" />}
                   {appliesToType === 'Location' && <MapPin size={18} className="shrink-0 text-[var(--color-neutral-8)]" />}
-                  {appliesToType === 'Meter' && <Gauge size={18} className="shrink-0 text-[var(--color-neutral-8)]" />}
                   <span className="flex-1 text-left truncate">{appliesToType}</span>
                   <ChevronDown size={14} className="shrink-0 text-[var(--color-neutral-7)]" />
                 </button>
@@ -1898,7 +1897,6 @@ function AssignAssetModal({
                 {([
                   { type: 'Asset' as const, icon: Box },
                   { type: 'Location' as const, icon: MapPin },
-                  { type: 'Meter' as const, icon: Gauge },
                 ] as { type: AppliesToType; icon: React.ElementType }[]).map(({ type: t, icon: Icon }) => (
                   <DropdownMenuItem key={t} onSelect={() => handleTypeChange(t)} className={appliesToType === t ? 'font-medium text-[var(--color-accent-9)] bg-[var(--color-accent-1)]' : ''}>
                     <Icon size={18} className="shrink-0" />
@@ -1972,8 +1970,7 @@ function AssignAssetModal({
                             type="button"
                             onClick={() => {
                               if (appliesToType === 'Asset') setForm(f => ({ ...f, asset: allSelected ? f.asset.filter(x => !filteredAppliesToOptions.includes(x)) : [...new Set([...f.asset, ...filteredAppliesToOptions])] }))
-                              else if (appliesToType === 'Location') setForm(f => ({ ...f, location: allSelected ? f.location.filter(x => !filteredAppliesToOptions.includes(x)) : [...new Set([...f.location, ...filteredAppliesToOptions])] }))
-                              else setForm(f => ({ ...f, meter: allSelected ? f.meter.filter(x => !filteredAppliesToOptions.includes(x)) : [...new Set([...f.meter, ...filteredAppliesToOptions])] }))
+                              else setForm(f => ({ ...f, location: allSelected ? f.location.filter(x => !filteredAppliesToOptions.includes(x)) : [...new Set([...f.location, ...filteredAppliesToOptions])] }))
                             }}
                             className="text-[10px] font-semibold uppercase tracking-wide text-[var(--color-accent-9)] hover:opacity-80 cursor-pointer transition-opacity"
                           >
@@ -3072,21 +3069,6 @@ function CreatePMPageContent() {
           endDate: form.endDate,
         }
       })
-    } else if (form.meter.length > 0) {
-      items = form.meter.map(m => {
-        const db = getMeterData(m)
-        return {
-          id: crypto.randomUUID(),
-          name: m,
-          type: 'Meter' as const,
-          subtext: db?.locationName || '',
-          meter: m,
-          assignees: [form.primaryAssignee, ...form.additionalAssignee].filter(Boolean),
-          team: form.team || '',
-          startDate: form.startDate,
-          endDate: form.endDate,
-        }
-      })
     }
     if (items.length === 0) {
       const assignees = [form.primaryAssignee, ...form.additionalAssignee].filter(Boolean)
@@ -4112,7 +4094,7 @@ function CreatePMPageContent() {
                                         }
                                         return (<>
                                           <SortHeader col="name" label="Applies To" className="flex-1 min-w-0" />
-                                          {false && <SortHeader col="meter" label="Meter" className="w-[120px] shrink-0" />}
+                                          <SortHeader col="meter" label="Meter" className="w-[120px] shrink-0" />
                                           <SortHeader col="user" label="Technicians" className="w-[96px] shrink-0" />
                                           <SortHeader col="team" label="Team" className="w-[80px] shrink-0" />
                                           <SortHeader col="start" label="Start / End" className="w-[140px] shrink-0" />
@@ -4147,81 +4129,50 @@ function CreatePMPageContent() {
                                           </button>
                                           {/* Name + type badge + subtext */}
                                           <div className="flex items-center gap-2 flex-1 min-w-0">
-                                            {a.type === 'Meter' ? (
-                                              /* Meter row: name · Meter badge, then Asset: —, Location: subtext */
-                                              <div className="flex flex-col min-w-0">
-                                                <div className="flex items-center gap-1.5 min-w-0">
-                                                  <span className="font-medium text-[var(--color-neutral-12)] truncate">{a.name}</span>
-                                                  <span className="shrink-0 inline-flex items-center h-[18px] px-1.5 rounded-[4px] text-[10px] font-medium bg-[var(--color-neutral-3)] text-[var(--color-neutral-9)]">Meter</span>
-                                                </div>
-                                                <span className="text-[11px] text-[var(--color-neutral-11)] truncate"><span className="text-[10px] text-[var(--color-neutral-7)] uppercase tracking-wide">Asset:</span> —</span>
-                                                <span className="text-[11px] text-[var(--color-neutral-11)] truncate"><span className="text-[10px] text-[var(--color-neutral-7)] uppercase tracking-wide">Location:</span> {a.subtext || '—'}</span>
-                                              </div>
-                                            ) : a.type === 'Location' ? (
-                                              /* Location row: name · Location badge, then Asset: —, Meter: ... */
+                                            {a.type === 'Location' ? (
+                                              /* Location row: name · Location badge, then Asset: — */
                                               <div className="flex flex-col min-w-0">
                                                 <div className="flex items-center gap-1.5 min-w-0">
                                                   <span className="font-medium text-[var(--color-neutral-12)] truncate">{a.name}</span>
                                                   <span className="shrink-0 inline-flex items-center h-[18px] px-1.5 rounded-[4px] text-[10px] font-medium bg-[var(--color-neutral-3)] text-[var(--color-neutral-9)]">Location</span>
                                                 </div>
                                                 <span className="text-[11px] text-[var(--color-neutral-11)] truncate"><span className="text-[10px] text-[var(--color-neutral-7)] uppercase tracking-wide">Asset:</span> —</span>
-                                                <Popover.Root>
-                                                  <Popover.Trigger asChild>
-                                                    <button title={a.meter || undefined} className={`text-left text-[11px] outline-none cursor-pointer ${isMeterTrigger && !a.meter ? 'text-[var(--color-error,#CE2C31)] font-medium' : 'text-[var(--color-neutral-11)] hover:underline'}`}>
-                                                      <span className="text-[10px] text-[var(--color-neutral-7)] uppercase tracking-wide">Meter:</span>{' '}
-                                                      {isMeterTrigger && !a.meter ? <span className="underline">Add</span> : (a.meter || '—')}
-                                                    </button>
-                                                  </Popover.Trigger>
-                                                  <Popover.Portal>
-                                                    <Popover.Content sideOffset={4} align="start" className="z-[var(--z-dropdown)] w-[200px] rounded-[var(--radius-xl)] border border-[var(--border-default)] bg-[var(--surface-primary)] shadow-[var(--shadow-lg)] outline-none overflow-hidden" onOpenAutoFocus={e => e.preventDefault()}>
-                                                      <MeterPopoverContent current={a.meter || ''} onSelect={m => setTriggers(ts => ts.map(t => t.id === trigger.id ? { ...t, assignments: t.assignments.map(x => x.id === a.id ? { ...x, meter: m } : x) } : t))} />
-                                                    </Popover.Content>
-                                                  </Popover.Portal>
-                                                </Popover.Root>
                                               </div>
                                             ) : a.type === 'Asset' ? (
-                                              /* Asset row: name · Asset badge, then Location: subtext, Meter: ... */
+                                              /* Asset row: name · Asset badge, then Location: subtext */
                                               <div className="flex flex-col min-w-0">
                                                 <div className="flex items-center gap-1.5 min-w-0">
                                                   <span className="font-medium text-[var(--color-neutral-12)] truncate">{a.name}</span>
                                                   <span className="shrink-0 inline-flex items-center h-[18px] px-1.5 rounded-[4px] text-[10px] font-medium bg-[var(--color-neutral-3)] text-[var(--color-neutral-9)]">Asset</span>
                                                 </div>
                                                 <span className="text-[11px] text-[var(--color-neutral-11)] truncate"><span className="text-[10px] text-[var(--color-neutral-7)] uppercase tracking-wide">Location:</span> {a.subtext || '—'}</span>
-                                                <Popover.Root>
-                                                  <Popover.Trigger asChild>
-                                                    <button title={a.meter || undefined} className={`text-left text-[11px] outline-none cursor-pointer ${isMeterTrigger && !a.meter ? 'text-[var(--color-error,#CE2C31)] font-medium' : 'text-[var(--color-neutral-11)] hover:underline'}`}>
-                                                      <span className="text-[10px] text-[var(--color-neutral-7)] uppercase tracking-wide">Meter:</span>{' '}
-                                                      {isMeterTrigger && !a.meter ? <span className="underline">Add</span> : (a.meter || '—')}
-                                                    </button>
-                                                  </Popover.Trigger>
-                                                  <Popover.Portal>
-                                                    <Popover.Content sideOffset={4} align="start" className="z-[var(--z-dropdown)] w-[200px] rounded-[var(--radius-xl)] border border-[var(--border-default)] bg-[var(--surface-primary)] shadow-[var(--shadow-lg)] outline-none overflow-hidden" onOpenAutoFocus={e => e.preventDefault()}>
-                                                      <MeterPopoverContent current={a.meter || ''} onSelect={m => setTriggers(ts => ts.map(t => t.id === trigger.id ? { ...t, assignments: t.assignments.map(x => x.id === a.id ? { ...x, meter: m } : x) } : t))} />
-                                                    </Popover.Content>
-                                                  </Popover.Portal>
-                                                </Popover.Root>
                                               </div>
                                             ) : (
                                               /* Person-only row: show empty applies-to block */
                                               <div className="flex flex-col min-w-0">
                                                 <span className="text-[11px] text-[var(--color-neutral-11)] truncate"><span className="text-[10px] text-[var(--color-neutral-7)] uppercase tracking-wide">Asset:</span> —</span>
                                                 <span className="text-[11px] text-[var(--color-neutral-11)] truncate"><span className="text-[10px] text-[var(--color-neutral-7)] uppercase tracking-wide">Location:</span> —</span>
-                                                <Popover.Root>
-                                                  <Popover.Trigger asChild>
-                                                    <button title={a.meter || undefined} className={`text-left text-[11px] outline-none cursor-pointer ${isMeterTrigger && !a.meter ? 'text-[var(--color-error,#CE2C31)] font-medium' : 'text-[var(--color-neutral-11)] hover:underline'}`}>
-                                                      <span className="text-[10px] text-[var(--color-neutral-7)] uppercase tracking-wide">Meter:</span>{' '}
-                                                      {isMeterTrigger && !a.meter ? <span className="underline">Add</span> : (a.meter || '—')}
-                                                    </button>
-                                                  </Popover.Trigger>
-                                                  <Popover.Portal>
-                                                    <Popover.Content sideOffset={4} align="start" className="z-[var(--z-dropdown)] w-[200px] rounded-[var(--radius-xl)] border border-[var(--border-default)] bg-[var(--surface-primary)] shadow-[var(--shadow-lg)] outline-none overflow-hidden" onOpenAutoFocus={e => e.preventDefault()}>
-                                                      <MeterPopoverContent current={a.meter || ''} onSelect={m => setTriggers(ts => ts.map(t => t.id === trigger.id ? { ...t, assignments: t.assignments.map(x => x.id === a.id ? { ...x, meter: m } : x) } : t))} />
-                                                    </Popover.Content>
-                                                  </Popover.Portal>
-                                                </Popover.Root>
                                               </div>
                                             )}
                                           </div>
+                                          {/* Meter — inline edit */}
+                                          <Popover.Root>
+                                            <Popover.Trigger asChild>
+                                              <button
+                                                title={a.meter || undefined}
+                                                className={`w-[120px] shrink-0 h-7 flex items-center px-1 rounded-[var(--radius-md)] text-left text-[12px] truncate outline-none cursor-pointer hover:bg-[var(--color-neutral-3)] transition-colors ${isMeterTrigger && !a.meter ? 'text-[var(--color-error,#CE2C31)] font-medium' : 'text-[var(--color-neutral-11)]'}`}
+                                              >
+                                                <span className="truncate">
+                                                  {isMeterTrigger && !a.meter ? 'Add' : (a.meter || '—')}
+                                                </span>
+                                              </button>
+                                            </Popover.Trigger>
+                                            <Popover.Portal>
+                                              <Popover.Content sideOffset={4} align="start" className="z-[var(--z-dropdown)] w-[200px] rounded-[var(--radius-xl)] border border-[var(--border-default)] bg-[var(--surface-primary)] shadow-[var(--shadow-lg)] outline-none overflow-hidden" onOpenAutoFocus={e => e.preventDefault()}>
+                                                <MeterPopoverContent current={a.meter || ''} onSelect={m => setTriggers(ts => ts.map(t => t.id === trigger.id ? { ...t, assignments: t.assignments.map(x => x.id === a.id ? { ...x, meter: m } : x) } : t))} />
+                                              </Popover.Content>
+                                            </Popover.Portal>
+                                          </Popover.Root>
                                           {/* Assignee avatars — inline edit */}
                                           <Popover.Root>
                                             <Popover.Trigger asChild>
