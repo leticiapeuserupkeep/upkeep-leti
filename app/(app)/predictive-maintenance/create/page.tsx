@@ -119,6 +119,8 @@ const PRIORITY_OPTIONS: { value: string; label: string; color: string }[] = [
 const ASSETS = [...ASSET_NAMES].sort((a, b) => a.localeCompare(b))
 const LOCATIONS = [...LOCATION_NAMES].sort((a, b) => a.localeCompare(b))
 const METERS = [...METER_NAMES].sort((a, b) => a.localeCompare(b))
+// An assignment can carry several meters, stored comma-separated on `meter`.
+const splitMeters = (v?: string) => (v ? v.split(', ').filter(Boolean) : [])
 const TRIGGERS = ['Every Wednesday', 'Daily', 'Weekly', 'Monthly', 'On Meter Reading']
 const ASSIGNEE_ROLES: Record<string, string> = {
   'Leticia Peuser': 'Technician',
@@ -1844,13 +1846,13 @@ function AssignAssetModal({
       || !!((data as { assignees?: string[] } | undefined)?.assignees?.length)
   })
 
-  // Meter is mandatory only for meter-triggered schedules, and only when the
-  // selected items don't already carry one from the database.
-  const needsMeterInput = isMeterBased
-    && appliesToSelected.length > 0
-    && appliesToSelected.some(name => appliesToType === 'Asset' ? !getAssetData(name)?.meter : true)
+  // Meter is mandatory for meter-triggered schedules — unless every selected item
+  // already carries one from the database, in which case there's nothing to ask for.
+  const selectionCarriesMeter = appliesToSelected.length > 0
+    && appliesToSelected.every(name => appliesToType === 'Asset' && !!getAssetData(name)?.meter)
+  const needsMeterInput = isMeterBased && !selectionCarriesMeter
   const canSubmit = !!(form.asset.length || form.location.length || form.primaryAssignee || form.additionalAssignee.length || form.team)
-    && !(needsMeterInput && !form.meter[0])
+    && !(needsMeterInput && form.meter.length === 0)
   const [dateError, setDateError] = useState('')
 
   function handleSubmit() {
@@ -2017,21 +2019,20 @@ function AssignAssetModal({
           </p>
         )}
 
-        {/* Meter field — only when meter-based trigger and selected items are missing a meter */}
-        {needsMeterInput && (() => {
-          return (
-            <div className="mb-6">
-              <ModalSectionLabel>Meter Reading <span className="text-[var(--color-error)]">*</span></ModalSectionLabel>
-              <SearchableSelect
-                value={form.meter[0] || ''}
-                onChange={v => { setForm(f => ({ ...f, meter: v ? [v] : [] })); setMeterTouched(false) }}
-                options={METERS}
-                error={meterTouched && !form.meter[0]}
-                onBlur={() => setMeterTouched(true)}
-              />
-            </div>
-          )
-        })()}
+        {/* Meter field — always offered; mandatory only for meter-triggered schedules
+            whose selected items don't already carry a meter. */}
+        <div className="mb-6">
+          <ModalSectionLabel>
+            Meter Reading {needsMeterInput && <span className="text-[var(--color-error)]">*</span>}
+          </ModalSectionLabel>
+          <SearchableMultiSelect
+            values={form.meter}
+            onChange={v => { setForm(f => ({ ...f, meter: v })); setMeterTouched(false) }}
+            options={METERS}
+            error={needsMeterInput && meterTouched && form.meter.length === 0}
+            onBlur={() => setMeterTouched(true)}
+          />
+        </div>
 
         <div className="h-px bg-[var(--border-subtle)] mb-6" />
 
@@ -3045,8 +3046,8 @@ function CreatePMPageContent() {
           name: a,
           type: 'Asset' as const,
           subtext: form.location[0] || db?.location || '',
-          meter: form.meter[0] || db?.meter || '',
-          meterInherited: !form.meter[0] && !!db?.meter,
+          meter: form.meter.join(', ') || db?.meter || '',
+          meterInherited: form.meter.length === 0 && !!db?.meter,
           assignees: [form.primaryAssignee, ...form.additionalAssignee].filter(Boolean),
           team: form.team || db?.team || '',
           teamInherited: !form.team && !!db?.team,
@@ -3062,7 +3063,7 @@ function CreatePMPageContent() {
           name: l,
           type: 'Location' as const,
           subtext: '',
-          meter: form.meter[0] || '',
+          meter: form.meter.join(', '),
           assignees: [form.primaryAssignee, ...form.additionalAssignee].filter(Boolean),
           team: form.team || db?.team || '',
           startDate: form.startDate,
@@ -3842,7 +3843,7 @@ function CreatePMPageContent() {
                                     .filter(a => {
                                       if (q && !a.name.toLowerCase().includes(q) && !(a.subtext || '').toLowerCase().includes(q)) return false
                                       if (af.technicians?.length && !af.technicians.some(t => a.assignees.includes(t))) return false
-                                      if (af.meters?.length && !af.meters.includes(a.meter || '')) return false
+                                      if (af.meters?.length && !splitMeters(a.meter).some(m => af.meters!.includes(m))) return false
                                       if (af.teams?.length && !af.teams.includes(a.team || '')) return false
                                       return true
                                     })
@@ -3927,7 +3928,7 @@ function CreatePMPageContent() {
                                       })()}
                                       {/* Filter: Meter — hidden */}
                                       {false && (() => {
-                                        const meters = Array.from(new Set(trigger.assignments.map(a => a.meter).filter(Boolean))) as string[]
+                                        const meters = Array.from(new Set(trigger.assignments.flatMap(a => splitMeters(a.meter))))
                                         if (meters.length === 0) return null
                                         const sel = af.meters ?? []
                                         const toggle = (m: string) => setAssignmentFilters(f => {
@@ -4162,9 +4163,17 @@ function CreatePMPageContent() {
                                                 title={a.meter || undefined}
                                                 className={`w-[120px] shrink-0 h-7 flex items-center px-1 rounded-[var(--radius-md)] text-left text-[12px] truncate outline-none cursor-pointer hover:bg-[var(--color-neutral-3)] transition-colors ${isMeterTrigger && !a.meter ? 'text-[var(--color-error,#CE2C31)] font-medium' : 'text-[var(--color-neutral-11)]'}`}
                                               >
-                                                <span className="truncate">
-                                                  {isMeterTrigger && !a.meter ? 'Add' : (a.meter || '—')}
-                                                </span>
+                                                {(() => {
+                                                  const ms = splitMeters(a.meter)
+                                                  if (isMeterTrigger && ms.length === 0) return <span className="truncate">Add</span>
+                                                  if (ms.length === 0) return <span className="truncate">—</span>
+                                                  return (<>
+                                                    <span className="truncate">{ms[0]}</span>
+                                                    {ms.length > 1 && (
+                                                      <span className="ml-1 shrink-0 inline-flex items-center h-[18px] px-1 rounded-[4px] text-[10px] font-medium bg-[var(--color-neutral-3)] text-[var(--color-neutral-9)]">+{ms.length - 1}</span>
+                                                    )}
+                                                  </>)
+                                                })()}
                                               </button>
                                             </Popover.Trigger>
                                             <Popover.Portal>
@@ -4389,7 +4398,7 @@ function CreatePMPageContent() {
               return {
                 asset: a.type === 'Asset' ? [a.name] : [],
                 location: a.type === 'Location' ? [a.name] : [],
-                meter: a.type === 'Meter' ? [a.name] : (a.meter ? [a.meter] : []),
+                meter: splitMeters(a.meter),
                 primaryAssignee: a.assignees[0] || '',
                 additionalAssignee: a.assignees.slice(1),
                 team: a.team || '',
