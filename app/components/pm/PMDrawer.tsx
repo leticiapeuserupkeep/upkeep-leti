@@ -217,7 +217,7 @@ export function PMDrawer({ pm, onClose, onEdit, initialTab = 'Details' }: PMDraw
 
       {/* Drawer */}
       <div
-        className={`fixed top-0 right-0 h-full w-[730px] max-w-[94vw] z-50 flex flex-col bg-[var(--surface-primary)] border-l border-[var(--border-default)] shadow-[var(--shadow-xl)] transition-transform duration-300 ease-[cubic-bezier(0.32,0.72,0,1)] ${isOpen ? 'translate-x-0' : 'translate-x-full'}`}
+        className={`fixed top-0 right-0 h-full w-[780px] max-w-[94vw] z-50 flex flex-col bg-[var(--surface-primary)] border-l border-[var(--border-default)] shadow-[var(--shadow-xl)] transition-transform duration-300 ease-[cubic-bezier(0.32,0.72,0,1)] ${isOpen ? 'translate-x-0' : 'translate-x-full'}`}
       >
         {pm && (
           <>
@@ -310,7 +310,7 @@ function DetailsTab({ pm }: { pm: PMItem }) {
         title="Images"
         action={
           <>
-            <CountPill>No images added</CountPill>
+            <CountPill>0</CountPill>
             <div className="flex items-center gap-0.5">
               <button type="button" aria-label="Previous images" disabled className="flex items-center justify-center w-6 h-6 rounded-[var(--radius-md)] text-[var(--color-neutral-6)] disabled:cursor-not-allowed">
                 <ChevronLeft size={15} />
@@ -342,8 +342,8 @@ function DetailsTab({ pm }: { pm: PMItem }) {
         title="Files"
         action={
           <>
-            <CountPill>No files added</CountPill>
-            <Button variant="secondary" size="md"><Plus size={13} /> Add</Button>
+            <CountPill>0</CountPill>
+            <Button variant="secondary" size="sm"><Plus size={12} /> Add</Button>
           </>
         }
       >
@@ -357,7 +357,7 @@ function DetailsTab({ pm }: { pm: PMItem }) {
       <Section
         id="pm-tasks"
         title="Tasks & Checklists"
-        action={<Button variant="secondary" size="md"><Plus size={13} /> Add</Button>}
+        action={<Button variant="secondary" size="sm"><Plus size={12} /> Add</Button>}
       >
         {pm.checklists && pm.checklists.length > 0 ? (
           <div className="flex flex-col gap-2">
@@ -402,7 +402,14 @@ function SchedulesSection({ pm }: { pm: PMItem }) {
   )
 
   return (
-    <Section id="pm-schedules" title="Schedules" action={<Button variant="secondary" size="md"><Plus size={13} /> Add</Button>}>
+    <Section
+      id="pm-schedules"
+      title="Schedules"
+      action={<>
+        <CountPill>{pm.schedules.length}</CountPill>
+        <Button variant="secondary" size="sm"><Plus size={12} /> Add</Button>
+      </>}
+    >
       {body}
     </Section>
   )
@@ -450,8 +457,8 @@ function ScheduleCard({ sched }: { sched: PMSchedule }) {
             <span className="flex-1 min-w-0 text-[11px] font-medium uppercase tracking-wide text-[var(--color-neutral-8)]">Assignments</span>
             <span className="w-[70px] shrink-0 text-[11px] font-medium uppercase tracking-wide text-[var(--color-neutral-8)]">Meter</span>
             <span className="w-[64px] shrink-0 text-[11px] font-medium uppercase tracking-wide text-[var(--color-neutral-8)]">Techs</span>
-            <span className="w-[88px] shrink-0 text-[11px] font-medium uppercase tracking-wide text-[var(--color-neutral-8)]">Work Orders</span>
             <span className="w-[80px] shrink-0 text-[11px] font-medium uppercase tracking-wide text-[var(--color-neutral-8)]">Start / End</span>
+            <span className="w-[88px] shrink-0 text-[11px] font-medium uppercase tracking-wide text-[var(--color-neutral-8)]">Work Orders</span>
             <span className="w-[70px] shrink-0 text-[11px] font-medium uppercase tracking-wide text-[var(--color-neutral-8)]">Next Due</span>
           </div>
           {/* Rows */}
@@ -473,15 +480,15 @@ function ScheduleCard({ sched }: { sched: PMSchedule }) {
                     ? <AvatarRow techs={a.technicians} extra={a.extraTechs} />
                     : <span className="text-[12px] text-[var(--color-neutral-7)]">—</span>}
                 </div>
-                <div className="w-[88px] shrink-0 flex flex-col gap-0.5">
-                  {a.lastWO && <span className="text-[11px] text-[var(--color-neutral-9)] leading-4">Last: {a.lastWO}</span>}
-                  {a.nextWO && <span className="text-[11px] text-[var(--color-neutral-9)] leading-4">Next: {a.nextWO}</span>}
-                  {!a.lastWO && !a.nextWO && <span className="text-[11px] text-[var(--color-neutral-7)]">—</span>}
-                </div>
                 <div className="w-[80px] shrink-0 flex flex-col gap-0.5">
                   {a.startDate && <span className="text-[11px] text-[var(--color-neutral-8)] leading-4">Start: {a.startDate}</span>}
                   {a.endDate && <span className="text-[11px] text-[var(--color-neutral-8)] leading-4">End: {a.endDate}</span>}
                   {!a.startDate && !a.endDate && <span className="text-[12px] text-[var(--color-neutral-7)]">—</span>}
+                </div>
+                <div className="w-[88px] shrink-0 flex flex-col gap-0.5">
+                  {a.lastWO && <span className="text-[11px] text-[var(--color-neutral-9)] leading-4">Last: {a.lastWO}</span>}
+                  {a.nextWO && <span className="text-[11px] text-[var(--color-neutral-9)] leading-4">Next: {a.nextWO}</span>}
+                  {!a.lastWO && !a.nextWO && <span className="text-[11px] text-[var(--color-neutral-7)]">—</span>}
                 </div>
                 <div className="w-[70px] shrink-0">
                   {a.nextWO
