@@ -2019,7 +2019,7 @@ function AssignAssetModal({
           </p>
         )}
 
-        <div className="h-px bg-[var(--border-subtle)] mb-8" />
+        <div className="h-px shrink-0 bg-[var(--border-subtle)] mb-8" />
 
         {/* Meter field — always offered; mandatory only for meter-triggered schedules
             whose selected items don't already carry a meter. */}
@@ -2036,7 +2036,7 @@ function AssignAssetModal({
           />
         </div>
 
-        <div className="h-px bg-[var(--border-subtle)] mb-8" />
+        <div className="h-px shrink-0 bg-[var(--border-subtle)] mb-8" />
 
         {/* PEOPLE */}
         <div className="flex items-center justify-between mb-2">
@@ -2066,7 +2066,7 @@ function AssignAssetModal({
           </div>
         </div>
 
-        <div className="h-px bg-[var(--border-subtle)] mb-8" />
+        <div className="h-px shrink-0 bg-[var(--border-subtle)] mb-8" />
 
         {/* DATES */}
         <div className="flex items-center justify-between mb-2">
