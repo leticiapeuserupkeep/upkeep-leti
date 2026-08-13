@@ -123,6 +123,22 @@ const METERS = [...METER_NAMES].sort((a, b) => a.localeCompare(b))
 // An assignment can carry several meters, stored comma-separated on `meter`.
 const splitMeters = (v?: string) => (v ? v.split(', ').filter(Boolean) : [])
 
+/**
+ * Edit affordance revealed when an assignment cell is hovered. A span rather
+ * than an IconButton because these cells are themselves popover-trigger
+ * buttons, and a nested button is invalid HTML.
+ */
+function CellEditHint({ mode, revealClass }: { mode: 'add' | 'edit'; revealClass: string }) {
+  return (
+    <span
+      aria-hidden
+      className={`inline-flex items-center justify-center shrink-0 w-6 h-6 rounded-[var(--radius-sm)] border border-[var(--border-default)] bg-[var(--surface-primary)] text-[var(--color-neutral-11)] opacity-0 transition-opacity ${revealClass}`}
+    >
+      {mode === 'edit' ? <Pencil size={10} /> : <Plus size={11} />}
+    </span>
+  )
+}
+
 /** Neutral pill inside an assignment filter button — the count, or "All". */
 function FilterTag({ children }: { children: React.ReactNode }) {
   return (
@@ -2891,6 +2907,9 @@ function CreatePMPageContent() {
   const [filesPartsOpen, setFilesPartsOpen] = useState(false)
   const [images, setImages] = useState<string[]>([])
   const [triggers, setTriggers] = useState<PMTrigger[]>([])
+  // Only one schedule card reads as focused at a time, even when several are
+  // expanded — the last one the user touched.
+  const [activeTriggerId, setActiveTriggerId] = useState<string | null>(null)
   const [showCalendarModal, setShowCalendarModal] = useState(false)
   const [calendarModalKey, setCalendarModalKey] = useState(0)
   const [editingTriggerId, setEditingTriggerId] = useState<string | null>(null)
@@ -3689,10 +3708,11 @@ function CreatePMPageContent() {
                     const hasMissingTech = trigger.assignments.some(a => a.assignees.length === 0 && !a.team)
                     const hasNoAssignments = !trigger.expanded && trigger.assignments.length === 0
                     const hasError = hasMissingMeters || hasMissingTech || hasNoAssignments
-                    // The expanded card is the focused one, so it wears the same
-                    // accent border + ring the form controls use when focused.
-                    const borderClass = hasError ? 'border-[var(--color-error,#CE2C31)]' : trigger.expanded ? 'border-[var(--color-accent-7)]' : 'border-[var(--border-default)]'
-                    const shadowClass = hasError ? 'shadow-[0_0_1px_3px_rgba(206,44,49,0.2)]' : trigger.expanded ? 'shadow-[0_0_1px_3px_rgba(0,106,220,0.1)]' : ''
+                    // The active card wears the same accent border + ring the form
+                    // controls use when focused; every other card stays neutral.
+                    const isActive = activeTriggerId === trigger.id
+                    const borderClass = hasError ? 'border-[var(--color-error,#CE2C31)]' : isActive ? 'border-[var(--color-accent-7)]' : 'border-[var(--border-default)]'
+                    const shadowClass = hasError ? 'shadow-[0_0_1px_3px_rgba(206,44,49,0.2)]' : isActive ? 'shadow-[0_0_1px_3px_rgba(0,106,220,0.1)]' : ''
                     // Same hover/focus affordance as the form controls; suppressed while the
                     // card is showing its error state so the red ring isn't overridden.
                     const hoverClass = hasError ? '' : 'hover:border-[var(--color-accent-7)] hover:shadow-[0_0_1px_3px_rgba(0,106,220,0.1)] focus-within:border-[var(--color-accent-7)] focus-within:shadow-[0_0_1px_3px_rgba(0,106,220,0.1)]'
@@ -3716,9 +3736,10 @@ function CreatePMPageContent() {
                       ) : null}
                       {/* Trigger row */}
                       <div
-                        className={`flex items-center gap-3 p-4 cursor-pointer select-none transition-colors ${skeletonTriggerIds.has(trigger.id) ? 'hidden' : ''} ${trigger.expanded ? 'bg-[var(--color-accent-1)]' : 'bg-[var(--surface-primary)] hover:bg-[var(--color-neutral-2)]'}`}
+                        className={`flex items-center gap-3 p-4 cursor-pointer select-none transition-colors ${skeletonTriggerIds.has(trigger.id) ? 'hidden' : ''} ${isActive ? 'bg-[var(--color-accent-1)]' : 'bg-[var(--surface-secondary)] hover:bg-[var(--color-neutral-3)]'}`}
                         onClick={() => {
                           const isExpanding = !trigger.expanded
+                          setActiveTriggerId(trigger.id)
                           setTriggers(ts => ts.map(t => t.id === trigger.id ? { ...t, expanded: !t.expanded } : t))
                           if (isExpanding) {
                             setTimeout(() => {
@@ -4188,8 +4209,9 @@ function CreatePMPageContent() {
                                           <Popover.Root>
                                             <Popover.Trigger asChild>
                                               <button
-                                                className={`w-[120px] shrink-0 h-7 flex items-center px-1 rounded-[var(--radius-md)] text-left text-[12px] truncate outline-none cursor-pointer hover:bg-[var(--color-neutral-3)] transition-colors ${isMeterTrigger && !a.meter ? 'text-[var(--color-error,#CE2C31)] font-medium' : 'text-[var(--color-neutral-11)]'}`}
+                                                className={`group/meter w-[120px] shrink-0 h-7 flex items-center justify-between gap-1 px-1 rounded-[var(--radius-md)] text-left text-[12px] outline-none cursor-pointer hover:bg-[var(--color-neutral-3)] transition-colors ${isMeterTrigger && !a.meter ? 'text-[var(--color-error,#CE2C31)] font-medium' : 'text-[var(--color-neutral-11)]'}`}
                                               >
+                                                <span className="flex items-center min-w-0">
                                                 {(() => {
                                                   const ms = splitMeters(a.meter)
                                                   if (isMeterTrigger && ms.length === 0) return <span className="truncate">Add</span>
@@ -4212,6 +4234,8 @@ function CreatePMPageContent() {
                                                     )}
                                                   </>)
                                                 })()}
+                                                </span>
+                                                <CellEditHint mode={splitMeters(a.meter).length ? 'edit' : 'add'} revealClass="group-hover/meter:opacity-100" />
                                               </button>
                                             </Popover.Trigger>
                                             <Popover.Portal>
@@ -4309,9 +4333,12 @@ function CreatePMPageContent() {
                                           {/* Date range — inline edit */}
                                           <Popover.Root>
                                             <Popover.Trigger asChild>
-                                              <button className="w-[150px] shrink-0 flex flex-col justify-center items-start py-1 px-1.5 rounded-[var(--radius-md)] hover:bg-[var(--color-neutral-3)] transition-colors cursor-pointer outline-none text-[11px] text-[var(--color-neutral-8)]">
-                                                <span><span className="text-[10px] text-[var(--color-neutral-8)] uppercase tracking-wide">Start:</span> {a.startDate ? displayDate(a.startDate) : '—'}</span>
-                                                <span><span className="text-[10px] text-[var(--color-neutral-8)] uppercase tracking-wide">End:</span> {a.endDate ? displayDate(a.endDate) : '—'}</span>
+                                              <button className="group/dates w-[150px] shrink-0 flex items-center justify-between gap-1 py-1 px-1.5 rounded-[var(--radius-md)] hover:bg-[var(--color-neutral-3)] transition-colors cursor-pointer outline-none text-[11px] text-[var(--color-neutral-8)]">
+                                                <span className="flex flex-col items-start min-w-0">
+                                                  <span><span className="text-[10px] text-[var(--color-neutral-8)] uppercase tracking-wide">Start:</span> {a.startDate ? displayDate(a.startDate) : '—'}</span>
+                                                  <span><span className="text-[10px] text-[var(--color-neutral-8)] uppercase tracking-wide">End:</span> {a.endDate ? displayDate(a.endDate) : '—'}</span>
+                                                </span>
+                                                <CellEditHint mode={a.startDate || a.endDate ? 'edit' : 'add'} revealClass="group-hover/dates:opacity-100" />
                                               </button>
                                             </Popover.Trigger>
                                             <Popover.Portal>
@@ -4392,6 +4419,7 @@ function CreatePMPageContent() {
           } else {
             const newId = crypto.randomUUID()
             setTriggers(ts => [...ts.map(tr => ({ ...tr, expanded: false })), { id: newId, calendarTrigger: t, assignments: [], expanded: true }])
+            setActiveTriggerId(newId)
             setNewTriggerIds(s => new Set([...s, newId]))
             setSkeletonTriggerIds(s => new Set([...s, newId]))
             setTimeout(() => setNewTriggerIds(s => { const next = new Set(s); next.delete(newId); return next }), 600)
