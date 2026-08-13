@@ -23,11 +23,11 @@ export const TextInput = forwardRef<HTMLInputElement, TextInputProps>(
             {props.required && <span className="ml-0.5 text-[var(--color-error)]">*</span>}
           </label>
         )}
-        <div className={`flex items-center h-10 rounded-[var(--radius-lg)] border overflow-hidden transition-colors duration-[var(--duration-fast)] ${error ? 'border-[var(--color-error)] focus-within:border-[var(--color-error)] shadow-[0_0_1px_3px_rgba(206,44,49,0.2)]' : 'border-[var(--border-default)] hover:border-[var(--color-accent-7)] hover:shadow-[0_0_1px_3px_rgba(0,106,220,0.1)] focus-within:border-[var(--color-accent-7)] focus-within:shadow-[0_0_1px_3px_rgba(0,106,220,0.1)]'}`}>
+        <div className={`flex items-center h-[var(--control-height-base)] rounded-[var(--radius-lg)] border overflow-hidden transition-colors duration-[var(--duration-fast)] ${error ? 'border-[var(--color-error)] focus-within:border-[var(--color-error)] shadow-[0_0_1px_3px_rgba(206,44,49,0.2)]' : 'border-[var(--border-default)] hover:border-[var(--color-accent-7)] hover:shadow-[0_0_1px_3px_rgba(0,106,220,0.1)] focus-within:border-[var(--color-accent-7)] focus-within:shadow-[0_0_1px_3px_rgba(0,106,220,0.1)]'}`}>
           <input
             ref={ref}
             id={inputId}
-            className={`flex-1 px-[var(--space-md)] py-[var(--space-sm)] bg-[var(--surface-primary)] text-[length:var(--font-size-sm)] text-[var(--color-neutral-11)] outline-none focus-visible:outline-none min-w-0 placeholder:text-[var(--color-neutral-7)] disabled:opacity-50 disabled:cursor-not-allowed ${className}`}
+            className={`flex-1 px-[var(--space-md)] py-[var(--space-sm)] bg-[var(--surface-primary)] text-[length:var(--control-font-size-base)] text-[var(--color-neutral-11)] outline-none focus-visible:outline-none min-w-0 placeholder:text-[var(--color-neutral-7)] disabled:opacity-50 disabled:cursor-not-allowed ${className}`}
             {...props}
           />
           {suffix && (
@@ -63,7 +63,7 @@ export const Textarea = forwardRef<HTMLTextAreaElement, TextareaProps>(
         <textarea
           ref={ref}
           id={inputId}
-          className={`px-[var(--space-md)] py-[var(--space-sm)] rounded-[var(--radius-lg)] border border-[var(--border-default)] bg-[var(--surface-primary)] text-[length:var(--font-size-sm)] text-[var(--color-neutral-11)] outline-none focus-visible:outline-none placeholder:text-[var(--color-neutral-7)] hover:border-[var(--color-accent-7)] hover:shadow-[0_0_1px_3px_rgba(0,106,220,0.1)] focus:border-[var(--color-accent-7)] focus:shadow-[0_0_1px_3px_rgba(0,106,220,0.1)] transition-colors duration-[var(--duration-fast)] resize-y min-h-[80px] disabled:opacity-50 disabled:cursor-not-allowed ${className}`}
+          className={`px-[var(--space-md)] py-[var(--space-sm)] rounded-[var(--radius-lg)] border border-[var(--border-default)] bg-[var(--surface-primary)] text-[length:var(--control-font-size-base)] text-[var(--color-neutral-11)] outline-none focus-visible:outline-none placeholder:text-[var(--color-neutral-7)] hover:border-[var(--color-accent-7)] hover:shadow-[0_0_1px_3px_rgba(0,106,220,0.1)] focus:border-[var(--color-accent-7)] focus:shadow-[0_0_1px_3px_rgba(0,106,220,0.1)] transition-colors duration-[var(--duration-fast)] resize-y min-h-[80px] disabled:opacity-50 disabled:cursor-not-allowed ${className}`}
           {...props}
         />
       </div>

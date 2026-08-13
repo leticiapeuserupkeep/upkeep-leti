@@ -3359,7 +3359,7 @@ function CreatePMPageContent() {
                   {/* Two-column layout: Left (Title+Description) | Right (Category+Priority+Duration+Signature) */}
                   <div className="grid grid-cols-2 gap-5">
                     {/* Left column */}
-                    <div className="flex flex-col gap-5">
+                    <div className="flex flex-col gap-4">
                       <div ref={titleContainerRef}>
                         <TextInput
                           label="Title"
@@ -3381,7 +3381,7 @@ function CreatePMPageContent() {
                       />
                     </div>
                     {/* Right column */}
-                    <div className="flex flex-col gap-5">
+                    <div className="flex flex-col gap-4">
                       <Select label="Category" value={category} onChange={setCategory} options={CATEGORIES} />
                       <Select
                         label="Priority"
@@ -3831,6 +3831,7 @@ function CreatePMPageContent() {
                                 <p className="text-[12px] text-[var(--color-neutral-8)] pb-3">Choose where this schedule applies</p>
                                 <div className="assign-cta-glow rounded-[var(--radius-md)]">
                                   <Button variant="primary" size="lg" onClick={() => setShowAssignModal(trigger.id)}>
+                                    <Plus size={16} />
                                     Add
                                   </Button>
                                 </div>
