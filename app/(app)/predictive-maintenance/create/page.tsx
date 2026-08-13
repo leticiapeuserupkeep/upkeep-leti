@@ -1714,7 +1714,7 @@ type AppliesToType = typeof APPLIES_TO_TYPES[number]
 
 function ModalSectionLabel({ children }: { children: React.ReactNode }) {
   return (
-    <p className="text-[11px] font-semibold uppercase tracking-wide text-[var(--color-neutral-7)] mb-2">{children}</p>
+    <p className="text-[11px] font-semibold uppercase tracking-wide text-[var(--color-neutral-11)] mb-2">{children}</p>
   )
 }
 
@@ -1726,7 +1726,7 @@ function AssignAssetModal({
   onSubmit: (data: AssignAssetForm) => void
   existingAssets?: Array<{ name: string; location?: string; meter?: string }>
   initialValues?: AssignAssetForm
-  previousAssignment?: { primaryAssignee?: string; additionalAssignee?: string[]; team?: string; startDate?: string; endDate?: string }
+  previousAssignment?: { primaryAssignee?: string; additionalAssignee?: string[]; team?: string; meter?: string[]; startDate?: string; endDate?: string }
   isMeterBased?: boolean
 
 }) {
@@ -2030,9 +2030,18 @@ function AssignAssetModal({
         {/* Meter field — always offered; mandatory only for meter-triggered schedules
             whose selected items don't already carry a meter. */}
         <div className="mb-6">
-          <ModalSectionLabel>
-            Meter Reading {needsMeterInput && <span className="text-[var(--color-error)]">*</span>}
-          </ModalSectionLabel>
+          <div className="flex items-center justify-between mb-2">
+            <p className="text-[11px] font-semibold uppercase tracking-wide text-[var(--color-neutral-11)]">
+              Meter Reading {needsMeterInput && <span className="text-[var(--color-error)]">*</span>}
+            </p>
+            {!!previousAssignment?.meter?.length && (
+              <button type="button"
+                onClick={() => { setForm(f => ({ ...f, meter: previousAssignment.meter! })); setMeterTouched(false) }}
+                className="text-[11px] font-medium underline text-[var(--color-neutral-11)] hover:text-[var(--color-neutral-12)] cursor-pointer">
+                Use Last Meter Reading
+              </button>
+            )}
+          </div>
           <SearchableMultiSelect
             values={form.meter}
             onChange={v => { setForm(f => ({ ...f, meter: v })); setMeterTouched(false) }}
@@ -2046,11 +2055,11 @@ function AssignAssetModal({
 
         {/* PEOPLE */}
         <div className="flex items-center justify-between mb-2">
-          <p className="text-[11px] font-semibold uppercase tracking-wide text-[var(--color-neutral-7)]">Assigned To</p>
+          <p className="text-[11px] font-semibold uppercase tracking-wide text-[var(--color-neutral-11)]">Assigned To</p>
           {(previousAssignment?.primaryAssignee || previousAssignment?.team) && (
             <button type="button"
               onClick={() => setForm(f => ({ ...f, primaryAssignee: previousAssignment.primaryAssignee!, additionalAssignee: previousAssignment.additionalAssignee ?? [], team: previousAssignment.team ?? '' }))}
-              className="text-[11px] text-[var(--color-accent-9)] hover:underline cursor-pointer font-medium">
+              className="text-[11px] font-medium underline text-[var(--color-neutral-11)] hover:text-[var(--color-neutral-12)] cursor-pointer">
               Use Last Assigned To
             </button>
           )}
@@ -2076,11 +2085,11 @@ function AssignAssetModal({
 
         {/* DATES */}
         <div className="flex items-center justify-between mb-2">
-          <p className="text-[11px] font-semibold uppercase tracking-wide text-[var(--color-neutral-7)]">Active Dates</p>
+          <p className="text-[11px] font-semibold uppercase tracking-wide text-[var(--color-neutral-11)]">Active Dates</p>
           {previousAssignment && (
             <button type="button"
               onClick={() => { setDateError(''); setForm(f => ({ ...f, startDate: previousAssignment.startDate ?? '', endDate: previousAssignment.endDate ?? '' })) }}
-              className="text-[11px] text-[var(--color-accent-9)] hover:underline cursor-pointer font-medium">
+              className="text-[11px] font-medium underline text-[var(--color-neutral-11)] hover:text-[var(--color-neutral-12)] cursor-pointer">
               Use Last Active Dates
             </button>
           )}
@@ -4396,7 +4405,7 @@ function CreatePMPageContent() {
               ? assignments.filter(a => a.id !== editingAssignmentId.assignmentId).at(-1)
               : assignments.at(-1)
             if (!prev) return undefined
-            return { primaryAssignee: prev.assignees[0] || '', additionalAssignee: prev.assignees.slice(1), team: prev.team || '', startDate: prev.startDate || '', endDate: prev.endDate || '' }
+            return { primaryAssignee: prev.assignees[0] || '', additionalAssignee: prev.assignees.slice(1), team: prev.team || '', meter: splitMeters(prev.meter), startDate: prev.startDate || '', endDate: prev.endDate || '' }
           })()}
           initialValues={(() => {
             const t = triggers.find(t => t.id === showAssignModal)
