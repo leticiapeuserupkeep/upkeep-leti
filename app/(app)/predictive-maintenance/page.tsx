@@ -867,11 +867,11 @@ export default function PreventiveMaintenancePage() {
                                                         <span className="shrink-0 inline-flex items-center h-[18px] px-1.5 rounded-[4px] text-[10px] font-medium bg-[var(--color-neutral-3)] text-[var(--color-neutral-9)]">{a.assetType}</span>
                                                       </div>
                                                       {a.assetType === 'Asset' ? (
-                                                        <span className="text-[11px] text-[var(--color-neutral-11)] truncate"><span className="text-[10px] text-[var(--color-neutral-7)] uppercase tracking-wide">Location:</span> {a.location || '—'}</span>
+                                                        <span className="text-[11px] text-[var(--color-neutral-11)] truncate"><span className="text-[10px] text-[var(--color-neutral-8)] uppercase tracking-wide">Location:</span> {a.location || '—'}</span>
                                                       ) : a.assetType === 'Meter' ? (
-                                                        <span className="text-[11px] text-[var(--color-neutral-11)] truncate"><span className="text-[10px] text-[var(--color-neutral-7)] uppercase tracking-wide">Location:</span> {a.location || '—'}</span>
+                                                        <span className="text-[11px] text-[var(--color-neutral-11)] truncate"><span className="text-[10px] text-[var(--color-neutral-8)] uppercase tracking-wide">Location:</span> {a.location || '—'}</span>
                                                       ) : (
-                                                        <span className="text-[11px] text-[var(--color-neutral-11)] truncate"><span className="text-[10px] text-[var(--color-neutral-7)] uppercase tracking-wide">Asset:</span> —</span>
+                                                        <span className="text-[11px] text-[var(--color-neutral-11)] truncate"><span className="text-[10px] text-[var(--color-neutral-8)] uppercase tracking-wide">Asset:</span> —</span>
                                                       )}
                                                     </div>
                                                     <div className="w-[120px] shrink-0 text-[12px] text-[var(--color-neutral-11)] truncate" title={a.meter || undefined}>

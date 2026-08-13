@@ -122,6 +122,15 @@ const LOCATIONS = [...LOCATION_NAMES].sort((a, b) => a.localeCompare(b))
 const METERS = [...METER_NAMES].sort((a, b) => a.localeCompare(b))
 // An assignment can carry several meters, stored comma-separated on `meter`.
 const splitMeters = (v?: string) => (v ? v.split(', ').filter(Boolean) : [])
+
+/** Neutral pill inside an assignment filter button — the count, or "All". */
+function FilterTag({ children }: { children: React.ReactNode }) {
+  return (
+    <span className="ml-1 flex items-center justify-center px-1.5 h-4 rounded-full bg-[var(--color-neutral-3)] text-[var(--color-neutral-9)] text-[10px] font-semibold">
+      {children}
+    </span>
+  )
+}
 const TRIGGERS = ['Every Wednesday', 'Daily', 'Weekly', 'Monthly', 'On Meter Reading']
 const ASSIGNEE_ROLES: Record<string, string> = {
   'Leticia Peuser': 'Technician',
@@ -419,7 +428,7 @@ function Select({
                 <X size={11} />
               </span>
             )}
-            <ChevronDown size={14} className="shrink-0 text-[var(--color-neutral-7)]" />
+            <ChevronDown size={14} className="shrink-0 text-[var(--color-neutral-9)]" />
           </button>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="start" minWidth="var(--radix-dropdown-menu-trigger-width)">
@@ -1927,7 +1936,7 @@ function AssignAssetModal({
 
         {/* APPLIES TO */}
         <div className="mb-8">
-          <ModalSectionLabel>Applies To</ModalSectionLabel>
+          <ModalSectionLabel>Assets / Locations</ModalSectionLabel>
           <div className="flex items-stretch rounded-[var(--radius-lg)] border border-[var(--border-default)] overflow-hidden">
             {/* Type selector */}
             <DropdownMenu modal={false}>
@@ -1936,7 +1945,7 @@ function AssignAssetModal({
                   {appliesToType === 'Asset' && <Box size={18} className="shrink-0 text-[var(--color-neutral-8)]" />}
                   {appliesToType === 'Location' && <MapPin size={18} className="shrink-0 text-[var(--color-neutral-8)]" />}
                   <span className="flex-1 text-left truncate">{appliesToType}</span>
-                  <ChevronDown size={14} className="shrink-0 text-[var(--color-neutral-7)]" />
+                  <ChevronDown size={14} className="shrink-0 text-[var(--color-neutral-9)]" />
                 </button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="start" minWidth="130px">
@@ -1973,7 +1982,7 @@ function AssignAssetModal({
                       )}
                     </>
                   )}
-                  <ChevronDown size={14} className="shrink-0 text-[var(--color-neutral-7)] ml-auto" />
+                  <ChevronDown size={14} className="shrink-0 text-[var(--color-neutral-9)] ml-auto" />
                 </button>
               </Popover.Trigger>
               <Popover.Portal>
@@ -3943,8 +3952,14 @@ function CreatePMPageContent() {
                                       {/* Filter: Technician */}
                                       {(() => {
                                         const techs = Array.from(new Set(trigger.assignments.flatMap(a => a.assignees))).sort()
-                                        if (techs.length === 0) return null
                                         const sel = af.technicians ?? []
+                                        if (techs.length === 0) return (
+                                          <button type="button" disabled title="No technicians assigned yet"
+                                            className="shrink-0 flex items-center gap-1 px-2 h-6 rounded-[var(--radius-md)] border text-[11px] font-medium border-[var(--border-default)] bg-[var(--color-neutral-2)] text-[var(--color-neutral-7)] cursor-not-allowed">
+                                            Technicians: <FilterTag>All</FilterTag>
+                                            <ChevronDown size={10} />
+                                          </button>
+                                        )
                                         const toggle = (name: string) => setAssignmentFilters(f => {
                                           const cur = f[trigger.id]?.technicians ?? []
                                           return { ...f, [trigger.id]: { technicians: cur.includes(name) ? cur.filter(n => n !== name) : [...cur, name], meters: f[trigger.id]?.meters ?? [], teams: f[trigger.id]?.teams ?? [] } }
@@ -3953,7 +3968,7 @@ function CreatePMPageContent() {
                                           <Popover.Root>
                                             <Popover.Trigger asChild>
                                               <button type="button" className={`shrink-0 flex items-center gap-1 px-2 h-6 rounded-[var(--radius-md)] border text-[11px] font-medium transition-colors cursor-pointer border-[var(--border-default)] bg-[var(--surface-primary)] text-[var(--color-neutral-8)] hover:bg-[var(--color-neutral-3)]`}>
-                                                Technicians: {sel.length ? <span className="ml-1 flex items-center justify-center px-2 h-4 rounded-full bg-[var(--color-accent-9)] text-white text-[9px] font-bold">{sel.length}</span> : 'All'}
+                                                Technicians: <FilterTag>{sel.length || 'All'}</FilterTag>
                                                 <ChevronDown size={10} />
                                               </button>
                                             </Popover.Trigger>
@@ -3989,7 +4004,7 @@ function CreatePMPageContent() {
                                           <Popover.Root>
                                             <Popover.Trigger asChild>
                                               <button type="button" className={`shrink-0 flex items-center gap-1 px-2 h-6 rounded-[var(--radius-md)] border text-[11px] font-medium transition-colors cursor-pointer border-[var(--border-default)] bg-[var(--surface-primary)] text-[var(--color-neutral-8)] hover:bg-[var(--color-neutral-3)]`}>
-                                                Meter{sel.length ? <span className="ml-1 flex items-center justify-center w-4 h-4 rounded-full bg-[var(--color-accent-9)] text-white text-[9px] font-bold">{sel.length}</span> : null}
+                                                Meter{sel.length ? <FilterTag>{sel.length}</FilterTag> : null}
                                                 <ChevronDown size={10} />
                                               </button>
                                             </Popover.Trigger>
@@ -4015,8 +4030,14 @@ function CreatePMPageContent() {
                                       {/* Filter: Team */}
                                       {(() => {
                                         const teams = Array.from(new Set(trigger.assignments.map(a => a.team).filter(Boolean))) as string[]
-                                        if (teams.length === 0) return null
                                         const sel = af.teams ?? []
+                                        if (teams.length === 0) return (
+                                          <button type="button" disabled title="No teams assigned yet"
+                                            className="shrink-0 flex items-center gap-1 px-2 h-6 rounded-[var(--radius-md)] border text-[11px] font-medium border-[var(--border-default)] bg-[var(--color-neutral-2)] text-[var(--color-neutral-7)] cursor-not-allowed">
+                                            Teams: <FilterTag>All</FilterTag>
+                                            <ChevronDown size={10} />
+                                          </button>
+                                        )
                                         const toggle = (t: string) => setAssignmentFilters(f => {
                                           const cur = f[trigger.id]?.teams ?? []
                                           return { ...f, [trigger.id]: { technicians: f[trigger.id]?.technicians ?? [], meters: f[trigger.id]?.meters ?? [], teams: cur.includes(t) ? cur.filter(x => x !== t) : [...cur, t] } }
@@ -4025,7 +4046,7 @@ function CreatePMPageContent() {
                                           <Popover.Root>
                                             <Popover.Trigger asChild>
                                               <button type="button" className={`shrink-0 flex items-center gap-1 px-2 h-6 rounded-[var(--radius-md)] border text-[11px] font-medium transition-colors cursor-pointer border-[var(--border-default)] bg-[var(--surface-primary)] text-[var(--color-neutral-8)] hover:bg-[var(--color-neutral-3)]`}>
-                                                Teams: {sel.length ? <span className="ml-1 flex items-center justify-center px-2 h-4 rounded-full bg-[var(--color-accent-9)] text-white text-[9px] font-bold">{sel.length}</span> : 'All'}
+                                                Teams: <FilterTag>{sel.length || 'All'}</FilterTag>
                                                 <ChevronDown size={10} />
                                               </button>
                                             </Popover.Trigger>
@@ -4187,7 +4208,7 @@ function CreatePMPageContent() {
                                                   <span className="font-medium text-[var(--color-neutral-12)] truncate">{a.name}</span>
                                                   <span className="shrink-0 inline-flex items-center h-[18px] px-1.5 rounded-[4px] text-[10px] font-medium bg-[var(--color-neutral-3)] text-[var(--color-neutral-9)]">Location</span>
                                                 </div>
-                                                <span className="text-[11px] text-[var(--color-neutral-11)] truncate"><span className="text-[10px] text-[var(--color-neutral-7)] uppercase tracking-wide">Asset:</span> —</span>
+                                                <span className="text-[11px] text-[var(--color-neutral-11)] truncate"><span className="text-[10px] text-[var(--color-neutral-8)] uppercase tracking-wide">Asset:</span> —</span>
                                               </div>
                                             ) : a.type === 'Asset' ? (
                                               /* Asset row: name · Asset badge, then Location: subtext */
@@ -4196,13 +4217,13 @@ function CreatePMPageContent() {
                                                   <span className="font-medium text-[var(--color-neutral-12)] truncate">{a.name}</span>
                                                   <span className="shrink-0 inline-flex items-center h-[18px] px-1.5 rounded-[4px] text-[10px] font-medium bg-[var(--color-neutral-3)] text-[var(--color-neutral-9)]">Asset</span>
                                                 </div>
-                                                <span className="text-[11px] text-[var(--color-neutral-11)] truncate"><span className="text-[10px] text-[var(--color-neutral-7)] uppercase tracking-wide">Location:</span> {a.subtext || '—'}</span>
+                                                <span className="text-[11px] text-[var(--color-neutral-11)] truncate"><span className="text-[10px] text-[var(--color-neutral-8)] uppercase tracking-wide">Location:</span> {a.subtext || '—'}</span>
                                               </div>
                                             ) : (
                                               /* Person-only row: show empty applies-to block */
                                               <div className="flex flex-col min-w-0">
-                                                <span className="text-[11px] text-[var(--color-neutral-11)] truncate"><span className="text-[10px] text-[var(--color-neutral-7)] uppercase tracking-wide">Asset:</span> —</span>
-                                                <span className="text-[11px] text-[var(--color-neutral-11)] truncate"><span className="text-[10px] text-[var(--color-neutral-7)] uppercase tracking-wide">Location:</span> —</span>
+                                                <span className="text-[11px] text-[var(--color-neutral-11)] truncate"><span className="text-[10px] text-[var(--color-neutral-8)] uppercase tracking-wide">Asset:</span> —</span>
+                                                <span className="text-[11px] text-[var(--color-neutral-11)] truncate"><span className="text-[10px] text-[var(--color-neutral-8)] uppercase tracking-wide">Location:</span> —</span>
                                               </div>
                                             )}
                                           </div>
@@ -4322,14 +4343,14 @@ function CreatePMPageContent() {
                                           <Popover.Root>
                                             <Popover.Trigger asChild>
                                               <button className="w-[150px] shrink-0 flex flex-col justify-center items-start py-1 px-1.5 rounded-[var(--radius-md)] hover:bg-[var(--color-neutral-3)] transition-colors cursor-pointer outline-none text-[11px] text-[var(--color-neutral-8)]">
-                                                {a.startDate && <span><span className="text-[10px] text-[var(--color-neutral-7)] uppercase tracking-wide">Start:</span> {displayDate(a.startDate)}</span>}
-                                                {a.endDate && <span><span className="text-[10px] text-[var(--color-neutral-7)] uppercase tracking-wide">End:</span> {displayDate(a.endDate)}</span>}
+                                                {a.startDate && <span><span className="text-[10px] text-[var(--color-neutral-8)] uppercase tracking-wide">Start:</span> {displayDate(a.startDate)}</span>}
+                                                {a.endDate && <span><span className="text-[10px] text-[var(--color-neutral-8)] uppercase tracking-wide">End:</span> {displayDate(a.endDate)}</span>}
                                                 {!a.startDate && !a.endDate && <span>—</span>}
                                                 {(() => {
                                                   const next = nextTriggerIso(trigger.calendarTrigger, a.startDate, a.endDate)
                                                   if (next) return (
                                                     <span className="text-[var(--color-neutral-11)] font-medium">
-                                                      <span className="text-[10px] text-[var(--color-neutral-7)] uppercase tracking-wide font-normal">Next:</span> {displayDate(next)}
+                                                      <span className="text-[10px] text-[var(--color-neutral-8)] uppercase tracking-wide font-normal">Next:</span> {displayDate(next)}
                                                     </span>
                                                   )
                                                   if (isMeterTrigger) return (

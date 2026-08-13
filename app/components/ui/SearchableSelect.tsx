@@ -76,7 +76,7 @@ export function SearchableSelect({
                 <X size={11} />
               </span>
             )}
-            <ChevronDown size={14} className="shrink-0 text-[var(--color-neutral-7)]" />
+            <ChevronDown size={14} className="shrink-0 text-[var(--color-neutral-9)]" />
           </button>
         </Popover.Trigger>
         <Popover.Portal>
@@ -231,7 +231,7 @@ export function SearchableMultiSelect({
                 {hidden > 0 && <Chip size={chipSize} variant="soft">+{hidden}</Chip>}
               </>
             )}
-            <ChevronDown size={14} className="shrink-0 text-[var(--color-neutral-7)] ml-auto" />
+            <ChevronDown size={14} className="shrink-0 text-[var(--color-neutral-9)] ml-auto" />
           </button>
         </Popover.Trigger>
         <Popover.Portal>
