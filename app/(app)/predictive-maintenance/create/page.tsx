@@ -2014,8 +2014,8 @@ function AssignAssetModal({
 
         {/* "We'll use existing tech" hint — right after Applies To */}
         {multiItemsWithTech && (
-          <p className="text-[12px] text-[var(--color-neutral-8)] mb-6 -mt-2 leading-5">
-            We'll use the technicians and teams already assigned to these items. You can change them below.
+          <p className="text-[12px] text-[var(--color-neutral-9)] mb-6 -mt-4 leading-5">
+            Some selected items already have assigned technicians. You can keep or reassign them below.
           </p>
         )}
 
