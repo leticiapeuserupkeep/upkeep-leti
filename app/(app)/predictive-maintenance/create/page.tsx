@@ -3667,7 +3667,7 @@ function CreatePMPageContent() {
               {triggers.length === 0 ? (
                 <div className="flex flex-col items-center justify-center py-16 gap-2 text-center">
                   <p className="text-[14px] font-semibold text-[var(--color-neutral-11)]">No schedules yet</p>
-                  <p className="text-[13px] text-[var(--color-neutral-8)]">Create a schedule to define when work orders should be generated.</p>
+                  <p className="text-[13px] text-[var(--color-neutral-8)] pb-3">Create a schedule to define when work orders should be generated.</p>
                   <Button variant="primary" size="lg" onClick={() => { setCalendarModalKey(k => k + 1); setShowCalendarModal(true) }}>
                     <Plus size={13} className="mr-1" />
                     New Schedule
@@ -3828,7 +3828,7 @@ function CreatePMPageContent() {
                             {trigger.assignments.length === 0 ? (
                               <div className="flex flex-col items-center justify-center p-4 gap-2 text-center assign-content-fadein">
                                 <p className="text-[13px] font-semibold text-[var(--color-neutral-11)]">Assets, Locations & Meters</p>
-                                <p className="text-[12px] text-[var(--color-neutral-8)]">Choose where this schedule applies</p>
+                                <p className="text-[12px] text-[var(--color-neutral-8)] pb-3">Choose where this schedule applies</p>
                                 <div className="assign-cta-glow rounded-[var(--radius-md)]">
                                   <Button variant="primary" size="lg" onClick={() => setShowAssignModal(trigger.id)}>
                                     Add
