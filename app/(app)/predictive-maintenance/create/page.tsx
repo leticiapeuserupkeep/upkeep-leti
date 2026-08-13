@@ -161,7 +161,7 @@ const TEAM_COLORS: Record<string, string> = {
   Safety: '#10B981',
   Operations: '#8B5CF6',
 }
-const TEAMS = ['Maintenance', 'Electrical', 'Safety', 'Operations'].map(name => ({
+const TEAMS = PM_TEAMS.map(name => ({
   value: name,
   label: name,
   icon: (
@@ -3713,11 +3713,8 @@ function CreatePMPageContent() {
                     const isActive = activeTriggerId === trigger.id
                     const borderClass = hasError ? 'border-[var(--color-error,#CE2C31)]' : isActive ? 'border-[var(--color-accent-7)]' : 'border-[var(--border-default)]'
                     const shadowClass = hasError ? 'shadow-[0_0_1px_3px_rgba(206,44,49,0.2)]' : isActive ? 'shadow-[0_0_1px_3px_rgba(0,106,220,0.1)]' : ''
-                    // Same hover/focus affordance as the form controls; suppressed while the
-                    // card is showing its error state so the red ring isn't overridden.
-                    const hoverClass = hasError ? '' : 'hover:border-[var(--color-accent-7)] hover:shadow-[0_0_1px_3px_rgba(0,106,220,0.1)] focus-within:border-[var(--color-accent-7)] focus-within:shadow-[0_0_1px_3px_rgba(0,106,220,0.1)]'
                     return (
-                    <div key={trigger.id} id={`trigger-card-${trigger.id}`} className={`rounded-[8px] border overflow-hidden transition-[border-color,box-shadow] duration-[var(--duration-fast)] ${borderClass} ${shadowClass} ${hoverClass} ${newTriggerIds.has(trigger.id) ? 'trigger-card-new' : ''}`}>
+                    <div key={trigger.id} id={`trigger-card-${trigger.id}`} className={`rounded-[8px] border overflow-hidden transition-[border-color,box-shadow] duration-[var(--duration-fast)] ${borderClass} ${shadowClass} ${newTriggerIds.has(trigger.id) ? 'trigger-card-new' : ''}`}>
                       {skeletonTriggerIds.has(trigger.id) ? (
                         <div className="flex flex-col bg-[var(--surface-primary)]">
                           <div className="flex items-center gap-3 px-4 py-4 bg-[var(--color-neutral-2)]">
@@ -3736,7 +3733,7 @@ function CreatePMPageContent() {
                       ) : null}
                       {/* Trigger row */}
                       <div
-                        className={`flex items-center gap-3 p-4 cursor-pointer select-none transition-colors ${skeletonTriggerIds.has(trigger.id) ? 'hidden' : ''} ${isActive ? 'bg-[var(--color-accent-1)]' : 'bg-[var(--surface-secondary)] hover:bg-[var(--color-neutral-3)]'}`}
+                        className={`flex items-center gap-3 p-4 cursor-pointer select-none transition-colors ${skeletonTriggerIds.has(trigger.id) ? 'hidden' : ''} bg-[var(--surface-secondary)] hover:bg-[var(--color-neutral-3)]`}
                         onClick={() => {
                           const isExpanding = !trigger.expanded
                           setActiveTriggerId(trigger.id)

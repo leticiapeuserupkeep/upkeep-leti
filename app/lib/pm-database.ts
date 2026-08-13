@@ -29,8 +29,9 @@ export const PM_PEOPLE = [
   'Jordan Lee', 'Casey Kim', 'Riley Patel', 'Drew Santos',
 ]
 
+/** The only teams that exist. Every `team` field below must be one of these. */
 export const PM_TEAMS = [
-  'Maintenance', 'Electrical', 'Safety', 'Operations', 'HVAC', 'Facilities',
+  'Maintenance', 'Electrical', 'Safety', 'Operations',
 ]
 
 export const PM_METERS: PMMeter[] = [
@@ -79,7 +80,7 @@ export const PM_LOCATIONS: PMLocation[] = [
     name: 'Chicago Office',
     assets: ['HVAC Unit AHU-03', 'AHU Rooftop RT-1', 'Clean Air Handler CAH-2'],
     meters: ['Flow Rate Monitor', 'CO2 Level Sensor'],
-    team: 'HVAC',
+    team: 'Maintenance',
     assignees: ['Casey Kim', 'Riley Patel'],
   },
   {
@@ -95,7 +96,7 @@ export const PM_LOCATIONS: PMLocation[] = [
     name: 'Parking Structure – Level 2',
     assets: ['Roof Exhaust Fan REF-3'],
     meters: ['Fan RPM Monitor'],
-    team: 'Facilities',
+    team: 'Operations',
     assignees: ['Drew Santos'],
   },
   {
@@ -117,7 +118,7 @@ export const PM_LOCATIONS: PMLocation[] = [
     id: 'l9',
     name: 'Rooftop Plant',
     assets: ['Cooling Tower CT-1'],
-    team: 'HVAC',
+    team: 'Maintenance',
     assignees: ['Riley Patel'],
   },
 ]
@@ -127,28 +128,28 @@ export const PM_ASSETS: PMAsset[] = [
   { id: 'a1',  name: 'Cooling Pump',             location: 'Plant B – Boiler Room',      meter: 'Cooling Pump Pressure',      team: 'Maintenance' },
   { id: 'a2',  name: 'Binding Machine',           location: 'Warehouse Zone B',            meter: 'Vibration Sensor A',         team: 'Operations' },
   { id: 'a3',  name: 'Compressor CR-01',          location: 'R&D Lab',                     meter: 'Temperature Gauge',          team: 'Safety' },
-  { id: 'a4',  name: 'HVAC Unit AHU-03',          location: 'Chicago Office',              meter: 'Flow Rate Monitor',          team: 'HVAC' },
+  { id: 'a4',  name: 'HVAC Unit AHU-03',          location: 'Chicago Office',              meter: 'Flow Rate Monitor',          team: 'Maintenance' },
   { id: 'a13', name: 'Chiller Unit CU-7',         location: 'Plant B – Boiler Room',      meter: 'Chiller Outlet Temp',        team: 'Maintenance' },
   { id: 'a14', name: 'UPS Battery Bank',          location: 'Server Room 4B',              meter: 'Battery Charge Level',       team: 'Electrical', assignee: 'Jamie Chen' },
-  { id: 'a16', name: 'Roof Exhaust Fan REF-3',    location: 'Parking Structure – Level 2', meter: 'Fan RPM Monitor',            team: 'Facilities' },
+  { id: 'a16', name: 'Roof Exhaust Fan REF-3',    location: 'Parking Structure – Level 2', meter: 'Fan RPM Monitor',            team: 'Operations' },
   { id: 'a17', name: 'Conveyor Belt CB-02',       location: 'Warehouse Zone A',            meter: 'Belt Tension Sensor',        team: 'Operations' },
   { id: 'a20', name: 'Hydraulic Press HP-01',     location: 'Warehouse Zone B',            meter: 'Hydraulic Pressure Sensor',  team: 'Operations' },
-  { id: 'a22', name: 'Clean Air Handler CAH-2',   location: 'Chicago Office',              meter: 'CO2 Level Sensor',           team: 'HVAC' },
+  { id: 'a22', name: 'Clean Air Handler CAH-2',   location: 'Chicago Office',              meter: 'CO2 Level Sensor',           team: 'Maintenance' },
 
   // Location + meter, no team/assignee
   { id: 'a5',  name: 'Forklift FL-204',           location: 'Warehouse Zone B',            meter: 'Vibration Sensor B' },
   { id: 'a6',  name: 'Generator Set GS-2',        location: 'Plant B – Boiler Room',      meter: 'Oil Pressure Gauge' },
 
   // Location + team/assignee, no meter
-  { id: 'a7',  name: 'AHU Rooftop RT-1',         location: 'Chicago Office',              team: 'HVAC',        assignee: 'Casey Kim' },
+  { id: 'a7',  name: 'AHU Rooftop RT-1',         location: 'Chicago Office',              team: 'Maintenance',        assignee: 'Casey Kim' },
   { id: 'a8',  name: 'Clean Room AHU',            location: 'R&D Lab',                     assignee: 'Taylor Brooks' },
   { id: 'a15', name: 'Fire Suppression System',   location: 'R&D Lab',                     team: 'Safety',      assignee: 'Taylor Brooks' },
   { id: 'a19', name: 'Emergency Generator EG-1',  location: 'Plant B – Boiler Room',      team: 'Electrical',  assignee: 'Sam Rivera' },
   { id: 'a23', name: 'Robotic Arm RA-3',          location: 'Manufacturing Floor A',       team: 'Operations',  assignee: 'Jordan Lee' },
-  { id: 'a24', name: 'Cooling Tower CT-1',        location: 'Rooftop Plant',               team: 'HVAC',        assignee: 'Riley Patel' },
+  { id: 'a24', name: 'Cooling Tower CT-1',        location: 'Rooftop Plant',               team: 'Maintenance',        assignee: 'Riley Patel' },
 
   // Meter only (no location)
-  { id: 'a9',  name: 'Air Handler AH-12',         meter: 'Air Filter DP Sensor',           team: 'Facilities' },
+  { id: 'a9',  name: 'Air Handler AH-12',         meter: 'Air Filter DP Sensor',           team: 'Operations' },
   { id: 'a18', name: 'Air Compressor AC-5',       meter: 'Tank Pressure Gauge',            team: 'Maintenance' },
 
   // Location + assignee (no meter)
