@@ -33,7 +33,7 @@ interface ChipProps {
 export const CHIP_ICON_SIZE: Record<ChipSize, number> = { sm: 16, base: 16, lg: 20 }
 
 const sizeStyles: Record<ChipSize, string> = {
-  sm: 'h-6 px-2 gap-0.5 text-[14px] leading-5',
+  sm: 'h-6 px-2 gap-0.5 text-[12px] leading-4',
   base: 'h-8 px-3 gap-1 text-[14px] leading-5',
   lg: 'h-10 px-4 gap-2 text-[16px] leading-6',
 }

@@ -1912,7 +1912,7 @@ function AssignAssetModal({
             {/* Hidden measurement row */}
             <div ref={appliesToMeasureRef} style={{ position: 'fixed', top: '-9999px', left: '-9999px', display: 'flex', gap: '4px' }} aria-hidden="true">
               {appliesToSelected.map(v => (
-                <Chip key={v} size="base" onRemove={() => {}}>{v}</Chip>
+                <Chip key={v} size="sm" onRemove={() => {}}>{v}</Chip>
               ))}
             </div>
             <Popover.Root open={valueOpen} onOpenChange={setValueOpen}>
@@ -1923,10 +1923,10 @@ function AssignAssetModal({
                   ) : (
                     <>
                       {appliesToSelected.slice(0, appliesToVisibleCount).map(v => (
-                        <Chip key={v} size="base" title={v} onRemove={() => toggleAppliesToValue(v)}>{v}</Chip>
+                        <Chip key={v} size="sm" title={v} onRemove={() => toggleAppliesToValue(v)}>{v}</Chip>
                       ))}
                       {appliesToSelected.length - appliesToVisibleCount > 0 && (
-                        <Chip size="base">+{appliesToSelected.length - appliesToVisibleCount}</Chip>
+                        <Chip size="sm">+{appliesToSelected.length - appliesToVisibleCount}</Chip>
                       )}
                     </>
                   )}
