@@ -629,8 +629,6 @@ export default function PreventiveMaintenancePage() {
                           <td className="px-4 py-4 align-middle">
                             {assnCount === 0 ? (
                               <span className="text-[var(--color-neutral-5)]">—</span>
-                            ) : assnCount === 1 ? (
-                              <span className="text-[13px] text-[var(--color-neutral-9)] truncate max-w-[160px] block">{pm.schedules[0].assignments[0].asset}</span>
                             ) : (
                               <Tooltip
                                 side="right"
@@ -651,7 +649,7 @@ export default function PreventiveMaintenancePage() {
                                 }
                               >
                                 <span className="inline-flex items-center justify-center h-6 px-2.5 rounded-full bg-[var(--color-neutral-3)] text-[12px] font-semibold text-[var(--color-neutral-9)] cursor-default">
-                                  {assnCount} Assignments
+                                  {assnCount} Assignment{assnCount !== 1 ? 's' : ''}
                                 </span>
                               </Tooltip>
                             )}
@@ -786,10 +784,10 @@ export default function PreventiveMaintenancePage() {
                                     const missingTechCount = sched.assignments.filter(a => a.technicians.length === 0).length
                                     const schedHasError = sched.assignments.length === 0 || missingTechCount > 0
                                     return (
-                                      <div key={sched.id} className={`rounded-[8px] border overflow-hidden ${schedHasError ? 'border-[var(--color-error,#CE2C31)] shadow-[0_0_1px_3px_rgba(206,44,49,0.1)]' : 'border-[var(--color-accent-4)]'}`}>
+                                      <div key={sched.id} className={`rounded-[8px] border overflow-hidden ${schedHasError ? 'border-[var(--color-error,#CE2C31)] shadow-[0_0_1px_3px_rgba(206,44,49,0.1)]' : 'border-[var(--border-default)]'}`}>
                                         {/* Schedule card header */}
                                         <div
-                                          className="flex items-center gap-3 p-4 bg-[var(--color-accent-1)] cursor-pointer select-none"
+                                          className="flex items-center gap-3 p-4 bg-[var(--surface-secondary)] cursor-pointer select-none"
                                           onClick={() => toggleSched(pm.id, sched.id)}
                                         >
                                           <div className="flex-1 min-w-0">
@@ -815,7 +813,7 @@ export default function PreventiveMaintenancePage() {
                                               locations > 0 && `${locations} Location${locations !== 1 ? 's' : ''}`,
                                               meters > 0 && `${meters} Meter${meters !== 1 ? 's' : ''}`,
                                             ].filter(Boolean).map(label => (
-                                              <span key={label as string} className="rounded-full bg-[var(--color-accent-2)] text-[var(--color-accent-9)] text-[11px] px-2 py-0.5 font-medium shrink-0">
+                                              <span key={label as string} className="rounded-full bg-[var(--color-neutral-3)] text-[var(--color-neutral-9)] text-[11px] px-2 py-0.5 font-medium shrink-0">
                                                 {label}
                                               </span>
                                             ))

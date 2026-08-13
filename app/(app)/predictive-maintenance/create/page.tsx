@@ -256,6 +256,49 @@ function MiniCalendar({ iso, onSelect }: { iso: string; onSelect: (iso: string) 
   )
 }
 
+/**
+ * First work order a calendar trigger will produce for an assignment.
+ *
+ * Walks forward from the assignment's start date in `every`×`period` steps
+ * until it lands on or after today, so an assignment that started in the past
+ * previews its *next* occurrence rather than its first. Returns '' when the
+ * trigger isn't a computable calendar cadence (meter-only, after-completion,
+ * or incomplete), and null-equivalent '' past the assignment's end date.
+ */
+function nextTriggerIso(cal: CalendarTrigger | undefined, startIso: string, endIso: string): string {
+  if (!cal || cal.scheduleType !== 'Regular Interval') return ''
+  const n = parseInt(cal.every, 10)
+  if (!n || n < 1 || !cal.period || !startIso) return ''
+
+  const [y, m, d] = startIso.split('-').map(Number)
+  if (!y || !m || !d) return ''
+
+  const cursor = new Date(y, m - 1, d)
+  const today = new Date()
+  today.setHours(0, 0, 0, 0)
+
+  const step = () => {
+    switch (cal.period) {
+      case 'Day': cursor.setDate(cursor.getDate() + n); break
+      case 'Week': cursor.setDate(cursor.getDate() + n * 7); break
+      case 'Month': cursor.setMonth(cursor.getMonth() + n); break
+      case 'Year': cursor.setFullYear(cursor.getFullYear() + n); break
+      default: return false
+    }
+    return true
+  }
+
+  // Bounded so an unrecognised period or absurd range can't spin forever.
+  let guard = 0
+  while (cursor < today && guard++ < 500) {
+    if (!step()) return ''
+  }
+
+  const iso = `${cursor.getFullYear()}-${String(cursor.getMonth() + 1).padStart(2, '0')}-${String(cursor.getDate()).padStart(2, '0')}`
+  if (endIso && iso > endIso) return ''
+  return iso
+}
+
 function todayIso(): string {
   const d = new Date()
   const y = d.getFullYear()
@@ -2906,7 +2949,6 @@ function CreatePMPageContent() {
   const [novaOpen, setNovaOpen] = useState(false)
   const [submitted, setSubmitted] = useState(false)
   const [newTriggerIds, setNewTriggerIds] = useState<Set<string>>(new Set())
-  const [focusedTriggerIds, setFocusedTriggerIds] = useState<Set<string>>(new Set())
   const [skeletonAssignmentIds, setSkeletonAssignmentIds] = useState<Set<string>>(new Set())
   const [newAssignmentIds, setNewAssignmentIds] = useState<Set<string>>(new Set())
   const [skeletonTriggerIds, setSkeletonTriggerIds] = useState<Set<string>>(new Set())
@@ -3681,10 +3723,15 @@ function CreatePMPageContent() {
                     const hasMissingTech = trigger.assignments.some(a => a.assignees.length === 0 && !a.team)
                     const hasNoAssignments = !trigger.expanded && trigger.assignments.length === 0
                     const hasError = hasMissingMeters || hasMissingTech || hasNoAssignments
-                    const borderClass = hasError ? 'border-[var(--color-error,#CE2C31)]' : trigger.expanded ? 'border-[var(--color-accent-4)]' : 'border-[var(--border-default)]'
-                    const shadowClass = hasError ? 'shadow-[0_0_1px_3px_rgba(206,44,49,0.2)]' : focusedTriggerIds.has(trigger.id) ? 'shadow-[0_0_1px_3px_rgba(0,106,220,0.1)]' : ''
+                    // The expanded card is the focused one, so it wears the same
+                    // accent border + ring the form controls use when focused.
+                    const borderClass = hasError ? 'border-[var(--color-error,#CE2C31)]' : trigger.expanded ? 'border-[var(--color-accent-7)]' : 'border-[var(--border-default)]'
+                    const shadowClass = hasError ? 'shadow-[0_0_1px_3px_rgba(206,44,49,0.2)]' : trigger.expanded ? 'shadow-[0_0_1px_3px_rgba(0,106,220,0.1)]' : ''
+                    // Same hover/focus affordance as the form controls; suppressed while the
+                    // card is showing its error state so the red ring isn't overridden.
+                    const hoverClass = hasError ? '' : 'hover:border-[var(--color-accent-7)] hover:shadow-[0_0_1px_3px_rgba(0,106,220,0.1)] focus-within:border-[var(--color-accent-7)] focus-within:shadow-[0_0_1px_3px_rgba(0,106,220,0.1)]'
                     return (
-                    <div key={trigger.id} id={`trigger-card-${trigger.id}`} className={`rounded-[8px] border overflow-hidden ${borderClass} ${shadowClass} ${newTriggerIds.has(trigger.id) ? 'trigger-card-new' : ''}`}>
+                    <div key={trigger.id} id={`trigger-card-${trigger.id}`} className={`rounded-[8px] border overflow-hidden transition-[border-color,box-shadow] duration-[var(--duration-fast)] ${borderClass} ${shadowClass} ${hoverClass} ${newTriggerIds.has(trigger.id) ? 'trigger-card-new' : ''}`}>
                       {skeletonTriggerIds.has(trigger.id) ? (
                         <div className="flex flex-col bg-[var(--surface-primary)]">
                           <div className="flex items-center gap-3 px-4 py-4 bg-[var(--color-neutral-2)]">
@@ -3763,16 +3810,12 @@ function CreatePMPageContent() {
                             {(() => {
                               const assets = trigger.assignments.filter(a => a.type === 'Asset').length
                               const locations = trigger.assignments.filter(a => a.type === 'Location').length
-                              const meters = trigger.assignments.filter(a => a.type === 'Meter').length
-                              const techs = new Set(trigger.assignments.flatMap(a => a.assignees)).size
                               const pills = [
                                 assets > 0 && `${assets} Asset${assets !== 1 ? 's' : ''}`,
                                 locations > 0 && `${locations} Location${locations !== 1 ? 's' : ''}`,
-                                meters > 0 && `${meters} Meter${meters !== 1 ? 's' : ''}`,
-                                techs > 0 && `${techs} Technician${techs !== 1 ? 's' : ''}`,
                               ].filter(Boolean) as string[]
                               return pills.map(label => (
-                                <span key={label} className="rounded-full bg-[var(--color-accent-2)] text-[var(--color-accent-9)] text-[11px] px-2 py-0.5 font-medium">
+                                <span key={label} className="rounded-full bg-[var(--color-neutral-3)] text-[var(--color-neutral-9)] text-[11px] px-2 py-0.5 font-medium">
                                   {label}
                                 </span>
                               ))
@@ -4105,7 +4148,7 @@ function CreatePMPageContent() {
                                           <SortHeader col="meter" label="Meter" className="w-[120px] shrink-0" />
                                           <SortHeader col="user" label="Technicians" className="w-[96px] shrink-0" />
                                           <SortHeader col="team" label="Team" className="w-[80px] shrink-0" />
-                                          <SortHeader col="start" label="Start / End" className="w-[140px] shrink-0" />
+                                          <SortHeader col="start" label="Dates" className="w-[150px] shrink-0" />
                                         </>)
                                       })()}
                                       <span className="w-7 shrink-0" />
@@ -4278,10 +4321,24 @@ function CreatePMPageContent() {
                                           {/* Date range — inline edit */}
                                           <Popover.Root>
                                             <Popover.Trigger asChild>
-                                              <button className="w-[140px] shrink-0 flex flex-col justify-center items-start h-7 px-1.5 rounded-[var(--radius-md)] hover:bg-[var(--color-neutral-3)] transition-colors cursor-pointer outline-none text-[11px] text-[var(--color-neutral-8)]">
+                                              <button className="w-[150px] shrink-0 flex flex-col justify-center items-start py-1 px-1.5 rounded-[var(--radius-md)] hover:bg-[var(--color-neutral-3)] transition-colors cursor-pointer outline-none text-[11px] text-[var(--color-neutral-8)]">
                                                 {a.startDate && <span><span className="text-[10px] text-[var(--color-neutral-7)] uppercase tracking-wide">Start:</span> {displayDate(a.startDate)}</span>}
                                                 {a.endDate && <span><span className="text-[10px] text-[var(--color-neutral-7)] uppercase tracking-wide">End:</span> {displayDate(a.endDate)}</span>}
                                                 {!a.startDate && !a.endDate && <span>—</span>}
+                                                {(() => {
+                                                  const next = nextTriggerIso(trigger.calendarTrigger, a.startDate, a.endDate)
+                                                  if (next) return (
+                                                    <span className="text-[var(--color-neutral-11)] font-medium">
+                                                      <span className="text-[10px] text-[var(--color-neutral-7)] uppercase tracking-wide font-normal">Next:</span> {displayDate(next)}
+                                                    </span>
+                                                  )
+                                                  if (isMeterTrigger) return (
+                                                    <span className="text-[var(--color-neutral-7)]">
+                                                      <span className="text-[10px] uppercase tracking-wide">Next:</span> On reading
+                                                    </span>
+                                                  )
+                                                  return null
+                                                })()}
                                               </button>
                                             </Popover.Trigger>
                                             <Popover.Portal>
@@ -4364,10 +4421,8 @@ function CreatePMPageContent() {
             setTriggers(ts => [...ts.map(tr => ({ ...tr, expanded: false })), { id: newId, calendarTrigger: t, assignments: [], expanded: true }])
             setNewTriggerIds(s => new Set([...s, newId]))
             setSkeletonTriggerIds(s => new Set([...s, newId]))
-            setFocusedTriggerIds(s => new Set([...s, newId]))
             setTimeout(() => setNewTriggerIds(s => { const next = new Set(s); next.delete(newId); return next }), 600)
             setTimeout(() => setSkeletonTriggerIds(s => { const next = new Set(s); next.delete(newId); return next }), 1000)
-            setTimeout(() => setFocusedTriggerIds(s => { const next = new Set(s); next.delete(newId); return next }), 2500)
             setTimeout(() => {
               const el = document.getElementById(`trigger-card-${newId}`)
               el?.scrollIntoView({ behavior: 'smooth', block: 'nearest' })

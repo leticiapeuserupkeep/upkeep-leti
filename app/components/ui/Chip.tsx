@@ -3,6 +3,8 @@
 import React from 'react'
 import { X } from 'lucide-react'
 
+// `soft` is the quiet neutral fill used for tags sitting inside a form control,
+// where a blue chip would compete with the field's own focus colour.
 export type ChipStyle = 'solid' | 'surface' | 'outline' | 'soft'
 export type ChipSize = 'xs' | 'sm' | 'base' | 'lg'
 
@@ -44,7 +46,7 @@ const restStyles: Record<ChipStyle, string> = {
   solid: 'bg-[var(--chip-solid-bg)] text-[var(--chip-solid-fg)] border border-transparent',
   surface: 'bg-[var(--chip-surface-bg)] text-[var(--chip-surface-fg)] border border-[var(--chip-surface-border)]',
   outline: 'bg-transparent text-[var(--chip-outline-fg)] border border-[var(--chip-outline-border)]',
-  soft: 'bg-[var(--chip-surface-bg)] text-[var(--chip-surface-fg)] border border-transparent',
+  soft: 'bg-[var(--color-neutral-3)] text-[var(--color-neutral-11)] border border-transparent',
 }
 
 const interactiveStyles: Record<ChipStyle, string> = {
@@ -52,7 +54,7 @@ const interactiveStyles: Record<ChipStyle, string> = {
   surface:
     'hover:bg-[var(--chip-surface-bg-hover)] hover:border-[var(--chip-surface-border-hover)] active:bg-[var(--chip-surface-bg-pressed)] active:border-[var(--chip-surface-border-pressed)]',
   outline: 'hover:border-[var(--chip-outline-border-hover)] active:border-[var(--chip-outline-border-pressed)]',
-  soft: 'hover:bg-[var(--chip-surface-bg-hover)] active:bg-[var(--chip-surface-bg-pressed)]',
+  soft: 'hover:bg-[var(--color-neutral-4)] active:bg-[var(--color-neutral-5)]',
 }
 
 const disabledStyles: Record<ChipStyle, string> = {
