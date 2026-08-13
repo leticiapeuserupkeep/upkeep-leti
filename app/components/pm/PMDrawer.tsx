@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useRef, useCallback, type ReactNode } from 'react'
+import { useState, useEffect, useRef, useCallback, createContext, useContext, type ReactNode } from 'react'
 import {
   X, Pencil, Maximize2, MoreHorizontal, ChevronDown, ChevronUp, ChevronLeft, ChevronRight,
   Plus, Image as ImageIcon, FileText, ListChecks, CalendarClock, Flag,
@@ -84,16 +84,25 @@ function HeaderButton({ label, onClick, children }: { label: string; onClick?: (
   )
 }
 
+/** The section the reader is currently on, so the others can recede. */
+const ActiveTabContext = createContext<DrawerTab>('Details')
+
 /**
  * Collapsible section with a heading row. `action` sits to the left of the
  * collapse chevron so the chevron stays the rightmost affordance throughout.
+ * Sections belonging to another tab dim slightly, so the one being read leads.
  */
 function Section({
-  id, title, action, children, defaultOpen = true, className = '',
-}: { id?: string; title: string; action?: ReactNode; children: ReactNode; defaultOpen?: boolean; className?: string }) {
+  id, tabKey, title, action, children, defaultOpen = true, className = '',
+}: { id?: string; tabKey?: DrawerTab; title: string; action?: ReactNode; children: ReactNode; defaultOpen?: boolean; className?: string }) {
   const [open, setOpen] = useState(defaultOpen)
+  const activeTab = useContext(ActiveTabContext)
+  const dimmed = !!tabKey && tabKey !== activeTab
   return (
-    <section id={id} className={`px-5 py-5 border-b border-[var(--border-subtle)] last:border-0 ${className}`}>
+    <section
+      id={id}
+      className={`px-5 py-5 border-b border-[var(--border-subtle)] last:border-0 transition-opacity duration-500 ease-out ${dimmed ? 'opacity-45' : 'opacity-100'} ${className}`}
+    >
       <div className="flex items-center justify-between gap-3 mb-4">
         <h3 className="text-[16px] font-semibold text-[var(--color-neutral-12)]">{title}</h3>
         <div className="flex items-center gap-2 shrink-0">
@@ -136,6 +145,10 @@ function CountPill({ children }: { children: ReactNode }) {
 export function PMDrawer({ pm, onClose, onEdit, initialTab = 'Details' }: PMDrawerProps) {
   const [tab, setTab] = useState<DrawerTab>('Details')
   const [descExpanded, setDescExpanded] = useState(false)
+  // Whether the description is actually long enough to be clamped — the toggle
+  // is pointless when the whole thing already fits.
+  const [descOverflows, setDescOverflows] = useState(false)
+  const descRef = useRef<HTMLParagraphElement>(null)
   const bodyRef = useRef<HTMLDivElement>(null)
   // Suppresses the scroll spy while a tab-initiated smooth scroll is in flight,
   // so the active tab doesn't flicker through the sections it passes over.
@@ -155,6 +168,17 @@ export function PMDrawer({ pm, onClose, onEdit, initialTab = 'Details' }: PMDraw
     })
     return () => cancelAnimationFrame(frame)
   }, [pm?.id, initialTab])
+
+  useEffect(() => {
+    const el = descRef.current
+    if (!el) { setDescOverflows(false); return }
+    // Only measurable while clamped; expanded, the text always fits its own box.
+    const measure = () => { if (!descExpanded) setDescOverflows(el.scrollHeight > el.clientHeight + 1) }
+    measure()
+    const ro = new ResizeObserver(measure)
+    ro.observe(el)
+    return () => ro.disconnect()
+  }, [pm?.id, pm?.description, descExpanded])
 
   const goToSection = useCallback((t: DrawerTab) => {
     setTab(t)
@@ -202,7 +226,7 @@ export function PMDrawer({ pm, onClose, onEdit, initialTab = 'Details' }: PMDraw
 
       {/* Drawer */}
       <div
-        className={`fixed top-0 right-0 h-full w-[680px] max-w-[94vw] z-50 flex flex-col bg-[var(--surface-primary)] border-l border-[var(--border-default)] shadow-[var(--shadow-xl)] transition-transform duration-300 ease-[cubic-bezier(0.32,0.72,0,1)] ${isOpen ? 'translate-x-0' : 'translate-x-full'}`}
+        className={`fixed top-0 right-0 h-full w-[730px] max-w-[94vw] z-50 flex flex-col bg-[var(--surface-primary)] border-l border-[var(--border-default)] shadow-[var(--shadow-xl)] transition-transform duration-300 ease-[cubic-bezier(0.32,0.72,0,1)] ${isOpen ? 'translate-x-0' : 'translate-x-full'}`}
       >
         {pm && (
           <>
@@ -223,16 +247,18 @@ export function PMDrawer({ pm, onClose, onEdit, initialTab = 'Details' }: PMDraw
               {/* Description */}
               {pm.description && (
                 <div className="mb-4">
-                  <p className={`text-[length:var(--control-font-size-base)] text-[var(--color-neutral-9)] leading-6 ${!descExpanded ? 'line-clamp-2' : ''}`}>
+                  <p ref={descRef} className={`text-[length:var(--control-font-size-base)] text-[var(--color-neutral-9)] leading-6 ${!descExpanded ? 'line-clamp-2' : ''}`}>
                     {pm.description}
                   </p>
-                  <button
-                    onClick={() => setDescExpanded(p => !p)}
-                    className="flex items-center gap-1 text-[13px] font-medium text-[var(--color-accent-9)] hover:underline mt-1 cursor-pointer"
-                  >
-                    {descExpanded ? <ChevronUp size={13} /> : <ChevronDown size={13} />}
-                    {descExpanded ? 'Show Less' : 'Show Full Description'}
-                  </button>
+                  {(descOverflows || descExpanded) && (
+                    <button
+                      onClick={() => setDescExpanded(p => !p)}
+                      className="flex items-center gap-1 text-[13px] font-medium text-[var(--color-accent-9)] hover:underline mt-1 cursor-pointer"
+                    >
+                      {descExpanded ? <ChevronUp size={13} /> : <ChevronDown size={13} />}
+                      {descExpanded ? 'Show Less' : 'Show Full Description'}
+                    </button>
+                  )}
                 </div>
               )}
 
@@ -256,7 +282,9 @@ export function PMDrawer({ pm, onClose, onEdit, initialTab = 'Details' }: PMDraw
 
             {/* Body — one continuous page; the tabs scroll to a section within it */}
             <div ref={bodyRef} className="relative flex-1 overflow-y-auto">
-              <DetailsTab pm={pm} />
+              <ActiveTabContext.Provider value={tab}>
+                <DetailsTab pm={pm} />
+              </ActiveTabContext.Provider>
             </div>
           </>
         )}
@@ -273,7 +301,7 @@ function DetailsTab({ pm }: { pm: PMItem }) {
   return (
     <div className="flex flex-col">
       {/* Details card */}
-      <Section id="pm-details" title="Details">
+      <Section id="pm-details" tabKey="Details" title="Details">
         <div className="rounded-[var(--radius-xl)] border border-[var(--border-default)] px-4 py-1">
           <FieldRow label="Category">{pm.category}</FieldRow>
           <FieldRow label="Priority">
@@ -290,6 +318,7 @@ function DetailsTab({ pm }: { pm: PMItem }) {
 
       {/* Images */}
       <Section
+        tabKey="Details"
         title="Images"
         action={
           <>
@@ -322,6 +351,7 @@ function DetailsTab({ pm }: { pm: PMItem }) {
 
       {/* Files */}
       <Section
+        tabKey="Details"
         title="Files"
         action={
           <>
@@ -339,6 +369,7 @@ function DetailsTab({ pm }: { pm: PMItem }) {
       {/* Tasks & Checklists */}
       <Section
         id="pm-tasks"
+        tabKey="Tasks"
         title="Tasks & Checklists"
         action={<Button variant="secondary" size="md"><Plus size={13} /> Add</Button>}
       >
@@ -360,7 +391,7 @@ function DetailsTab({ pm }: { pm: PMItem }) {
       <SchedulesSection pm={pm} />
 
       {/* Work Orders */}
-      <Section id="pm-work-orders" title="Work Orders" action={<CountPill>{woCount}</CountPill>}>
+      <Section id="pm-work-orders" tabKey="Work Orders" title="Work Orders" action={<CountPill>{woCount}</CountPill>}>
         <WorkOrderList pm={pm} />
       </Section>
 
@@ -385,7 +416,7 @@ function SchedulesSection({ pm }: { pm: PMItem }) {
   )
 
   return (
-    <Section id="pm-schedules" title="Schedules" action={<Button variant="secondary" size="md"><Plus size={13} /> Add</Button>}>
+    <Section id="pm-schedules" tabKey="Schedules" title="Schedules" action={<Button variant="secondary" size="md"><Plus size={13} /> Add</Button>}>
       {body}
     </Section>
   )
@@ -412,7 +443,7 @@ function ScheduleCard({ sched }: { sched: PMSchedule }) {
             </>
           )}
         </div>
-        <Chip size="sm" variant={count === 0 ? 'outline' : 'surface'}>
+        <Chip size="sm" variant="soft" className="!text-[12px]">
           {count === 0 ? 'No Assignments' : `${count} Assignment${count !== 1 ? 's' : ''}`}
         </Chip>
         <button
@@ -433,8 +464,8 @@ function ScheduleCard({ sched }: { sched: PMSchedule }) {
             <span className="flex-1 min-w-0 text-[11px] font-medium uppercase tracking-wide text-[var(--color-neutral-8)]">Assignments</span>
             <span className="w-[70px] shrink-0 text-[11px] font-medium uppercase tracking-wide text-[var(--color-neutral-8)]">Meter</span>
             <span className="w-[64px] shrink-0 text-[11px] font-medium uppercase tracking-wide text-[var(--color-neutral-8)]">Techs</span>
-            <span className="w-[92px] shrink-0 text-[11px] font-medium uppercase tracking-wide text-[var(--color-neutral-8)]">Work Orders</span>
-            <span className="w-[92px] shrink-0 text-[11px] font-medium uppercase tracking-wide text-[var(--color-neutral-8)]">Start / End</span>
+            <span className="w-[80px] shrink-0 text-[11px] font-medium uppercase tracking-wide text-[var(--color-neutral-8)]">Start / End</span>
+            <span className="w-[78px] shrink-0 text-[11px] font-medium uppercase tracking-wide text-[var(--color-neutral-8)]">Next Due</span>
           </div>
           {/* Rows */}
           <div className="divide-y divide-[var(--border-subtle)]">
@@ -455,15 +486,15 @@ function ScheduleCard({ sched }: { sched: PMSchedule }) {
                     ? <AvatarRow techs={a.technicians} extra={a.extraTechs} />
                     : <span className="text-[12px] text-[var(--color-neutral-7)]">—</span>}
                 </div>
-                <div className="w-[92px] shrink-0 flex flex-col gap-0.5">
-                  {a.lastWO && <span className="text-[11px] text-[var(--color-neutral-8)] leading-4">Last: {a.lastWO}</span>}
-                  {a.nextWO && <span className="text-[11px] text-[var(--color-neutral-12)] font-medium leading-4">Next: {a.nextWO}</span>}
-                  {!a.lastWO && !a.nextWO && <span className="text-[12px] text-[var(--color-neutral-7)]">—</span>}
-                </div>
-                <div className="w-[92px] shrink-0 flex flex-col gap-0.5">
+                <div className="w-[80px] shrink-0 flex flex-col gap-0.5">
                   {a.startDate && <span className="text-[11px] text-[var(--color-neutral-8)] leading-4">Start: {a.startDate}</span>}
                   {a.endDate && <span className="text-[11px] text-[var(--color-neutral-8)] leading-4">End: {a.endDate}</span>}
                   {!a.startDate && !a.endDate && <span className="text-[12px] text-[var(--color-neutral-7)]">—</span>}
+                </div>
+                <div className="w-[78px] shrink-0">
+                  {a.nextWO
+                    ? <span className="text-[12px] font-semibold text-[var(--color-neutral-12)] leading-4">{a.nextWO}</span>
+                    : <span className="text-[11px] text-[var(--color-neutral-7)]">—</span>}
                 </div>
               </div>
             ))}
