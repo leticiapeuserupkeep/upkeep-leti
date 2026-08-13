@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, type ReactNode } from 'react'
+import { useState, useEffect, useRef, useCallback, type ReactNode } from 'react'
 import {
   X, Pencil, Maximize2, MoreHorizontal, ChevronDown, ChevronUp, ChevronLeft, ChevronRight,
   Plus, Image as ImageIcon, FileText, ListChecks, CalendarClock, ClipboardList, Flag,
@@ -37,11 +37,12 @@ interface PMDrawerProps {
 
 type DrawerTab = 'Details' | 'Tasks' | 'Schedules' | 'Work Orders'
 
-const TABS: { key: DrawerTab; icon: React.ElementType }[] = [
-  { key: 'Details', icon: FileText },
-  { key: 'Tasks', icon: ListChecks },
-  { key: 'Schedules', icon: CalendarClock },
-  { key: 'Work Orders', icon: ClipboardList },
+/** Tabs scroll the single page to their section rather than swapping content. */
+const TABS: { key: DrawerTab; icon: React.ElementType; section: string }[] = [
+  { key: 'Details', icon: FileText, section: 'pm-details' },
+  { key: 'Tasks', icon: ListChecks, section: 'pm-tasks' },
+  { key: 'Schedules', icon: CalendarClock, section: 'pm-schedules' },
+  { key: 'Work Orders', icon: ClipboardList, section: 'pm-work-orders' },
 ]
 
 const PRIORITY_COLOR: Record<string, string> = {
@@ -86,11 +87,11 @@ function HeaderButton({ label, onClick, children }: { label: string; onClick?: (
  * collapse chevron so the chevron stays the rightmost affordance throughout.
  */
 function Section({
-  title, action, children, defaultOpen = true, className = '',
-}: { title: string; action?: ReactNode; children: ReactNode; defaultOpen?: boolean; className?: string }) {
+  id, title, action, children, defaultOpen = true, className = '',
+}: { id?: string; title: string; action?: ReactNode; children: ReactNode; defaultOpen?: boolean; className?: string }) {
   const [open, setOpen] = useState(defaultOpen)
   return (
-    <section className={`px-5 py-5 border-b border-[var(--border-subtle)] last:border-0 ${className}`}>
+    <section id={id} className={`px-5 py-5 border-b border-[var(--border-subtle)] last:border-0 ${className}`}>
       <div className="flex items-center justify-between gap-3 mb-4">
         <h3 className="text-[16px] font-semibold text-[var(--color-neutral-12)]">{title}</h3>
         <div className="flex items-center gap-2 shrink-0">
@@ -133,9 +134,51 @@ function CountPill({ children }: { children: ReactNode }) {
 export function PMDrawer({ pm, onClose, onEdit }: PMDrawerProps) {
   const [tab, setTab] = useState<DrawerTab>('Details')
   const [descExpanded, setDescExpanded] = useState(false)
+  const bodyRef = useRef<HTMLDivElement>(null)
+  // Suppresses the scroll spy while a tab-initiated smooth scroll is in flight,
+  // so the active tab doesn't flicker through the sections it passes over.
+  const scrollingTo = useRef<DrawerTab | null>(null)
 
-  // Reset tab when PM changes
-  useEffect(() => { setTab('Details'); setDescExpanded(false) }, [pm?.id])
+  // Reset when PM changes
+  useEffect(() => {
+    setTab('Details')
+    setDescExpanded(false)
+    if (bodyRef.current) bodyRef.current.scrollTop = 0
+  }, [pm?.id])
+
+  const goToSection = useCallback((t: DrawerTab) => {
+    setTab(t)
+    const body = bodyRef.current
+    const target = TABS.find(x => x.key === t)
+    if (!body || !target) return
+    const el = body.querySelector<HTMLElement>(`#${target.section}`)
+    if (!el) return
+    scrollingTo.current = t
+    body.scrollTo({ top: el.offsetTop, behavior: 'smooth' })
+  }, [])
+
+  // Scroll spy: the active tab follows whichever section header is at the top.
+  useEffect(() => {
+    const body = bodyRef.current
+    if (!body || !pm) return
+    const onScroll = () => {
+      if (scrollingTo.current) {
+        const target = TABS.find(x => x.key === scrollingTo.current)
+        const el = target && body.querySelector<HTMLElement>(`#${target.section}`)
+        // Settled close enough to the target — hand control back to the spy.
+        if (el && Math.abs(body.scrollTop - el.offsetTop) < 4) scrollingTo.current = null
+        return
+      }
+      let current: DrawerTab = TABS[0].key
+      for (const t of TABS) {
+        const el = body.querySelector<HTMLElement>(`#${t.section}`)
+        if (el && el.offsetTop - body.scrollTop <= 8) current = t.key
+      }
+      setTab(prev => (prev === current ? prev : current))
+    }
+    body.addEventListener('scroll', onScroll, { passive: true })
+    return () => body.removeEventListener('scroll', onScroll)
+  }, [pm?.id])
 
   const isOpen = pm !== null
 
@@ -188,7 +231,7 @@ export function PMDrawer({ pm, onClose, onEdit }: PMDrawerProps) {
                 {TABS.map(({ key, icon: Icon }) => (
                   <button
                     key={key}
-                    onClick={() => setTab(key)}
+                    onClick={() => goToSection(key)}
                     className={`flex items-center gap-1.5 px-3 h-10 text-[length:var(--control-font-size-base)] font-medium border-b-2 transition-colors cursor-pointer ${
                       tab === key
                         ? 'border-[var(--color-accent-9)] text-[var(--color-accent-9)]'
@@ -202,12 +245,9 @@ export function PMDrawer({ pm, onClose, onEdit }: PMDrawerProps) {
               </div>
             </div>
 
-            {/* Body */}
-            <div className="flex-1 overflow-y-auto">
-              {tab === 'Details' && <DetailsTab pm={pm} />}
-              {tab === 'Schedules' && <SchedulesSection pm={pm} standalone />}
-              {tab === 'Tasks' && <TasksTab pm={pm} />}
-              {tab === 'Work Orders' && <WorkOrdersTab pm={pm} />}
+            {/* Body — one continuous page; the tabs scroll to a section within it */}
+            <div ref={bodyRef} className="relative flex-1 overflow-y-auto">
+              <DetailsTab pm={pm} />
             </div>
           </>
         )}
@@ -224,7 +264,7 @@ function DetailsTab({ pm }: { pm: PMItem }) {
   return (
     <div className="flex flex-col">
       {/* Details card */}
-      <Section title="Details">
+      <Section id="pm-details" title="Details">
         <div className="rounded-[var(--radius-xl)] border border-[var(--border-default)] px-4 py-1">
           <FieldRow label="Category">{pm.category}</FieldRow>
           <FieldRow label="Priority">
@@ -289,6 +329,7 @@ function DetailsTab({ pm }: { pm: PMItem }) {
 
       {/* Tasks & Checklists */}
       <Section
+        id="pm-tasks"
         title="Tasks & Checklists"
         action={<Button variant="secondary" size="md"><Plus size={13} /> Add</Button>}
       >
@@ -310,16 +351,19 @@ function DetailsTab({ pm }: { pm: PMItem }) {
       <SchedulesSection pm={pm} />
 
       {/* Work Orders */}
-      <Section title="Work Orders" action={<CountPill>{woCount}</CountPill>}>
+      <Section id="pm-work-orders" title="Work Orders" action={<CountPill>{woCount}</CountPill>}>
         <WorkOrderList pm={pm} />
       </Section>
+
+      {/* Lets the last section scroll up to the top of the viewport */}
+      <div aria-hidden className="h-[60vh] shrink-0" />
     </div>
   )
 }
 
 // ── Schedules ────────────────────────────────────────────────────────────────
 
-function SchedulesSection({ pm, standalone = false }: { pm: PMItem; standalone?: boolean }) {
+function SchedulesSection({ pm }: { pm: PMItem }) {
   const body = pm.schedules.length === 0 ? (
     <div className="flex flex-col items-center justify-center py-10 gap-2 text-center">
       <CalendarClock size={26} className="text-[var(--color-neutral-5)]" />
@@ -331,10 +375,8 @@ function SchedulesSection({ pm, standalone = false }: { pm: PMItem; standalone?:
     </div>
   )
 
-  if (standalone) return <div className="flex flex-col">{body === null ? null : <div className="p-5">{body}</div>}</div>
-
   return (
-    <Section title="Schedules" action={<Button variant="secondary" size="md"><Plus size={13} /> Add</Button>}>
+    <Section id="pm-schedules" title="Schedules" action={<Button variant="secondary" size="md"><Plus size={13} /> Add</Button>}>
       {body}
     </Section>
   )
@@ -423,31 +465,6 @@ function ScheduleCard({ sched }: { sched: PMSchedule }) {
   )
 }
 
-// ── Tasks Tab ────────────────────────────────────────────────────────────────
-
-function TasksTab({ pm }: { pm: PMItem }) {
-  if (pm.checklists && pm.checklists.length > 0) {
-    return (
-      <div className="flex flex-col gap-2 p-5">
-        {pm.checklists.map((cl, i) => (
-          <div key={i} className="flex items-center gap-2.5 px-3 h-10 rounded-[var(--radius-lg)] border border-[var(--border-default)]">
-            <ListChecks size={15} className="text-[var(--color-neutral-7)] shrink-0" />
-            <span className="text-[length:var(--control-font-size-base)] text-[var(--color-neutral-11)] truncate">{cl}</span>
-          </div>
-        ))}
-      </div>
-    )
-  }
-  return (
-    <div className="flex flex-col items-center justify-center py-16 gap-2 text-center px-6">
-      <ListChecks size={28} className="text-[var(--color-neutral-5)]" />
-      <p className="text-[13px] font-medium text-[var(--color-neutral-8)]">No tasks yet</p>
-      <p className="text-[12px] text-[var(--color-neutral-8)] pb-3">Add tasks and checklists to this PM to track completion.</p>
-      <Button variant="primary" size="lg"><Plus size={16} /> Add Task</Button>
-    </div>
-  )
-}
-
 // ── Work Orders ──────────────────────────────────────────────────────────────
 
 function buildWorkOrders(pm: PMItem) {
@@ -483,18 +500,4 @@ function WorkOrderList({ pm }: { pm: PMItem }) {
       ))}
     </div>
   )
-}
-
-function WorkOrdersTab({ pm }: { pm: PMItem }) {
-  const wos = buildWorkOrders(pm)
-  if (wos.length === 0) {
-    return (
-      <div className="flex flex-col items-center justify-center py-16 gap-2 text-center px-6">
-        <ClipboardList size={28} className="text-[var(--color-neutral-5)]" />
-        <p className="text-[13px] font-medium text-[var(--color-neutral-8)]">No work orders yet</p>
-        <p className="text-[12px] text-[var(--color-neutral-8)]">Work orders will appear here once this PM is active.</p>
-      </div>
-    )
-  }
-  return <div className="p-5"><WorkOrderList pm={pm} /></div>
 }
