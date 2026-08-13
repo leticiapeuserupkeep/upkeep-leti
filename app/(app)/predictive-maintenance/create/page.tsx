@@ -2910,6 +2910,21 @@ function CreatePMPageContent() {
   // Only one schedule card reads as focused at a time, even when several are
   // expanded — the last one the user touched.
   const [activeTriggerId, setActiveTriggerId] = useState<string | null>(null)
+
+  // Clicking away from every schedule card clears the focus. Popovers and modals
+  // render in portals outside the card, so they count as inside.
+  useEffect(() => {
+    if (!activeTriggerId) return
+    const onPointerDown = (e: MouseEvent) => {
+      const t = e.target as HTMLElement | null
+      if (!t) return
+      if (t.closest('[data-radix-popper-content-wrapper]') || t.closest('[role="dialog"]')) return
+      if (t.closest('[id^="trigger-card-"]')) return
+      setActiveTriggerId(null)
+    }
+    document.addEventListener('mousedown', onPointerDown)
+    return () => document.removeEventListener('mousedown', onPointerDown)
+  }, [activeTriggerId])
   const [showCalendarModal, setShowCalendarModal] = useState(false)
   const [calendarModalKey, setCalendarModalKey] = useState(0)
   const [editingTriggerId, setEditingTriggerId] = useState<string | null>(null)
@@ -3713,8 +3728,10 @@ function CreatePMPageContent() {
                     const isActive = activeTriggerId === trigger.id
                     const borderClass = hasError ? 'border-[var(--color-error,#CE2C31)]' : isActive ? 'border-[var(--color-accent-7)]' : 'border-[var(--border-default)]'
                     const shadowClass = hasError ? 'shadow-[0_0_1px_3px_rgba(206,44,49,0.2)]' : isActive ? 'shadow-[0_0_1px_3px_rgba(0,106,220,0.1)]' : ''
+                    // Hover previews the focus ring; the error ring stays untouched.
+                    const hoverClass = hasError || isActive ? '' : 'hover:border-[var(--color-accent-7)] hover:shadow-[0_0_1px_3px_rgba(0,106,220,0.1)]'
                     return (
-                    <div key={trigger.id} id={`trigger-card-${trigger.id}`} className={`rounded-[8px] border overflow-hidden transition-[border-color,box-shadow] duration-[var(--duration-fast)] ${borderClass} ${shadowClass} ${newTriggerIds.has(trigger.id) ? 'trigger-card-new' : ''}`}>
+                    <div key={trigger.id} id={`trigger-card-${trigger.id}`} className={`rounded-[8px] border overflow-hidden transition-[border-color,box-shadow] duration-[var(--duration-fast)] ${borderClass} ${shadowClass} ${hoverClass} ${newTriggerIds.has(trigger.id) ? 'trigger-card-new' : ''}`}>
                       {skeletonTriggerIds.has(trigger.id) ? (
                         <div className="flex flex-col bg-[var(--surface-primary)]">
                           <div className="flex items-center gap-3 px-4 py-4 bg-[var(--color-neutral-2)]">
