@@ -265,49 +265,6 @@ function MiniCalendar({ iso, onSelect }: { iso: string; onSelect: (iso: string) 
   )
 }
 
-/**
- * First work order a calendar trigger will produce for an assignment.
- *
- * Walks forward from the assignment's start date in `every`×`period` steps
- * until it lands on or after today, so an assignment that started in the past
- * previews its *next* occurrence rather than its first. Returns '' when the
- * trigger isn't a computable calendar cadence (meter-only, after-completion,
- * or incomplete), and null-equivalent '' past the assignment's end date.
- */
-function nextTriggerIso(cal: CalendarTrigger | undefined, startIso: string, endIso: string): string {
-  if (!cal || cal.scheduleType !== 'Regular Interval') return ''
-  const n = parseInt(cal.every, 10)
-  if (!n || n < 1 || !cal.period || !startIso) return ''
-
-  const [y, m, d] = startIso.split('-').map(Number)
-  if (!y || !m || !d) return ''
-
-  const cursor = new Date(y, m - 1, d)
-  const today = new Date()
-  today.setHours(0, 0, 0, 0)
-
-  const step = () => {
-    switch (cal.period) {
-      case 'Day': cursor.setDate(cursor.getDate() + n); break
-      case 'Week': cursor.setDate(cursor.getDate() + n * 7); break
-      case 'Month': cursor.setMonth(cursor.getMonth() + n); break
-      case 'Year': cursor.setFullYear(cursor.getFullYear() + n); break
-      default: return false
-    }
-    return true
-  }
-
-  // Bounded so an unrecognised period or absurd range can't spin forever.
-  let guard = 0
-  while (cursor < today && guard++ < 500) {
-    if (!step()) return ''
-  }
-
-  const iso = `${cursor.getFullYear()}-${String(cursor.getMonth() + 1).padStart(2, '0')}-${String(cursor.getDate()).padStart(2, '0')}`
-  if (endIso && iso > endIso) return ''
-  return iso
-}
-
 function todayIso(): string {
   const d = new Date()
   const y = d.getFullYear()
@@ -4231,7 +4188,6 @@ function CreatePMPageContent() {
                                           <Popover.Root>
                                             <Popover.Trigger asChild>
                                               <button
-                                                title={a.meter || undefined}
                                                 className={`w-[120px] shrink-0 h-7 flex items-center px-1 rounded-[var(--radius-md)] text-left text-[12px] truncate outline-none cursor-pointer hover:bg-[var(--color-neutral-3)] transition-colors ${isMeterTrigger && !a.meter ? 'text-[var(--color-error,#CE2C31)] font-medium' : 'text-[var(--color-neutral-11)]'}`}
                                               >
                                                 {(() => {
@@ -4241,7 +4197,18 @@ function CreatePMPageContent() {
                                                   return (<>
                                                     <span className="truncate">{ms[0]}</span>
                                                     {ms.length > 1 && (
-                                                      <span className="ml-1 shrink-0 inline-flex items-center h-[18px] px-1 rounded-[4px] text-[10px] font-medium bg-[var(--color-neutral-3)] text-[var(--color-neutral-9)]">+{ms.length - 1}</span>
+                                                      <TooltipProvider delayDuration={200}>
+                                                        <Tooltip
+                                                          side="top"
+                                                          content={
+                                                            <div className="flex flex-col gap-0.5 py-0.5">
+                                                              {ms.map(m => <span key={m} className="text-[12px] leading-5">{m}</span>)}
+                                                            </div>
+                                                          }
+                                                        >
+                                                          <span className="ml-1 shrink-0 inline-flex items-center h-[18px] px-1 rounded-[4px] text-[10px] font-medium bg-[var(--color-neutral-3)] text-[var(--color-neutral-9)]">+{ms.length - 1}</span>
+                                                        </Tooltip>
+                                                      </TooltipProvider>
                                                     )}
                                                   </>)
                                                 })()}
@@ -4343,23 +4310,8 @@ function CreatePMPageContent() {
                                           <Popover.Root>
                                             <Popover.Trigger asChild>
                                               <button className="w-[150px] shrink-0 flex flex-col justify-center items-start py-1 px-1.5 rounded-[var(--radius-md)] hover:bg-[var(--color-neutral-3)] transition-colors cursor-pointer outline-none text-[11px] text-[var(--color-neutral-8)]">
-                                                {a.startDate && <span><span className="text-[10px] text-[var(--color-neutral-8)] uppercase tracking-wide">Start:</span> {displayDate(a.startDate)}</span>}
-                                                {a.endDate && <span><span className="text-[10px] text-[var(--color-neutral-8)] uppercase tracking-wide">End:</span> {displayDate(a.endDate)}</span>}
-                                                {!a.startDate && !a.endDate && <span>—</span>}
-                                                {(() => {
-                                                  const next = nextTriggerIso(trigger.calendarTrigger, a.startDate, a.endDate)
-                                                  if (next) return (
-                                                    <span className="text-[var(--color-neutral-11)] font-medium">
-                                                      <span className="text-[10px] text-[var(--color-neutral-8)] uppercase tracking-wide font-normal">Next:</span> {displayDate(next)}
-                                                    </span>
-                                                  )
-                                                  if (isMeterTrigger) return (
-                                                    <span className="text-[var(--color-neutral-7)]">
-                                                      <span className="text-[10px] uppercase tracking-wide">Next:</span> On reading
-                                                    </span>
-                                                  )
-                                                  return null
-                                                })()}
+                                                <span><span className="text-[10px] text-[var(--color-neutral-8)] uppercase tracking-wide">Start:</span> {a.startDate ? displayDate(a.startDate) : '—'}</span>
+                                                <span><span className="text-[10px] text-[var(--color-neutral-8)] uppercase tracking-wide">End:</span> {a.endDate ? displayDate(a.endDate) : '—'}</span>
                                               </button>
                                             </Popover.Trigger>
                                             <Popover.Portal>
