@@ -604,10 +604,10 @@ export default function PreventiveMaintenancePage() {
                                     side="bottom"
                                     sideOffset={6}
                                     content={
-                                      <div className="flex flex-col gap-1 py-0.5">
-                                        {pm.schedules.slice(1).map((s, i) => (
+                                      <div className="flex flex-col gap-1 py-0.5 max-w-[280px]">
+                                        {pm.schedules.map((s, i) => (
                                           <span key={i} className="text-[12px] leading-5">
-                                            {s.calendarTrigger.replace(/\s*·\s*On\s+\w+/i, '').replace(/\s*·\s*At\s+\d+:\d+\s*(AM|PM)?/i, '')}
+                                            {s.calendarTrigger}{s.meterTrigger ? ` or ${s.meterTrigger}` : ''}
                                           </span>
                                         ))}
                                       </div>
@@ -637,8 +637,11 @@ export default function PreventiveMaintenancePage() {
                                 sideOffset={8}
                                 content={
                                   <div className="flex flex-col gap-2 min-w-[160px] max-w-[240px]">
-                                    {pm.schedules.filter(s => s.assignments.length > 0).map(sched => (
+                                    {pm.schedules.filter(s => s.assignments.length > 0).map((sched, si) => (
                                       <div key={sched.id}>
+                                        <div className="text-[10px] font-semibold text-white uppercase tracking-wide mb-1">
+                                          {sched.calendarTrigger || sched.meterTrigger || `Schedule ${si + 1}`}
+                                        </div>
                                         {sched.assignments.map(a => (
                                           <div key={a.id} className="text-[12px] text-white/90 py-0.5">{a.asset}</div>
                                         ))}
@@ -849,6 +852,7 @@ export default function PreventiveMaintenancePage() {
                                                 {/* Column headers */}
                                                 <div className="flex items-center gap-5 px-3 h-[40px] bg-[#F9F9FB]">
                                                   <span className="text-[11px] font-medium uppercase tracking-wide text-[var(--color-neutral-8)] flex-1 min-w-0">Applies To</span>
+                                                  <span className="text-[11px] font-medium uppercase tracking-wide text-[var(--color-neutral-8)] w-[120px] shrink-0">Meter</span>
                                                   <span className="text-[11px] font-medium uppercase tracking-wide text-[var(--color-neutral-8)] w-[90px] shrink-0">Technicians</span>
                                                   <span className="text-[11px] font-medium uppercase tracking-wide text-[var(--color-neutral-8)] w-[100px] shrink-0">Start / End</span>
                                                   <span className="text-[11px] font-medium uppercase tracking-wide text-[var(--color-neutral-8)] w-[140px] shrink-0">Work Orders</span>
@@ -864,22 +868,16 @@ export default function PreventiveMaintenancePage() {
                                                         <span className="font-medium text-[var(--color-neutral-12)] truncate">{a.asset}</span>
                                                         <span className="shrink-0 inline-flex items-center h-[18px] px-1.5 rounded-[4px] text-[10px] font-medium bg-[var(--color-neutral-3)] text-[var(--color-neutral-9)]">{a.assetType}</span>
                                                       </div>
-                                                      {a.assetType === 'Meter' ? (
-                                                        <>
-                                                          <span className="text-[11px] text-[var(--color-neutral-11)] truncate"><span className="text-[10px] text-[var(--color-neutral-7)] uppercase tracking-wide">Asset:</span> —</span>
-                                                          <span className="text-[11px] text-[var(--color-neutral-11)] truncate"><span className="text-[10px] text-[var(--color-neutral-7)] uppercase tracking-wide">Location:</span> {a.location || '—'}</span>
-                                                        </>
-                                                      ) : a.assetType === 'Location' ? (
-                                                        <>
-                                                          <span className="text-[11px] text-[var(--color-neutral-11)] truncate"><span className="text-[10px] text-[var(--color-neutral-7)] uppercase tracking-wide">Asset:</span> —</span>
-                                                          <span className="text-[11px] text-[var(--color-neutral-11)] truncate"><span className="text-[10px] text-[var(--color-neutral-7)] uppercase tracking-wide">Meter:</span> {a.meter || '—'}</span>
-                                                        </>
+                                                      {a.assetType === 'Asset' ? (
+                                                        <span className="text-[11px] text-[var(--color-neutral-11)] truncate"><span className="text-[10px] text-[var(--color-neutral-7)] uppercase tracking-wide">Location:</span> {a.location || '—'}</span>
+                                                      ) : a.assetType === 'Meter' ? (
+                                                        <span className="text-[11px] text-[var(--color-neutral-11)] truncate"><span className="text-[10px] text-[var(--color-neutral-7)] uppercase tracking-wide">Location:</span> {a.location || '—'}</span>
                                                       ) : (
-                                                        <>
-                                                          <span className="text-[11px] text-[var(--color-neutral-11)] truncate"><span className="text-[10px] text-[var(--color-neutral-7)] uppercase tracking-wide">Location:</span> {a.location || '—'}</span>
-                                                          <span className="text-[11px] text-[var(--color-neutral-11)] truncate"><span className="text-[10px] text-[var(--color-neutral-7)] uppercase tracking-wide">Meter:</span> {a.meter || '—'}</span>
-                                                        </>
+                                                        <span className="text-[11px] text-[var(--color-neutral-11)] truncate"><span className="text-[10px] text-[var(--color-neutral-7)] uppercase tracking-wide">Asset:</span> —</span>
                                                       )}
+                                                    </div>
+                                                    <div className="w-[120px] shrink-0 text-[12px] text-[var(--color-neutral-11)] truncate" title={a.meter || undefined}>
+                                                      {a.meter || <span className="text-[var(--color-neutral-7)]">—</span>}
                                                     </div>
                                                     <div className="w-[90px] shrink-0">
                                                       {a.technicians.length > 0
