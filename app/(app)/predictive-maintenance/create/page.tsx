@@ -1882,7 +1882,7 @@ function AssignAssetModal({
       <ModalBody className="flex flex-col px-6 pb-6 pt-2">
 
         {/* APPLIES TO */}
-        <div className="mb-5">
+        <div className="mb-6">
           <ModalSectionLabel>Applies To</ModalSectionLabel>
           <div className="flex items-stretch rounded-[var(--radius-lg)] border border-[var(--border-default)] overflow-hidden">
             {/* Type selector */}
@@ -2012,18 +2012,24 @@ function AssignAssetModal({
           </div>
         </div>
 
-        <div className="h-px shrink-0 bg-[var(--border-subtle)] mb-5" />
+        <div className="h-px shrink-0 bg-[var(--border-subtle)] mb-6" />
 
-        {/* "We'll use existing tech" hint */}
-        {multiItemsWithTech && (
-          <p className="text-[12px] text-[var(--color-neutral-9)] mb-4 leading-5 animate-card-in">
+        {/* "We'll use existing tech" hint — stays mounted so it can fade out as well as in.
+            The 0fr→1fr grid row animates the collapse; the child clips its own overflow. */}
+        <div
+          aria-hidden={!multiItemsWithTech}
+          className={`grid shrink-0 transition-all duration-200 ease-out ${
+            multiItemsWithTech ? 'grid-rows-[1fr] opacity-100 mb-4' : 'grid-rows-[0fr] opacity-0 mb-0'
+          }`}
+        >
+          <p className="overflow-hidden text-[12px] text-[var(--color-neutral-9)] leading-5">
             Some selected items already have assigned technicians. You can keep or reassign them below.
           </p>
-        )}
+        </div>
 
         {/* Meter field — always offered; mandatory only for meter-triggered schedules
             whose selected items don't already carry a meter. */}
-        <div className="mb-5">
+        <div className="mb-6">
           <ModalSectionLabel>
             Meter Reading {needsMeterInput && <span className="text-[var(--color-error)]">*</span>}
           </ModalSectionLabel>
@@ -2036,7 +2042,7 @@ function AssignAssetModal({
           />
         </div>
 
-        <div className="h-px shrink-0 bg-[var(--border-subtle)] mb-5" />
+        <div className="h-px shrink-0 bg-[var(--border-subtle)] mb-6" />
 
         {/* PEOPLE */}
         <div className="flex items-center justify-between mb-2">
@@ -2049,7 +2055,7 @@ function AssignAssetModal({
             </button>
           )}
         </div>
-        <div className="flex flex-col gap-4 mb-5">
+        <div className="flex flex-col gap-4 mb-6">
           <div className="flex flex-col gap-[var(--space-xs)]">
             <div className="flex items-center justify-between">
               <label className="text-[length:var(--font-size-sm)] font-medium text-[var(--color-neutral-12)]">Technician</label>
@@ -2066,7 +2072,7 @@ function AssignAssetModal({
           </div>
         </div>
 
-        <div className="h-px shrink-0 bg-[var(--border-subtle)] mb-5" />
+        <div className="h-px shrink-0 bg-[var(--border-subtle)] mb-6" />
 
         {/* DATES */}
         <div className="flex items-center justify-between mb-2">
