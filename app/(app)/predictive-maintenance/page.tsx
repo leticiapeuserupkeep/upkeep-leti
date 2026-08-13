@@ -848,7 +848,7 @@ export default function PreventiveMaintenancePage() {
                                             ) : (
                                               <>
                                                 {/* Column headers */}
-                                                <div className="flex items-center gap-5 px-3 h-[40px] bg-[#F9F9FB]">
+                                                <div className="flex items-center gap-5 px-3 h-[40px] bg-[var(--surface-primary)] border-y border-[var(--border-subtle)]">
                                                   <span className="text-[11px] font-medium uppercase tracking-wide text-[var(--color-neutral-8)] flex-1 min-w-0">Applies To</span>
                                                   <span className="text-[11px] font-medium uppercase tracking-wide text-[var(--color-neutral-8)] w-[120px] shrink-0">Meter</span>
                                                   <span className="text-[11px] font-medium uppercase tracking-wide text-[var(--color-neutral-8)] w-[90px] shrink-0">Technicians</span>
