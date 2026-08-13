@@ -6,6 +6,15 @@ import { ChevronDown, Search, Check, X } from 'lucide-react'
 import { Avatar } from '@/app/components/ui/Avatar'
 import { Chip, type ChipSize } from '@/app/components/ui/Chip'
 
+/** Secondary label shown after an option name, e.g. a person's role. */
+function OptionTag({ children }: { children: React.ReactNode }) {
+  return (
+    <span className="shrink-0 inline-flex items-center h-[18px] px-1.5 rounded-full bg-[var(--color-neutral-3)] text-[11px] font-medium text-[var(--color-neutral-9)]">
+      {children}
+    </span>
+  )
+}
+
 /* ── Single-select ── */
 
 interface SearchableSelectProps {
@@ -19,10 +28,13 @@ interface SearchableSelectProps {
   showAvatar?: boolean
   error?: boolean
   onBlur?: () => void
+  /** Optional per-option secondary label (e.g. role), keyed by option value. */
+  optionTags?: Record<string, string>
 }
 
 export function SearchableSelect({
   label, required, value, onChange, options, placeholder = '', className = '', showAvatar = false, error = false, onBlur,
+  optionTags,
 }: SearchableSelectProps) {
   const [open, setOpen] = useState(false)
   const [query, setQuery] = useState('')
@@ -96,6 +108,7 @@ export function SearchableSelect({
                 >
                   {showAvatar && <Avatar name={o} size="xs" className="shrink-0" />}
                   <span className="flex-1 truncate">{o}</span>
+                  {optionTags?.[o] && <OptionTag>{optionTags[o]}</OptionTag>}
                   {value === o && <Check size={13} className="shrink-0" />}
                 </button>
               ))}
@@ -122,11 +135,13 @@ interface SearchableMultiSelectProps {
   onBlur?: () => void
   /** Size of the value chips. Defaults to `xs` — the in-input tag size. */
   chipSize?: ChipSize
+  /** Optional per-option secondary label (e.g. role), keyed by option value. */
+  optionTags?: Record<string, string>
 }
 
 export function SearchableMultiSelect({
   label, required, values, onChange, options, placeholder = '', className = '', showAvatar = false, error = false, onBlur,
-  chipSize = 'xs',
+  chipSize = 'xs', optionTags,
 }: SearchableMultiSelectProps) {
   const [open, setOpen] = useState(false)
   const [query, setQuery] = useState('')
@@ -253,6 +268,7 @@ export function SearchableMultiSelect({
                     </span>
                     {showAvatar && <Avatar name={o} size="xs" className="shrink-0" />}
                     <span className="flex-1 truncate">{o}</span>
+                    {optionTags?.[o] && <OptionTag>{optionTags[o]}</OptionTag>}
                   </button>
                 )
               })}

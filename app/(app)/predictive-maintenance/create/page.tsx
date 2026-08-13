@@ -1238,8 +1238,8 @@ function InlineAssignForm({ onSubmit, onCancel }: { onSubmit: (f: AssignAssetFor
       )}
 
       <div className="grid grid-cols-3 gap-4">
-        <SearchableSelect label="Technician" value={form.primaryAssignee} onChange={set('primaryAssignee')} options={ASSIGNEES} showAvatar />
-        <SearchableMultiSelect label="Additional Technicians" values={form.additionalAssignee} onChange={v => setForm(f => ({ ...f, additionalAssignee: v }))} options={ASSIGNEES} showAvatar />
+        <SearchableSelect label="Technician" value={form.primaryAssignee} onChange={set('primaryAssignee')} options={ASSIGNEES} optionTags={ASSIGNEE_ROLES} showAvatar />
+        <SearchableMultiSelect label="Additional Technicians" values={form.additionalAssignee} onChange={v => setForm(f => ({ ...f, additionalAssignee: v }))} options={ASSIGNEES} optionTags={ASSIGNEE_ROLES} showAvatar />
         <Select label="Team" value={form.team} onChange={set('team')} options={TEAMS} clearable />
       </div>
 
@@ -2058,11 +2058,11 @@ function AssignAssetModal({
             <div className="flex items-center justify-between">
               <label className="text-[length:var(--font-size-sm)] font-medium text-[var(--color-neutral-12)]">Technician</label>
             </div>
-            <SearchableSelect value={form.primaryAssignee} onChange={set('primaryAssignee')} options={ASSIGNEES} showAvatar />
+            <SearchableSelect value={form.primaryAssignee} onChange={set('primaryAssignee')} options={ASSIGNEES} optionTags={ASSIGNEE_ROLES} showAvatar />
           </div>
           <div className="flex gap-4">
             <div className={`flex-1 min-w-0 ${form.primaryAssignee ? '' : 'opacity-40 pointer-events-none'}`}>
-              <SearchableMultiSelect label="Additional Technicians" values={form.additionalAssignee} onChange={v => setForm(f => ({ ...f, additionalAssignee: v }))} options={ASSIGNEES} showAvatar />
+              <SearchableMultiSelect label="Additional Technicians" values={form.additionalAssignee} onChange={v => setForm(f => ({ ...f, additionalAssignee: v }))} options={ASSIGNEES} optionTags={ASSIGNEE_ROLES} showAvatar />
             </div>
             <div className="flex-1 min-w-0">
               <Select label="Team" value={form.team} onChange={set('team')} options={TEAMS} clearable placeholder="" />
@@ -2829,6 +2829,7 @@ function FillMissingModal({
                     value={values[a.id]}
                     onChange={v => setValues(s => ({ ...s, [a.id]: v }))}
                     options={type === 'meter' ? METERS : ASSIGNEES}
+                    optionTags={type === 'tech' ? ASSIGNEE_ROLES : undefined}
                     placeholder={type === 'meter' ? 'Select meter…' : 'Select technician…'}
                     showAvatar={type === 'tech'}
                   />
