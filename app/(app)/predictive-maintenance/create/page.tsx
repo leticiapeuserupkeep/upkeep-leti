@@ -3377,7 +3377,7 @@ function CreatePMPageContent() {
                         placeholder="Describe this maintenance task…"
                         value={description}
                         onChange={e => setDescription((e.target as HTMLTextAreaElement).value)}
-                        className="h-[128px] resize-none"
+                        className="h-[104px] resize-none"
                       />
                     </div>
                     {/* Right column */}
