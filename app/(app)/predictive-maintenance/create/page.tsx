@@ -1879,10 +1879,10 @@ function AssignAssetModal({
         title="Add to Schedule"
         description="Choose where this schedule applies and optionally assign technicians or a team."
       />
-      <ModalBody className="flex flex-col p-6">
+      <ModalBody className="flex flex-col px-6 pb-6 pt-2">
 
         {/* APPLIES TO */}
-        <div className="mb-6">
+        <div className="mb-8">
           <ModalSectionLabel>Applies To</ModalSectionLabel>
           <div className="flex items-stretch rounded-[var(--radius-lg)] border border-[var(--border-default)] overflow-hidden">
             {/* Type selector */}
@@ -2014,14 +2014,16 @@ function AssignAssetModal({
 
         {/* "We'll use existing tech" hint — right after Applies To */}
         {multiItemsWithTech && (
-          <p className="text-[12px] text-[var(--color-neutral-9)] mb-6 -mt-4 leading-5">
+          <p className="text-[12px] text-[var(--color-neutral-9)] mb-8 -mt-6 leading-5">
             Some selected items already have assigned technicians. You can keep or reassign them below.
           </p>
         )}
 
+        <div className="h-px bg-[var(--border-subtle)] mb-8" />
+
         {/* Meter field — always offered; mandatory only for meter-triggered schedules
             whose selected items don't already carry a meter. */}
-        <div className="mb-6">
+        <div className="mb-8">
           <ModalSectionLabel>
             Meter Reading {needsMeterInput && <span className="text-[var(--color-error)]">*</span>}
           </ModalSectionLabel>
@@ -2034,7 +2036,7 @@ function AssignAssetModal({
           />
         </div>
 
-        <div className="h-px bg-[var(--border-subtle)] mb-6" />
+        <div className="h-px bg-[var(--border-subtle)] mb-8" />
 
         {/* PEOPLE */}
         <div className="flex items-center justify-between mb-2">
@@ -2047,7 +2049,7 @@ function AssignAssetModal({
             </button>
           )}
         </div>
-        <div className="flex flex-col gap-4 mb-6">
+        <div className="flex flex-col gap-4 mb-8">
           <div className="flex flex-col gap-[var(--space-xs)]">
             <div className="flex items-center justify-between">
               <label className="text-[length:var(--font-size-sm)] font-medium text-[var(--color-neutral-12)]">Technician</label>
@@ -2064,7 +2066,7 @@ function AssignAssetModal({
           </div>
         </div>
 
-        <div className="h-px bg-[var(--border-subtle)] mb-6" />
+        <div className="h-px bg-[var(--border-subtle)] mb-8" />
 
         {/* DATES */}
         <div className="flex items-center justify-between mb-2">
