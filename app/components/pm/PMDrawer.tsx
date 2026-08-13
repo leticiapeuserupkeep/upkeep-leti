@@ -94,7 +94,7 @@ function Section({
   const [open, setOpen] = useState(defaultOpen)
   return (
     <section id={id} className={`px-5 py-5 border-b border-[var(--border-subtle)] last:border-0 ${className}`}>
-      <div className="flex items-center justify-between gap-3 mb-4">
+      <div className="flex items-center justify-between gap-3 mb-6">
         <h3 className="text-[16px] font-semibold text-[var(--color-neutral-12)]">{title}</h3>
         <div className="flex items-center gap-2 shrink-0">
           {action}
@@ -330,10 +330,6 @@ function DetailsTab({ pm }: { pm: PMItem }) {
           >
             <Plus size={18} />
           </button>
-          <div className="flex items-center gap-2 text-[13px] text-[var(--color-neutral-8)]">
-            <ImageIcon size={15} className="text-[var(--color-neutral-6)]" />
-            No images added yet
-          </div>
         </div>
       </Section>
 
