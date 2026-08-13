@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef, useCallback, type ReactNode } from 'react'
 import {
   X, Pencil, Maximize2, MoreHorizontal, ChevronDown, ChevronUp, ChevronLeft, ChevronRight,
-  Plus, Image as ImageIcon, FileText, ListChecks, CalendarClock, ClipboardList, Flag,
+  Plus, Image as ImageIcon, FileText, ListChecks, CalendarClock, Flag,
 } from 'lucide-react'
 import { Avatar } from '@/app/components/ui'
 import { Button } from '@/app/components/ui/Button'
@@ -38,11 +38,11 @@ interface PMDrawerProps {
 type DrawerTab = 'Details' | 'Tasks' | 'Schedules' | 'Work Orders'
 
 /** Tabs scroll the single page to their section rather than swapping content. */
-const TABS: { key: DrawerTab; icon: React.ElementType; section: string }[] = [
-  { key: 'Details', icon: FileText, section: 'pm-details' },
-  { key: 'Tasks', icon: ListChecks, section: 'pm-tasks' },
-  { key: 'Schedules', icon: CalendarClock, section: 'pm-schedules' },
-  { key: 'Work Orders', icon: ClipboardList, section: 'pm-work-orders' },
+const TABS: { key: DrawerTab; section: string }[] = [
+  { key: 'Details', section: 'pm-details' },
+  { key: 'Tasks', section: 'pm-tasks' },
+  { key: 'Schedules', section: 'pm-schedules' },
+  { key: 'Work Orders', section: 'pm-work-orders' },
 ]
 
 const PRIORITY_COLOR: Record<string, string> = {
@@ -228,17 +228,16 @@ export function PMDrawer({ pm, onClose, onEdit }: PMDrawerProps) {
 
               {/* Tabs */}
               <div className="flex items-center gap-1 -mx-1">
-                {TABS.map(({ key, icon: Icon }) => (
+                {TABS.map(({ key }) => (
                   <button
                     key={key}
                     onClick={() => goToSection(key)}
-                    className={`flex items-center gap-1.5 px-3 h-10 text-[length:var(--control-font-size-base)] font-medium border-b-2 transition-colors cursor-pointer ${
+                    className={`px-3 h-10 text-[length:var(--control-font-size-base)] font-medium border-b-2 transition-colors cursor-pointer ${
                       tab === key
                         ? 'border-[var(--color-accent-9)] text-[var(--color-accent-9)]'
                         : 'border-transparent text-[var(--color-neutral-8)] hover:text-[var(--color-neutral-11)]'
                     }`}
                   >
-                    <Icon size={15} />
                     {key}
                   </button>
                 ))}
