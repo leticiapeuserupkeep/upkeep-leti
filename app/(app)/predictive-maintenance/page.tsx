@@ -222,7 +222,6 @@ const COLS = [
   { key: 'cat',         label: 'Category',    cls: 'w-[130px]' },
   { key: 'pri',         label: 'Priority',    cls: 'w-[110px]' },
   { key: 'status',      label: 'Status',      cls: 'w-[110px]' },
-  { key: 'checklist',   label: 'Checklist',   cls: 'w-[130px]' },
   { key: 'actions',     label: '',            cls: 'w-[48px]' },
   { key: 'expand',      label: '',            cls: 'w-[48px]' },
 ]
@@ -546,7 +545,6 @@ export default function PreventiveMaintenancePage() {
                       <td className="px-3 py-4"><div className="h-3 w-16 rounded-full bg-[var(--color-neutral-3)]" /></td>
                       <td className="px-3 py-4"><div className="h-3 w-12 rounded-full bg-[var(--color-neutral-3)]" /></td>
                       <td className="px-3 py-4"><div className="h-3 w-12 rounded-full bg-[var(--color-neutral-3)]" /></td>
-                      <td className="px-3 py-4"><div className="h-3 w-24 rounded-full bg-[var(--color-neutral-3)]" /></td>
                       <td className="px-3 py-4 w-8" />
                     </tr>
                   )}
@@ -722,26 +720,6 @@ export default function PreventiveMaintenancePage() {
                             </div>
                           </td>
 
-                          {/* Checklist */}
-                          <td className="px-4 py-4 align-middle">
-                            {pm.checklists && pm.checklists.length > 0 ? (
-                              <Tooltip
-                                side="bottom"
-                                sideOffset={6}
-                                content={
-                                  <div className="flex flex-col gap-1 py-0.5">
-                                    {pm.checklists.map((cl, i) => (
-                                      <span key={i} className="text-[12px] leading-5">{cl}</span>
-                                    ))}
-                                  </div>
-                                }
-                              >
-                                <span className="text-[13px] font-medium text-[var(--color-neutral-9)]">
-                                  {pm.checklists.length}
-                                </span>
-                              </Tooltip>
-                            ) : <span className="text-[var(--color-neutral-5)]">—</span>}
-                          </td>
 
                           {/* Actions */}
                           <td className="px-2 py-4 align-middle" style={{ position: 'relative', zIndex: openMenu === pm.id ? 200 : undefined }} onClick={e => e.stopPropagation()}>
