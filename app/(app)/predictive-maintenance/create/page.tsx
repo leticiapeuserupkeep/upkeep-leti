@@ -1882,7 +1882,7 @@ function AssignAssetModal({
       <ModalBody className="flex flex-col px-6 pb-6 pt-2">
 
         {/* APPLIES TO */}
-        <div className="mb-6">
+        <div className="mb-8">
           <ModalSectionLabel>Applies To</ModalSectionLabel>
           <div className="flex items-stretch rounded-[var(--radius-lg)] border border-[var(--border-default)] overflow-hidden">
             {/* Type selector */}
@@ -2028,7 +2028,7 @@ function AssignAssetModal({
 
         {/* Meter field — always offered; mandatory only for meter-triggered schedules
             whose selected items don't already carry a meter. */}
-        <div className="mb-6">
+        <div className="mb-8">
           <div className="flex items-center justify-between mb-2">
             <p className="text-[11px] font-semibold uppercase tracking-wide text-[var(--color-neutral-11)]">
               Meter Reading {needsMeterInput && <span className="text-[var(--color-error)]">*</span>}
@@ -2036,7 +2036,7 @@ function AssignAssetModal({
             {!!previousAssignment?.meter?.length && (
               <button type="button"
                 onClick={() => { setForm(f => ({ ...f, meter: previousAssignment.meter! })); setMeterTouched(false) }}
-                className="text-[11px] font-medium underline text-[var(--color-neutral-11)] hover:text-[var(--color-neutral-12)] cursor-pointer">
+                className="text-[11px] font-medium underline text-[var(--color-neutral-9)] hover:text-[var(--color-neutral-11)] cursor-pointer">
                 Use Last Meter Reading
               </button>
             )}
@@ -2057,12 +2057,12 @@ function AssignAssetModal({
           {(previousAssignment?.primaryAssignee || previousAssignment?.team) && (
             <button type="button"
               onClick={() => setForm(f => ({ ...f, primaryAssignee: previousAssignment.primaryAssignee!, additionalAssignee: previousAssignment.additionalAssignee ?? [], team: previousAssignment.team ?? '' }))}
-              className="text-[11px] font-medium underline text-[var(--color-neutral-11)] hover:text-[var(--color-neutral-12)] cursor-pointer">
+              className="text-[11px] font-medium underline text-[var(--color-neutral-9)] hover:text-[var(--color-neutral-11)] cursor-pointer">
               Use Last Assigned To
             </button>
           )}
         </div>
-        <div className="flex flex-col gap-4 mb-6">
+        <div className="flex flex-col gap-3 mb-8">
           <div className="flex flex-col gap-[var(--space-xs)]">
             <div className="flex items-center justify-between">
               <label className="text-[length:var(--font-size-sm)] font-medium text-[var(--color-neutral-12)]">Technician</label>
@@ -2086,7 +2086,7 @@ function AssignAssetModal({
           {previousAssignment && (
             <button type="button"
               onClick={() => { setDateError(''); setForm(f => ({ ...f, startDate: previousAssignment.startDate ?? '', endDate: previousAssignment.endDate ?? '' })) }}
-              className="text-[11px] font-medium underline text-[var(--color-neutral-11)] hover:text-[var(--color-neutral-12)] cursor-pointer">
+              className="text-[11px] font-medium underline text-[var(--color-neutral-9)] hover:text-[var(--color-neutral-11)] cursor-pointer">
               Use Last Active Dates
             </button>
           )}
