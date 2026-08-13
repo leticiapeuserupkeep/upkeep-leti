@@ -249,6 +249,9 @@ export default function PreventiveMaintenancePage() {
   const bulkMenuRef = useRef<HTMLDivElement>(null)
   const [bulkDeleteConfirm, setBulkDeleteConfirm] = useState(false)
   const [selectedPM, setSelectedPM] = useState<PMItem | null>(null)
+  // Which drawer section to land on — the schedule titles deep-link to Schedules.
+  const [drawerTab, setDrawerTab] = useState<'Details' | 'Schedules'>('Details')
+  const openDrawer = (pm: PMItem, tab: 'Details' | 'Schedules' = 'Details') => { setDrawerTab(tab); setSelectedPM(pm) }
   const [createdToast, setCreatedToast] = useState<{ title: string; scheduleCount: number; assignmentCount: number } | null>(null)
   const router = useRouter()
 
@@ -589,7 +592,7 @@ export default function PreventiveMaintenancePage() {
                                   {pm.title || 'Untitled PM'}
                                 </button>
                               ) : (
-                                <button type="button" onClick={e => { e.stopPropagation(); setSelectedPM(pm) }} className="text-[13px] font-semibold text-[var(--color-neutral-12)] leading-5 group-hover:text-[var(--color-accent-9)] transition-colors hover:underline cursor-pointer text-left">{pm.title}</button>
+                                <button type="button" onClick={e => { e.stopPropagation(); openDrawer(pm) }} className="text-[13px] font-semibold text-[var(--color-neutral-12)] leading-5 group-hover:text-[var(--color-accent-9)] transition-colors hover:underline cursor-pointer text-left">{pm.title}</button>
                               )
                             })()}
                           </td>
@@ -791,9 +794,13 @@ export default function PreventiveMaintenancePage() {
                                           onClick={() => toggleSched(pm.id, sched.id)}
                                         >
                                           <div className="flex-1 min-w-0">
-                                            <span className="text-[13px] font-semibold text-[var(--color-neutral-11)] truncate block">
+                                            <button
+                                              type="button"
+                                              onClick={e => { e.stopPropagation(); openDrawer(pm, 'Schedules') }}
+                                              className="text-[13px] font-semibold text-[var(--color-neutral-11)] hover:text-[var(--color-accent-9)] hover:underline transition-colors cursor-pointer truncate block max-w-full text-left"
+                                            >
                                               {sched.calendarTrigger}{sched.meterTrigger ? ` or ${sched.meterTrigger}` : ''}
-                                            </span>
+                                            </button>
                                           </div>
                                           {missingTechCount > 0 && (
                                             <span className="flex items-center gap-1 rounded-full bg-[#FFEFEF] text-[var(--color-error)] text-[11px] px-2.5 py-0.5 font-medium shrink-0">
@@ -1005,6 +1012,7 @@ export default function PreventiveMaintenancePage() {
     )}
     <PMDrawer
       pm={selectedPM}
+      initialTab={drawerTab}
       onClose={() => setSelectedPM(null)}
       onEdit={(pm) => {
         // eslint-disable-next-line @typescript-eslint/no-explicit-any

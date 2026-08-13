@@ -33,6 +33,8 @@ interface PMDrawerProps {
   pm: PMItem | null
   onClose: () => void
   onEdit: (pm: PMItem) => void
+  /** Section to land on when the drawer opens. Defaults to Details. */
+  initialTab?: DrawerTab
 }
 
 type DrawerTab = 'Details' | 'Tasks' | 'Schedules' | 'Work Orders'
@@ -131,7 +133,7 @@ function CountPill({ children }: { children: ReactNode }) {
   )
 }
 
-export function PMDrawer({ pm, onClose, onEdit }: PMDrawerProps) {
+export function PMDrawer({ pm, onClose, onEdit, initialTab = 'Details' }: PMDrawerProps) {
   const [tab, setTab] = useState<DrawerTab>('Details')
   const [descExpanded, setDescExpanded] = useState(false)
   const bodyRef = useRef<HTMLDivElement>(null)
@@ -139,12 +141,20 @@ export function PMDrawer({ pm, onClose, onEdit }: PMDrawerProps) {
   // so the active tab doesn't flicker through the sections it passes over.
   const scrollingTo = useRef<DrawerTab | null>(null)
 
-  // Reset when PM changes
+  // Reset when the PM changes, landing on the requested section. The jump waits
+  // a frame so the body has rendered and section offsets are real.
   useEffect(() => {
-    setTab('Details')
+    setTab(initialTab)
     setDescExpanded(false)
-    if (bodyRef.current) bodyRef.current.scrollTop = 0
-  }, [pm?.id])
+    const frame = requestAnimationFrame(() => {
+      const body = bodyRef.current
+      if (!body) return
+      const target = TABS.find(x => x.key === initialTab)
+      const el = target && body.querySelector<HTMLElement>(`#${target.section}`)
+      body.scrollTop = el ? el.offsetTop : 0
+    })
+    return () => cancelAnimationFrame(frame)
+  }, [pm?.id, initialTab])
 
   const goToSection = useCallback((t: DrawerTab) => {
     setTab(t)
