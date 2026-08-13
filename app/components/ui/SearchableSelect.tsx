@@ -44,14 +44,14 @@ export function SearchableSelect({
         <Popover.Trigger asChild>
           <button
             type="button"
-            className={`w-full h-10 flex items-center gap-2 pl-3 pr-2 rounded-[var(--radius-lg)] border bg-[var(--surface-primary)] hover:bg-[var(--color-neutral-2)] data-[state=open]:shadow-[0_0_1px_3px_rgba(0,106,220,0.1)] transition-colors cursor-pointer outline-none ${
+            className={`w-full h-[var(--control-height-base)] flex items-center gap-2 pl-3 pr-2 rounded-[var(--radius-lg)] border bg-[var(--surface-primary)] hover:bg-[var(--color-neutral-2)] data-[state=open]:shadow-[0_0_1px_3px_rgba(0,106,220,0.1)] transition-colors cursor-pointer outline-none ${
               error
                 ? 'border-[var(--color-error)] shadow-[0_0_1px_3px_rgba(206,44,49,0.12)] hover:border-[var(--color-error)] data-[state=open]:border-[var(--color-accent-7)] data-[state=open]:shadow-[0_0_1px_3px_rgba(0,106,220,0.1)]'
                 : 'border-[var(--border-default)] hover:border-[var(--color-accent-7)] hover:shadow-[0_0_1px_3px_rgba(0,106,220,0.1)] data-[state=open]:border-[var(--color-accent-7)]'
             }`}
           >
             {showAvatar && value && <Avatar name={value} size="xs" className="shrink-0" />}
-            <span className={`flex-1 text-left text-[13px] truncate ${value ? 'text-[var(--color-neutral-11)]' : 'text-[var(--color-neutral-7)]'}`}>
+            <span className={`flex-1 text-left text-[length:var(--control-font-size-base)] truncate ${value ? 'text-[var(--color-neutral-11)]' : 'text-[var(--color-neutral-7)]'}`}>
               {value || placeholder}
             </span>
             {value && (
@@ -198,14 +198,14 @@ export function SearchableMultiSelect({
           <button
             ref={triggerRef}
             type="button"
-            className={`w-full h-10 flex items-center gap-1 pl-3 pr-2 rounded-[var(--radius-lg)] border bg-[var(--surface-primary)] hover:bg-[var(--color-neutral-2)] data-[state=open]:shadow-[0_0_1px_3px_rgba(0,106,220,0.1)] transition-colors cursor-pointer outline-none text-left overflow-hidden ${
+            className={`w-full h-[var(--control-height-base)] flex items-center gap-1 pl-3 pr-2 rounded-[var(--radius-lg)] border bg-[var(--surface-primary)] hover:bg-[var(--color-neutral-2)] data-[state=open]:shadow-[0_0_1px_3px_rgba(0,106,220,0.1)] transition-colors cursor-pointer outline-none text-left overflow-hidden ${
               error
                 ? 'border-[var(--color-error)] shadow-[0_0_1px_3px_rgba(206,44,49,0.12)] hover:border-[var(--color-error)] data-[state=open]:border-[var(--color-accent-7)]'
                 : 'border-[var(--border-default)] hover:border-[var(--color-accent-7)] hover:shadow-[0_0_1px_3px_rgba(0,106,220,0.1)] data-[state=open]:border-[var(--color-accent-7)]'
             }`}
           >
             {values.length === 0 ? (
-              <span className="flex-1 text-[13px] text-[var(--color-neutral-7)]">{placeholder}</span>
+              <span className="flex-1 text-[length:var(--control-font-size-base)] text-[var(--color-neutral-7)]">{placeholder}</span>
             ) : (
               <>
                 {visibleValues.map(v => (

@@ -290,7 +290,7 @@ function DateInputMDY({ value, onChange, label, className, defaultToday, minIso 
       {label && <label className="text-[length:var(--font-size-sm)] font-medium text-[var(--color-neutral-12)]">{label}</label>}
       <Popover.Root open={open} onOpenChange={setOpen}>
         <Popover.Trigger asChild>
-          <div className={`flex items-center h-9 px-2.5 gap-2 rounded-[var(--radius-md)] border bg-[var(--surface-primary)] cursor-text transition-colors outline-none ${error ? 'border-[var(--color-error)] shadow-[0_0_1px_3px_rgba(206,44,49,0.12)]' : focused || open ? 'border-[var(--color-accent-7)] shadow-[0_0_1px_3px_rgba(0,106,220,0.1)]' : 'border-[var(--border-default)]'}`}
+          <div className={`flex items-center h-[var(--control-height-base)] px-2.5 gap-2 rounded-[var(--radius-md)] border bg-[var(--surface-primary)] cursor-text transition-colors outline-none ${error ? 'border-[var(--color-error)] shadow-[0_0_1px_3px_rgba(206,44,49,0.12)]' : focused || open ? 'border-[var(--color-accent-7)] shadow-[0_0_1px_3px_rgba(0,106,220,0.1)]' : 'border-[var(--border-default)]'}`}
             onClick={() => { setOpen(false) }}>
             <input
               type="text"
@@ -301,7 +301,7 @@ function DateInputMDY({ value, onChange, label, className, defaultToday, minIso 
               onFocus={() => setFocused(true)}
               onBlur={() => { setFocused(false); commit(raw) }}
               onKeyDown={e => { if (e.key === 'Enter') { commit(raw); setOpen(true) } }}
-              className="flex-1 min-w-0 bg-transparent outline-none focus-visible:outline-none text-[13px] text-[var(--color-neutral-11)] placeholder:text-[var(--color-neutral-6)]"
+              className="flex-1 min-w-0 bg-transparent outline-none focus-visible:outline-none text-[length:var(--control-font-size-base)] text-[var(--color-neutral-11)] placeholder:text-[var(--color-neutral-6)]"
             />
             {raw && !(defaultToday && raw === isoToMDY(todayIso())) && (
               <button type="button" onClick={e => { e.stopPropagation(); setError(''); if (defaultToday) { const iso = todayIso(); onChange(iso); setRaw(isoToMDY(iso)) } else { onChange(''); setRaw('') } }} className="shrink-0 text-[var(--color-neutral-8)] hover:text-[var(--color-neutral-11)] transition-colors cursor-pointer focus-visible:outline-none"><X size={12} /></button>
@@ -361,9 +361,9 @@ function Select({
       )}
       <DropdownMenu modal={false}>
         <DropdownMenuTrigger asChild>
-          <button className="w-full h-10 flex items-center gap-2 pl-3 pr-2 rounded-[var(--radius-lg)] border border-[var(--border-default)] bg-[var(--surface-primary)] hover:bg-[var(--color-neutral-2)] hover:border-[var(--color-accent-7)] hover:shadow-[0_0_1px_3px_rgba(0,106,220,0.1)] data-[state=open]:border-[var(--color-accent-7)] data-[state=open]:shadow-[0_0_1px_3px_rgba(0,106,220,0.1)] transition-colors cursor-pointer outline-none">
+          <button className="w-full h-[var(--control-height-base)] flex items-center gap-2 pl-3 pr-2 rounded-[var(--radius-lg)] border border-[var(--border-default)] bg-[var(--surface-primary)] hover:bg-[var(--color-neutral-2)] hover:border-[var(--color-accent-7)] hover:shadow-[0_0_1px_3px_rgba(0,106,220,0.1)] data-[state=open]:border-[var(--color-accent-7)] data-[state=open]:shadow-[0_0_1px_3px_rgba(0,106,220,0.1)] transition-colors cursor-pointer outline-none">
             {selected?.icon && <span className="shrink-0 flex items-center">{selected.icon}</span>}
-            <span className={`flex-1 text-left text-[13px] truncate ${value ? 'text-[var(--color-neutral-11)]' : 'text-[var(--color-neutral-7)]'}`}>
+            <span className={`flex-1 text-left text-[length:var(--control-font-size-base)] truncate ${value ? 'text-[var(--color-neutral-11)]' : 'text-[var(--color-neutral-7)]'}`}>
               {selected?.label ?? placeholder}
             </span>
             {clearable && value && (
@@ -1888,7 +1888,7 @@ function AssignAssetModal({
             {/* Type selector */}
             <DropdownMenu modal={false}>
               <DropdownMenuTrigger asChild>
-                <button className="h-10 w-[130px] flex items-center gap-1.5 pl-3 pr-2 border-r border-[var(--border-default)] bg-[var(--color-neutral-2)] hover:bg-[var(--color-neutral-3)] text-[13px] font-medium text-[var(--color-neutral-11)] cursor-pointer outline-none transition-colors">
+                <button className="h-[var(--control-height-base)] w-[130px] flex items-center gap-1.5 pl-3 pr-2 border-r border-[var(--border-default)] bg-[var(--color-neutral-2)] hover:bg-[var(--color-neutral-3)] text-[length:var(--control-font-size-base)] font-medium text-[var(--color-neutral-11)] cursor-pointer outline-none transition-colors">
                   {appliesToType === 'Asset' && <Box size={18} className="shrink-0 text-[var(--color-neutral-8)]" />}
                   {appliesToType === 'Location' && <MapPin size={18} className="shrink-0 text-[var(--color-neutral-8)]" />}
                   <span className="flex-1 text-left truncate">{appliesToType}</span>
@@ -1918,7 +1918,7 @@ function AssignAssetModal({
             </div>
             <Popover.Root open={valueOpen} onOpenChange={setValueOpen}>
               <Popover.Trigger asChild>
-                <button ref={appliesToTriggerRef} className="flex-1 h-10 flex items-center gap-1 pl-3 pr-2 bg-[var(--surface-primary)] hover:bg-[var(--color-neutral-2)] data-[state=open]:bg-[var(--color-neutral-2)] cursor-pointer outline-none transition-colors overflow-hidden">
+                <button ref={appliesToTriggerRef} className="flex-1 h-[var(--control-height-base)] flex items-center gap-1 pl-3 pr-2 bg-[var(--surface-primary)] hover:bg-[var(--color-neutral-2)] data-[state=open]:bg-[var(--color-neutral-2)] cursor-pointer outline-none transition-colors overflow-hidden">
                   {appliesToSelected.length === 0 ? (
                     <span className="flex-1 text-[13px] text-[var(--color-neutral-7)]" />
                   ) : (
@@ -2012,7 +2012,6 @@ function AssignAssetModal({
           </div>
         </div>
 
-        <div className="h-px shrink-0 bg-[var(--border-subtle)] mb-6" />
 
         {/* "We'll use existing tech" hint — stays mounted so it can fade out as well as in.
             The 0fr→1fr grid row animates the collapse; the child clips its own overflow. */}
@@ -2051,7 +2050,6 @@ function AssignAssetModal({
           />
         </div>
 
-        <div className="h-px shrink-0 bg-[var(--border-subtle)] mb-6" />
 
         {/* PEOPLE */}
         <div className="flex items-center justify-between mb-2">
@@ -2081,7 +2079,6 @@ function AssignAssetModal({
           </div>
         </div>
 
-        <div className="h-px shrink-0 bg-[var(--border-subtle)] mb-6" />
 
         {/* DATES */}
         <div className="flex items-center justify-between mb-2">

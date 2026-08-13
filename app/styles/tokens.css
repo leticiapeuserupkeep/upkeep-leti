@@ -112,6 +112,17 @@
   --line-height-normal: 1.5;
   --line-height-relaxed: 1.6;
 
+  /* ── Form control sizes ──
+     One scale shared by text, number, select and multi-select inputs.
+     `base` is the default; reach for sm/lg only when the density demands it. */
+  --control-height-sm: 24px;
+  --control-height-base: 32px;
+  --control-height-lg: 40px;
+
+  --control-font-size-sm: 13px;
+  --control-font-size-base: var(--font-size-base);
+  --control-font-size-lg: var(--font-size-base);
+
   /* Font weights handled by Tailwind utilities (font-medium, font-semibold, font-bold) */
 
   /* ── Shadows ── */
