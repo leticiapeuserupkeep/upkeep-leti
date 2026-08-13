@@ -1912,7 +1912,7 @@ function AssignAssetModal({
             {/* Hidden measurement row */}
             <div ref={appliesToMeasureRef} style={{ position: 'fixed', top: '-9999px', left: '-9999px', display: 'flex', gap: '4px' }} aria-hidden="true">
               {appliesToSelected.map(v => (
-                <Chip key={v} size="sm" onRemove={() => {}}>{v}</Chip>
+                <Chip key={v} size="xs" variant="soft" onRemove={() => {}}>{v}</Chip>
               ))}
             </div>
             <Popover.Root open={valueOpen} onOpenChange={setValueOpen}>
@@ -1923,10 +1923,10 @@ function AssignAssetModal({
                   ) : (
                     <>
                       {appliesToSelected.slice(0, appliesToVisibleCount).map(v => (
-                        <Chip key={v} size="sm" title={v} onRemove={() => toggleAppliesToValue(v)}>{v}</Chip>
+                        <Chip key={v} size="xs" variant="soft" title={v} onRemove={() => toggleAppliesToValue(v)}>{v}</Chip>
                       ))}
                       {appliesToSelected.length - appliesToVisibleCount > 0 && (
-                        <Chip size="sm">+{appliesToSelected.length - appliesToVisibleCount}</Chip>
+                        <Chip size="xs" variant="soft">+{appliesToSelected.length - appliesToVisibleCount}</Chip>
                       )}
                     </>
                   )}
@@ -1991,7 +1991,7 @@ function AssignAssetModal({
                           </span>
                           <div className="flex-1 flex flex-col min-w-0">
                             <span className="truncate">{o}</span>
-                            {assetLocation && <span className="text-[11px] text-[var(--color-neutral-7)] truncate">{assetLocation}</span>}
+                            {assetLocation && <span className="text-[11px] text-[var(--color-neutral-8)] truncate">{assetLocation}</span>}
                           </div>
                         </button>
                       )
@@ -4224,7 +4224,7 @@ function CreatePMPageContent() {
                                                         <Avatar name={name} size="xs" className="shrink-0" />
                                                         <div className="flex flex-col flex-1 min-w-0">
                                                           <span className="text-[var(--color-neutral-11)] truncate">{name}</span>
-                                                          {ASSIGNEE_ROLES[name] && <span className="text-[11px] text-[var(--color-neutral-7)] truncate">{ASSIGNEE_ROLES[name]}</span>}
+                                                          {ASSIGNEE_ROLES[name] && <span className="text-[11px] text-[var(--color-neutral-8)] truncate">{ASSIGNEE_ROLES[name]}</span>}
                                                         </div>
                                                         <div className={`w-4 h-4 rounded border flex items-center justify-center shrink-0 transition-colors ${checked ? 'bg-[var(--color-accent-9)] border-[var(--color-accent-9)]' : 'border-[var(--border-default)]'}`}>
                                                           {checked && <svg width="9" height="9" viewBox="0 0 9 9" fill="none"><path d="M1.5 4.5L3.5 6.5L7.5 2.5" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>}

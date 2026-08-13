@@ -120,13 +120,13 @@ interface SearchableMultiSelectProps {
   showAvatar?: boolean
   error?: boolean
   onBlur?: () => void
-  /** Size of the value chips. Defaults to `sm` so they sit inside a base-height control. */
+  /** Size of the value chips. Defaults to `xs` — the in-input tag size. */
   chipSize?: ChipSize
 }
 
 export function SearchableMultiSelect({
   label, required, values, onChange, options, placeholder = '', className = '', showAvatar = false, error = false, onBlur,
-  chipSize = 'sm',
+  chipSize = 'xs',
 }: SearchableMultiSelectProps) {
   const [open, setOpen] = useState(false)
   const [query, setQuery] = useState('')
@@ -192,7 +192,7 @@ export function SearchableMultiSelect({
       {/* Hidden measurement row */}
       <div ref={measureRef} style={{ position: 'fixed', top: '-9999px', left: '-9999px', display: 'flex', gap: '4px' }} aria-hidden="true">
         {values.map(v => (
-          <Chip key={v} size={chipSize} onRemove={() => {}}>{v}</Chip>
+          <Chip key={v} size={chipSize} variant="soft" onRemove={() => {}}>{v}</Chip>
         ))}
       </div>
       <Popover.Root open={open} onOpenChange={v => { setOpen(v); if (!v && onBlur) onBlur() }}>
@@ -211,9 +211,9 @@ export function SearchableMultiSelect({
             ) : (
               <>
                 {visibleValues.map(v => (
-                  <Chip key={v} size={chipSize} title={v} onRemove={() => toggle(v)}>{v}</Chip>
+                  <Chip key={v} size={chipSize} variant="soft" title={v} onRemove={() => toggle(v)}>{v}</Chip>
                 ))}
-                {hidden > 0 && <Chip size={chipSize}>+{hidden}</Chip>}
+                {hidden > 0 && <Chip size={chipSize} variant="soft">+{hidden}</Chip>}
               </>
             )}
             <ChevronDown size={14} className="shrink-0 text-[var(--color-neutral-7)] ml-auto" />

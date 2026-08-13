@@ -3,8 +3,8 @@
 import React from 'react'
 import { X } from 'lucide-react'
 
-export type ChipStyle = 'solid' | 'surface' | 'outline'
-export type ChipSize = 'sm' | 'base' | 'lg'
+export type ChipStyle = 'solid' | 'surface' | 'outline' | 'soft'
+export type ChipSize = 'xs' | 'sm' | 'base' | 'lg'
 
 interface ChipProps {
   children: React.ReactNode
@@ -30,10 +30,12 @@ interface ChipProps {
 }
 
 /** Icon px per size — callers use this so leading/trailing glyphs stay on spec. */
-export const CHIP_ICON_SIZE: Record<ChipSize, number> = { sm: 16, base: 16, lg: 20 }
+export const CHIP_ICON_SIZE: Record<ChipSize, number> = { xs: 12, sm: 16, base: 16, lg: 20 }
 
 const sizeStyles: Record<ChipSize, string> = {
-  sm: 'h-6 px-2 gap-0.5 text-[12px] leading-4',
+  /** Borderless in-input tag — sits inside a control without competing with it. */
+  xs: 'h-5 px-2 gap-0.5 text-[11px] leading-4',
+  sm: 'h-6 px-2 gap-0.5 text-[14px] leading-5',
   base: 'h-8 px-3 gap-1 text-[14px] leading-5',
   lg: 'h-10 px-4 gap-2 text-[16px] leading-6',
 }
@@ -42,6 +44,7 @@ const restStyles: Record<ChipStyle, string> = {
   solid: 'bg-[var(--chip-solid-bg)] text-[var(--chip-solid-fg)] border border-transparent',
   surface: 'bg-[var(--chip-surface-bg)] text-[var(--chip-surface-fg)] border border-[var(--chip-surface-border)]',
   outline: 'bg-transparent text-[var(--chip-outline-fg)] border border-[var(--chip-outline-border)]',
+  soft: 'bg-[var(--chip-surface-bg)] text-[var(--chip-surface-fg)] border border-transparent',
 }
 
 const interactiveStyles: Record<ChipStyle, string> = {
@@ -49,12 +52,14 @@ const interactiveStyles: Record<ChipStyle, string> = {
   surface:
     'hover:bg-[var(--chip-surface-bg-hover)] hover:border-[var(--chip-surface-border-hover)] active:bg-[var(--chip-surface-bg-pressed)] active:border-[var(--chip-surface-border-pressed)]',
   outline: 'hover:border-[var(--chip-outline-border-hover)] active:border-[var(--chip-outline-border-pressed)]',
+  soft: 'hover:bg-[var(--chip-surface-bg-hover)] active:bg-[var(--chip-surface-bg-pressed)]',
 }
 
 const disabledStyles: Record<ChipStyle, string> = {
   solid: 'bg-[var(--chip-disabled-bg)] text-[var(--chip-disabled-fg-solid)] border border-transparent',
   surface: 'bg-[var(--chip-disabled-bg)] text-[var(--chip-disabled-fg)] border border-[var(--chip-disabled-border)]',
   outline: 'bg-transparent text-[var(--chip-disabled-fg)] border border-[var(--chip-disabled-border)]',
+  soft: 'bg-[var(--chip-disabled-bg)] text-[var(--chip-disabled-fg)] border border-transparent',
 }
 
 export function Chip({
