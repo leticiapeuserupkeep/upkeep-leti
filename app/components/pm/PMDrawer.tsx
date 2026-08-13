@@ -1,8 +1,13 @@
 'use client'
 
-import { useState, useEffect } from 'react'
-import { X, Pencil, CalendarClock, Plus, Image as ImageIcon, FileText, ListChecks, Clock } from 'lucide-react'
+import { useState, useEffect, type ReactNode } from 'react'
+import {
+  X, Pencil, Maximize2, MoreHorizontal, ChevronDown, ChevronUp, ChevronLeft, ChevronRight,
+  Plus, Image as ImageIcon, FileText, ListChecks, CalendarClock, ClipboardList, Flag,
+} from 'lucide-react'
 import { Avatar } from '@/app/components/ui'
+import { Button } from '@/app/components/ui/Button'
+import { Chip } from '@/app/components/ui/Chip'
 
 // ── Types shared with the list page (minimal) ────────────────────────────────
 
@@ -32,6 +37,13 @@ interface PMDrawerProps {
 
 type DrawerTab = 'Details' | 'Tasks' | 'Schedules' | 'Work Orders'
 
+const TABS: { key: DrawerTab; icon: React.ElementType }[] = [
+  { key: 'Details', icon: FileText },
+  { key: 'Tasks', icon: ListChecks },
+  { key: 'Schedules', icon: CalendarClock },
+  { key: 'Work Orders', icon: ClipboardList },
+]
+
 const PRIORITY_COLOR: Record<string, string> = {
   High: 'text-[var(--color-error)]',
   Medium: 'text-[var(--color-warning)]',
@@ -54,6 +66,70 @@ function AvatarRow({ techs, extra = 0 }: { techs: TechAvatar[]; extra?: number }
   )
 }
 
+/** Icon-only header control. */
+function HeaderButton({ label, onClick, children }: { label: string; onClick?: () => void; children: ReactNode }) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      title={label}
+      aria-label={label}
+      className="flex items-center justify-center w-8 h-8 rounded-[var(--radius-lg)] border border-[var(--border-default)] text-[var(--color-neutral-9)] hover:bg-[var(--color-neutral-3)] hover:text-[var(--color-neutral-11)] transition-colors cursor-pointer"
+    >
+      {children}
+    </button>
+  )
+}
+
+/**
+ * Collapsible section with a heading row. `action` sits to the left of the
+ * collapse chevron so the chevron stays the rightmost affordance throughout.
+ */
+function Section({
+  title, action, children, defaultOpen = true, className = '',
+}: { title: string; action?: ReactNode; children: ReactNode; defaultOpen?: boolean; className?: string }) {
+  const [open, setOpen] = useState(defaultOpen)
+  return (
+    <section className={`px-5 py-5 border-b border-[var(--border-subtle)] last:border-0 ${className}`}>
+      <div className="flex items-center justify-between gap-3 mb-4">
+        <h3 className="text-[16px] font-semibold text-[var(--color-neutral-12)]">{title}</h3>
+        <div className="flex items-center gap-2 shrink-0">
+          {action}
+          <button
+            type="button"
+            onClick={() => setOpen(o => !o)}
+            aria-label={open ? `Collapse ${title}` : `Expand ${title}`}
+            aria-expanded={open}
+            className="flex items-center justify-center w-6 h-6 rounded-[var(--radius-md)] text-[var(--color-neutral-8)] hover:bg-[var(--color-neutral-3)] hover:text-[var(--color-neutral-11)] transition-colors cursor-pointer"
+          >
+            {open ? <ChevronUp size={15} /> : <ChevronDown size={15} />}
+          </button>
+        </div>
+      </div>
+      {open && children}
+    </section>
+  )
+}
+
+/** Label/value row inside the Details card, separated by a dashed rule. */
+function FieldRow({ label, children }: { label: string; children: ReactNode }) {
+  return (
+    <div className="flex items-center gap-4 py-3 border-b border-dashed border-[var(--border-default)] last:border-0">
+      <span className="w-[92px] shrink-0 text-[11px] font-medium uppercase tracking-wide text-[var(--color-neutral-8)]">{label}</span>
+      <div className="flex-1 min-w-0 text-[length:var(--control-font-size-base)] text-[var(--color-neutral-11)]">{children}</div>
+    </div>
+  )
+}
+
+/** Count pill used by the Images / Files / Work Orders headings. */
+function CountPill({ children }: { children: ReactNode }) {
+  return (
+    <span className="inline-flex items-center h-6 px-2.5 rounded-full bg-[var(--color-neutral-3)] text-[12px] font-medium text-[var(--color-neutral-9)]">
+      {children}
+    </span>
+  )
+}
+
 export function PMDrawer({ pm, onClose, onEdit }: PMDrawerProps) {
   const [tab, setTab] = useState<DrawerTab>('Details')
   const [descExpanded, setDescExpanded] = useState(false)
@@ -67,67 +143,60 @@ export function PMDrawer({ pm, onClose, onEdit }: PMDrawerProps) {
     <>
       {/* Backdrop */}
       <div
-        className={`fixed inset-0 z-40 transition-opacity duration-300 ${isOpen ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'}`}
+        className={`fixed inset-0 z-40 bg-black/20 transition-opacity duration-300 ${isOpen ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'}`}
         onClick={onClose}
       />
 
       {/* Drawer */}
       <div
-        className={`fixed top-0 right-0 h-full w-[480px] z-50 flex flex-col bg-[var(--surface-primary)] border-l border-[var(--border-default)] shadow-[var(--shadow-xl)] transition-transform duration-300 ease-[cubic-bezier(0.32,0.72,0,1)] ${isOpen ? 'translate-x-0' : 'translate-x-full'}`}
+        className={`fixed top-0 right-0 h-full w-[680px] max-w-[94vw] z-50 flex flex-col bg-[var(--surface-primary)] border-l border-[var(--border-default)] shadow-[var(--shadow-xl)] transition-transform duration-300 ease-[cubic-bezier(0.32,0.72,0,1)] ${isOpen ? 'translate-x-0' : 'translate-x-full'}`}
       >
         {pm && (
           <>
             {/* Header */}
-            <div className="flex flex-col px-5 pt-4 pb-0 shrink-0 border-b border-[var(--border-default)]">
-              <div className="flex items-start gap-2 mb-3">
-                <h2 className="flex-1 text-[15px] font-semibold text-[var(--color-neutral-12)] leading-5 min-w-0 break-words">
+            <div className="flex flex-col px-5 pt-5 shrink-0 border-b border-[var(--border-default)]">
+              <div className="flex items-start gap-3 mb-3">
+                <h2 className="flex-1 text-[20px] font-semibold text-[var(--color-neutral-12)] leading-7 min-w-0 break-words">
                   {pm.title}
                 </h2>
-                <div className="flex items-center gap-1 shrink-0">
-                  <button
-                    onClick={() => onEdit(pm)}
-                    className="flex items-center justify-center w-7 h-7 rounded-[var(--radius-md)] text-[var(--color-neutral-7)] hover:bg-[var(--color-neutral-3)] hover:text-[var(--color-neutral-11)] transition-colors cursor-pointer"
-                    title="Edit"
-                  >
-                    <Pencil size={14} />
-                  </button>
-                  <button
-                    onClick={onClose}
-                    className="flex items-center justify-center w-7 h-7 rounded-[var(--radius-md)] text-[var(--color-neutral-7)] hover:bg-[var(--color-neutral-3)] hover:text-[var(--color-neutral-11)] transition-colors cursor-pointer"
-                  >
-                    <X size={15} />
-                  </button>
+                <div className="flex items-center gap-1.5 shrink-0">
+                  <HeaderButton label="Edit" onClick={() => onEdit(pm)}><Pencil size={14} /></HeaderButton>
+                  <HeaderButton label="Expand"><Maximize2 size={14} /></HeaderButton>
+                  <HeaderButton label="More actions"><MoreHorizontal size={15} /></HeaderButton>
+                  <HeaderButton label="Close" onClick={onClose}><X size={15} /></HeaderButton>
                 </div>
               </div>
 
               {/* Description */}
               {pm.description && (
-                <div className="mb-3">
-                  <p className={`text-[13px] text-[var(--color-neutral-9)] leading-5 ${!descExpanded ? 'line-clamp-2' : ''}`}>
+                <div className="mb-4">
+                  <p className={`text-[length:var(--control-font-size-base)] text-[var(--color-neutral-9)] leading-6 ${!descExpanded ? 'line-clamp-2' : ''}`}>
                     {pm.description}
                   </p>
                   <button
                     onClick={() => setDescExpanded(p => !p)}
-                    className="text-[12px] font-medium text-[var(--color-accent-9)] hover:underline mt-0.5 cursor-pointer"
+                    className="flex items-center gap-1 text-[13px] font-medium text-[var(--color-accent-9)] hover:underline mt-1 cursor-pointer"
                   >
-                    {descExpanded ? 'Show less' : 'Show full description'}
+                    {descExpanded ? <ChevronUp size={13} /> : <ChevronDown size={13} />}
+                    {descExpanded ? 'Show Less' : 'Show Full Description'}
                   </button>
                 </div>
               )}
 
               {/* Tabs */}
-              <div className="flex items-center gap-0 -mx-1">
-                {(['Details', 'Tasks', 'Schedules', 'Work Orders'] as DrawerTab[]).map(t => (
+              <div className="flex items-center gap-1 -mx-1">
+                {TABS.map(({ key, icon: Icon }) => (
                   <button
-                    key={t}
-                    onClick={() => setTab(t)}
-                    className={`px-3 h-9 text-[13px] font-medium border-b-2 transition-colors cursor-pointer ${
-                      tab === t
+                    key={key}
+                    onClick={() => setTab(key)}
+                    className={`flex items-center gap-1.5 px-3 h-10 text-[length:var(--control-font-size-base)] font-medium border-b-2 transition-colors cursor-pointer ${
+                      tab === key
                         ? 'border-[var(--color-accent-9)] text-[var(--color-accent-9)]'
                         : 'border-transparent text-[var(--color-neutral-8)] hover:text-[var(--color-neutral-11)]'
                     }`}
                   >
-                    {t}
+                    <Icon size={15} />
+                    {key}
                   </button>
                 ))}
               </div>
@@ -136,7 +205,7 @@ export function PMDrawer({ pm, onClose, onEdit }: PMDrawerProps) {
             {/* Body */}
             <div className="flex-1 overflow-y-auto">
               {tab === 'Details' && <DetailsTab pm={pm} />}
-              {tab === 'Schedules' && <SchedulesTab pm={pm} />}
+              {tab === 'Schedules' && <SchedulesSection pm={pm} standalone />}
               {tab === 'Tasks' && <TasksTab pm={pm} />}
               {tab === 'Work Orders' && <WorkOrdersTab pm={pm} />}
             </div>
@@ -150,157 +219,205 @@ export function PMDrawer({ pm, onClose, onEdit }: PMDrawerProps) {
 // ── Details Tab ──────────────────────────────────────────────────────────────
 
 function DetailsTab({ pm }: { pm: PMItem }) {
-  const fields = [
-    { label: 'Category', value: pm.category },
-    { label: 'Priority', value: pm.priority, isPriority: true },
-    { label: 'Duration', value: '2 hrs 35 Mins' },
-    { label: 'Created', value: 'Monday, Oct 19, 2025' },
-    { label: 'Updated', value: 'Monday, Oct 19, 2025' },
-  ]
+  const woCount = pm.schedules.reduce((n, s) => n + s.assignments.reduce((m, a) => m + (a.woCount ?? 0), 0), 0)
 
   return (
     <div className="flex flex-col">
-      {/* Key fields */}
-      <section className="px-5 py-4 border-b border-[var(--border-subtle)]">
-        <p className="text-[10px] font-bold uppercase tracking-[0.08em] text-[var(--color-neutral-8)] mb-3">Details</p>
-        <div className="flex flex-col gap-3">
-          {fields.map(f => (
-            <div key={f.label} className="flex items-center gap-3">
-              <span className="text-[12px] text-[var(--color-neutral-7)] w-[80px] shrink-0">{f.label}</span>
-              {f.isPriority ? (
-                <span className={`text-[13px] font-medium ${PRIORITY_COLOR[pm.priority] ?? 'text-[var(--color-neutral-9)]'}`}>
-                  {pm.priority}
-                </span>
-              ) : (
-                <span className="text-[13px] font-medium text-[var(--color-neutral-11)]">{f.value}</span>
-              )}
-            </div>
-          ))}
+      {/* Details card */}
+      <Section title="Details">
+        <div className="rounded-[var(--radius-xl)] border border-[var(--border-default)] px-4 py-1">
+          <FieldRow label="Category">{pm.category}</FieldRow>
+          <FieldRow label="Priority">
+            <span className="inline-flex items-center gap-1.5">
+              <Flag size={13} fill="currentColor" className={PRIORITY_COLOR[pm.priority] ?? 'text-[var(--color-neutral-6)]'} />
+              {pm.priority}
+            </span>
+          </FieldRow>
+          <FieldRow label="Duration">2 hrs 35 Mins</FieldRow>
+          <FieldRow label="Created">Monday, Oct 19, 2025 5:00 PM</FieldRow>
+          <FieldRow label="Updated">Monday, Oct 19, 2025 5:00 PM</FieldRow>
         </div>
-      </section>
+      </Section>
 
       {/* Images */}
-      <section className="px-5 py-4 border-b border-[var(--border-subtle)]">
-        <div className="flex items-center justify-between mb-3">
-          <p className="text-[10px] font-bold uppercase tracking-[0.08em] text-[var(--color-neutral-8)]">Images</p>
-          <button className="flex items-center gap-1 text-[12px] font-medium text-[var(--color-accent-9)] hover:underline cursor-pointer">
-            <Plus size={11} /> Add
-          </button>
-        </div>
+      <Section
+        title="Images"
+        action={
+          <>
+            <CountPill>No images added</CountPill>
+            <div className="flex items-center gap-0.5">
+              <button type="button" aria-label="Previous images" disabled className="flex items-center justify-center w-6 h-6 rounded-[var(--radius-md)] text-[var(--color-neutral-6)] disabled:cursor-not-allowed">
+                <ChevronLeft size={15} />
+              </button>
+              <button type="button" aria-label="Next images" disabled className="flex items-center justify-center w-6 h-6 rounded-[var(--radius-md)] text-[var(--color-neutral-6)] disabled:cursor-not-allowed">
+                <ChevronRight size={15} />
+              </button>
+            </div>
+          </>
+        }
+      >
         <div className="flex items-center gap-2">
-          <div className="flex items-center justify-center w-14 h-14 rounded-[var(--radius-md)] bg-[var(--color-neutral-3)] border border-dashed border-[var(--border-default)] cursor-pointer hover:bg-[var(--color-neutral-4)] transition-colors">
-            <ImageIcon size={16} className="text-[var(--color-neutral-6)]" />
+          <button
+            type="button"
+            aria-label="Add image"
+            className="flex items-center justify-center w-[72px] h-[72px] rounded-[var(--radius-lg)] bg-[var(--color-accent-1)] border border-dashed border-[var(--color-accent-4)] text-[var(--color-accent-9)] hover:bg-[var(--color-accent-2)] transition-colors cursor-pointer shrink-0"
+          >
+            <Plus size={18} />
+          </button>
+          <div className="flex items-center gap-2 text-[13px] text-[var(--color-neutral-8)]">
+            <ImageIcon size={15} className="text-[var(--color-neutral-6)]" />
+            No images added yet
           </div>
-          <span className="text-[12px] text-[var(--color-neutral-7)]">No images added</span>
         </div>
-      </section>
+      </Section>
 
       {/* Files */}
-      <section className="px-5 py-4 border-b border-[var(--border-subtle)]">
-        <div className="flex items-center justify-between mb-3">
-          <p className="text-[10px] font-bold uppercase tracking-[0.08em] text-[var(--color-neutral-8)]">Files</p>
-          <button className="flex items-center gap-1 text-[12px] font-medium text-[var(--color-accent-9)] hover:underline cursor-pointer">
-            <Plus size={11} /> Add
-          </button>
+      <Section
+        title="Files"
+        action={
+          <>
+            <CountPill>No files added</CountPill>
+            <Button variant="secondary" size="md"><Plus size={13} /> Add</Button>
+          </>
+        }
+      >
+        <div className="flex items-center gap-2 text-[13px] text-[var(--color-neutral-8)]">
+          <FileText size={15} className="text-[var(--color-neutral-6)]" />
+          No files added yet
         </div>
-        <div className="flex items-center gap-2">
-          <FileText size={14} className="text-[var(--color-neutral-6)]" />
-          <span className="text-[12px] text-[var(--color-neutral-7)]">No files added</span>
-        </div>
-      </section>
+      </Section>
 
       {/* Tasks & Checklists */}
-      <section className="px-5 py-4 border-b border-[var(--border-subtle)]">
-        <div className="flex items-center justify-between mb-3">
-          <p className="text-[10px] font-bold uppercase tracking-[0.08em] text-[var(--color-neutral-8)]">Tasks & Checklists</p>
-          <button className="flex items-center gap-1 text-[12px] font-medium text-[var(--color-accent-9)] hover:underline cursor-pointer">
-            <Plus size={11} /> Add
-          </button>
-        </div>
+      <Section
+        title="Tasks & Checklists"
+        action={<Button variant="secondary" size="md"><Plus size={13} /> Add</Button>}
+      >
         {pm.checklists && pm.checklists.length > 0 ? (
-          <div className="flex flex-col gap-1.5">
-            {pm.checklists.map((cl, i) => (
-              <div key={i} className="flex items-center gap-2">
-                <ListChecks size={13} className="text-[var(--color-neutral-6)] shrink-0" />
-                <span className="text-[13px] text-[var(--color-neutral-9)]">{cl}</span>
-              </div>
-            ))}
-          </div>
-        ) : (
-          <span className="text-[12px] text-[var(--color-neutral-7)]">No checklists added</span>
-        )}
-      </section>
-
-      {/* Schedules summary */}
-      <section className="px-5 py-4">
-        <div className="flex items-center justify-between mb-3">
-          <p className="text-[10px] font-bold uppercase tracking-[0.08em] text-[var(--color-neutral-8)]">Schedules</p>
-          <button className="flex items-center gap-1 text-[12px] font-medium text-[var(--color-accent-9)] hover:underline cursor-pointer">
-            <Plus size={11} /> Add
-          </button>
-        </div>
-        {pm.schedules.length === 0 ? (
-          <span className="text-[12px] text-[var(--color-neutral-7)]">No schedules</span>
-        ) : (
           <div className="flex flex-col gap-2">
-            {pm.schedules.map(s => (
-              <div key={s.id} className="flex items-center gap-2 p-3 rounded-[var(--radius-md)] bg-[var(--color-accent-1)] border border-[var(--color-accent-3)]">
-                <CalendarClock size={13} className="text-[var(--color-accent-9)] shrink-0" />
-                <span className="flex-1 text-[13px] font-medium text-[var(--color-neutral-11)] truncate">{s.calendarTrigger}</span>
-                <span className="text-[11px] text-[var(--color-accent-9)] shrink-0">{s.assignments.length} assignment{s.assignments.length !== 1 ? 's' : ''}</span>
+            {pm.checklists.map((cl, i) => (
+              <div key={i} className="flex items-center gap-2.5 px-3 h-10 rounded-[var(--radius-lg)] border border-[var(--border-default)]">
+                <ListChecks size={15} className="text-[var(--color-neutral-7)] shrink-0" />
+                <span className="text-[length:var(--control-font-size-base)] text-[var(--color-neutral-11)] truncate">{cl}</span>
               </div>
             ))}
           </div>
+        ) : (
+          <span className="text-[13px] text-[var(--color-neutral-8)]">No checklists added</span>
         )}
-      </section>
+      </Section>
+
+      {/* Schedules */}
+      <SchedulesSection pm={pm} />
+
+      {/* Work Orders */}
+      <Section title="Work Orders" action={<CountPill>{woCount}</CountPill>}>
+        <WorkOrderList pm={pm} />
+      </Section>
     </div>
   )
 }
 
-// ── Schedules Tab ────────────────────────────────────────────────────────────
+// ── Schedules ────────────────────────────────────────────────────────────────
 
-function SchedulesTab({ pm }: { pm: PMItem }) {
+function SchedulesSection({ pm, standalone = false }: { pm: PMItem; standalone?: boolean }) {
+  const body = pm.schedules.length === 0 ? (
+    <div className="flex flex-col items-center justify-center py-10 gap-2 text-center">
+      <CalendarClock size={26} className="text-[var(--color-neutral-5)]" />
+      <p className="text-[13px] font-medium text-[var(--color-neutral-8)]">No schedules yet</p>
+    </div>
+  ) : (
+    <div className="flex flex-col gap-3">
+      {pm.schedules.map(s => <ScheduleCard key={s.id} sched={s} />)}
+    </div>
+  )
+
+  if (standalone) return <div className="flex flex-col">{body === null ? null : <div className="p-5">{body}</div>}</div>
+
   return (
-    <div className="flex flex-col gap-3 p-5">
-      {pm.schedules.length === 0 ? (
-        <div className="flex flex-col items-center justify-center py-12 gap-2 text-center">
-          <CalendarClock size={28} className="text-[var(--color-neutral-5)]" />
-          <p className="text-[13px] font-medium text-[var(--color-neutral-8)]">No schedules yet</p>
-        </div>
-      ) : (
-        pm.schedules.map(sched => (
-          <div key={sched.id} className="rounded-[var(--radius-lg)] border border-[var(--border-default)] overflow-hidden">
-            <div className="flex items-center gap-2 px-3 py-2.5 bg-[var(--color-accent-1)] border-b border-[var(--color-accent-3)]">
-              <CalendarClock size={13} className="text-[var(--color-accent-9)] shrink-0" />
-              <span className="flex-1 text-[13px] font-semibold text-[var(--color-neutral-11)] truncate">{sched.calendarTrigger}</span>
-              <span className={`text-[11px] px-2 py-0.5 rounded-full font-medium shrink-0 ${sched.assignments.length === 0 ? 'bg-[#FFEFEF] text-[var(--color-error)]' : 'bg-[var(--color-accent-2)] text-[var(--color-accent-9)]'}`}>
-                {sched.assignments.length === 0 ? 'No Assignments' : `${sched.assignments.length} Assignment${sched.assignments.length !== 1 ? 's' : ''}`}
+    <Section title="Schedules" action={<Button variant="secondary" size="md"><Plus size={13} /> Add</Button>}>
+      {body}
+    </Section>
+  )
+}
+
+function ScheduleCard({ sched }: { sched: PMSchedule }) {
+  const [open, setOpen] = useState(true)
+  const count = sched.assignments.length
+
+  return (
+    <div className="rounded-[var(--radius-xl)] border border-[var(--border-default)] overflow-hidden">
+      {/* Trigger header */}
+      <div className="flex items-center gap-2 px-4 py-3">
+        <div className="flex items-center gap-2 flex-1 min-w-0 flex-wrap">
+          <span className="text-[length:var(--control-font-size-base)] font-semibold text-[var(--color-neutral-12)]">
+            {sched.calendarTrigger}
+          </span>
+          {sched.meterTrigger && (
+            <>
+              <span className="inline-flex items-center h-5 px-2 rounded-full bg-[var(--color-neutral-3)] text-[11px] font-medium text-[var(--color-neutral-9)]">or</span>
+              <span className="text-[length:var(--control-font-size-base)] font-semibold text-[var(--color-neutral-12)]">
+                {sched.meterTrigger}
               </span>
-            </div>
-            {sched.assignments.length > 0 && (
-              <div className="divide-y divide-[var(--border-subtle)]">
-                {sched.assignments.map(a => (
-                  <div key={a.id} className="flex items-center gap-3 px-3 py-3">
-                    <div className="flex flex-col flex-1 min-w-0">
-                      <div className="flex items-center gap-1.5">
-                        <span className="text-[13px] font-medium text-[var(--color-neutral-12)] truncate">{a.asset}</span>
-                        <span className="px-1.5 py-0.5 rounded-[var(--radius-sm)] bg-[var(--color-neutral-3)] text-[10px] font-medium text-[var(--color-neutral-8)] shrink-0">{a.assetType}</span>
-                      </div>
-                      {a.location && <span className="text-[11px] text-[var(--color-neutral-7)] truncate">{a.location}</span>}
-                    </div>
-                    {a.technicians.length > 0 && (
-                      <AvatarRow techs={a.technicians} extra={a.extraTechs} />
-                    )}
-                    <div className="flex flex-col gap-0.5 shrink-0 text-right">
-                      {a.lastWO && <span className="text-[11px] text-[var(--color-neutral-7)]">Last: {a.lastWO}</span>}
-                      {a.nextWO && <span className="text-[11px] text-[var(--color-neutral-7)]">Next: {a.nextWO}</span>}
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
+            </>
+          )}
+        </div>
+        <Chip size="sm" variant={count === 0 ? 'outline' : 'surface'}>
+          {count === 0 ? 'No Assignments' : `${count} Assignment${count !== 1 ? 's' : ''}`}
+        </Chip>
+        <button
+          type="button"
+          onClick={() => setOpen(o => !o)}
+          aria-label={open ? 'Collapse schedule' : 'Expand schedule'}
+          aria-expanded={open}
+          className="flex items-center justify-center w-6 h-6 shrink-0 rounded-[var(--radius-md)] text-[var(--color-neutral-8)] hover:bg-[var(--color-neutral-3)] transition-colors cursor-pointer"
+        >
+          {open ? <ChevronUp size={15} /> : <ChevronDown size={15} />}
+        </button>
+      </div>
+
+      {open && count > 0 && (
+        <>
+          {/* Column headers */}
+          <div className="flex items-center gap-3 px-4 h-9 bg-[var(--surface-secondary)] border-y border-[var(--border-subtle)]">
+            <span className="flex-1 min-w-0 text-[11px] font-medium uppercase tracking-wide text-[var(--color-neutral-8)]">Assignments</span>
+            <span className="w-[70px] shrink-0 text-[11px] font-medium uppercase tracking-wide text-[var(--color-neutral-8)]">Meter</span>
+            <span className="w-[64px] shrink-0 text-[11px] font-medium uppercase tracking-wide text-[var(--color-neutral-8)]">Techs</span>
+            <span className="w-[92px] shrink-0 text-[11px] font-medium uppercase tracking-wide text-[var(--color-neutral-8)]">Work Orders</span>
+            <span className="w-[92px] shrink-0 text-[11px] font-medium uppercase tracking-wide text-[var(--color-neutral-8)]">Start / End</span>
           </div>
-        ))
+          {/* Rows */}
+          <div className="divide-y divide-[var(--border-subtle)]">
+            {sched.assignments.map(a => (
+              <div key={a.id} className="flex items-center gap-3 px-4 py-3">
+                <div className="flex flex-col flex-1 min-w-0">
+                  <div className="flex items-center gap-1.5 min-w-0">
+                    <span className="text-[13px] font-medium text-[var(--color-neutral-12)] truncate">{a.asset}</span>
+                    <span className="shrink-0 inline-flex items-center h-[18px] px-1.5 rounded-[4px] bg-[var(--color-neutral-3)] text-[10px] font-medium text-[var(--color-neutral-9)]">{a.assetType}</span>
+                  </div>
+                  {a.location && <span className="text-[11px] text-[var(--color-neutral-8)] truncate">{a.location}</span>}
+                </div>
+                <span className="w-[70px] shrink-0 text-[12px] text-[var(--color-neutral-11)] truncate" title={a.meter || undefined}>
+                  {a.meter || <span className="text-[var(--color-neutral-7)]">—</span>}
+                </span>
+                <div className="w-[64px] shrink-0">
+                  {a.technicians.length > 0
+                    ? <AvatarRow techs={a.technicians} extra={a.extraTechs} />
+                    : <span className="text-[12px] text-[var(--color-neutral-7)]">—</span>}
+                </div>
+                <div className="w-[92px] shrink-0 flex flex-col gap-0.5">
+                  {a.lastWO && <span className="text-[11px] text-[var(--color-neutral-8)] leading-4">Last: {a.lastWO}</span>}
+                  {a.nextWO && <span className="text-[11px] text-[var(--color-neutral-12)] font-medium leading-4">Next: {a.nextWO}</span>}
+                  {!a.lastWO && !a.nextWO && <span className="text-[12px] text-[var(--color-neutral-7)]">—</span>}
+                </div>
+                <div className="w-[92px] shrink-0 flex flex-col gap-0.5">
+                  {a.startDate && <span className="text-[11px] text-[var(--color-neutral-8)] leading-4">Start: {a.startDate}</span>}
+                  {a.endDate && <span className="text-[11px] text-[var(--color-neutral-8)] leading-4">End: {a.endDate}</span>}
+                  {!a.startDate && !a.endDate && <span className="text-[12px] text-[var(--color-neutral-7)]">—</span>}
+                </div>
+              </div>
+            ))}
+          </div>
+        </>
       )}
     </div>
   )
@@ -309,56 +426,75 @@ function SchedulesTab({ pm }: { pm: PMItem }) {
 // ── Tasks Tab ────────────────────────────────────────────────────────────────
 
 function TasksTab({ pm }: { pm: PMItem }) {
+  if (pm.checklists && pm.checklists.length > 0) {
+    return (
+      <div className="flex flex-col gap-2 p-5">
+        {pm.checklists.map((cl, i) => (
+          <div key={i} className="flex items-center gap-2.5 px-3 h-10 rounded-[var(--radius-lg)] border border-[var(--border-default)]">
+            <ListChecks size={15} className="text-[var(--color-neutral-7)] shrink-0" />
+            <span className="text-[length:var(--control-font-size-base)] text-[var(--color-neutral-11)] truncate">{cl}</span>
+          </div>
+        ))}
+      </div>
+    )
+  }
   return (
     <div className="flex flex-col items-center justify-center py-16 gap-2 text-center px-6">
       <ListChecks size={28} className="text-[var(--color-neutral-5)]" />
       <p className="text-[13px] font-medium text-[var(--color-neutral-8)]">No tasks yet</p>
-      <p className="text-[12px] text-[var(--color-neutral-6)]">Add tasks and checklists to this PM to track completion.</p>
-      <button className="mt-2 flex items-center gap-1.5 px-3 h-8 rounded-[var(--radius-md)] bg-[var(--color-accent-9)] text-white text-[13px] font-medium cursor-pointer hover:opacity-90 transition-opacity">
-        <Plus size={13} /> Add Task
-      </button>
+      <p className="text-[12px] text-[var(--color-neutral-8)] pb-3">Add tasks and checklists to this PM to track completion.</p>
+      <Button variant="primary" size="lg"><Plus size={16} /> Add Task</Button>
     </div>
   )
 }
 
-// ── Work Orders Tab ──────────────────────────────────────────────────────────
+// ── Work Orders ──────────────────────────────────────────────────────────────
 
-function WorkOrdersTab({ pm }: { pm: PMItem }) {
-  const mockWOs = pm.schedules.flatMap(s => s.assignments.flatMap(a =>
+function buildWorkOrders(pm: PMItem) {
+  return pm.schedules.flatMap(s => s.assignments.flatMap(a =>
     Array.from({ length: Math.min(a.woCount ?? 0, 3) }, (_, i) => ({
       id: `WO-${pm.id}-${a.id}-${i}`,
       title: pm.title,
       asset: a.asset,
-      status: i === 0 ? 'Active' : i === 1 ? 'Active' : 'Completed',
-      priority: pm.priority,
+      status: i === 2 ? 'Completed' : 'Active',
       date: a.lastWO ?? '—',
     }))
   )).slice(0, 8)
+}
 
-  if (mockWOs.length === 0) {
-    return (
-      <div className="flex flex-col items-center justify-center py-16 gap-2 text-center px-6">
-        <Clock size={28} className="text-[var(--color-neutral-5)]" />
-        <p className="text-[13px] font-medium text-[var(--color-neutral-8)]">No work orders yet</p>
-        <p className="text-[12px] text-[var(--color-neutral-6)]">Work orders will appear here once this PM is active.</p>
-      </div>
-    )
+function WorkOrderList({ pm }: { pm: PMItem }) {
+  const wos = buildWorkOrders(pm)
+  if (wos.length === 0) {
+    return <span className="text-[13px] text-[var(--color-neutral-8)]">No work orders yet</span>
   }
-
   return (
-    <div className="flex flex-col divide-y divide-[var(--border-subtle)]">
-      {mockWOs.map(wo => (
-        <div key={wo.id} className="flex items-center gap-3 px-5 py-3 hover:bg-[var(--color-neutral-2)] transition-colors">
+    <div className="rounded-[var(--radius-xl)] border border-[var(--border-default)] divide-y divide-[var(--border-subtle)] overflow-hidden">
+      {wos.map(wo => (
+        <div key={wo.id} className="flex items-center gap-3 px-4 py-3 hover:bg-[var(--surface-secondary)] transition-colors">
           <div className="flex flex-col flex-1 min-w-0">
             <span className="text-[13px] font-medium text-[var(--color-neutral-12)] truncate">{wo.title}</span>
-            <span className="text-[11px] text-[var(--color-neutral-7)] truncate">{wo.asset}</span>
+            <span className="text-[11px] text-[var(--color-neutral-8)] truncate">{wo.asset}</span>
           </div>
-          <span className={`text-[11px] px-2 py-0.5 rounded-full font-medium shrink-0 ${wo.status === 'Active' ? 'bg-[#E6F9ED] text-[#1A7A3C]' : 'bg-[var(--color-neutral-3)] text-[var(--color-neutral-8)]'}`}>
+          <span className={`text-[11px] px-2 py-0.5 rounded-full font-medium shrink-0 ${wo.status === 'Active' ? 'bg-[#E6F9ED] text-[#1A7A3C]' : 'bg-[var(--color-neutral-3)] text-[var(--color-neutral-9)]'}`}>
             {wo.status}
           </span>
-          <span className="text-[11px] text-[var(--color-neutral-6)] shrink-0">{wo.date}</span>
+          <span className="text-[11px] text-[var(--color-neutral-8)] shrink-0">{wo.date}</span>
         </div>
       ))}
     </div>
   )
+}
+
+function WorkOrdersTab({ pm }: { pm: PMItem }) {
+  const wos = buildWorkOrders(pm)
+  if (wos.length === 0) {
+    return (
+      <div className="flex flex-col items-center justify-center py-16 gap-2 text-center px-6">
+        <ClipboardList size={28} className="text-[var(--color-neutral-5)]" />
+        <p className="text-[13px] font-medium text-[var(--color-neutral-8)]">No work orders yet</p>
+        <p className="text-[12px] text-[var(--color-neutral-8)]">Work orders will appear here once this PM is active.</p>
+      </div>
+    )
+  }
+  return <div className="p-5"><WorkOrderList pm={pm} /></div>
 }
