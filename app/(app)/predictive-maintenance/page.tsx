@@ -860,8 +860,8 @@ export default function PreventiveMaintenancePage() {
                                                   <span className="text-[11px] font-medium uppercase tracking-wide text-[var(--color-neutral-8)] w-[120px] shrink-0">Meter</span>
                                                   <span className="text-[11px] font-medium uppercase tracking-wide text-[var(--color-neutral-8)] w-[90px] shrink-0">Technicians</span>
                                                   <span className="text-[11px] font-medium uppercase tracking-wide text-[var(--color-neutral-8)] w-[100px] shrink-0">Start / End</span>
-                                                  <span className="text-[11px] font-medium uppercase tracking-wide text-[var(--color-neutral-8)] w-[90px] shrink-0">Work Orders</span>
-                                                  <span className="text-[11px] font-medium uppercase tracking-wide text-[var(--color-neutral-8)] w-[110px] shrink-0">Next Due Date</span>
+                                                  <span className="text-[11px] font-medium uppercase tracking-wide text-[var(--color-neutral-8)] w-[110px] shrink-0">Work Orders</span>
+                                                  <span className="text-[11px] font-medium uppercase tracking-wide text-[var(--color-neutral-8)] w-[90px] shrink-0">Next Due</span>
                                                 </div>
                                                 {/* Assignment rows */}
                                                 <div className="max-h-[320px] overflow-y-auto overscroll-contain">
@@ -895,12 +895,12 @@ export default function PreventiveMaintenancePage() {
                                                       {a.startDate && <span className="text-[11px] text-[var(--color-neutral-8)] leading-4">Start: {displayDate(a.startDate)}</span>}
                                                       {a.endDate && <span className="text-[11px] text-[var(--color-neutral-8)] leading-4">End: {displayDate(a.endDate)}</span>}
                                                     </div>
-                                                    <div className="w-[90px] shrink-0">
-                                                      {a.lastWO
-                                                        ? <span className="text-[11px] text-[var(--color-neutral-9)] leading-4">Last: {a.lastWO}</span>
-                                                        : <span className="text-[11px] text-[var(--color-neutral-7)]">—</span>}
+                                                    <div className="w-[110px] shrink-0 flex flex-col gap-0.5">
+                                                      {a.lastWO && <span className="text-[11px] text-[var(--color-neutral-9)] leading-4">Last: {a.lastWO}</span>}
+                                                      {a.nextWO && <span className="text-[11px] text-[var(--color-neutral-9)] leading-4">Next: {a.nextWO}</span>}
+                                                      {!a.lastWO && !a.nextWO && <span className="text-[11px] text-[var(--color-neutral-7)]">—</span>}
                                                     </div>
-                                                    <div className="w-[110px] shrink-0">
+                                                    <div className="w-[90px] shrink-0">
                                                       {a.nextWO
                                                         ? <span className="text-[12px] font-semibold text-[var(--color-neutral-12)] leading-4">{a.nextWO}</span>
                                                         : <span className="text-[11px] text-[var(--color-neutral-7)]">—</span>}
