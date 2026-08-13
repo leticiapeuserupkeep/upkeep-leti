@@ -123,6 +123,34 @@
   --control-font-size-base: var(--font-size-base);
   --control-font-size-lg: var(--font-size-base);
 
+  /* ── Chip / tag ──
+     Own palette: the chip spec uses Radix Blue + Slate, which is a different
+     ramp from --color-accent-*, so these can't alias the accent scale. */
+  --chip-solid-bg: #3e63dd;
+  --chip-solid-bg-hover: #3a5bc7;
+  --chip-solid-bg-pressed: #1f2d5c;
+  --chip-solid-fg: #ffffff;
+
+  --chip-surface-bg: #edf2fe;
+  --chip-surface-bg-hover: #e1e9ff;
+  --chip-surface-bg-pressed: #d2deff;
+  --chip-surface-border: #abbdf9;
+  --chip-surface-border-hover: #8da4ef;
+  --chip-surface-border-pressed: #3e63dd;
+  --chip-surface-fg: #1c2024;
+
+  --chip-outline-border: #3e63dd;
+  --chip-outline-border-hover: #3358d4;
+  --chip-outline-border-pressed: #1f2d5c;
+  --chip-outline-fg: #3a5bc7;
+
+  --chip-disabled-bg: #f0f0f3;
+  --chip-disabled-border: #e0e1e6;
+  --chip-disabled-fg-solid: #8b8d98;
+  --chip-disabled-fg: #b9bbc6;
+
+  --chip-focus-ring: #abbdf9;
+
   /* Font weights handled by Tailwind utilities (font-medium, font-semibold, font-bold) */
 
   /* ── Shadows ── */

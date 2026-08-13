@@ -21,6 +21,7 @@ import { Tooltip, TooltipProvider } from '@/app/components/ui/Tooltip'
 import { Badge } from '@/app/components/ui/Badge'
 import { FilterSelect } from '@/app/components/ui/FilterSelect'
 import { SearchableSelect, SearchableMultiSelect } from '@/app/components/ui/SearchableSelect'
+import { Chip } from '@/app/components/ui/Chip'
 import { NumberInput } from '@/app/components/ui/NumberInput'
 import { TimePicker } from '@/app/components/ui/TimePicker'
 import { DatePicker } from '@/app/components/ui/DatePicker'
@@ -1888,7 +1889,7 @@ function AssignAssetModal({
             {/* Type selector */}
             <DropdownMenu modal={false}>
               <DropdownMenuTrigger asChild>
-                <button className="h-[var(--control-height-base)] w-[130px] flex items-center gap-1.5 pl-3 pr-2 border-r border-[var(--border-default)] bg-[var(--color-neutral-2)] hover:bg-[var(--color-neutral-3)] text-[length:var(--control-font-size-base)] font-medium text-[var(--color-neutral-11)] cursor-pointer outline-none transition-colors">
+                <button className="h-[var(--control-height-lg)] w-[130px] flex items-center gap-1.5 pl-3 pr-2 border-r border-[var(--border-default)] bg-[var(--color-neutral-2)] hover:bg-[var(--color-neutral-3)] text-[length:var(--control-font-size-base)] font-medium text-[var(--color-neutral-11)] cursor-pointer outline-none transition-colors">
                   {appliesToType === 'Asset' && <Box size={18} className="shrink-0 text-[var(--color-neutral-8)]" />}
                   {appliesToType === 'Location' && <MapPin size={18} className="shrink-0 text-[var(--color-neutral-8)]" />}
                   <span className="flex-1 text-left truncate">{appliesToType}</span>
@@ -1911,31 +1912,21 @@ function AssignAssetModal({
             {/* Hidden measurement row */}
             <div ref={appliesToMeasureRef} style={{ position: 'fixed', top: '-9999px', left: '-9999px', display: 'flex', gap: '4px' }} aria-hidden="true">
               {appliesToSelected.map(v => (
-                <span key={v} className="inline-flex items-center gap-1 h-6 px-2 rounded-[var(--radius-md)] bg-[var(--color-accent-2)] text-[var(--color-accent-9)] text-[12px] font-medium whitespace-nowrap">
-                  {v}<X size={11} />
-                </span>
+                <Chip key={v} size="base" onRemove={() => {}}>{v}</Chip>
               ))}
             </div>
             <Popover.Root open={valueOpen} onOpenChange={setValueOpen}>
               <Popover.Trigger asChild>
-                <button ref={appliesToTriggerRef} className="flex-1 h-[var(--control-height-base)] flex items-center gap-1 pl-3 pr-2 bg-[var(--surface-primary)] hover:bg-[var(--color-neutral-2)] data-[state=open]:bg-[var(--color-neutral-2)] cursor-pointer outline-none transition-colors overflow-hidden">
+                <button ref={appliesToTriggerRef} className="flex-1 h-[var(--control-height-lg)] flex items-center gap-1 pl-3 pr-2 bg-[var(--surface-primary)] hover:bg-[var(--color-neutral-2)] data-[state=open]:bg-[var(--color-neutral-2)] cursor-pointer outline-none transition-colors overflow-hidden">
                   {appliesToSelected.length === 0 ? (
                     <span className="flex-1 text-[13px] text-[var(--color-neutral-7)]" />
                   ) : (
                     <>
                       {appliesToSelected.slice(0, appliesToVisibleCount).map(v => (
-                        <span
-                          key={v}
-                          className="inline-flex items-center gap-1 h-6 px-2 rounded-[var(--radius-md)] bg-[var(--color-accent-2)] text-[var(--color-accent-9)] text-[12px] font-medium shrink-0"
-                          onClick={e => { e.stopPropagation(); toggleAppliesToValue(v) }}
-                        >
-                          {v}<X size={11} className="cursor-pointer" />
-                        </span>
+                        <Chip key={v} size="base" title={v} onRemove={() => toggleAppliesToValue(v)}>{v}</Chip>
                       ))}
                       {appliesToSelected.length - appliesToVisibleCount > 0 && (
-                        <span className="inline-flex items-center h-6 px-2 rounded-[var(--radius-md)] bg-[var(--color-neutral-3)] text-[var(--color-neutral-9)] text-[12px] font-medium shrink-0">
-                          +{appliesToSelected.length - appliesToVisibleCount}
-                        </span>
+                        <Chip size="base">+{appliesToSelected.length - appliesToVisibleCount}</Chip>
                       )}
                     </>
                   )}
@@ -2036,7 +2027,7 @@ function AssignAssetModal({
             {!!previousAssignment?.meter?.length && (
               <button type="button"
                 onClick={() => { setForm(f => ({ ...f, meter: previousAssignment.meter! })); setMeterTouched(false) }}
-                className="text-[11px] font-medium underline text-[var(--color-neutral-9)] hover:text-[var(--color-neutral-11)] cursor-pointer">
+                className="text-[11px] font-medium underline text-[var(--color-neutral-8)] hover:text-[var(--color-neutral-11)] cursor-pointer">
                 Use Last Meter Reading
               </button>
             )}
@@ -2057,7 +2048,7 @@ function AssignAssetModal({
           {(previousAssignment?.primaryAssignee || previousAssignment?.team) && (
             <button type="button"
               onClick={() => setForm(f => ({ ...f, primaryAssignee: previousAssignment.primaryAssignee!, additionalAssignee: previousAssignment.additionalAssignee ?? [], team: previousAssignment.team ?? '' }))}
-              className="text-[11px] font-medium underline text-[var(--color-neutral-9)] hover:text-[var(--color-neutral-11)] cursor-pointer">
+              className="text-[11px] font-medium underline text-[var(--color-neutral-8)] hover:text-[var(--color-neutral-11)] cursor-pointer">
               Use Last Assigned To
             </button>
           )}
@@ -2086,7 +2077,7 @@ function AssignAssetModal({
           {previousAssignment && (
             <button type="button"
               onClick={() => { setDateError(''); setForm(f => ({ ...f, startDate: previousAssignment.startDate ?? '', endDate: previousAssignment.endDate ?? '' })) }}
-              className="text-[11px] font-medium underline text-[var(--color-neutral-9)] hover:text-[var(--color-neutral-11)] cursor-pointer">
+              className="text-[11px] font-medium underline text-[var(--color-neutral-8)] hover:text-[var(--color-neutral-11)] cursor-pointer">
               Use Last Active Dates
             </button>
           )}
@@ -3677,7 +3668,7 @@ function CreatePMPageContent() {
                 <div className="flex flex-col items-center justify-center py-16 gap-2 text-center">
                   <p className="text-[14px] font-semibold text-[var(--color-neutral-11)]">No schedules yet</p>
                   <p className="text-[13px] text-[var(--color-neutral-8)]">Create a schedule to define when work orders should be generated.</p>
-                  <Button variant="primary" size="md" onClick={() => { setCalendarModalKey(k => k + 1); setShowCalendarModal(true) }}>
+                  <Button variant="primary" size="lg" onClick={() => { setCalendarModalKey(k => k + 1); setShowCalendarModal(true) }}>
                     <Plus size={13} className="mr-1" />
                     New Schedule
                   </Button>
@@ -3839,7 +3830,7 @@ function CreatePMPageContent() {
                                 <p className="text-[13px] font-semibold text-[var(--color-neutral-11)]">Assets, Locations & Meters</p>
                                 <p className="text-[12px] text-[var(--color-neutral-8)]">Choose where this schedule applies</p>
                                 <div className="assign-cta-glow rounded-[var(--radius-md)]">
-                                  <Button variant="primary" size="sm" onClick={() => setShowAssignModal(trigger.id)}>
+                                  <Button variant="primary" size="lg" onClick={() => setShowAssignModal(trigger.id)}>
                                     Add
                                   </Button>
                                 </div>

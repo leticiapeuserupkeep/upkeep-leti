@@ -4,6 +4,7 @@ import { useState, useRef, useEffect, useCallback } from 'react'
 import * as Popover from '@radix-ui/react-popover'
 import { ChevronDown, Search, Check, X } from 'lucide-react'
 import { Avatar } from '@/app/components/ui/Avatar'
+import { Chip, type ChipSize } from '@/app/components/ui/Chip'
 
 /* ── Single-select ── */
 
@@ -119,10 +120,13 @@ interface SearchableMultiSelectProps {
   showAvatar?: boolean
   error?: boolean
   onBlur?: () => void
+  /** Size of the value chips. Defaults to `sm` so they sit inside a base-height control. */
+  chipSize?: ChipSize
 }
 
 export function SearchableMultiSelect({
   label, required, values, onChange, options, placeholder = '', className = '', showAvatar = false, error = false, onBlur,
+  chipSize = 'sm',
 }: SearchableMultiSelectProps) {
   const [open, setOpen] = useState(false)
   const [query, setQuery] = useState('')
@@ -188,9 +192,7 @@ export function SearchableMultiSelect({
       {/* Hidden measurement row */}
       <div ref={measureRef} style={{ position: 'fixed', top: '-9999px', left: '-9999px', display: 'flex', gap: '4px' }} aria-hidden="true">
         {values.map(v => (
-          <span key={v} className="inline-flex items-center gap-1 h-6 px-2 rounded-[var(--radius-md)] bg-[var(--color-accent-2)] text-[var(--color-accent-9)] text-[12px] font-medium whitespace-nowrap">
-            {v}<X size={11} />
-          </span>
+          <Chip key={v} size={chipSize} onRemove={() => {}}>{v}</Chip>
         ))}
       </div>
       <Popover.Root open={open} onOpenChange={v => { setOpen(v); if (!v && onBlur) onBlur() }}>
@@ -209,20 +211,9 @@ export function SearchableMultiSelect({
             ) : (
               <>
                 {visibleValues.map(v => (
-                  <span
-                    key={v}
-                    className="inline-flex items-center gap-1 h-6 px-2 rounded-[var(--radius-md)] bg-[var(--color-accent-2)] text-[var(--color-accent-9)] text-[12px] font-medium shrink-0"
-                    onClick={e => { e.stopPropagation(); toggle(v) }}
-                  >
-                    {v}
-                    <X size={11} className="cursor-pointer" />
-                  </span>
+                  <Chip key={v} size={chipSize} title={v} onRemove={() => toggle(v)}>{v}</Chip>
                 ))}
-                {hidden > 0 && (
-                  <span className="inline-flex items-center h-6 px-2 rounded-[var(--radius-md)] bg-[var(--color-neutral-3)] text-[var(--color-neutral-9)] text-[12px] font-medium shrink-0">
-                    +{hidden}
-                  </span>
-                )}
+                {hidden > 0 && <Chip size={chipSize}>+{hidden}</Chip>}
               </>
             )}
             <ChevronDown size={14} className="shrink-0 text-[var(--color-neutral-7)] ml-auto" />
