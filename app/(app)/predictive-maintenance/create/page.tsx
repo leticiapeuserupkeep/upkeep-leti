@@ -2820,7 +2820,7 @@ function FillMissingModal({
                 key={a.id}
                 className={`flex items-center gap-3 py-3 ${i < assignments.length - 1 ? 'border-b border-[var(--border-subtle)]' : ''}`}
               >
-                <div className="flex items-center gap-1.5 shrink-0 w-[160px] min-w-0">
+                <div className="flex items-center gap-1.5 flex-1 min-w-0">
                   <span className="text-[13px] font-medium text-[var(--color-neutral-12)] truncate">{a.name}</span>
                   <span className="text-[10px] font-medium px-1.5 py-0.5 rounded-full bg-[var(--color-neutral-3)] text-[var(--color-neutral-9)] shrink-0">{a.type}</span>
                 </div>
