@@ -637,11 +637,8 @@ export default function PreventiveMaintenancePage() {
                                 sideOffset={8}
                                 content={
                                   <div className="flex flex-col gap-2 min-w-[160px] max-w-[240px]">
-                                    {pm.schedules.filter(s => s.assignments.length > 0).map((sched, si) => (
+                                    {pm.schedules.filter(s => s.assignments.length > 0).map(sched => (
                                       <div key={sched.id}>
-                                        <div className="text-[11px] font-semibold text-white/50 uppercase tracking-wide mb-1">
-                                          {sched.calendarTrigger || sched.meterTrigger || `Schedule ${si + 1}`}
-                                        </div>
                                         {sched.assignments.map(a => (
                                           <div key={a.id} className="text-[12px] text-white/90 py-0.5">{a.asset}</div>
                                         ))}
