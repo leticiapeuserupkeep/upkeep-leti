@@ -451,7 +451,6 @@ function ScheduleCard({ sched }: { sched: PMSchedule }) {
           {/* Column headers */}
           <div className="flex items-center gap-3 px-4 h-9 bg-[var(--surface-secondary)] border-y border-[var(--border-subtle)]">
             <span className="flex-1 min-w-0 text-[11px] font-medium uppercase tracking-wide text-[var(--color-neutral-8)]">Assignments</span>
-            <span className="w-[70px] shrink-0 text-[11px] font-medium uppercase tracking-wide text-[var(--color-neutral-8)]">Meter</span>
             <span className="w-[64px] shrink-0 text-[11px] font-medium uppercase tracking-wide text-[var(--color-neutral-8)]">Techs</span>
             <span className="w-[80px] shrink-0 text-[11px] font-medium uppercase tracking-wide text-[var(--color-neutral-8)]">Start / End</span>
             <span className="w-[88px] shrink-0 text-[11px] font-medium uppercase tracking-wide text-[var(--color-neutral-8)]">Work Orders</span>
@@ -467,18 +466,21 @@ function ScheduleCard({ sched }: { sched: PMSchedule }) {
                     <span className="shrink-0 inline-flex items-center h-[18px] px-1.5 rounded-[4px] bg-[var(--color-neutral-3)] text-[10px] font-medium text-[var(--color-neutral-9)]">{a.assetType}</span>
                   </div>
                   {a.location && <span className="text-[11px] text-[var(--color-neutral-8)] truncate">{a.location}</span>}
+                  {/* A Meter row is the meter — its badge already says so. */}
+                  {a.assetType !== 'Meter' && (
+                    <span className="text-[11px] text-[var(--color-neutral-8)] truncate" title={a.meter || undefined}>
+                      <span className="uppercase tracking-wide text-[10px]">Meter:</span> {a.meter || '—'}
+                    </span>
+                  )}
                 </div>
-                <span className="w-[70px] shrink-0 text-[12px] text-[var(--color-neutral-11)] truncate" title={a.meter || undefined}>
-                  {a.meter || <span className="text-[var(--color-neutral-7)]">—</span>}
-                </span>
                 <div className="w-[64px] shrink-0">
                   {a.technicians.length > 0
                     ? <AvatarRow techs={a.technicians} extra={a.extraTechs} />
                     : <span className="text-[12px] text-[var(--color-neutral-7)]">—</span>}
                 </div>
                 <div className="w-[80px] shrink-0 flex flex-col gap-0.5">
-                  {a.startDate && <span className="text-[11px] text-[var(--color-neutral-8)] leading-4">Start: {a.startDate}</span>}
-                  {a.endDate && <span className="text-[11px] text-[var(--color-neutral-8)] leading-4">End: {a.endDate}</span>}
+                  {a.startDate && <span className="text-[11px] text-[var(--color-neutral-9)] leading-4">Start: {a.startDate}</span>}
+                  {a.endDate && <span className="text-[11px] text-[var(--color-neutral-9)] leading-4">End: {a.endDate}</span>}
                   {!a.startDate && !a.endDate && <span className="text-[12px] text-[var(--color-neutral-7)]">—</span>}
                 </div>
                 <div className="w-[88px] shrink-0 flex flex-col gap-0.5">

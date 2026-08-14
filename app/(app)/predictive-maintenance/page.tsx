@@ -857,7 +857,6 @@ export default function PreventiveMaintenancePage() {
                                                 {/* Column headers */}
                                                 <div className="flex items-center gap-5 px-3 h-[40px] bg-[var(--surface-primary)] border-y border-[var(--border-subtle)]">
                                                   <span className="text-[11px] font-medium uppercase tracking-wide text-[var(--color-neutral-8)] flex-1 min-w-0">Applies To</span>
-                                                  <span className="text-[11px] font-medium uppercase tracking-wide text-[var(--color-neutral-8)] w-[120px] shrink-0">Meter</span>
                                                   <span className="text-[11px] font-medium uppercase tracking-wide text-[var(--color-neutral-8)] w-[90px] shrink-0">Technicians</span>
                                                   <span className="text-[11px] font-medium uppercase tracking-wide text-[var(--color-neutral-8)] w-[100px] shrink-0">Start / End</span>
                                                   <span className="text-[11px] font-medium uppercase tracking-wide text-[var(--color-neutral-8)] w-[110px] shrink-0">Work Orders</span>
@@ -874,16 +873,17 @@ export default function PreventiveMaintenancePage() {
                                                         <span className="font-medium text-[var(--color-neutral-12)] truncate">{a.asset}</span>
                                                         <span className="shrink-0 inline-flex items-center h-[18px] px-1.5 rounded-[4px] text-[10px] font-medium bg-[var(--color-neutral-3)] text-[var(--color-neutral-9)]">{a.assetType}</span>
                                                       </div>
-                                                      {a.assetType === 'Asset' ? (
-                                                        <span className="text-[11px] text-[var(--color-neutral-11)] truncate"><span className="text-[10px] text-[var(--color-neutral-8)] uppercase tracking-wide">Location:</span> {a.location || '—'}</span>
-                                                      ) : a.assetType === 'Meter' ? (
-                                                        <span className="text-[11px] text-[var(--color-neutral-11)] truncate"><span className="text-[10px] text-[var(--color-neutral-8)] uppercase tracking-wide">Location:</span> {a.location || '—'}</span>
-                                                      ) : (
+                                                      {a.assetType === 'Location' ? (
                                                         <span className="text-[11px] text-[var(--color-neutral-11)] truncate"><span className="text-[10px] text-[var(--color-neutral-8)] uppercase tracking-wide">Asset:</span> —</span>
+                                                      ) : (
+                                                        <span className="text-[11px] text-[var(--color-neutral-11)] truncate"><span className="text-[10px] text-[var(--color-neutral-8)] uppercase tracking-wide">Location:</span> {a.location || '—'}</span>
                                                       )}
-                                                    </div>
-                                                    <div className="w-[120px] shrink-0 text-[12px] text-[var(--color-neutral-11)] truncate" title={a.meter || undefined}>
-                                                      {a.meter || <span className="text-[var(--color-neutral-7)]">—</span>}
+                                                      {/* A Meter row is the meter — its badge already says so. */}
+                                                      {a.assetType !== 'Meter' && (
+                                                        <span className="text-[11px] text-[var(--color-neutral-11)] truncate" title={a.meter || undefined}>
+                                                          <span className="text-[10px] text-[var(--color-neutral-8)] uppercase tracking-wide">Meter:</span> {a.meter || '—'}
+                                                        </span>
+                                                      )}
                                                     </div>
                                                     <div className="w-[90px] shrink-0">
                                                       {a.technicians.length > 0
@@ -892,8 +892,8 @@ export default function PreventiveMaintenancePage() {
                                                       }
                                                     </div>
                                                     <div className="w-[100px] shrink-0 flex flex-col gap-0.5">
-                                                      {a.startDate && <span className="text-[11px] text-[var(--color-neutral-8)] leading-4">Start: {displayDate(a.startDate)}</span>}
-                                                      {a.endDate && <span className="text-[11px] text-[var(--color-neutral-8)] leading-4">End: {displayDate(a.endDate)}</span>}
+                                                      {a.startDate && <span className="text-[11px] text-[var(--color-neutral-9)] leading-4">Start: {displayDate(a.startDate)}</span>}
+                                                      {a.endDate && <span className="text-[11px] text-[var(--color-neutral-9)] leading-4">End: {displayDate(a.endDate)}</span>}
                                                     </div>
                                                     <div className="w-[110px] shrink-0 flex flex-col gap-0.5">
                                                       {a.lastWO && <span className="text-[11px] text-[var(--color-neutral-9)] leading-4">Last: {a.lastWO}</span>}

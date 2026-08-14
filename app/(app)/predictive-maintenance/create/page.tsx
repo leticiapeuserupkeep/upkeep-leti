@@ -6,7 +6,7 @@ import Link from 'next/link'
 import { useRouter, useSearchParams } from 'next/navigation'
 import {
   ChevronLeft, ChevronRight, ChevronUp, ChevronDown, ChevronsUpDown, FileText, Box,
-  Plus, X, MapPin, Gauge, Clock, Users, Upload, Trash2, PanelLeft,
+  Plus, X, MapPin, Gauge, Clock, Users, Upload, Trash2, PanelLeft, Info,
   Calendar, ArrowRight, ArrowDown, Sparkle, MoreHorizontal, Pencil, Activity, CalendarClock,
   User, UserX, RotateCcw, RefreshCw, Camera, Link2, Search, Ban, Flag, SlidersHorizontal,
 } from 'lucide-react'
@@ -25,7 +25,7 @@ import { Chip } from '@/app/components/ui/Chip'
 import { NumberInput } from '@/app/components/ui/NumberInput'
 import { TimePicker } from '@/app/components/ui/TimePicker'
 import { DatePicker } from '@/app/components/ui/DatePicker'
-import { ASSET_NAMES, LOCATION_NAMES, METER_NAMES, PM_TEAMS, getAssetData, getLocationData } from '@/app/lib/pm-database'
+import { ASSET_NAMES, LOCATION_NAMES, METER_NAMES, PM_TEAMS, getAssetData, getLocationData, getMeterData } from '@/app/lib/pm-database'
 
 /* ── Types ── */
 
@@ -53,6 +53,10 @@ interface AssignAssetForm {
   trigger: string
   startDate: string
   endDate: string
+  /** Overwrite meters the selected assets already carry, rather than only filling blanks. */
+  applyMeterToAll?: boolean
+  /** Same, for technicians and team. */
+  applyTechToAll?: boolean
 }
 
 interface CalendarTrigger {
@@ -532,14 +536,12 @@ function CreateCalendarTriggerModal({
   isEditing?: boolean
 }) {
   const [form, setForm] = useState<Omit<CalendarTrigger, 'id'>>(initial ?? EMPTY_TRIGGER)
-  const [hasChanges, setHasChanges] = useState(false)
   const [fieldsTouched, setFieldsTouched] = useState(false)
   const [woRelativeNTouched, setWoRelativeNTouched] = useState(false)
   const [woRelativePeriodTouched, setWoRelativePeriodTouched] = useState(false)
   const [woOnThePeriodTouched, setWoOnThePeriodTouched] = useState(false)
   const set = <K extends keyof typeof form>(k: K) => (v: (typeof form)[K]) => {
     setFieldsTouched(true)
-    setHasChanges(true)
     setForm(f => ({ ...f, [k]: v }))
   }
 
@@ -579,6 +581,15 @@ function CreateCalendarTriggerModal({
   const [meterDuePeriod, setMeterDuePeriod] = useState(initial?.meterDuePeriod ?? '')
   const meterComplete = meterCondition !== '' && meterValue.trim() !== ''
 
+  /* Dirty state is derived from the whole payload rather than tracked by a flag:
+     the meter fields live in their own state, so a flag set only by `set()`
+     missed every edit made to them and left Save Changes disabled. */
+  const draftTrigger = { ...form, meterCondition, meterValue, meterUnit, meterDueN, meterDuePeriod }
+  const hasChanges = !initial || Object.keys(draftTrigger).some(k => {
+    const key = k as keyof typeof draftTrigger
+    return (draftTrigger[key] ?? '') !== ((initial as unknown as Record<string, unknown>)[key] ?? '')
+  })
+
   function handleSubmit() {
     onSubmit({ ...form, id: initial?.id ?? crypto.randomUUID(), meterCondition, meterValue, meterUnit, meterDueN, meterDuePeriod })
     setForm(EMPTY_TRIGGER)
@@ -602,7 +613,7 @@ function CreateCalendarTriggerModal({
       <ModalBody className="flex flex-col gap-3 p-6">
 
         {/* Calendar Based card */}
-        <div className="rounded-[var(--radius-xl)] border border-[var(--border-default)]">
+        <div className="rounded-[var(--radius-xl)] border border-[var(--border-default)] transition-[border-color,box-shadow] duration-[var(--duration-fast)] hover:border-[var(--color-accent-7)] hover:shadow-[0_0_1px_3px_rgba(0,106,220,0.1)]">
           <div className="flex items-center gap-3 px-4 py-3 bg-[var(--color-neutral-2)] rounded-t-[var(--radius-xl)] hover:bg-[var(--color-neutral-3)] transition-colors">
             <button type="button" onClick={() => setShowCalendarBased(v => !v)}
               className="flex items-center gap-3 flex-1 min-w-0 text-left cursor-pointer">
@@ -888,7 +899,7 @@ function CreateCalendarTriggerModal({
             ].filter(Boolean).join(' · ')
             const clearMeter = () => { setMeterCondition(''); setMeterValue(''); setMeterUnit('Units'); setMeterDueN(''); setMeterDuePeriod(''); setShowMeterTrigger(false) }
             return (
-              <div ref={meterCardRef} className="rounded-[var(--radius-xl)] border border-[var(--border-default)] overflow-hidden">
+              <div ref={meterCardRef} className="rounded-[var(--radius-xl)] border border-[var(--border-default)] overflow-hidden transition-[border-color,box-shadow] duration-[var(--duration-fast)] hover:border-[var(--color-accent-7)] hover:shadow-[0_0_1px_3px_rgba(0,106,220,0.1)]">
                 <div className="flex items-center gap-4 px-4 py-3 bg-[var(--color-neutral-2)]">
                   <button type="button" onClick={() => { setShowMeterTrigger(v => { if (!v) setTimeout(() => meterCardRef.current?.scrollIntoView({ behavior: 'smooth', block: 'nearest' }), 240); return !v }) }}
                     className="flex items-center gap-4 flex-1 min-w-0 text-left cursor-pointer">
@@ -958,7 +969,7 @@ function CreateCalendarTriggerModal({
           })()}
 
           {/* Add Inactive Periods */}
-          <div className={`rounded-[var(--radius-xl)] border border-[var(--border-default)] overflow-hidden transition-opacity ${(!form.scheduleType || !form.period) && !meterComplete ? 'opacity-40 pointer-events-none' : ''}`}>
+          <div className={`rounded-[var(--radius-xl)] border border-[var(--border-default)] overflow-hidden transition-opacity transition-[border-color,box-shadow] duration-[var(--duration-fast)] hover:border-[var(--color-accent-7)] hover:shadow-[0_0_1px_3px_rgba(0,106,220,0.1)] ${(!form.scheduleType || !form.period) && !meterComplete ? 'opacity-40 pointer-events-none' : ''}`}>
             {(() => {
               const lastPeriod = inactivePeriods[inactivePeriods.length - 1]
               const lastPeriodComplete = !lastPeriod || (!!lastPeriod.fromDate && !!lastPeriod.toDate)
@@ -1733,10 +1744,52 @@ const EMPTY_FORM: AssignAssetForm = {
   startDate: '', endDate: '',
 }
 
-// Meter is not a thing a schedule applies to — it's an attribute of the asset or
-// location it applies to, captured by its own field when the trigger is meter-based.
-const APPLIES_TO_TYPES = ['Asset', 'Location'] as const
+const APPLIES_TO_TYPES = ['Asset', 'Location', 'Meter'] as const
 type AppliesToType = typeof APPLIES_TO_TYPES[number]
+/** Plural in the switcher, singular as the stored type. */
+const APPLIES_TO_LABEL: Record<AppliesToType, string> = { Asset: 'Assets', Location: 'Locations', Meter: 'Meter' }
+
+/**
+ * Pill switcher. Segments share the width equally, which lets a single sliding
+ * indicator track the selection by translating whole segment widths.
+ */
+function SegmentedSwitcher({ value, options, labels, onChange }: {
+  value: AppliesToType
+  options: readonly AppliesToType[]
+  labels: Record<AppliesToType, string>
+  onChange: (v: AppliesToType) => void
+}) {
+  const index = Math.max(0, options.indexOf(value))
+  return (
+    <div role="tablist" className="relative flex w-full items-start p-1 rounded-full bg-[var(--surface-secondary)]">
+      <span
+        aria-hidden
+        className="absolute left-1 top-1 bottom-1 rounded-full bg-[var(--chip-solid-bg)] transition-transform duration-300 ease-[cubic-bezier(0.32,0.72,0,1)]"
+        style={{
+          width: `calc((100% - 0.5rem) / ${options.length})`,
+          transform: `translateX(${index * 100}%)`,
+        }}
+      />
+      {options.map(o => {
+        const active = o === value
+        return (
+          <button
+            key={o}
+            type="button"
+            role="tab"
+            aria-selected={active}
+            onClick={() => onChange(o)}
+            className={`relative z-10 flex-1 h-9 px-4 rounded-full text-[14px] leading-5 whitespace-nowrap transition-colors duration-200 cursor-pointer ${
+              active ? 'text-white font-semibold' : 'text-[var(--color-neutral-12)]'
+            }`}
+          >
+            {labels[o]}
+          </button>
+        )
+      })}
+    </div>
+  )
+}
 
 function ModalSectionLabel({ children }: { children: React.ReactNode }) {
   return (
@@ -1764,12 +1817,13 @@ function AssignAssetModal({
     if (open) {
       if (initialValues) {
         setForm(initialValues)
-        setAppliesToType(initialValues.location.length && !initialValues.asset.length ? 'Location' : 'Asset')
+        setAppliesToType(initialValues.asset.length ? 'Asset' : initialValues.location.length ? 'Location' : initialValues.meter.length ? 'Meter' : 'Asset')
       } else {
         setForm(EMPTY_FORM)
         setAppliesToType('Asset')
       }
       setMeterTouched(false)
+      setMeterAutoFilled(false)
     }
   }, [open])
   const [valueOpen, setValueOpen] = useState(false)
@@ -1780,13 +1834,19 @@ function AssignAssetModal({
   const [appliesToVisibleCount, setAppliesToVisibleCount] = useState(99)
   const set = (k: keyof AssignAssetForm) => (v: string) => setForm(f => ({ ...f, [k]: v }))
   const [techAutoFilled, setTechAutoFilled] = useState(false)
+  // Tracks whether the meter in the form came from the database rather than the
+  // user, so a later selection change may replace it but a manual pick survives.
+  const [meterAutoFilled, setMeterAutoFilled] = useState(false)
 
   const usedAssets = existingAssets.map(a => a.name).filter(Boolean)
   const usedLocations = existingAssets.map(a => a.location).filter(Boolean)
-  const usedList = appliesToType === 'Asset' ? usedAssets : usedLocations
-  const allAppliesToOptions = appliesToType === 'Asset' ? ASSETS : LOCATIONS
+  const usedMeters = existingAssets.map(a => a.meter).filter(Boolean)
+  const usedList = appliesToType === 'Asset' ? usedAssets : appliesToType === 'Location' ? usedLocations : usedMeters
+  const allAppliesToOptions = appliesToType === 'Asset' ? ASSETS : appliesToType === 'Location' ? LOCATIONS : METERS
   const appliesToOptions = allAppliesToOptions
-  const appliesToSelected: string[] = appliesToType === 'Asset' ? form.asset : form.location
+  const appliesToSelected: string[] = appliesToType === 'Asset' ? form.asset
+    : appliesToType === 'Location' ? form.location
+    : form.meter
   const filteredAppliesToOptions = appliesToOptions.filter(o => {
     const q = valueQuery.toLowerCase()
     if (!q) return true
@@ -1798,10 +1858,19 @@ function AssignAssetModal({
     return false
   })
 
+  /** Writes a committed selection back to whichever list the current type uses. */
+  function commitAppliesTo(next: string[]) {
+    if (appliesToType === 'Asset') setForm(f => ({ ...f, asset: next }))
+    else if (appliesToType === 'Location') setForm(f => ({ ...f, location: next }))
+    else setForm(f => ({ ...f, meter: next }))
+  }
+
   function toggleAppliesToValue(v: string) {
-    const update = (arr: string[]) => arr.includes(v) ? arr.filter(x => x !== v) : [...arr, v]
-    if (appliesToType === 'Asset') setForm(f => ({ ...f, asset: update(f.asset) }))
-    else setForm(f => ({ ...f, location: update(f.location) }))
+    commitAppliesTo(appliesToSelected.includes(v) ? appliesToSelected.filter(x => x !== v) : [...appliesToSelected, v])
+  }
+
+  function removeAppliesToValue(v: string) {
+    commitAppliesTo(appliesToSelected.filter(x => x !== v))
   }
 
   function handleTypeChange(type: AppliesToType) {
@@ -1813,6 +1882,7 @@ function AssignAssetModal({
   useEffect(() => {
     if (valueOpen) setTimeout(() => valueInputRef.current?.focus(), 0)
     else setValueQuery('')
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [valueOpen])
 
   useEffect(() => {
@@ -1839,6 +1909,36 @@ function AssignAssetModal({
       // Going to 0 or 2+ items — clear auto-filled values
       setForm(f => ({ ...f, primaryAssignee: '', team: '' }))
       setTechAutoFilled(false)
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [appliesToSelected.join(','), appliesToType])
+
+  // A single asset or location can lend its meter to the field. With several
+  // selected there is no one right answer, so the field is left alone — the
+  // "apply to all" toggle covers that case instead.
+  useEffect(() => {
+    if (appliesToType === 'Meter') return
+
+    if (appliesToSelected.length !== 1) {
+      if (meterAutoFilled) { setForm(f => ({ ...f, meter: [] })); setMeterAutoFilled(false) }
+      return
+    }
+
+    const name = appliesToSelected[0]
+    const dbMeters = (appliesToType === 'Asset'
+      ? [getAssetData(name)?.meter]
+      : (getLocationData(name)?.meters ?? [])
+    ).filter(Boolean) as string[]
+
+    if (dbMeters.length > 0) {
+      // Never clobber a meter the user chose themselves.
+      if (meterAutoFilled || form.meter.length === 0) {
+        setForm(f => (f.meter.join(',') === dbMeters.join(',') ? f : { ...f, meter: dbMeters }))
+        setMeterAutoFilled(true)
+      }
+    } else if (meterAutoFilled) {
+      setForm(f => ({ ...f, meter: [] }))
+      setMeterAutoFilled(false)
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [appliesToSelected.join(','), appliesToType])
@@ -1874,10 +1974,18 @@ function AssignAssetModal({
 
   // Meter is mandatory for meter-triggered schedules — unless every selected item
   // already carries one from the database, in which case there's nothing to ask for.
-  const selectionCarriesMeter = appliesToSelected.length > 0
-    && appliesToSelected.every(name => appliesToType === 'Asset' && !!getAssetData(name)?.meter)
-  const needsMeterInput = isMeterBased && !selectionCarriesMeter
-  const canSubmit = !!(form.asset.length || form.location.length || form.primaryAssignee || form.additionalAssignee.length || form.team)
+  // Selecting meters directly already answers the question, so the field goes away.
+  /** Plural, lowercase noun for whatever the schedule applies to — copy reads
+     "for all assets" / "for all locations" depending on the switcher. */
+  const entityWord = appliesToType === 'Location' ? 'locations' : appliesToType === 'Meter' ? 'meters' : 'assets'
+  const needsMeterInput = isMeterBased && appliesToType !== 'Meter'
+  // With several items selected and only some carrying a meter, the choice is
+  // ambiguous: fill the gaps, or overwrite everything?
+  const selectedWithOwnMeter = appliesToType === 'Asset'
+    ? appliesToSelected.filter(name => !!getAssetData(name)?.meter).length
+    : appliesToSelected.filter(name => (getLocationData(name)?.meters?.length ?? 0) > 0).length
+  const someAlreadyHaveMeter = appliesToSelected.length > 1 && selectedWithOwnMeter > 0
+  const canSubmit = !!(form.asset.length || form.location.length || form.meter.length || form.primaryAssignee || form.additionalAssignee.length || form.team)
     && !(needsMeterInput && form.meter.length === 0)
   const [dateError, setDateError] = useState('')
 
@@ -1900,7 +2008,7 @@ function AssignAssetModal({
   }
 
   return (
-    <Modal open={open} onOpenChange={v => !v && handleClose()} maxWidth="520px">
+    <Modal open={open} onOpenChange={v => !v && handleClose()} maxWidth="718px">
       <ModalHeader
         title="Add to Schedule"
         description="Choose where this schedule applies and optionally assign technicians or a team."
@@ -1909,30 +2017,18 @@ function AssignAssetModal({
 
         {/* APPLIES TO */}
         <div className="mb-8">
-          <ModalSectionLabel>Assets / Locations</ModalSectionLabel>
+          <div>
+            <SegmentedSwitcher
+              value={appliesToType}
+              options={APPLIES_TO_TYPES}
+              labels={APPLIES_TO_LABEL}
+              onChange={handleTypeChange}
+            />
+          </div>
+          <div className="pt-6">
+          <div key={appliesToType} className="animate-card-in">
+          <ModalSectionLabel>{APPLIES_TO_LABEL[appliesToType]}</ModalSectionLabel>
           <div className="flex items-stretch rounded-[var(--radius-lg)] border border-[var(--border-default)] overflow-hidden">
-            {/* Type selector */}
-            <DropdownMenu modal={false}>
-              <DropdownMenuTrigger asChild>
-                <button className="h-[var(--control-height-lg)] w-[130px] flex items-center gap-1.5 pl-3 pr-2 border-r border-[var(--border-default)] bg-[var(--color-neutral-2)] hover:bg-[var(--color-neutral-3)] text-[length:var(--control-font-size-base)] font-medium text-[var(--color-neutral-11)] cursor-pointer outline-none transition-colors">
-                  {appliesToType === 'Asset' && <Box size={18} className="shrink-0 text-[var(--color-neutral-8)]" />}
-                  {appliesToType === 'Location' && <MapPin size={18} className="shrink-0 text-[var(--color-neutral-8)]" />}
-                  <span className="flex-1 text-left truncate">{appliesToType}</span>
-                  <ChevronDown size={14} className="shrink-0 text-[var(--color-neutral-9)]" />
-                </button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="start" minWidth="130px">
-                {([
-                  { type: 'Asset' as const, icon: Box },
-                  { type: 'Location' as const, icon: MapPin },
-                ] as { type: AppliesToType; icon: React.ElementType }[]).map(({ type: t, icon: Icon }) => (
-                  <DropdownMenuItem key={t} onSelect={() => handleTypeChange(t)} className={appliesToType === t ? 'font-medium text-[var(--color-accent-9)] bg-[var(--color-accent-1)]' : ''}>
-                    <Icon size={18} className="shrink-0" />
-                    {t}
-                  </DropdownMenuItem>
-                ))}
-              </DropdownMenuContent>
-            </DropdownMenu>
             {/* Value selector — searchable multiselect */}
             {/* Hidden measurement row */}
             <div ref={appliesToMeasureRef} style={{ position: 'fixed', top: '-9999px', left: '-9999px', display: 'flex', gap: '4px' }} aria-hidden="true">
@@ -1940,15 +2036,17 @@ function AssignAssetModal({
                 <Chip key={v} size="xs" variant="soft" onRemove={() => {}}>{v}</Chip>
               ))}
             </div>
-            <Popover.Root open={valueOpen} onOpenChange={setValueOpen}>
+            {/* `modal` makes the first outside click only dismiss the picker, so
+                hitting the modal's Cancel/Add while it is open just closes this. */}
+            <Popover.Root modal open={valueOpen} onOpenChange={setValueOpen}>
               <Popover.Trigger asChild>
-                <button ref={appliesToTriggerRef} className="flex-1 h-[var(--control-height-lg)] flex items-center gap-1 pl-3 pr-2 bg-[var(--surface-primary)] hover:bg-[var(--color-neutral-2)] data-[state=open]:bg-[var(--color-neutral-2)] cursor-pointer outline-none transition-colors overflow-hidden">
+                <button ref={appliesToTriggerRef} className="flex-1 h-[var(--control-height-base)] flex items-center gap-1 pl-3 pr-2 bg-[var(--surface-primary)] hover:bg-[var(--color-neutral-2)] data-[state=open]:bg-[var(--color-neutral-2)] cursor-pointer outline-none transition-colors overflow-hidden">
                   {appliesToSelected.length === 0 ? (
                     <span className="flex-1 text-[13px] text-[var(--color-neutral-7)]" />
                   ) : (
                     <>
                       {appliesToSelected.slice(0, appliesToVisibleCount).map(v => (
-                        <Chip key={v} size="xs" variant="soft" title={v} onRemove={() => toggleAppliesToValue(v)}>{v}</Chip>
+                        <Chip key={v} size="xs" variant="soft" title={v} onRemove={() => removeAppliesToValue(v)}>{v}</Chip>
                       ))}
                       {appliesToSelected.length - appliesToVisibleCount > 0 && (
                         <Chip size="xs" variant="soft">+{appliesToSelected.length - appliesToVisibleCount}</Chip>
@@ -1964,7 +2062,7 @@ function AssignAssetModal({
                   align="start"
                   className="z-[var(--z-dropdown)] w-[var(--radix-popover-trigger-width)] rounded-[var(--radius-xl)] border border-[var(--border-default)] bg-[var(--surface-primary)] shadow-[var(--shadow-lg)] outline-none overflow-hidden"
                 >
-                  <div className="flex items-center gap-2 px-3 py-2 border-b border-[var(--border-subtle)]">
+                  <div className="flex items-center gap-2 mt-2 px-3 py-2 border-b border-[var(--border-subtle)]">
                     <Search size={13} className="shrink-0 text-[var(--color-neutral-7)]" />
                     <input
                       ref={valueInputRef}
@@ -1980,15 +2078,16 @@ function AssignAssetModal({
                       const someSelected = !allSelected && filteredAppliesToOptions.some(o => appliesToSelected.includes(o))
                       const selectedCount = filteredAppliesToOptions.filter(o => appliesToSelected.includes(o)).length
                       return (
-                        <div className="flex items-center justify-between px-3 py-1.5 bg-[var(--color-neutral-2)] border-b border-[var(--border-subtle)]">
+                        <div className="flex items-center justify-between px-3 py-2 bg-[var(--color-neutral-2)] border-b border-[var(--border-subtle)]">
                           <span className="text-[10px] font-semibold uppercase tracking-wide text-[var(--color-neutral-8)]">
                             TOTAL RESULTS: {filteredAppliesToOptions.length}{someSelected ? ` · ${selectedCount} selected` : allSelected ? ` · all selected` : ''}
                           </span>
                           <button
                             type="button"
                             onClick={() => {
-                              if (appliesToType === 'Asset') setForm(f => ({ ...f, asset: allSelected ? f.asset.filter(x => !filteredAppliesToOptions.includes(x)) : [...new Set([...f.asset, ...filteredAppliesToOptions])] }))
-                              else setForm(f => ({ ...f, location: allSelected ? f.location.filter(x => !filteredAppliesToOptions.includes(x)) : [...new Set([...f.location, ...filteredAppliesToOptions])] }))
+                              commitAppliesTo(allSelected
+                                ? appliesToSelected.filter(x => !filteredAppliesToOptions.includes(x))
+                                : [...new Set([...appliesToSelected, ...filteredAppliesToOptions])])
                             }}
                             className="text-[10px] font-semibold uppercase tracking-wide text-[var(--color-accent-9)] hover:opacity-80 cursor-pointer transition-opacity"
                           >
@@ -2026,45 +2125,77 @@ function AssignAssetModal({
               </Popover.Portal>
             </Popover.Root>
           </div>
+          </div>
+          </div>
         </div>
 
-
-        {/* "We'll use existing tech" hint — stays mounted so it can fade out as well as in.
-            The 0fr→1fr grid row animates the collapse; the child clips its own overflow. */}
+        {/* Meter — its own row; collapses away when meters are what the schedule
+            applies to. Stays mounted so the modal resizes instead of jumping. */}
         <div
-          aria-hidden={!multiItemsWithTech}
-          className={`grid shrink-0 transition-all duration-200 ease-out ${
-            multiItemsWithTech ? 'grid-rows-[1fr] opacity-100 mb-4' : 'grid-rows-[0fr] opacity-0 mb-0'
+          aria-hidden={!needsMeterInput}
+          className={`grid transition-all duration-300 ease-out ${
+            needsMeterInput ? 'grid-rows-[1fr] opacity-100 mb-8' : 'grid-rows-[0fr] opacity-0 mb-0'
           }`}
         >
-          <p className="overflow-hidden text-[12px] text-[var(--color-neutral-9)] leading-5">
-            Some selected items already have assigned technicians. You can keep or reassign them below.
-          </p>
+          <div className="overflow-hidden">
+            <div className="flex items-baseline justify-between gap-3 mb-2">
+              <div className="flex items-center gap-1.5 min-w-0">
+                <p className="shrink-0 text-[11px] font-semibold uppercase tracking-wide text-[var(--color-neutral-11)]">
+                  Meter Reading <span className="text-[var(--color-error)]">*</span>
+                </p>
+                <TooltipProvider delayDuration={200}>
+                  <Tooltip side="top" content="Meter-based schedules require an associated meter for each asset.">
+                    <span className="shrink-0 flex items-center text-[var(--color-neutral-7)] hover:text-[var(--color-neutral-9)] transition-colors cursor-help">
+                      <Info size={13} />
+                    </span>
+                  </Tooltip>
+                </TooltipProvider>
+              </div>
+              {!!previousAssignment?.meter?.length && (
+                <button type="button"
+                  onClick={() => { setForm(f => ({ ...f, meter: previousAssignment.meter! })); setMeterTouched(false); setMeterAutoFilled(false) }}
+                  className="shrink-0 text-[11px] font-medium underline text-[var(--color-neutral-8)] hover:text-[var(--color-neutral-11)] cursor-pointer">
+                  Use Last
+                </button>
+              )}
+            </div>
+            <SearchableMultiSelect
+              values={form.meter}
+              onChange={v => { setForm(f => ({ ...f, meter: v })); setMeterTouched(false); setMeterAutoFilled(false) }}
+              options={METERS}
+              error={meterTouched && form.meter.length === 0}
+              onBlur={() => setMeterTouched(true)}
+            />
+            {/* Stays mounted so it can fade out as well as in; the 0fr→1fr row
+                animates the collapse and the child clips its own overflow. */}
+            <div
+              aria-hidden={!someAlreadyHaveMeter}
+              className={`grid transition-all duration-200 ease-out ${
+                someAlreadyHaveMeter ? 'grid-rows-[1fr] opacity-100 mt-3' : 'grid-rows-[0fr] opacity-0 mt-0'
+              }`}
+            >
+              <div className="overflow-hidden">
+                <div className="flex items-center justify-between gap-4 p-3 rounded-[var(--radius-lg)] bg-[var(--surface-secondary)]">
+                  <div className="min-w-0">
+                    <p className="text-[14px] font-bold leading-5 text-[var(--color-neutral-12)]">
+                      Use same meter for all {entityWord}
+                    </p>
+                    <p className="text-[12px] leading-5 text-[var(--color-neutral-9)]">
+                      Some {entityWord} already have a meter. Turn this on to use the same meter for all.
+                    </p>
+                  </div>
+                  <Switch
+                    size="sm"
+                    checked={!!form.applyMeterToAll}
+                    onCheckedChange={v => setForm(f => ({ ...f, applyMeterToAll: v }))}
+                    aria-label={`Use same meter for all ${entityWord}`}
+                  />
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
 
-        {/* Meter field — always offered; mandatory only for meter-triggered schedules
-            whose selected items don't already carry a meter. */}
-        <div className="mb-8">
-          <div className="flex items-center justify-between mb-2">
-            <p className="text-[11px] font-semibold uppercase tracking-wide text-[var(--color-neutral-11)]">
-              Meter Reading {needsMeterInput && <span className="text-[var(--color-error)]">*</span>}
-            </p>
-            {!!previousAssignment?.meter?.length && (
-              <button type="button"
-                onClick={() => { setForm(f => ({ ...f, meter: previousAssignment.meter! })); setMeterTouched(false) }}
-                className="text-[11px] font-medium underline text-[var(--color-neutral-8)] hover:text-[var(--color-neutral-11)] cursor-pointer">
-                Use Last Meter Reading
-              </button>
-            )}
-          </div>
-          <SearchableMultiSelect
-            values={form.meter}
-            onChange={v => { setForm(f => ({ ...f, meter: v })); setMeterTouched(false) }}
-            options={METERS}
-            error={needsMeterInput && meterTouched && form.meter.length === 0}
-            onBlur={() => setMeterTouched(true)}
-          />
-        </div>
 
 
         {/* PEOPLE */}
@@ -2074,7 +2205,7 @@ function AssignAssetModal({
             <button type="button"
               onClick={() => setForm(f => ({ ...f, primaryAssignee: previousAssignment.primaryAssignee!, additionalAssignee: previousAssignment.additionalAssignee ?? [], team: previousAssignment.team ?? '' }))}
               className="text-[11px] font-medium underline text-[var(--color-neutral-8)] hover:text-[var(--color-neutral-11)] cursor-pointer">
-              Use Last Assigned To
+              Use Last
             </button>
           )}
         </div>
@@ -2093,6 +2224,32 @@ function AssignAssetModal({
               <Select label="Team" value={form.team} onChange={set('team')} options={TEAMS} clearable placeholder="" />
             </div>
           </div>
+          {/* Same pattern as the meter override; stays mounted so it can fade both ways. */}
+          <div
+            aria-hidden={!multiItemsWithTech}
+            className={`grid transition-all duration-200 ease-out ${
+              multiItemsWithTech ? 'grid-rows-[1fr] opacity-100 mt-3' : 'grid-rows-[0fr] opacity-0 mt-0'
+            }`}
+          >
+            <div className="overflow-hidden">
+              <div className="flex items-center justify-between gap-4 p-3 rounded-[var(--radius-lg)] bg-[var(--surface-secondary)]">
+                <div className="min-w-0">
+                  <p className="text-[14px] font-bold leading-5 text-[var(--color-neutral-12)]">
+                    Use same assignees for all {entityWord}
+                  </p>
+                  <p className="text-[12px] leading-5 text-[var(--color-neutral-9)]">
+                    Some {entityWord} already have assignees. Turn this on to use the same technicians and team for all.
+                  </p>
+                </div>
+                <Switch
+                  size="sm"
+                  checked={!!form.applyTechToAll}
+                  onCheckedChange={v => setForm(f => ({ ...f, applyTechToAll: v }))}
+                  aria-label={`Use same assignees for all ${entityWord}`}
+                />
+              </div>
+            </div>
+          </div>
         </div>
 
 
@@ -2103,7 +2260,7 @@ function AssignAssetModal({
             <button type="button"
               onClick={() => { setDateError(''); setForm(f => ({ ...f, startDate: previousAssignment.startDate ?? '', endDate: previousAssignment.endDate ?? '' })) }}
               className="text-[11px] font-medium underline text-[var(--color-neutral-8)] hover:text-[var(--color-neutral-11)] cursor-pointer">
-              Use Last Active Dates
+              Use Last
             </button>
           )}
         </div>
@@ -3094,11 +3251,15 @@ function CreatePMPageContent() {
           name: a,
           type: 'Asset' as const,
           subtext: form.location[0] || db?.location || '',
-          meter: form.meter.join(', ') || db?.meter || '',
-          meterInherited: form.meter.length === 0 && !!db?.meter,
-          assignees: [form.primaryAssignee, ...form.additionalAssignee].filter(Boolean),
-          team: form.team || db?.team || '',
-          teamInherited: !form.team && !!db?.team,
+          // Unless told to apply to all, a meter the asset already owns wins.
+          meter: (form.applyMeterToAll ? form.meter.join(', ') : (db?.meter || form.meter.join(', '))) || '',
+          meterInherited: !form.applyMeterToAll && !!db?.meter,
+          // Unless told to apply to all, whoever the asset already has wins.
+          assignees: (!form.applyTechToAll && db?.assignee)
+            ? [db.assignee]
+            : [form.primaryAssignee, ...form.additionalAssignee].filter(Boolean),
+          team: (form.applyTechToAll ? form.team : (db?.team || form.team)) || '',
+          teamInherited: !form.applyTechToAll && !!db?.team,
           startDate: form.startDate,
           endDate: form.endDate,
         }
@@ -3118,6 +3279,19 @@ function CreatePMPageContent() {
           endDate: form.endDate,
         }
       })
+    } else if (form.meter.length > 0) {
+      // Meters picked directly — each becomes its own assignment.
+      items = form.meter.map(m => ({
+        id: crypto.randomUUID(),
+        name: m,
+        type: 'Meter' as const,
+        subtext: getMeterData(m)?.locationName || '',
+        meter: m,
+        assignees: [form.primaryAssignee, ...form.additionalAssignee].filter(Boolean),
+        team: form.team || '',
+        startDate: form.startDate,
+        endDate: form.endDate,
+      }))
     }
     if (items.length === 0) {
       const assignees = [form.primaryAssignee, ...form.additionalAssignee].filter(Boolean)
@@ -4158,7 +4332,6 @@ function CreatePMPageContent() {
                                         }
                                         return (<>
                                           <SortHeader col="name" label="Applies To" className="flex-1 min-w-0" />
-                                          <SortHeader col="meter" label="Meter" className="w-[120px] shrink-0" />
                                           <SortHeader col="user" label="Technicians" className="w-[96px] shrink-0" />
                                           <SortHeader col="team" label="Team" className="w-[80px] shrink-0" />
                                           <SortHeader col="start" label="Dates" className="w-[150px] shrink-0" />
@@ -4186,7 +4359,47 @@ function CreatePMPageContent() {
                                           <div className="w-[80px] h-3 rounded-full bg-[var(--color-neutral-3)]" />
                                           <div className="w-[140px] h-3 rounded-full bg-[var(--color-neutral-3)]" />
                                         </div>
-                                      ) : (
+                                      ) : (() => {
+                                        /* Meter reads as a detail of the asset or location it belongs to.
+                                           A Meter-type row needs none — the row already is the meter. */
+                                        const meters = splitMeters(a.meter)
+                                        const MeterDetail = () => (
+                                          <Popover.Root>
+                                            <Popover.Trigger asChild>
+                                              <button
+                                                className={`group/meter inline-flex items-center gap-1 h-5 px-1.5 w-fit rounded-[var(--radius-sm)] border text-left text-[11px] outline-none cursor-pointer hover:bg-[var(--color-neutral-3)] transition-colors ${isMeterTrigger && meters.length === 0 ? 'text-[var(--color-error,#CE2C31)] font-medium border-[var(--color-error,#CE2C31)]' : 'text-[var(--color-neutral-11)] border-[var(--border-default)]'}`}
+                                              >
+                                                <span className="text-[10px] text-[var(--color-neutral-8)] uppercase tracking-wide">Meter:</span>
+                                                {meters.length === 0 ? (
+                                                  <span className="truncate">{isMeterTrigger ? 'Add' : '—'}</span>
+                                                ) : (<>
+                                                  <span className="truncate">{meters[0]}</span>
+                                                  {meters.length > 1 && (
+                                                    <TooltipProvider delayDuration={200}>
+                                                      <Tooltip
+                                                        side="top"
+                                                        content={
+                                                          <div className="flex flex-col gap-0.5 py-0.5">
+                                                            {meters.map(m => <span key={m} className="text-[12px] leading-5">{m}</span>)}
+                                                          </div>
+                                                        }
+                                                      >
+                                                        <span className="shrink-0 inline-flex items-center h-[16px] px-1 rounded-[4px] text-[10px] font-medium bg-[var(--color-neutral-3)] text-[var(--color-neutral-9)]">+{meters.length - 1}</span>
+                                                      </Tooltip>
+                                                    </TooltipProvider>
+                                                  )}
+                                                </>)}
+                                                <Pencil size={9} className="shrink-0 opacity-0 group-hover/meter:opacity-100 transition-opacity text-[var(--color-neutral-8)]" />
+                                              </button>
+                                            </Popover.Trigger>
+                                            <Popover.Portal>
+                                              <Popover.Content sideOffset={4} align="start" className="z-[var(--z-dropdown)] w-[200px] rounded-[var(--radius-xl)] border border-[var(--border-default)] bg-[var(--surface-primary)] shadow-[var(--shadow-lg)] outline-none overflow-hidden" onOpenAutoFocus={e => e.preventDefault()}>
+                                                <MeterPopoverContent current={a.meter || ''} onSelect={m => setTriggers(ts => ts.map(t => t.id === trigger.id ? { ...t, assignments: t.assignments.map(x => x.id === a.id ? { ...x, meter: m } : x) } : t))} />
+                                              </Popover.Content>
+                                            </Popover.Portal>
+                                          </Popover.Root>
+                                        )
+                                        return (
                                         <div key={a.id} id={`assignment-row-${a.id}`} className={`flex items-center gap-5 px-3 py-4 border-b border-[#F0F0F3] last:border-0 text-[13px] ${newAssignmentIds.has(a.id) ? 'assignment-row-new' : ''} ${isMeterTrigger && !a.meter ? 'bg-[#FFF8F8]' : sel.has(a.id) ? 'bg-[#F8FAFF]' : 'bg-white'}`}>
                                           <button type="button" onClick={() => toggleOne(a.id)} className={`flex-shrink-0 w-4 h-4 rounded-[var(--radius-sm)] border flex items-center justify-center transition-colors ${sel.has(a.id) ? 'bg-[var(--color-accent-9)] border-[var(--color-accent-9)]' : 'border-[var(--color-neutral-6)] bg-[var(--surface-primary)]'}`}>
                                             {sel.has(a.id) && <svg width="10" height="8" viewBox="0 0 10 8" fill="none"><path d="M1 4L3.5 6.5L9 1" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>}
@@ -4201,6 +4414,7 @@ function CreatePMPageContent() {
                                                   <span className="shrink-0 inline-flex items-center h-[18px] px-1.5 rounded-[4px] text-[10px] font-medium bg-[var(--color-neutral-3)] text-[var(--color-neutral-9)]">Location</span>
                                                 </div>
                                                 <span className="text-[11px] text-[var(--color-neutral-11)] truncate"><span className="text-[10px] text-[var(--color-neutral-8)] uppercase tracking-wide">Asset:</span> —</span>
+                                                <MeterDetail />
                                               </div>
                                             ) : a.type === 'Asset' ? (
                                               /* Asset row: name · Asset badge, then Location: subtext */
@@ -4210,54 +4424,18 @@ function CreatePMPageContent() {
                                                   <span className="shrink-0 inline-flex items-center h-[18px] px-1.5 rounded-[4px] text-[10px] font-medium bg-[var(--color-neutral-3)] text-[var(--color-neutral-9)]">Asset</span>
                                                 </div>
                                                 <span className="text-[11px] text-[var(--color-neutral-11)] truncate"><span className="text-[10px] text-[var(--color-neutral-8)] uppercase tracking-wide">Location:</span> {a.subtext || '—'}</span>
+                                                <MeterDetail />
                                               </div>
                                             ) : (
-                                              /* Person-only row: show empty applies-to block */
+                                              /* Person-only row: empty applies-to block, but the meter is
+                                                 still editable — a meter-based schedule needs one here too. */
                                               <div className="flex flex-col min-w-0">
                                                 <span className="text-[11px] text-[var(--color-neutral-11)] truncate"><span className="text-[10px] text-[var(--color-neutral-8)] uppercase tracking-wide">Asset:</span> —</span>
                                                 <span className="text-[11px] text-[var(--color-neutral-11)] truncate"><span className="text-[10px] text-[var(--color-neutral-8)] uppercase tracking-wide">Location:</span> —</span>
+                                                <MeterDetail />
                                               </div>
                                             )}
                                           </div>
-                                          {/* Meter — inline edit */}
-                                          <Popover.Root>
-                                            <Popover.Trigger asChild>
-                                              <button
-                                                className={`group/meter w-[120px] shrink-0 h-7 flex items-center justify-between gap-1 px-1 rounded-[var(--radius-md)] text-left text-[12px] outline-none cursor-pointer hover:bg-[var(--color-neutral-3)] transition-colors ${isMeterTrigger && !a.meter ? 'text-[var(--color-error,#CE2C31)] font-medium' : 'text-[var(--color-neutral-11)]'}`}
-                                              >
-                                                <span className="flex items-center min-w-0">
-                                                {(() => {
-                                                  const ms = splitMeters(a.meter)
-                                                  if (isMeterTrigger && ms.length === 0) return <span className="truncate">Add</span>
-                                                  if (ms.length === 0) return <span className="truncate">—</span>
-                                                  return (<>
-                                                    <span className="truncate">{ms[0]}</span>
-                                                    {ms.length > 1 && (
-                                                      <TooltipProvider delayDuration={200}>
-                                                        <Tooltip
-                                                          side="top"
-                                                          content={
-                                                            <div className="flex flex-col gap-0.5 py-0.5">
-                                                              {ms.map(m => <span key={m} className="text-[12px] leading-5">{m}</span>)}
-                                                            </div>
-                                                          }
-                                                        >
-                                                          <span className="ml-1 shrink-0 inline-flex items-center h-[18px] px-1 rounded-[4px] text-[10px] font-medium bg-[var(--color-neutral-3)] text-[var(--color-neutral-9)]">+{ms.length - 1}</span>
-                                                        </Tooltip>
-                                                      </TooltipProvider>
-                                                    )}
-                                                  </>)
-                                                })()}
-                                                </span>
-                                                <CellEditHint mode={splitMeters(a.meter).length ? 'edit' : 'add'} revealClass="group-hover/meter:opacity-100" />
-                                              </button>
-                                            </Popover.Trigger>
-                                            <Popover.Portal>
-                                              <Popover.Content sideOffset={4} align="start" className="z-[var(--z-dropdown)] w-[200px] rounded-[var(--radius-xl)] border border-[var(--border-default)] bg-[var(--surface-primary)] shadow-[var(--shadow-lg)] outline-none overflow-hidden" onOpenAutoFocus={e => e.preventDefault()}>
-                                                <MeterPopoverContent current={a.meter || ''} onSelect={m => setTriggers(ts => ts.map(t => t.id === trigger.id ? { ...t, assignments: t.assignments.map(x => x.id === a.id ? { ...x, meter: m } : x) } : t))} />
-                                              </Popover.Content>
-                                            </Popover.Portal>
-                                          </Popover.Root>
                                           {/* Assignee avatars — inline edit */}
                                           <Popover.Root>
                                             <Popover.Trigger asChild>
@@ -4381,7 +4559,8 @@ function CreatePMPageContent() {
                                             </DropdownMenuContent>
                                           </DropdownMenu>
                                         </div>
-                                      ))}
+                                        )
+                                      })())}
                                     </div>
                                   </>)
                                 })()}

@@ -53,7 +53,9 @@ export function SearchableSelect({
           {label}{required && <span className="text-[var(--color-error)] ml-0.5">*</span>}
         </label>
       )}
-      <Popover.Root open={open} onOpenChange={v => { setOpen(v); if (!v && onBlur) onBlur() }}>
+      {/* `modal` makes the first outside click only dismiss the dropdown — it never
+          also activates what sits underneath (e.g. a modal's Cancel/Save). */}
+      <Popover.Root modal open={open} onOpenChange={v => { setOpen(v); if (!v && onBlur) onBlur() }}>
         <Popover.Trigger asChild>
           <button
             type="button"
@@ -155,6 +157,7 @@ export function SearchableMultiSelect({
   useEffect(() => {
     if (open) setTimeout(() => inputRef.current?.focus(), 0)
     else setQuery('')
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open])
 
   const compute = useCallback(() => {
@@ -210,7 +213,9 @@ export function SearchableMultiSelect({
           <Chip key={v} size={chipSize} variant="soft" onRemove={() => {}}>{v}</Chip>
         ))}
       </div>
-      <Popover.Root open={open} onOpenChange={v => { setOpen(v); if (!v && onBlur) onBlur() }}>
+      {/* `modal` makes the first outside click only dismiss the dropdown — it never
+          also activates what sits underneath (e.g. a modal's Cancel/Save). */}
+      <Popover.Root modal open={open} onOpenChange={v => { setOpen(v); if (!v && onBlur) onBlur() }}>
         <Popover.Trigger asChild>
           <button
             ref={triggerRef}
