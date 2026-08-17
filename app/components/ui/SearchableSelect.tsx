@@ -2,7 +2,7 @@
 
 import { useState, useRef, useEffect, useCallback } from 'react'
 import * as Popover from '@radix-ui/react-popover'
-import { ChevronDown, Search, Check, X } from 'lucide-react'
+import { ChevronDown, Search, Check, X, Plus } from 'lucide-react'
 import { Avatar } from '@/app/components/ui/Avatar'
 import { Chip, type ChipSize } from '@/app/components/ui/Chip'
 
@@ -12,6 +12,26 @@ function OptionTag({ children }: { children: React.ReactNode }) {
     <span className="shrink-0 inline-flex items-center h-[18px] px-1.5 rounded-full bg-[var(--color-neutral-3)] text-[11px] font-medium text-[var(--color-neutral-9)]">
       {children}
     </span>
+  )
+}
+
+/**
+ * Pinned footer that offers to create a new record of whatever the dropdown
+ * lists. It sits outside the scrolling option list, so it stays visible.
+ * Purely an entry point — the caller supplies the action.
+ */
+function CreateFooter({ entity, onClick }: { entity: string; onClick: () => void }) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className="w-full shrink-0 flex items-center justify-between gap-2 px-3 py-2 border-t border-[var(--border-subtle)] text-left text-[13px] font-medium text-[var(--color-accent-9)] cursor-pointer transition-colors hover:bg-[var(--color-accent-1)]"
+    >
+      Create New {entity}
+      <span className="shrink-0 inline-flex items-center justify-center w-8 h-8 rounded-[var(--radius-md)] bg-[var(--chip-surface-bg)]">
+        <Plus size={16} />
+      </span>
+    </button>
   )
 }
 
@@ -30,11 +50,15 @@ interface SearchableSelectProps {
   onBlur?: () => void
   /** Optional per-option secondary label (e.g. role), keyed by option value. */
   optionTags?: Record<string, string>
+  /** Shows a pinned "Create New <entity>" footer, e.g. `Technician`. */
+  createEntity?: string
+  /** Runs when that footer is used. Without it the footer just closes the menu. */
+  onCreate?: () => void
 }
 
 export function SearchableSelect({
   label, required, value, onChange, options, placeholder = '', className = '', showAvatar = false, error = false, onBlur,
-  optionTags,
+  optionTags, createEntity, onCreate,
 }: SearchableSelectProps) {
   const [open, setOpen] = useState(false)
   const [query, setQuery] = useState('')
@@ -115,6 +139,7 @@ export function SearchableSelect({
                 </button>
               ))}
             </div>
+            {createEntity && <CreateFooter entity={createEntity} onClick={() => { setOpen(false); onCreate?.() }} />}
           </Popover.Content>
         </Popover.Portal>
       </Popover.Root>
@@ -139,11 +164,15 @@ interface SearchableMultiSelectProps {
   chipSize?: ChipSize
   /** Optional per-option secondary label (e.g. role), keyed by option value. */
   optionTags?: Record<string, string>
+  /** Shows a pinned "Create New <entity>" footer, e.g. `Technician`. */
+  createEntity?: string
+  /** Runs when that footer is used. Without it the footer just closes the menu. */
+  onCreate?: () => void
 }
 
 export function SearchableMultiSelect({
   label, required, values, onChange, options, placeholder = '', className = '', showAvatar = false, error = false, onBlur,
-  chipSize = 'xs', optionTags,
+  chipSize = 'xs', optionTags, createEntity, onCreate,
 }: SearchableMultiSelectProps) {
   const [open, setOpen] = useState(false)
   const [query, setQuery] = useState('')
@@ -278,6 +307,7 @@ export function SearchableMultiSelect({
                 )
               })}
             </div>
+            {createEntity && <CreateFooter entity={createEntity} onClick={() => { setOpen(false); onCreate?.() }} />}
           </Popover.Content>
         </Popover.Portal>
       </Popover.Root>

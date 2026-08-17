@@ -23,11 +23,13 @@ export function Modal({ open, onOpenChange, children, maxWidth = '480px', srTitl
       <Dialog.Portal>
         <Dialog.Overlay className="modal-overlay fixed inset-0 z-[var(--z-overlay)] bg-black/40" />
         <Dialog.Content
-          className="modal-content fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-[var(--z-modal)] w-full max-h-[85vh] rounded-[var(--radius-2xl)] border border-[var(--border-default)] bg-[var(--surface-primary)] shadow-[var(--shadow-xl)] focus:outline-none flex flex-col overflow-visible"
+          className="modal-content fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-[var(--z-modal)] w-[calc(100%-32px)] max-h-[calc(100dvh-48px)] rounded-[var(--radius-2xl)] border border-[var(--border-default)] bg-[var(--surface-primary)] shadow-[var(--shadow-xl)] focus:outline-none flex flex-col overflow-visible"
           style={{ maxWidth }}
         >
           {srTitle && <Dialog.Title className="sr-only">{srTitle}</Dialog.Title>}
-          <div className="flex flex-col overflow-hidden rounded-[var(--radius-2xl)] max-h-[85vh]">
+          {/* Matches the content cap above so short screens give the body as much
+              room as possible instead of squeezing it into 85vh. */}
+          <div className="flex flex-col overflow-hidden rounded-[var(--radius-2xl)] max-h-[calc(100dvh-48px)]">
             {children}
           </div>
         </Dialog.Content>

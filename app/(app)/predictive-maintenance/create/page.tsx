@@ -8,7 +8,7 @@ import {
   ChevronLeft, ChevronRight, ChevronUp, ChevronDown, ChevronsUpDown, FileText, Box,
   Plus, X, MapPin, Gauge, Clock, Users, Upload, Trash2, PanelLeft, Info,
   Calendar, ArrowRight, ArrowDown, Sparkle, MoreHorizontal, Pencil, Activity, CalendarClock,
-  User, UserX, RotateCcw, RefreshCw, Camera, Link2, Search, Ban, Flag, SlidersHorizontal,
+  User, UserX, RotateCcw, RefreshCw, Camera, Link2, Search, Ban, Flag, SlidersHorizontal, Check, Circle, CircleCheck, CircleDot, CircleX,
 } from 'lucide-react'
 import { Button } from '@/app/components/ui/Button'
 import { IconButton } from '@/app/components/ui/IconButton'
@@ -361,6 +361,179 @@ function validateDateRange(start: string, end: string): string {
   return ''
 }
 
+/* ── Progress stepper ── */
+
+const PM_STEPS = ['Add details', 'Create schedule', 'Add Assets & Locations', 'Review and Create'] as const
+
+/**
+ * Four bars over four labels. Everything before `current` reads as done, the
+ * current one is solid accent, and the rest stay neutral.
+ */
+type StepState = 'done' | 'current' | 'error' | 'pending'
+
+/**
+ * Share of the work actually finished — an untouched form reads 0%. Only the
+ * first three steps can be completed; "Review and Create" is the end state, so
+ * finishing those three is 100%.
+ */
+function overallPercent(states: StepState[]) {
+  const actionable = states.slice(0, 3)
+  const done = actionable.filter(st => st === 'done').length
+  return Math.round((done / actionable.length) * 100)
+}
+
+const PM_STEP_PROGRESS_LABELS: Record<string, string> = {
+  'Add details': 'Adding details',
+  'Create schedule': 'Creating schedule',
+  'Add Assets & Locations': 'Adding assets & locations',
+  'Review and Create': 'Ready to create',
+}
+
+function ProgressBar({ states }: { states: StepState[] }) {
+  const current = PM_STEPS[states.findIndex(st => st === 'current')] ?? PM_STEPS[PM_STEPS.length - 1]
+  const percent = overallPercent(states)
+  return (
+    <div className="flex flex-col gap-2 w-full">
+      <div className="flex items-start justify-between">
+        <span className="text-[12px] font-medium leading-4 text-[var(--color-neutral-12)]">{PM_STEP_PROGRESS_LABELS[current] ?? current}</span>
+        <span className="text-[12px] font-semibold leading-4 text-[var(--color-neutral-9)]">{percent}%</span>
+      </div>
+      <div className="relative h-2 w-full rounded-full border border-[rgba(0,0,45,0.09)] bg-[rgba(0,0,51,0.06)] overflow-hidden">
+        <span
+          className="absolute left-0 top-0 bottom-0 rounded-full bg-[var(--chip-solid-bg)] transition-[width] duration-500 ease-[cubic-bezier(0.32,0.72,0,1)]"
+          style={{ width: `${percent}%` }}
+        />
+      </div>
+    </div>
+  )
+}
+
+/**
+ * Progress rail: the four steps as a sticky card beside the form. Each step
+ * carries its own state, so a later step can be in progress while an earlier
+ * one still shows an error — the form can be filled in any order.
+ */
+function ProgressCard({ states, onSelect }: { states: StepState[]; onSelect: (index: number) => void }) {
+  const tone: Record<StepState, string> = {
+    done: 'text-[var(--chip-solid-bg)]',
+    current: 'text-[var(--chip-solid-bg-pressed)]',
+    error: 'text-[var(--color-error)]',
+    pending: 'text-[var(--color-neutral-8)]',
+  }
+  const icon: Record<StepState, React.ReactNode> = {
+    done: <CircleCheck size={14} />,
+    current: <CircleDot size={14} />,
+    error: <CircleX size={14} />,
+    pending: <Circle size={14} />,
+  }
+  return (
+    <aside className="sticky top-[92px] self-start shrink-0 w-[208px] rounded-[var(--radius-xl)] border border-[var(--border-default)] bg-[var(--surface-primary)] overflow-hidden">
+      <div className="flex items-center h-12 px-4 border-b border-[var(--border-subtle)]">
+        <span className="text-[12px] font-semibold leading-4 text-[var(--color-neutral-12)]">Progress</span>
+      </div>
+      <div className="flex flex-col gap-1 px-3 pt-3 pb-5">
+        {PM_STEPS.map((step, i) => {
+          const state = states[i] ?? 'pending'
+          return (
+            <button
+              key={step}
+              type="button"
+              /* Steps not yet reached have nothing to jump to, so they are inert. */
+              disabled={state === 'pending'}
+              onClick={() => onSelect(i)}
+              /* The step in progress gets a tinted row so it reads as "you are here". */
+              className={`flex items-center gap-3 w-full text-left px-2 py-1.5 rounded-[var(--radius-md)] text-[12px] leading-4 transition-colors duration-500 ${
+                state === 'pending' ? 'cursor-default' : 'cursor-pointer font-medium'
+              } ${state === 'current' ? 'bg-[var(--chip-surface-bg)]' : state === 'pending' ? '' : 'hover:bg-[var(--color-neutral-3)]'} ${tone[state]}`}
+            >
+              <span className="shrink-0">{icon[state]}</span>
+              {step}
+            </button>
+          )
+        })}
+      </div>
+    </aside>
+  )
+}
+
+/**
+ * Every step carries its own state, so a later step can be in progress while an
+ * earlier one still shows an error — sequential progress isn't a good model for
+ * a form the user can fill in any order.
+ */
+function Stepper({ states }: { states: StepState[] }) {
+  const barClass: Record<StepState, string> = {
+    done: 'bg-[var(--chip-solid-bg-pressed)]',
+    current: 'bg-[var(--chip-solid-bg)]',
+    error: 'bg-[var(--color-error-border)]',
+    pending: 'bg-[var(--color-neutral-3)]',
+  }
+  const textClass: Record<StepState, string> = {
+    done: 'font-medium text-[var(--color-neutral-12)]',
+    current: 'font-medium text-[var(--chip-solid-bg)]',
+    error: 'font-medium text-[var(--color-error)]',
+    pending: 'text-[var(--color-neutral-9)]',
+  }
+  return (
+    <div className="flex flex-col w-full">
+      <div className="flex items-center gap-1">
+        {PM_STEPS.map((step, i) => (
+          /* Neutral track with a fill that grows in, so reaching a step reads as
+             progress rather than a colour swap. */
+          <span key={step} className="flex-1 h-1 rounded-full bg-[var(--color-neutral-3)] overflow-hidden">
+            <span
+              className={`block h-full rounded-full transition-[width,background-color] duration-500 ease-[cubic-bezier(0.32,0.72,0,1)] ${barClass[states[i] ?? 'pending']}`}
+              style={{ width: (states[i] ?? 'pending') === 'pending' ? '0%' : '100%' }}
+            />
+          </span>
+        ))}
+      </div>
+      <div className="flex items-start gap-3 py-1">
+        {PM_STEPS.map((step, i) => {
+          const state = states[i] ?? 'pending'
+          return (
+            <span key={step} className={`flex-1 px-1 text-[10px] uppercase tracking-wide leading-4 truncate transition-colors duration-500 ${textClass[state]}`}>
+              {step}
+            </span>
+          )
+        })}
+      </div>
+    </div>
+  )
+}
+
+/**
+ * One row of the "what's left to do" empty states: numbered badge, copy, and an
+ * optional action. A done step wears a check and dims; a pending step dims too
+ * but keeps its outlined number.
+ */
+function StepRow({ state, number, title, description, action }: {
+  state: 'done' | 'current' | 'pending'
+  number: number
+  title: string
+  description: string
+  action?: React.ReactNode
+}) {
+  return (
+    <div className={`flex items-center gap-3 p-4 rounded-[var(--radius-lg)] border border-[var(--border-default)] bg-[var(--surface-primary)] ${state === 'current' ? '' : 'opacity-50'}`}>
+      <span
+        className={`shrink-0 w-10 h-10 flex items-center justify-center rounded-[var(--radius-sm)] text-[14px] font-semibold ${
+          state === 'done' ? 'bg-[var(--chip-surface-bg)] text-[var(--chip-outline-fg)]'
+          : state === 'current' ? 'bg-[var(--chip-solid-bg)] text-white'
+          : 'border border-[var(--color-neutral-6)] text-[var(--color-neutral-9)]'
+        }`}
+      >
+        {state === 'done' ? <Check size={16} /> : number}
+      </span>
+      <div className="flex-1 min-w-0">
+        <p className="text-[16px] font-semibold leading-6 text-[var(--color-neutral-12)]">{title}</p>
+        <p className="text-[12px] leading-4 text-[var(--color-neutral-9)]">{description}</p>
+      </div>
+      {action}
+    </div>
+  )
+}
+
 /* ── Select field component ── */
 
 type SelectOption = string | { value: string; label: string; icon?: React.ReactNode }
@@ -369,7 +542,7 @@ function normalizeOption(o: SelectOption): { value: string; label: string; icon?
 }
 
 function Select({
-  label, required, value, onChange, options, placeholder = 'Select…', clearable = false,
+  label, required, value, onChange, options, placeholder = 'Select…', clearable = false, createEntity,
 }: {
   label?: string
   required?: boolean
@@ -378,6 +551,8 @@ function Select({
   options: SelectOption[]
   placeholder?: string
   clearable?: boolean
+  /** Shows a pinned "Create New <entity>" item at the bottom of the menu. */
+  createEntity?: string
 }) {
   const normalized = options.map(normalizeOption)
   const selected = normalized.find(o => o.value === value)
@@ -419,6 +594,13 @@ function Select({
               {o.label}
             </DropdownMenuItem>
           ))}
+          {createEntity && (
+            <div className="mt-1 pt-1 border-t border-[var(--border-subtle)]">
+              <DropdownMenuItem className="text-[13px] font-medium text-[var(--color-accent-9)]">
+                Create New {createEntity}
+              </DropdownMenuItem>
+            </div>
+          )}
         </DropdownMenuContent>
       </DropdownMenu>
     </div>
@@ -548,6 +730,14 @@ function CreateCalendarTriggerModal({
   const [showInactivePeriods, setShowInactivePeriods] = useState(false)
   const [showMeterTrigger, setShowMeterTrigger] = useState(!!(initial?.meterValue || initial?.meterCondition))
   const [showCalendarBased, setShowCalendarBased] = useState(!!(initial?.scheduleType && initial?.every && initial?.period))
+  /* 0fr→1fr animates the reveal, but leaving the row at 1fr can clip the card on
+     short screens. Once the transition is over the row goes back to auto. */
+  const [calendarSettled, setCalendarSettled] = useState(showCalendarBased)
+  useEffect(() => {
+    if (!showCalendarBased) { setCalendarSettled(false); return }
+    const t = setTimeout(() => setCalendarSettled(true), 240)
+    return () => clearTimeout(t)
+  }, [showCalendarBased])
   const [inactivePeriods, setInactivePeriods] = useState<Array<{ id: string; fromDate: string; fromTime: string; toDate: string; toTime: string }>>([])
   const [newPeriod, setNewPeriod] = useState({ fromDate: '', fromTime: '', toDate: '', toTime: '' })
   const lastAddedIdRef = useRef<string | null>(null)
@@ -613,7 +803,7 @@ function CreateCalendarTriggerModal({
       <ModalBody className="flex flex-col gap-3 p-6">
 
         {/* Calendar Based card */}
-        <div className="rounded-[var(--radius-xl)] border border-[var(--border-default)] transition-[border-color,box-shadow] duration-[var(--duration-fast)] hover:border-[var(--color-accent-7)] hover:shadow-[0_0_1px_3px_rgba(0,106,220,0.1)]">
+        <div className="shrink-0 rounded-[var(--radius-xl)] border border-[var(--border-default)] overflow-hidden transition-[border-color,box-shadow] duration-[var(--duration-fast)] hover:border-[var(--color-accent-7)] hover:shadow-[0_0_1px_3px_rgba(0,106,220,0.1)]">
           <div className="flex items-center gap-3 px-4 py-3 bg-[var(--color-neutral-2)] rounded-t-[var(--radius-xl)] hover:bg-[var(--color-neutral-3)] transition-colors">
             <button type="button" onClick={() => setShowCalendarBased(v => !v)}
               className="flex items-center gap-3 flex-1 min-w-0 text-left cursor-pointer">
@@ -681,8 +871,8 @@ function CreateCalendarTriggerModal({
               </div>
             )}
           </div>
-          <div style={{ display: 'grid', gridTemplateRows: showCalendarBased ? '1fr' : '0fr', transition: 'grid-template-rows 220ms ease' }}>
-            <div style={{ overflow: 'hidden' }}>
+          <div style={{ display: 'grid', gridTemplateRows: showCalendarBased ? (calendarSettled ? 'auto' : '1fr') : '0fr', transition: 'grid-template-rows 220ms ease' }}>
+            <div style={{ overflow: calendarSettled ? 'visible' : 'hidden' }}>
               <div className="p-4 flex flex-col gap-6">
 
                 {/* Schedule type */}
@@ -899,7 +1089,7 @@ function CreateCalendarTriggerModal({
             ].filter(Boolean).join(' · ')
             const clearMeter = () => { setMeterCondition(''); setMeterValue(''); setMeterUnit('Units'); setMeterDueN(''); setMeterDuePeriod(''); setShowMeterTrigger(false) }
             return (
-              <div ref={meterCardRef} className="rounded-[var(--radius-xl)] border border-[var(--border-default)] overflow-hidden transition-[border-color,box-shadow] duration-[var(--duration-fast)] hover:border-[var(--color-accent-7)] hover:shadow-[0_0_1px_3px_rgba(0,106,220,0.1)]">
+              <div ref={meterCardRef} className="shrink-0 rounded-[var(--radius-xl)] border border-[var(--border-default)] overflow-hidden transition-[border-color,box-shadow] duration-[var(--duration-fast)] hover:border-[var(--color-accent-7)] hover:shadow-[0_0_1px_3px_rgba(0,106,220,0.1)]">
                 <div className="flex items-center gap-4 px-4 py-3 bg-[var(--color-neutral-2)]">
                   <button type="button" onClick={() => { setShowMeterTrigger(v => { if (!v) setTimeout(() => meterCardRef.current?.scrollIntoView({ behavior: 'smooth', block: 'nearest' }), 240); return !v }) }}
                     className="flex items-center gap-4 flex-1 min-w-0 text-left cursor-pointer">
@@ -969,7 +1159,7 @@ function CreateCalendarTriggerModal({
           })()}
 
           {/* Add Inactive Periods */}
-          <div className={`rounded-[var(--radius-xl)] border border-[var(--border-default)] overflow-hidden transition-opacity transition-[border-color,box-shadow] duration-[var(--duration-fast)] hover:border-[var(--color-accent-7)] hover:shadow-[0_0_1px_3px_rgba(0,106,220,0.1)] ${(!form.scheduleType || !form.period) && !meterComplete ? 'opacity-40 pointer-events-none' : ''}`}>
+          <div className={`shrink-0 rounded-[var(--radius-xl)] border border-[var(--border-default)] overflow-hidden transition-opacity transition-[border-color,box-shadow] duration-[var(--duration-fast)] hover:border-[var(--color-accent-7)] hover:shadow-[0_0_1px_3px_rgba(0,106,220,0.1)] ${(!form.scheduleType || !form.period) && !meterComplete ? 'opacity-40 pointer-events-none' : ''}`}>
             {(() => {
               const lastPeriod = inactivePeriods[inactivePeriods.length - 1]
               const lastPeriodComplete = !lastPeriod || (!!lastPeriod.fromDate && !!lastPeriod.toDate)
@@ -1274,9 +1464,9 @@ function InlineAssignForm({ onSubmit, onCancel }: { onSubmit: (f: AssignAssetFor
       )}
 
       <div className="grid grid-cols-3 gap-4">
-        <SearchableSelect label="Technician" value={form.primaryAssignee} onChange={set('primaryAssignee')} options={ASSIGNEES} optionTags={ASSIGNEE_ROLES} showAvatar />
-        <SearchableMultiSelect label="Additional Technicians" values={form.additionalAssignee} onChange={v => setForm(f => ({ ...f, additionalAssignee: v }))} options={ASSIGNEES} optionTags={ASSIGNEE_ROLES} showAvatar />
-        <Select label="Team" value={form.team} onChange={set('team')} options={TEAMS} clearable />
+        <SearchableSelect label="Technician" value={form.primaryAssignee} onChange={set('primaryAssignee')} options={ASSIGNEES} optionTags={ASSIGNEE_ROLES} showAvatar createEntity="Technician" />
+        <SearchableMultiSelect label="Additional Technicians" values={form.additionalAssignee} onChange={v => setForm(f => ({ ...f, additionalAssignee: v }))} options={ASSIGNEES} optionTags={ASSIGNEE_ROLES} showAvatar createEntity="Technician" />
+        <Select label="Team" value={form.team} onChange={set('team')} options={TEAMS} clearable createEntity="Team" />
       </div>
 
       <div className="flex items-center justify-end gap-2 pt-1">
@@ -1742,6 +1932,9 @@ const EMPTY_FORM: AssignAssetForm = {
   asset: [], location: [], meter: [],
   primaryAssignee: '', additionalAssignee: [], team: '', trigger: '',
   startDate: '', endDate: '',
+  /* Both overrides start on: what the user types here is meant for everything
+     they selected, unless they deliberately keep the existing values. */
+  applyMeterToAll: true, applyTechToAll: true,
 }
 
 const APPLIES_TO_TYPES = ['Asset', 'Location', 'Meter'] as const
@@ -2121,6 +2314,17 @@ function AssignAssetModal({
                       )
                     })}
                   </div>
+                  {/* Pinned create entry point — the label follows the switcher. */}
+                  <button
+                    type="button"
+                    onClick={() => setValueOpen(false)}
+                    className="w-full shrink-0 flex items-center justify-between gap-2 px-3 py-2 border-t border-[var(--border-subtle)] text-left text-[13px] font-medium text-[var(--color-accent-9)] cursor-pointer transition-colors hover:bg-[var(--color-accent-1)]"
+                  >
+                    Create New {appliesToType}
+                    <span className="shrink-0 inline-flex items-center justify-center w-8 h-8 rounded-[var(--radius-md)] bg-[var(--chip-surface-bg)]">
+                      <Plus size={16} />
+                    </span>
+                  </button>
                 </Popover.Content>
               </Popover.Portal>
             </Popover.Root>
@@ -2165,6 +2369,7 @@ function AssignAssetModal({
               options={METERS}
               error={meterTouched && form.meter.length === 0}
               onBlur={() => setMeterTouched(true)}
+              createEntity="Meter"
             />
             {/* Stays mounted so it can fade out as well as in; the 0fr→1fr row
                 animates the collapse and the child clips its own overflow. */}
@@ -2177,11 +2382,8 @@ function AssignAssetModal({
               <div className="overflow-hidden">
                 <div className="flex items-center justify-between gap-4 p-3 rounded-[var(--radius-lg)] bg-[var(--surface-secondary)]">
                   <div className="min-w-0">
-                    <p className="text-[14px] font-bold leading-5 text-[var(--color-neutral-12)]">
-                      Use same meter for all {entityWord}
-                    </p>
                     <p className="text-[12px] leading-5 text-[var(--color-neutral-9)]">
-                      Some {entityWord} already have a meter. Turn this on to use the same meter for all.
+                      Some selected {entityWord} already have a meter. Turn this on to use the same meter for all.
                     </p>
                   </div>
                   <Switch
@@ -2214,31 +2416,28 @@ function AssignAssetModal({
             <div className="flex items-center justify-between">
               <label className="text-[length:var(--font-size-sm)] font-medium text-[var(--color-neutral-12)]">Technician</label>
             </div>
-            <SearchableSelect value={form.primaryAssignee} onChange={set('primaryAssignee')} options={ASSIGNEES} optionTags={ASSIGNEE_ROLES} showAvatar />
+            <SearchableSelect value={form.primaryAssignee} onChange={set('primaryAssignee')} options={ASSIGNEES} optionTags={ASSIGNEE_ROLES} showAvatar createEntity="Technician" />
           </div>
           <div className="flex gap-4">
             <div className={`flex-1 min-w-0 ${form.primaryAssignee ? '' : 'opacity-40 pointer-events-none'}`}>
-              <SearchableMultiSelect label="Additional Technicians" values={form.additionalAssignee} onChange={v => setForm(f => ({ ...f, additionalAssignee: v }))} options={ASSIGNEES} optionTags={ASSIGNEE_ROLES} showAvatar />
+              <SearchableMultiSelect label="Additional Technicians" values={form.additionalAssignee} onChange={v => setForm(f => ({ ...f, additionalAssignee: v }))} options={ASSIGNEES} optionTags={ASSIGNEE_ROLES} showAvatar createEntity="Technician" />
             </div>
             <div className="flex-1 min-w-0">
-              <Select label="Team" value={form.team} onChange={set('team')} options={TEAMS} clearable placeholder="" />
+              <Select label="Team" value={form.team} onChange={set('team')} options={TEAMS} clearable placeholder="" createEntity="Team" />
             </div>
           </div>
           {/* Same pattern as the meter override; stays mounted so it can fade both ways. */}
           <div
             aria-hidden={!multiItemsWithTech}
             className={`grid transition-all duration-200 ease-out ${
-              multiItemsWithTech ? 'grid-rows-[1fr] opacity-100 mt-3' : 'grid-rows-[0fr] opacity-0 mt-0'
+              multiItemsWithTech ? 'grid-rows-[1fr] opacity-100' : 'grid-rows-[0fr] opacity-0'
             }`}
           >
             <div className="overflow-hidden">
               <div className="flex items-center justify-between gap-4 p-3 rounded-[var(--radius-lg)] bg-[var(--surface-secondary)]">
                 <div className="min-w-0">
-                  <p className="text-[14px] font-bold leading-5 text-[var(--color-neutral-12)]">
-                    Use same assignees for all {entityWord}
-                  </p>
                   <p className="text-[12px] leading-5 text-[var(--color-neutral-9)]">
-                    Some {entityWord} already have assignees. Turn this on to use the same technicians and team for all.
+                    Some selected {entityWord} already have assignees. Turn this on to use the same assignees for all.
                   </p>
                 </div>
                 <Switch
@@ -3014,6 +3213,7 @@ function FillMissingModal({
                     optionTags={type === 'tech' ? ASSIGNEE_ROLES : undefined}
                     placeholder={type === 'meter' ? 'Select meter…' : 'Select technician…'}
                     showAvatar={type === 'tech'}
+                    createEntity={type === 'meter' ? 'Meter' : 'Technician'}
                   />
                 </div>
                 <button
@@ -3064,6 +3264,8 @@ function CreatePMPageContent() {
   const [filesPartsOpen, setFilesPartsOpen] = useState(false)
   const [images, setImages] = useState<string[]>([])
   const [triggers, setTriggers] = useState<PMTrigger[]>([])
+  /* Page sections stay neutral — no hover ring, no focused state. */
+  const cardChrome = 'border-[var(--border-default)]'
   // Only one schedule card reads as focused at a time, even when several are
   // expanded — the last one the user touched.
   const [activeTriggerId, setActiveTriggerId] = useState<string | null>(null)
@@ -3340,6 +3542,32 @@ function CreatePMPageContent() {
   }
 
   const hasUnassignedTriggers = triggers.length > 0 && triggers.some(t => t.assignments.length === 0)
+  /* Step states for the header progress bar. A required field left empty only
+     counts as an error once the user has moved past it (or tried to submit). */
+  /* The pinned progress bar only grows a divider once there is content behind it. */
+  const [pageScrolled, setPageScrolled] = useState(false)
+
+  /** Rail steps jump to the part of the form they belong to. */
+  function scrollToStep(index: number) {
+    const id = index === 0 ? 'pm-section-details' : 'pm-section-schedules'
+    const el = document.getElementById(id)
+    el?.scrollIntoView({ behavior: 'smooth', block: index === 3 ? 'end' : 'start' })
+  }
+
+  const stepStates: StepState[] = (() => {
+    const done = [
+      !!title.trim(),
+      triggers.length > 0,
+      triggers.length > 0 && triggers.every(t => t.assignments.length > 0),
+      false,
+    ]
+    const movedOn = triggers.length > 0 || titleError
+    const states: StepState[] = done.map(d => (d ? 'done' : 'pending'))
+    if (!done[0] && movedOn) states[0] = 'error'
+    const current = states.findIndex(st => st === 'pending')
+    if (current !== -1) states[current] = 'current'
+    return states
+  })()
   const hasMissingMeters = triggers.some(t => t.calendarTrigger.meterCondition && t.assignments.some(a => !a.meter))
   const hasMissingTechnicians = triggers.some(t => t.assignments.some(a => a.assignees.length === 0 && !a.team))
   const hasAnyError = triggers.length === 0 || hasUnassignedTriggers || hasMissingMeters || hasMissingTechnicians
@@ -3549,11 +3777,11 @@ function CreatePMPageContent() {
 
       {/* Body */}
       <div className="flex-1 flex overflow-hidden bg-[var(--surface-primary)]">
-        <div className="flex-1 overflow-y-auto">
-        <div className="max-w-[1100px] mx-auto w-full">
-
+        <div className="flex-1 overflow-y-auto pb-[60px]" onScroll={e => setPageScrolled((e.target as HTMLDivElement).scrollTop > 4)}>
+        {/* Intro + overall progress span the full width, above the rail. */}
+        <div className="max-w-[1320px] mx-auto w-full px-6 pt-6">
           {/* Page intro */}
-          <div className="flex items-center justify-between px-6 pt-6 pb-2">
+          <div className="flex items-start justify-between gap-4 pb-4">
             <p className="text-[13px] text-[var(--color-neutral-9)] max-w-[520px]">
               Automatically generate work orders based on a schedule or meter reading. Add the details, assign technicians, and help prevent equipment failures.
             </p>
@@ -3563,11 +3791,25 @@ function CreatePMPageContent() {
             </button>
           </div>
 
+        </div>
+
+        {/* The bar is a direct child of the scroll area so it can stay pinned for
+            the whole page, not just while the intro is in view. */}
+        <div className={`sticky top-0 z-20 bg-[var(--surface-primary)] py-4 border-b transition-colors duration-300 ${pageScrolled ? 'border-[var(--border-subtle)]' : 'border-transparent'}`}>
+          <div className="max-w-[1320px] mx-auto w-full px-6">
+            <ProgressBar states={stepStates} />
+          </div>
+        </div>
+
+        <div className="max-w-[1320px] mx-auto w-full flex items-start gap-6 px-6 pt-6">
+          <ProgressCard states={stepStates} onSelect={scrollToStep} />
+          <div className="flex-1 min-w-0">
+
           {/* DETAILS */}
-          <div className="p-6 flex flex-col gap-5 overflow-y-auto">
-              <div className="rounded-[var(--radius-xl)] border border-[var(--border-default)] bg-[var(--surface-primary)] overflow-hidden">
+          <div id="pm-section-details" className="pb-6 flex flex-col gap-5 scroll-mt-[92px]">
+              <div className={`rounded-[var(--radius-xl)] border bg-[var(--surface-primary)] overflow-hidden transition-[border-color,box-shadow] duration-[var(--duration-fast)] ${cardChrome}`}>
                 {/* Card header */}
-                <div className="flex items-center gap-3 px-4 h-[57px] bg-[#F9F9FB] border-b border-[var(--border-subtle)]">
+                <div className="flex items-center gap-3 px-4 h-[56px] bg-[#F9F9FB] border-b border-[var(--border-subtle)]">
                   <FileText size={18} className="text-[var(--color-neutral-7)]" />
                   <span className="text-[16px] font-semibold text-[var(--color-neutral-12)]">Details</span>
                 </div>
@@ -3640,7 +3882,7 @@ function CreatePMPageContent() {
                   {/* Images, Files & Parts */}
               <button
                 onClick={() => setFilesPartsOpen(o => !o)}
-                className="w-full flex items-center gap-2 px-4 h-[52px] border-y border-[#F0F0F3] bg-[#F9F9FB] hover:bg-[var(--color-neutral-3)] transition-colors cursor-pointer"
+                className="w-full flex items-center gap-2 px-4 h-[56px] border-y border-[#F0F0F3] bg-[#F9F9FB] hover:bg-[var(--color-neutral-3)] transition-colors cursor-pointer"
               >
                 <svg width="20" height="20" viewBox="0 0 18 18" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" className="text-[var(--color-neutral-7)]">
                   <path d="M9.1875 15.9375H4.3125C3.89829 15.9375 3.5625 15.6017 3.5625 15.1875V2.8125C3.5625 2.39829 3.89829 2.0625 4.3125 2.0625H13.6875C14.1017 2.0625 14.4375 2.39829 14.4375 2.8125V9.1875M13.6875 11.4375V13.6875M13.6875 13.6875V15.9375M13.6875 13.6875H11.4375M13.6875 13.6875H15.9375M6.5625 5.0625H11.4375M6.5625 8.0625H8.4375" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
@@ -3703,8 +3945,8 @@ function CreatePMPageContent() {
                     <span className="text-[13px] font-semibold text-[var(--color-neutral-11)]">Parts</span>
                     <DropdownMenu modal={false}>
                       <DropdownMenuTrigger asChild>
-                        <button className="inline-flex items-center gap-1.5 h-8 px-3 rounded-[var(--radius-md)] bg-[var(--color-accent-9)] border border-[var(--color-accent-10)] text-white text-[13px] font-medium hover:bg-[var(--color-accent-10)] transition-colors cursor-pointer">
-                          Add <ChevronDown size={13} />
+                        <button className="inline-flex items-center gap-1 h-6 px-1.5 rounded-[var(--radius-sm)] bg-[var(--surface-primary)] border border-[var(--border-default)] text-[var(--color-neutral-11)] text-[length:var(--font-size-sm)] leading-4 font-medium hover:bg-[var(--color-neutral-4)] hover:border-[var(--color-neutral-5)] transition-colors cursor-pointer">
+                          Add Part
                         </button>
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end" minWidth="160px">
@@ -3719,7 +3961,7 @@ function CreatePMPageContent() {
                   {/* Tasks & Checklists */}
               <div
                 onClick={() => setChecklistsOpen(o => !o)}
-                className="w-full flex items-center gap-2 px-4 h-[52px] border-b border-[#F0F0F3] bg-[#F9F9FB] hover:bg-[var(--color-neutral-3)] transition-colors cursor-pointer select-none"
+                className="w-full flex items-center gap-2 px-4 h-[56px] border-b border-[#F0F0F3] bg-[#F9F9FB] hover:bg-[var(--color-neutral-3)] transition-colors cursor-pointer select-none"
               >
                 <svg width="20" height="20" viewBox="0 0 18 18" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" className="text-[var(--color-neutral-7)]">
                   <path d="M6.75 4.5H3.75C3.33579 4.5 3 4.83579 3 5.25V14.25C3 14.6642 3.33579 15 3.75 15H14.25C14.6642 15 15 14.6642 15 14.25V5.25C15 4.83579 14.6642 4.5 14.25 4.5H11.25M6.75 4.5V3.75C6.75 3.33579 7.08579 3 7.5 3H10.5C10.9142 3 11.25 3.33579 11.25 3.75V4.5M6.75 4.5H11.25M6.75 9H11.25M6.75 12H9" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
@@ -3857,11 +4099,11 @@ function CreatePMPageContent() {
           </div>
 
           {/* TRIGGERS */}
-          <div className="px-6 pb-6">
-            <div className="rounded-[var(--radius-xl)] border border-[var(--border-default)] bg-[var(--surface-primary)] overflow-hidden">
+          <div id="pm-section-schedules" className="pb-6 scroll-mt-[92px]">
+            <div className={`rounded-[var(--radius-xl)] border bg-[var(--surface-primary)] overflow-hidden transition-[border-color,box-shadow] duration-[var(--duration-fast)] ${cardChrome}`}>
 
               {/* Card header */}
-              <div className="flex items-center justify-between px-5 h-[54px] bg-[var(--color-neutral-2)] border-b border-[var(--border-subtle)]">
+              <div className="flex items-center justify-between px-5 h-[56px] bg-[var(--color-neutral-2)] border-b border-[var(--border-subtle)]">
                 <div className="flex items-center gap-2">
                   <Clock size={16} className="text-[var(--color-neutral-7)]" />
                   <span className="text-[15px] font-semibold text-[var(--color-neutral-12)]">Schedules</span>
@@ -3882,13 +4124,29 @@ function CreatePMPageContent() {
               </div>
 
               {triggers.length === 0 ? (
-                <div className="flex flex-col items-center justify-center py-16 gap-2 text-center">
-                  <p className="text-[14px] font-semibold text-[var(--color-neutral-11)]">No schedules yet</p>
-                  <p className="text-[13px] text-[var(--color-neutral-8)] pb-3">Create a schedule to define when work orders should be generated.</p>
-                  <Button variant="primary" size="lg" onClick={() => { setCalendarModalKey(k => k + 1); setShowCalendarModal(true) }}>
-                    <Plus size={13} className="mr-1" />
-                    New Schedule
-                  </Button>
+                /* Empty state reads as the two steps the section needs: create the
+                   schedule, then say what it applies to. Step 2 stays dimmed and
+                   inert until a schedule exists to attach anything to. */
+                <div className="flex flex-col gap-3 px-4 py-4">
+                  <StepRow
+                    state="current"
+                    number={1}
+                    title="Create a new Schedule"
+                    description="Create a schedule to define when maintenance happens."
+                    action={
+                      <Button variant="primary" onClick={() => { setCalendarModalKey(k => k + 1); setShowCalendarModal(true) }}>
+                        <Plus size={16} />
+                        New Schedule
+                      </Button>
+                    }
+                  />
+                  <StepRow
+                    state="pending"
+                    number={2}
+                    title="Assets, Locations &amp; Meters"
+                    description="Choose where this schedule applies."
+                    action={<Button variant="primary" disabled><Plus size={16} />Add</Button>}
+                  />
                 </div>
               ) : (
                 <div className="flex flex-col gap-2 p-4">
@@ -4045,15 +4303,25 @@ function CreatePMPageContent() {
                         <div className="p-4 flex flex-col gap-4 bg-[var(--surface-primary)]">
                           <div className="overflow-hidden">
                             {trigger.assignments.length === 0 ? (
-                              <div className="flex flex-col items-center justify-center p-4 gap-2 text-center assign-content-fadein">
-                                <p className="text-[13px] font-semibold text-[var(--color-neutral-11)]">Assets, Locations & Meters</p>
-                                <p className="text-[12px] text-[var(--color-neutral-8)] pb-3">Choose where this schedule applies</p>
-                                <div className="assign-cta-glow rounded-[var(--radius-md)]">
-                                  <Button variant="primary" size="lg" onClick={() => setShowAssignModal(trigger.id)}>
-                                    <Plus size={16} />
-                                    Add
-                                  </Button>
-                                </div>
+                              <div className="flex flex-col gap-3 p-4 assign-content-fadein">
+                                <StepRow
+                                  state="done"
+                                  number={1}
+                                  title="Create a new Schedule"
+                                  description="Create a schedule to define when maintenance happens."
+                                />
+                                <StepRow
+                                  state="current"
+                                  number={2}
+                                  title="Assets, Locations &amp; Meters"
+                                  description="Choose where this schedule applies."
+                                  action={
+                                    <Button variant="primary" onClick={() => setShowAssignModal(trigger.id)}>
+                                      <Plus size={16} />
+                                      Add
+                                    </Button>
+                                  }
+                                />
                               </div>
                             ) : (
                               <>
@@ -4367,7 +4635,7 @@ function CreatePMPageContent() {
                                           <Popover.Root>
                                             <Popover.Trigger asChild>
                                               <button
-                                                className={`group/meter inline-flex items-center gap-1 h-5 px-1.5 w-fit rounded-[var(--radius-sm)] border text-left text-[11px] outline-none cursor-pointer hover:bg-[var(--color-neutral-3)] transition-colors ${isMeterTrigger && meters.length === 0 ? 'text-[var(--color-error,#CE2C31)] font-medium border-[var(--color-error,#CE2C31)]' : 'text-[var(--color-neutral-11)] border-[var(--border-default)]'}`}
+                                                className={`group/meter inline-flex items-center gap-1 h-6 -ml-1.5 px-1.5 w-fit rounded-[var(--radius-sm)] text-left text-[11px] outline-none cursor-pointer hover:bg-[var(--color-neutral-3)] transition-colors ${isMeterTrigger && meters.length === 0 ? 'text-[var(--color-error,#CE2C31)] font-medium' : 'text-[var(--color-neutral-11)]'}`}
                                               >
                                                 <span className="text-[10px] text-[var(--color-neutral-8)] uppercase tracking-wide">Meter:</span>
                                                 {meters.length === 0 ? (
@@ -4389,7 +4657,11 @@ function CreatePMPageContent() {
                                                     </TooltipProvider>
                                                   )}
                                                 </>)}
-                                                <Pencil size={9} className="shrink-0 opacity-0 group-hover/meter:opacity-100 transition-opacity text-[var(--color-neutral-8)]" />
+                                                {/* A span, not IconButton — this sits inside the popover
+                                                    trigger button and nested buttons are invalid. */}
+                                                <span className="shrink-0 inline-flex items-center justify-center w-[var(--control-height-sm)] h-[var(--control-height-sm)] rounded-[var(--radius-sm)] border border-[var(--border-default)] bg-[var(--surface-primary)] text-[var(--color-neutral-8)] opacity-0 group-hover/meter:opacity-100 transition-opacity">
+                                                  <Pencil size={11} />
+                                                </span>
                                               </button>
                                             </Popover.Trigger>
                                             <Popover.Portal>
@@ -4578,6 +4850,7 @@ function CreatePMPageContent() {
             </div>
           </div>
 
+          </div>
         </div>
 
       </div>
