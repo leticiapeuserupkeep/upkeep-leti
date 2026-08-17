@@ -3316,7 +3316,7 @@ function PreviewScheduleCard({ trigger }: { trigger: PMTrigger }) {
         )}
         {/* Names what the schedule applies to — the type when they all share one,
             otherwise the neutral "assignments". */}
-        <span className="ml-auto shrink-0 inline-flex items-center h-5 px-2 rounded-full bg-[var(--chip-surface-bg)] text-[11px] font-medium text-[var(--chip-outline-fg)]">
+        <span className="ml-auto shrink-0 inline-flex items-center h-5 px-2 rounded-full bg-[var(--color-neutral-3)] text-[11px] font-medium text-[var(--color-neutral-9)]">
           {`${count} ${count === 1 ? noun : noun + 's'}`}
         </span>
       </div>
