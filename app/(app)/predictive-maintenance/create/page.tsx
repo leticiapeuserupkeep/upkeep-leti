@@ -1280,7 +1280,7 @@ function TriggerRow({ trigger, onRemove, onEdit, meterMissing }: { trigger: Cale
         {trigger.meterValue && (
           <>
             <span className="inline-flex items-center justify-center px-2 h-5 rounded-full bg-[#F0F0F3] text-[12px] font-medium text-[#1C2024] shrink-0">or</span>
-            <span className={`text-[14px] font-medium ${meterMissing ? 'text-[#CE2C31]' : 'text-[#1C2024]'}`}>When a reading is {trigger.meterCondition} {trigger.meterValue} {trigger.meterUnit}</span>
+            <span className={`text-[14px] font-medium ${meterMissing ? 'text-[#CE2C31]' : 'text-[#1C2024]'}`}>When a reading {trigger.meterCondition} {trigger.meterValue} {trigger.meterUnit}</span>
           </>
         )}
       </div>
@@ -3088,7 +3088,7 @@ function formatScheduleText(t: CalendarTrigger): string {
 }
 function formatMeterText(t: CalendarTrigger): string | undefined {
   if (!t.meterValue) return undefined
-  return `When a reading is ${t.meterCondition} ${t.meterValue} ${t.meterUnit || 'units'}`
+  return `When a reading ${t.meterCondition} ${t.meterValue} ${t.meterUnit || 'units'}`
 }
 
 function MeterPopoverContent({ current, onSelect }: { current: string; onSelect: (m: string) => void }) {
@@ -3251,6 +3251,253 @@ function FillMissingModal({
   )
 }
 
+/** A single number in the preview's at-a-glance strip. */
+function PreviewStat({ value, label, hint }: { value: string; label: string; hint?: string }) {
+  return (
+    <div className="flex flex-col gap-0.5 px-4 py-3 min-w-0">
+      <span className="text-[20px] font-semibold leading-7 text-[var(--color-neutral-12)] truncate">{value}</span>
+      <span className="text-[12px] leading-4 text-[var(--color-neutral-9)] truncate">{label}</span>
+      {hint && <span className="text-[11px] leading-4 text-[var(--color-neutral-8)] truncate">{hint}</span>}
+    </div>
+  )
+}
+
+/** One labelled fact in the preview's summary grid. */
+function PreviewField({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="flex flex-col gap-1 min-w-0">
+      <span className="text-[10px] font-semibold uppercase tracking-wide text-[var(--color-neutral-8)]">{label}</span>
+      <span className="text-[14px] text-[var(--color-neutral-12)] truncate">{value || '—'}</span>
+    </div>
+  )
+}
+
+/** How many rows fit before the list starts scrolling — controls appear past this. */
+const PREVIEW_ROWS_BEFORE_SCROLL = 5
+
+/**
+ * One schedule in the preview. Search and the technician/team filters only show
+ * up once the list is long enough to scroll — below that they are just noise.
+ */
+function PreviewScheduleCard({ trigger }: { trigger: PMTrigger }) {
+  const [query, setQuery] = useState('')
+  const [tech, setTech] = useState('')
+  const [team, setTeam] = useState('')
+
+  const rows = trigger.assignments
+  const scrolls = rows.length > PREVIEW_ROWS_BEFORE_SCROLL
+  const technicians = [...new Set(rows.flatMap(a => a.assignees))].sort()
+  const teams = [...new Set(rows.map(a => a.team).filter(Boolean) as string[])].sort()
+
+  const q = query.trim().toLowerCase()
+  const filtered = rows.filter(a => {
+    if (tech && !a.assignees.includes(tech)) return false
+    if (team && a.team !== team) return false
+    if (!q) return true
+    return [a.name, a.subtext, a.meter, a.team, ...a.assignees].filter(Boolean).some(v => (v as string).toLowerCase().includes(q))
+  })
+
+  const count = rows.length
+  const types = new Set(rows.map(x => x.type))
+  const noun = types.size === 1 ? [...types][0] : 'Assignment'
+
+  return (
+    <div className="rounded-[var(--radius-xl)] border border-[var(--border-default)] overflow-hidden">
+      <div className="flex items-center gap-2 px-4 h-[56px] bg-[#F9F9FB] border-b border-[var(--border-subtle)]">
+        <Clock size={16} className="text-[var(--color-neutral-7)] shrink-0" />
+        <span className="text-[14px] font-medium text-[var(--color-neutral-12)]">{formatScheduleText(trigger.calendarTrigger)}</span>
+        {trigger.calendarTrigger.meterValue && (
+          <>
+            <span className="inline-flex items-center justify-center px-2 h-5 rounded-full bg-[var(--color-neutral-3)] text-[12px] font-medium text-[var(--color-neutral-11)] shrink-0">or</span>
+            <span className="text-[14px] font-medium text-[var(--color-neutral-12)] truncate">
+              When a reading {trigger.calendarTrigger.meterCondition} {trigger.calendarTrigger.meterValue} {trigger.calendarTrigger.meterUnit}
+            </span>
+          </>
+        )}
+        {/* Names what the schedule applies to — the type when they all share one,
+            otherwise the neutral "assignments". */}
+        <span className="ml-auto shrink-0 inline-flex items-center h-5 px-2 rounded-full bg-[var(--chip-surface-bg)] text-[11px] font-medium text-[var(--chip-outline-fg)]">
+          {`${count} ${count === 1 ? noun : noun + 's'}`}
+        </span>
+      </div>
+
+      {scrolls && (
+        <div className="flex items-center gap-2 px-4 py-2 border-b border-[var(--border-subtle)]">
+          <div className="flex items-center gap-2 h-8 px-2.5 flex-1 min-w-0 rounded-[var(--radius-lg)] border border-[var(--border-default)] bg-[var(--surface-primary)] focus-within:border-[var(--color-accent-7)] focus-within:shadow-[0_0_1px_3px_rgba(0,106,220,0.1)] transition-colors">
+            <Search size={13} className="shrink-0 text-[var(--color-neutral-7)]" />
+            <input
+              value={query}
+              onChange={e => setQuery(e.target.value)}
+              placeholder="Search"
+              className="flex-1 min-w-0 text-[13px] text-[var(--color-neutral-11)] bg-transparent outline-none placeholder:text-[var(--color-neutral-7)]"
+            />
+          </div>
+          {technicians.length > 1 && (
+            <div className="w-[160px] shrink-0">
+              <Select value={tech} onChange={setTech} options={technicians} placeholder="All technicians" clearable />
+            </div>
+          )}
+          {teams.length > 1 && (
+            <div className="w-[150px] shrink-0">
+              <Select value={team} onChange={setTeam} options={teams} placeholder="All teams" clearable />
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Long lists scroll inside the card instead of stretching the page. */}
+      <div className="flex flex-col max-h-[320px] overflow-y-auto">
+        {filtered.length === 0 ? (
+          <p className="px-4 py-6 text-[13px] text-center text-[var(--color-neutral-8)]">No assignments match</p>
+        ) : filtered.map((a, i) => (
+          <div key={a.id} className={`flex items-center gap-5 px-4 py-3 text-[13px] ${i > 0 ? 'border-t border-[#F0F0F3]' : ''}`}>
+            <div className="flex flex-col min-w-0 flex-1">
+              <div className="flex items-center gap-1.5 min-w-0">
+                <span className="font-medium text-[var(--color-neutral-12)] truncate">{a.name || '—'}</span>
+                <span className="shrink-0 inline-flex items-center h-[18px] px-1.5 rounded-[4px] text-[10px] font-medium bg-[var(--color-neutral-3)] text-[var(--color-neutral-9)]">{a.type}</span>
+              </div>
+              {a.type !== 'Location' && (
+                <span className="text-[11px] text-[var(--color-neutral-11)] truncate">
+                  <span className="text-[10px] uppercase tracking-wide text-[var(--color-neutral-8)]">Location:</span> {a.subtext || '—'}
+                </span>
+              )}
+              {a.type !== 'Meter' && (
+                <span className="text-[11px] text-[var(--color-neutral-11)] truncate">
+                  <span className="text-[10px] uppercase tracking-wide text-[var(--color-neutral-8)]">Meter:</span> {a.meter || '—'}
+                </span>
+              )}
+            </div>
+            <div className="w-[180px] shrink-0 flex items-center gap-1.5">
+              {a.assignees.slice(0, 3).map((name, idx) => (
+                <Avatar key={name} name={name} size="xs" className={idx > 0 ? '-ml-2' : ''} />
+              ))}
+              {a.assignees.length > 3 && <span className="text-[11px] text-[var(--color-neutral-8)]">+{a.assignees.length - 3}</span>}
+              {a.team && <span className="text-[12px] text-[var(--color-neutral-11)] truncate">{a.team}</span>}
+              {a.assignees.length === 0 && !a.team && <span className="text-[12px] text-[var(--color-neutral-7)]">Unassigned</span>}
+            </div>
+            <div className="w-[150px] shrink-0 text-[11px] text-[var(--color-neutral-9)] leading-4">
+              <div>Start: {a.startDate ? isoToMDY(a.startDate) : '—'}</div>
+              <div>End: {a.endDate ? isoToMDY(a.endDate) : '—'}</div>
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  )
+}
+
+/**
+ * Read-only run-through of the PM before it is created: the details as saved,
+ * then every schedule with the rows it will generate work orders for.
+ */
+function PMPreview({ title, description, category, priority, duration, signature, checklists, images, triggers, onBack, onCreate }: {
+  title: string
+  description: string
+  category: string
+  priority: string
+  duration: string
+  signature: boolean
+  checklists: ChecklistGroup[]
+  images: string[]
+  triggers: PMTrigger[]
+  onBack: () => void
+  onCreate: () => void
+}) {
+  const assignmentCount = triggers.reduce((n, t) => n + t.assignments.length, 0)
+  const taskCount = checklists.reduce((n, c) => n + c.tasks.length, 0)
+  const rows = triggers.flatMap(t => t.assignments)
+  const technicians = new Set(rows.flatMap(a => a.assignees))
+  const teams = new Set(rows.map(a => a.team).filter(Boolean) as string[])
+  const meterTriggers = triggers.filter(t => !!t.calendarTrigger.meterValue).length
+  /* The first work order lands on the earliest start date across every row —
+     meter-based schedules fire on a reading instead, so they are called out. */
+  const firstStart = rows.map(a => a.startDate).filter(Boolean).sort()[0]
+  return (
+    <div className="absolute inset-0 z-30 flex flex-col bg-[var(--surface-primary)] preview-in">
+      <div className="h-[60px] shrink-0 flex items-center gap-3 px-4 border-b border-[var(--border-subtle)]">
+        {/* Same controls as the page header, so the chrome does not shift. */}
+        <button
+          type="button"
+          onClick={() => window.dispatchEvent(new Event('toggle-sidebar'))}
+          className="flex items-center justify-center w-8 h-8 rounded-[var(--radius-lg)] hover:bg-[var(--color-neutral-3)] transition-colors text-[var(--color-neutral-8)] cursor-pointer shrink-0"
+          aria-label="Toggle sidebar"
+        >
+          <PanelLeft size={20} />
+        </button>
+        <div className="w-px h-5 bg-[var(--border-subtle)] shrink-0" />
+        <button
+          type="button"
+          onClick={onBack}
+          aria-label="Back to edit"
+          className="flex items-center justify-center w-8 h-8 rounded-[var(--radius-lg)] hover:bg-[var(--color-neutral-3)] transition-colors text-[var(--color-neutral-8)] cursor-pointer"
+        >
+          <ChevronLeft size={20} />
+        </button>
+        <h1 className="text-[15px] font-semibold text-[var(--color-neutral-12)]">Preview</h1>
+        <div className="ml-auto flex items-center gap-2">
+          <Button variant="secondary" size="md" onClick={onBack}>Back to edit</Button>
+          <Button variant="primary" size="md" onClick={onCreate}>Create PM</Button>
+        </div>
+      </div>
+
+      <div className="flex-1 overflow-y-auto">
+        <div className="max-w-[900px] mx-auto w-full px-6 py-8 flex flex-col gap-6">
+
+          <div className="flex flex-col gap-2">
+            <h2 className="text-[24px] font-semibold leading-8 text-[var(--color-neutral-12)]">{title}</h2>
+            <p className="text-[14px] leading-5 text-[var(--color-neutral-9)]">
+              {description || 'No description'}
+            </p>
+          </div>
+
+          {/* At a glance: the shape of the PM before reading any detail. */}
+          <div className="grid grid-cols-2 md:grid-cols-4 rounded-[var(--radius-xl)] border border-[var(--border-default)] divide-x divide-y md:divide-y-0 divide-[var(--border-subtle)] overflow-hidden">
+            <PreviewStat
+              value={String(triggers.length)}
+              label={triggers.length === 1 ? 'Schedule' : 'Schedules'}
+              hint={meterTriggers ? `${meterTriggers} meter-based` : 'All calendar-based'}
+            />
+            <PreviewStat
+              value={String(assignmentCount)}
+              label={assignmentCount === 1 ? 'Assignment' : 'Assignments'}
+              hint={`Across ${triggers.length} ${triggers.length === 1 ? 'schedule' : 'schedules'}`}
+            />
+            <PreviewStat
+              value={String(technicians.size)}
+              label={technicians.size === 1 ? 'Technician' : 'Technicians'}
+              hint={teams.size ? `${teams.size} ${teams.size === 1 ? 'team' : 'teams'}` : 'No team'}
+            />
+            <PreviewStat
+              value={firstStart ? isoToMDY(firstStart) : '—'}
+              label="First work order"
+              hint={meterTriggers ? 'Meter schedules fire on reading' : 'Starts on this date'}
+            />
+          </div>
+
+          <div className="rounded-[var(--radius-xl)] border border-[var(--border-default)] overflow-hidden">
+            <div className="flex items-center gap-3 px-4 h-[56px] bg-[#F9F9FB] border-b border-[var(--border-subtle)]">
+              <FileText size={18} className="text-[var(--color-neutral-7)]" />
+              <span className="text-[16px] font-semibold text-[var(--color-neutral-12)]">Details</span>
+            </div>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-5 p-4">
+              <PreviewField label="Category" value={category} />
+              <PreviewField label="Priority" value={priority} />
+              <PreviewField label="Duration (hs)" value={duration} />
+              <PreviewField label="Signature" value={signature ? 'Required' : 'Not required'} />
+              <PreviewField label="Checklists" value={checklists.length ? `${checklists.length} · ${taskCount} tasks` : '—'} />
+              <PreviewField label="Images" value={images.length ? String(images.length) : '—'} />
+            </div>
+          </div>
+
+          {triggers.map(trigger => (
+            <PreviewScheduleCard key={trigger.id} trigger={trigger} />
+          ))}
+        </div>
+      </div>
+    </div>
+  )
+}
+
 function CreatePMPageContent() {
   const [title, setTitle] = useState('')
   const [description, setDescription] = useState('')
@@ -3259,6 +3506,7 @@ function CreatePMPageContent() {
   const [duration, setDuration] = useState('')
   const [signature, setSignature] = useState(false)
   const [createWONow, setCreateWONow] = useState(false)
+  const [previewOpen, setPreviewOpen] = useState(false)
   const [checklists, setChecklists] = useState<ChecklistGroup[]>([])
   const [checklistsOpen, setChecklistsOpen] = useState(false)
   const [filesPartsOpen, setFilesPartsOpen] = useState(false)
@@ -3391,7 +3639,7 @@ function CreatePMPageContent() {
     if (dirtyTrackingRef.current) setIsDirty(true)
   }, [title, category, priority, triggers.length])
 
-  function persistPM(status: 'Active' | 'Draft') {
+  function persistPM(status: 'Active' | 'Draft', opts?: { markNew?: boolean }) {
     const schedule = triggers[0]
       ? formatScheduleText(triggers[0].calendarTrigger) || `Meter trigger`
       : 'No schedule'
@@ -3426,7 +3674,9 @@ function CreatePMPageContent() {
       const existing = JSON.parse(localStorage.getItem('upkeep_new_pms') ?? '[]')
       const updated = [item, ...existing.filter((x: { id: string }) => x.id !== item.id)]
       localStorage.setItem('upkeep_new_pms', JSON.stringify(updated))
-      if (!isEditing) localStorage.setItem('upkeep_pm_skeleton_id', item.id)
+      /* The skeleton marker makes the list page animate a brand new row, so it
+         is only set on an explicit save — not on every autosave keystroke. */
+      if (!isEditing && opts?.markNew !== false) localStorage.setItem('upkeep_pm_skeleton_id', item.id)
     } catch {}
   }
 
@@ -3595,10 +3845,20 @@ function CreatePMPageContent() {
 
   const isEditing = !!(searchParams?.get('edit'))
 
-  function handleSaveDraft() {
-    persistPM('Draft')
-    router.push('/predictive-maintenance')
-  }
+  /* Autosave: every edit lands in the draft after a short pause, so leaving the
+     page never loses work. Explicit saves still handle status and navigation. */
+  const autosaveArmed = useRef(false)
+  const [savedAt, setSavedAt] = useState<number | null>(null)
+  useEffect(() => {
+    if (!autosaveArmed.current) { autosaveArmed.current = true; return }
+    if (!title.trim() && triggers.length === 0) return
+    const t = setTimeout(() => {
+      persistPM(isEditing && editingPmStatus === 'Active' ? 'Active' : 'Draft', { markNew: false })
+      setSavedAt(Date.now())
+    }, 800)
+    return () => clearTimeout(t)
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [title, description, category, priority, duration, signature, checklists, images, triggers])
 
   function handleSaveEdit() {
     persistPM(editingPmStatus === 'Draft' ? 'Draft' : 'Active')
@@ -3656,8 +3916,13 @@ function CreatePMPageContent() {
   }
 
   return (
-    <div className="flex flex-col h-full overflow-hidden">
+    <div className="relative flex flex-col h-full overflow-hidden">
       <style>{`
+        @keyframes preview-in {
+          from { opacity: 0; transform: translateY(8px); }
+          to { opacity: 1; transform: translateY(0); }
+        }
+        .preview-in { animation: preview-in 220ms cubic-bezier(0.32, 0.72, 0, 1) both; }
         @keyframes trigger-card-slide-in {
           from { opacity: 0; transform: translateY(10px) scale(0.98); }
           to { opacity: 1; transform: translateY(0) scale(1); }
@@ -3716,6 +3981,9 @@ function CreatePMPageContent() {
         <h1 className="text-[15px] font-semibold text-[var(--color-neutral-12)] flex-1">
           {isEditing ? 'Edit Preventive Maintenance' : 'Create a New Preventive Maintenance'}
         </h1>
+        {savedAt && (
+          <span className="text-[12px] text-[var(--color-neutral-8)] select-none">Draft saved</span>
+        )}
         <div className="flex items-center gap-2 mr-2">
           <span className="text-[13px] text-[var(--color-neutral-9)]">Create First Work Order Now</span>
           <Switch checked={createWONow} onCheckedChange={setCreateWONow} size="md" aria-label="Create first Work Order Now" />
@@ -3737,13 +4005,14 @@ function CreatePMPageContent() {
           </div>
         ) : (
           <>
-            {/* Draft save button: hidden when editing an active PM */}
+            {/* Drafts save themselves, so this slot shows the preview instead. */}
             <button
               type="button"
-              onClick={handleSaveDraft}
-              className="inline-flex items-center justify-center h-8 px-3 rounded-[var(--radius-lg)] bg-[var(--color-accent-1)] text-[14px] font-medium text-[var(--color-accent-11)] hover:bg-[var(--color-accent-2)] transition-colors cursor-pointer select-none"
+              disabled={createDisabled}
+              onClick={() => setPreviewOpen(true)}
+              className="inline-flex items-center justify-center h-8 px-3 rounded-[var(--radius-lg)] bg-[var(--color-accent-1)] text-[14px] font-medium text-[var(--color-accent-11)] hover:bg-[var(--color-accent-2)] transition-colors cursor-pointer select-none disabled:bg-[var(--color-neutral-3)] disabled:text-[var(--color-neutral-8)] disabled:cursor-not-allowed"
             >
-              Save Draft
+              Preview
             </button>
             <div ref={createBtnRef} className="relative">
               <Button variant="primary" size="md" onClick={handleCreatePM} disabled={createDisabled}>
@@ -3775,6 +4044,22 @@ function CreatePMPageContent() {
         )}
       </div>
 
+      {previewOpen && (
+        <PMPreview
+          title={title}
+          description={description}
+          category={category}
+          priority={priority}
+          duration={duration}
+          signature={signature}
+          checklists={checklists}
+          images={images}
+          triggers={triggers}
+          onBack={() => setPreviewOpen(false)}
+          onCreate={handleCreatePM}
+        />
+      )}
+
       {/* Body */}
       <div className="flex-1 flex overflow-hidden bg-[var(--surface-primary)]">
         <div className="flex-1 overflow-y-auto pb-[60px]" onScroll={e => setPageScrolled((e.target as HTMLDivElement).scrollTop > 4)}>
@@ -3782,7 +4067,7 @@ function CreatePMPageContent() {
         <div className="max-w-[1320px] mx-auto w-full px-6 pt-6">
           {/* Page intro */}
           <div className="flex items-start justify-between gap-4 pb-4">
-            <p className="text-[13px] text-[var(--color-neutral-9)] max-w-[520px]">
+            <p className="text-[16px] leading-6 text-[var(--color-neutral-9)] max-w-[520px]">
               Automatically generate work orders based on a schedule or meter reading. Add the details, assign technicians, and help prevent equipment failures.
             </p>
             <button type="button" onClick={() => setNovaOpen(true)} className="flex items-center gap-1.5 px-3 h-8 rounded-[var(--radius-lg)] border border-[var(--color-accent-6)] bg-[var(--color-accent-1)] hover:bg-[var(--color-accent-2)] text-[13px] font-medium text-[var(--color-accent-11)] transition-colors cursor-pointer shrink-0">
