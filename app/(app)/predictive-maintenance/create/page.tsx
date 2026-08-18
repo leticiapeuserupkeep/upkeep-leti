@@ -8,7 +8,7 @@ import {
   ChevronLeft, ChevronRight, ChevronUp, ChevronDown, ChevronsUpDown, FileText, Box,
   Plus, X, MapPin, Gauge, Clock, Users, Upload, Trash2, PanelLeft, Info,
   Calendar, ArrowRight, ArrowDown, Sparkle, MoreHorizontal, Pencil, Activity, CalendarClock,
-  User, UserX, RotateCcw, RefreshCw, Camera, Link2, Search, Ban, Flag, SlidersHorizontal, Check, Circle, CircleCheck, CircleDot, CircleX,
+  User, UserX, RotateCcw, RefreshCw, Camera, Link2, Search, Ban, Flag, SlidersHorizontal, Check,
 } from 'lucide-react'
 import { Button } from '@/app/components/ui/Button'
 import { IconButton } from '@/app/components/ui/IconButton'
@@ -420,11 +420,30 @@ function ProgressCard({ states, onSelect }: { states: StepState[]; onSelect: (in
     error: 'text-[var(--color-error)]',
     pending: 'text-[var(--color-neutral-8)]',
   }
+  /* Step markers come from the design set rather than the icon library, so the
+     stroke colours are the spec's own. */
+  const ring = 'M12.3971 6.99935C12.3971 9.97939 9.98134 12.3952 7.0013 12.3952C4.02127 12.3952 1.60547 9.97939 1.60547 6.99935C1.60547 4.01931 4.02127 1.60352 7.0013 1.60352C9.98134 1.60352 12.3971 4.01931 12.3971 6.99935Z'
   const icon: Record<StepState, React.ReactNode> = {
-    done: <CircleCheck size={14} />,
-    current: <CircleDot size={14} />,
-    error: <CircleX size={14} />,
-    pending: <Circle size={14} />,
+    done: (
+      <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true">
+        <path d={`M8.7513 5.54102L6.1263 8.74935L4.95964 7.58268M${ring.slice(1)}`} stroke="#3E63DD" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+      </svg>
+    ),
+    current: (
+      <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true">
+        <path d={ring} stroke="#1F2D5C" strokeWidth="1.5" strokeLinecap="square" />
+      </svg>
+    ),
+    error: (
+      <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true">
+        <path d={`M8.7513 5.24935L5.2513 8.74935M8.7513 8.74935L5.2513 5.24935M${ring.slice(1)}`} stroke="#CC4E00" strokeWidth="1.5" strokeLinecap="round" />
+      </svg>
+    ),
+    pending: (
+      <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true">
+        <path d={ring} stroke="#CDCED6" strokeWidth="1.5" strokeLinecap="square" />
+      </svg>
+    ),
   }
   return (
     <aside className="sticky top-[92px] self-start shrink-0 w-[208px] rounded-[var(--radius-xl)] border border-[var(--border-default)] bg-[var(--surface-primary)] overflow-hidden">
@@ -507,15 +526,30 @@ function Stepper({ states }: { states: StepState[] }) {
  * optional action. A done step wears a check and dims; a pending step dims too
  * but keeps its outlined number.
  */
-function StepRow({ state, number, title, description, action }: {
+function StepRow({ state, number, title, description, action, lockedHint, onRowClick, badge }: {
   state: 'done' | 'current' | 'pending'
   number: number
   title: string
   description: string
   action?: React.ReactNode
+  /** Turns a locked row into a button that explains why it is locked. */
+  lockedHint?: { title: string; body: string }
+  /** Makes the whole row trigger the same thing its action button does. */
+  onRowClick?: () => void
+  /** Replaces the step number, e.g. a plus once the steps stop being a sequence. */
+  badge?: React.ReactNode
 }) {
-  return (
-    <div className={`flex items-center gap-3 p-4 rounded-[var(--radius-lg)] border border-[var(--border-default)] bg-[var(--surface-primary)] ${state === 'current' ? '' : 'opacity-50'}`}>
+  /* Fixed to the pointer: the card clips its overflow, so an absolutely
+     positioned bubble would be cut off at the card's edge. */
+  const [hintAt, setHintAt] = useState<{ x: number; y: number } | null>(null)
+  useEffect(() => {
+    if (!hintAt) return
+    const t = setTimeout(() => setHintAt(null), 6500)
+    return () => clearTimeout(t)
+  }, [hintAt])
+
+  const row = (
+    <>
       <span
         className={`shrink-0 w-10 h-10 flex items-center justify-center rounded-[var(--radius-sm)] text-[14px] font-semibold ${
           state === 'done' ? 'bg-[var(--chip-surface-bg)] text-[var(--chip-outline-fg)]'
@@ -523,13 +557,52 @@ function StepRow({ state, number, title, description, action }: {
           : 'border border-[var(--color-neutral-6)] text-[var(--color-neutral-9)]'
         }`}
       >
-        {state === 'done' ? <Check size={16} /> : number}
+        {badge ?? (state === 'done' ? <Check size={16} /> : number)}
       </span>
-      <div className="flex-1 min-w-0">
+      <div className="flex-1 min-w-0 text-left">
         <p className="text-[16px] font-semibold leading-6 text-[var(--color-neutral-12)]">{title}</p>
         <p className="text-[12px] leading-4 text-[var(--color-neutral-9)]">{description}</p>
       </div>
       {action}
+    </>
+  )
+  const rowClass = `w-full flex items-center gap-3 p-4 rounded-[var(--radius-lg)] border border-[var(--border-default)] bg-[var(--surface-primary)] ${state === 'current' ? '' : 'opacity-50'}`
+
+  return (
+    <div className="relative">
+      {lockedHint ? (
+        <button
+          type="button"
+          onClick={e => setHintAt(prev => prev ? null : { x: Math.min(e.clientX + 12, window.innerWidth - 332), y: e.clientY + 14 })}
+          className={`${rowClass} cursor-pointer transition-colors hover:bg-[var(--color-neutral-2)]`}
+        >
+          {row}
+        </button>
+      ) : onRowClick ? (
+        /* A div, not a button: the row already contains its action button and
+           nesting buttons is invalid. */
+        <div
+          role="button"
+          tabIndex={0}
+          onClick={onRowClick}
+          onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onRowClick() } }}
+          className={`${rowClass} cursor-pointer transition-colors hover:bg-[var(--color-neutral-2)]`}
+        >
+          {row}
+        </div>
+      ) : (
+        <div className={rowClass}>{row}</div>
+      )}
+      {/* Sits outside the dimmed row so the explanation stays legible. */}
+      {lockedHint && hintAt && (
+        <div
+          style={{ position: 'fixed', left: hintAt.x, top: hintAt.y, zIndex: 9999 }}
+          className="pointer-events-none flex flex-col gap-0.5 w-[320px] rounded-[var(--radius-lg)] bg-[var(--color-neutral-12)] px-3 py-2 shadow-[var(--shadow-lg)]"
+        >
+          <span className="text-[12px] font-semibold text-white">{lockedHint.title}</span>
+          <span className="text-[11px] leading-4 text-white/70">{lockedHint.body}</span>
+        </div>
+      )}
     </div>
   )
 }
@@ -4067,7 +4140,7 @@ function CreatePMPageContent() {
         <div className="max-w-[1320px] mx-auto w-full px-6 pt-6">
           {/* Page intro */}
           <div className="flex items-start justify-between gap-4 pb-4">
-            <p className="text-[16px] leading-6 text-[var(--color-neutral-9)] max-w-[520px]">
+            <p className="flex-1 min-w-0 text-[16px] leading-6 text-[var(--color-neutral-9)] max-w-[600px]">
               Automatically generate work orders based on a schedule or meter reading. Add the details, assign technicians, and help prevent equipment failures.
             </p>
             <button type="button" onClick={() => setNovaOpen(true)} className="flex items-center gap-1.5 px-3 h-8 rounded-[var(--radius-lg)] border border-[var(--color-accent-6)] bg-[var(--color-accent-1)] hover:bg-[var(--color-accent-2)] text-[13px] font-medium text-[var(--color-accent-11)] transition-colors cursor-pointer shrink-0">
@@ -4076,14 +4149,6 @@ function CreatePMPageContent() {
             </button>
           </div>
 
-        </div>
-
-        {/* The bar is a direct child of the scroll area so it can stay pinned for
-            the whole page, not just while the intro is in view. */}
-        <div className={`sticky top-0 z-20 bg-[var(--surface-primary)] py-4 border-b transition-colors duration-300 ${pageScrolled ? 'border-[var(--border-subtle)]' : 'border-transparent'}`}>
-          <div className="max-w-[1320px] mx-auto w-full px-6">
-            <ProgressBar states={stepStates} />
-          </div>
         </div>
 
         <div className="max-w-[1320px] mx-auto w-full flex items-start gap-6 px-6 pt-6">
@@ -4246,7 +4311,7 @@ function CreatePMPageContent() {
                   {/* Tasks & Checklists */}
               <div
                 onClick={() => setChecklistsOpen(o => !o)}
-                className="w-full flex items-center gap-2 px-4 h-[56px] border-b border-[#F0F0F3] bg-[#F9F9FB] hover:bg-[var(--color-neutral-3)] transition-colors cursor-pointer select-none"
+                className="w-full flex items-center gap-2 mt-1 px-4 h-[56px] border-b border-[#F0F0F3] bg-[#F9F9FB] hover:bg-[var(--color-neutral-3)] transition-colors cursor-pointer select-none"
               >
                 <svg width="20" height="20" viewBox="0 0 18 18" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" className="text-[var(--color-neutral-7)]">
                   <path d="M6.75 4.5H3.75C3.33579 4.5 3 4.83579 3 5.25V14.25C3 14.6642 3.33579 15 3.75 15H14.25C14.6642 15 15 14.6642 15 14.25V5.25C15 4.83579 14.6642 4.5 14.25 4.5H11.25M6.75 4.5V3.75C6.75 3.33579 7.08579 3 7.5 3H10.5C10.9142 3 11.25 3.33579 11.25 3.75V4.5M6.75 4.5H11.25M6.75 9H11.25M6.75 12H9" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
@@ -4401,7 +4466,6 @@ function CreatePMPageContent() {
                   )}
                   {triggers.length > 0 && (
                     <Button variant="secondary" size="sm" onClick={() => { setEditingTriggerId(null); setCalendarModalKey(k => k + 1); setShowCalendarModal(true) }}>
-                      <Plus size={12} />
                       New Schedule
                     </Button>
                   )}
@@ -4418,6 +4482,7 @@ function CreatePMPageContent() {
                     number={1}
                     title="Create a new Schedule"
                     description="Create a schedule to define when maintenance happens."
+                    onRowClick={() => { setCalendarModalKey(k => k + 1); setShowCalendarModal(true) }}
                     action={
                       <Button variant="primary" onClick={() => { setCalendarModalKey(k => k + 1); setShowCalendarModal(true) }}>
                         <Plus size={16} />
@@ -4429,13 +4494,16 @@ function CreatePMPageContent() {
                     state="pending"
                     number={2}
                     title="Assets, Locations &amp; Meters"
-                    description="Choose where this schedule applies."
-                    action={<Button variant="primary" disabled><Plus size={16} />Add</Button>}
+                    description="Available after you create a schedule."
+                    lockedHint={{
+                      title: 'Create a schedule first',
+                      body: 'Assets, locations, and meters need a schedule before they can be added.',
+                    }}
                   />
                 </div>
               ) : (
                 <div className="flex flex-col gap-2 p-4">
-                  {triggers.map(trigger => {
+                  {triggers.map((trigger, triggerIndex) => {
                     const hasMissingMeters = !!trigger.calendarTrigger.meterCondition && trigger.assignments.some(a => !a.meter)
                     const hasMissingTech = trigger.assignments.some(a => a.assignees.length === 0 && !a.team)
                     const hasNoAssignments = !trigger.expanded && trigger.assignments.length === 0
@@ -4589,17 +4657,23 @@ function CreatePMPageContent() {
                           <div className="overflow-hidden">
                             {trigger.assignments.length === 0 ? (
                               <div className="flex flex-col gap-3 p-4 assign-content-fadein">
-                                <StepRow
-                                  state="done"
-                                  number={1}
-                                  title="Create a new Schedule"
-                                  description="Create a schedule to define when maintenance happens."
-                                />
+                                {/* The "schedule created" recap only helps the first time —
+                                    later cards go straight to what is still missing. */}
+                                {triggerIndex === 0 && (
+                                  <StepRow
+                                    state="done"
+                                    number={1}
+                                    title="Create a new Schedule"
+                                    description="Create a schedule to define when maintenance happens."
+                                  />
+                                )}
                                 <StepRow
                                   state="current"
                                   number={2}
+                                  badge={triggerIndex === 0 ? undefined : <Plus size={18} />}
                                   title="Assets, Locations &amp; Meters"
                                   description="Choose where this schedule applies."
+                                  onRowClick={() => setShowAssignModal(trigger.id)}
                                   action={
                                     <Button variant="primary" onClick={() => setShowAssignModal(trigger.id)}>
                                       <Plus size={16} />
@@ -5129,6 +5203,15 @@ function CreatePMPageContent() {
                     </div>
                     )
                   })}
+                  {/* Adding another schedule is the obvious next move once one exists. */}
+                  <button
+                    type="button"
+                    onClick={() => { setEditingTriggerId(null); setCalendarModalKey(k => k + 1); setShowCalendarModal(true) }}
+                    className="w-full h-11 flex items-center justify-center gap-1.5 rounded-[var(--radius-lg)] bg-[var(--color-accent-1)] text-[14px] font-medium text-[var(--color-accent-11)] hover:bg-[var(--color-accent-2)] transition-colors cursor-pointer"
+                  >
+                    <Plus size={16} />
+                    New Schedule
+                  </button>
                 </div>
               )}
 
