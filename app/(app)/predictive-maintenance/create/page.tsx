@@ -446,7 +446,7 @@ function ProgressCard({ states, onSelect }: { states: StepState[]; onSelect: (in
     ),
   }
   return (
-    <aside className="sticky top-[92px] self-start shrink-0 w-[208px] rounded-[var(--radius-xl)] border border-[var(--border-default)] bg-[var(--surface-primary)] overflow-hidden">
+    <aside className="sticky top-0 self-start shrink-0 w-[208px] rounded-[var(--radius-xl)] border border-[var(--border-default)] bg-[var(--surface-primary)] overflow-hidden">
       <div className="flex items-center h-12 px-4 border-b border-[var(--border-subtle)]">
         <span className="text-[12px] font-semibold leading-4 text-[var(--color-neutral-12)]">Progress</span>
       </div>
@@ -3877,6 +3877,8 @@ function CreatePMPageContent() {
     el?.scrollIntoView({ behavior: 'smooth', block: index === 3 ? 'end' : 'start' })
   }
 
+  const hasMissingMeters = triggers.some(t => t.calendarTrigger.meterCondition && t.assignments.some(a => !a.meter))
+  const hasMissingTechnicians = triggers.some(t => t.assignments.some(a => a.assignees.length === 0 && !a.team))
   const stepStates: StepState[] = (() => {
     const done = [
       !!title.trim(),
@@ -3887,12 +3889,12 @@ function CreatePMPageContent() {
     const movedOn = triggers.length > 0 || titleError
     const states: StepState[] = done.map(d => (d ? 'done' : 'pending'))
     if (!done[0] && movedOn) states[0] = 'error'
+    /* Anything the schedule cards flag in red belongs on the rail too. */
+    if (hasUnassignedTriggers || hasMissingTechnicians || hasMissingMeters) states[2] = 'error'
     const current = states.findIndex(st => st === 'pending')
     if (current !== -1) states[current] = 'current'
     return states
   })()
-  const hasMissingMeters = triggers.some(t => t.calendarTrigger.meterCondition && t.assignments.some(a => !a.meter))
-  const hasMissingTechnicians = triggers.some(t => t.assignments.some(a => a.assignees.length === 0 && !a.team))
   const hasAnyError = triggers.length === 0 || hasUnassignedTriggers || hasMissingMeters || hasMissingTechnicians
   const isTitleValid = title.trim() !== '' && title.trim().toLowerCase() !== 'untitled pm' && title.trim().toLowerCase() !== 'untitled'
   const missingFields: string[] = [
@@ -4959,8 +4961,8 @@ function CreatePMPageContent() {
                                         }
                                         return (<>
                                           <SortHeader col="name" label="Applies To" className="flex-1 min-w-0" />
-                                          <SortHeader col="user" label="Technicians" className="w-[96px] shrink-0" />
-                                          <SortHeader col="team" label="Team" className="w-[80px] shrink-0" />
+                                          <SortHeader col="user" label="Technicians" className="w-[132px] shrink-0" />
+                                          <SortHeader col="team" label="Team" className="w-[124px] shrink-0" />
                                           <SortHeader col="start" label="Dates" className="w-[150px] shrink-0" />
                                         </>)
                                       })()}
@@ -4994,11 +4996,11 @@ function CreatePMPageContent() {
                                           <Popover.Root>
                                             <Popover.Trigger asChild>
                                               <button
-                                                className={`group/meter inline-flex items-center gap-1 h-6 -ml-1.5 px-1.5 w-fit rounded-[var(--radius-sm)] text-left text-[11px] outline-none cursor-pointer hover:bg-[var(--color-neutral-3)] transition-colors ${isMeterTrigger && meters.length === 0 ? 'text-[var(--color-error,#CE2C31)] font-medium' : 'text-[var(--color-neutral-11)]'}`}
+                                                className={`group/meter relative inline-flex items-center gap-1 -ml-1.5 px-1.5 w-fit rounded-[var(--radius-sm)] text-left text-[11px] outline-none cursor-pointer hover:bg-[var(--color-neutral-3)] transition-colors ${isMeterTrigger && meters.length === 0 ? 'text-[var(--color-error,#CE2C31)] font-medium' : 'text-[var(--color-neutral-11)]'}`}
                                               >
                                                 <span className="text-[10px] text-[var(--color-neutral-8)] uppercase tracking-wide">Meter:</span>
                                                 {meters.length === 0 ? (
-                                                  <span className="truncate">{isMeterTrigger ? 'Add' : '—'}</span>
+                                                  <span className="truncate">{isMeterTrigger ? 'Add' : 'Not set'}</span>
                                                 ) : (<>
                                                   <span className="truncate">{meters[0]}</span>
                                                   {meters.length > 1 && (
@@ -5018,7 +5020,8 @@ function CreatePMPageContent() {
                                                 </>)}
                                                 {/* A span, not IconButton — this sits inside the popover
                                                     trigger button and nested buttons are invalid. */}
-                                                <span className="shrink-0 inline-flex items-center justify-center w-[var(--control-height-sm)] h-[var(--control-height-sm)] rounded-[var(--radius-sm)] border border-[var(--border-default)] bg-[var(--surface-primary)] text-[var(--color-neutral-8)] opacity-0 group-hover/meter:opacity-100 transition-opacity">
+                                                {/* Floated out of flow so the edit affordance never grows the row. */}
+                                                <span className="absolute left-full top-1/2 -translate-y-1/2 ml-2 shrink-0 inline-flex items-center justify-center w-[var(--control-height-sm)] h-[var(--control-height-sm)] rounded-[var(--radius-sm)] border border-[var(--border-default)] bg-[var(--surface-primary)] text-[var(--color-neutral-8)] opacity-0 group-hover/meter:opacity-100 transition-opacity">
                                                   <Pencil size={11} />
                                                 </span>
                                               </button>
@@ -5039,30 +5042,30 @@ function CreatePMPageContent() {
                                           <div className="flex items-center gap-2 flex-1 min-w-0">
                                             {a.type === 'Location' ? (
                                               /* Location row: name · Location badge, then Asset: — */
-                                              <div className="flex flex-col min-w-0">
+                                              <div className="flex flex-col gap-1 min-w-0">
                                                 <div className="flex items-center gap-1.5 min-w-0">
                                                   <span className="font-medium text-[var(--color-neutral-12)] truncate">{a.name}</span>
                                                   <span className="shrink-0 inline-flex items-center h-[18px] px-1.5 rounded-[4px] text-[10px] font-medium bg-[var(--color-neutral-3)] text-[var(--color-neutral-9)]">Location</span>
                                                 </div>
-                                                <span className="text-[11px] text-[var(--color-neutral-11)] truncate"><span className="text-[10px] text-[var(--color-neutral-8)] uppercase tracking-wide">Asset:</span> —</span>
+                                                <span className="text-[11px] text-[var(--color-neutral-11)] truncate"><span className="text-[10px] text-[var(--color-neutral-8)] uppercase tracking-wide">Asset:</span> Not set</span>
                                                 <MeterDetail />
                                               </div>
                                             ) : a.type === 'Asset' ? (
                                               /* Asset row: name · Asset badge, then Location: subtext */
-                                              <div className="flex flex-col min-w-0">
+                                              <div className="flex flex-col gap-1 min-w-0">
                                                 <div className="flex items-center gap-1.5 min-w-0">
                                                   <span className="font-medium text-[var(--color-neutral-12)] truncate">{a.name}</span>
                                                   <span className="shrink-0 inline-flex items-center h-[18px] px-1.5 rounded-[4px] text-[10px] font-medium bg-[var(--color-neutral-3)] text-[var(--color-neutral-9)]">Asset</span>
                                                 </div>
-                                                <span className="text-[11px] text-[var(--color-neutral-11)] truncate"><span className="text-[10px] text-[var(--color-neutral-8)] uppercase tracking-wide">Location:</span> {a.subtext || '—'}</span>
+                                                <span className="text-[11px] text-[var(--color-neutral-11)] truncate"><span className="text-[10px] text-[var(--color-neutral-8)] uppercase tracking-wide">Location:</span> {a.subtext || 'Not set'}</span>
                                                 <MeterDetail />
                                               </div>
                                             ) : (
                                               /* Person-only row: empty applies-to block, but the meter is
                                                  still editable — a meter-based schedule needs one here too. */
-                                              <div className="flex flex-col min-w-0">
-                                                <span className="text-[11px] text-[var(--color-neutral-11)] truncate"><span className="text-[10px] text-[var(--color-neutral-8)] uppercase tracking-wide">Asset:</span> —</span>
-                                                <span className="text-[11px] text-[var(--color-neutral-11)] truncate"><span className="text-[10px] text-[var(--color-neutral-8)] uppercase tracking-wide">Location:</span> —</span>
+                                              <div className="flex flex-col gap-1 min-w-0">
+                                                <span className="text-[11px] text-[var(--color-neutral-11)] truncate"><span className="text-[10px] text-[var(--color-neutral-8)] uppercase tracking-wide">Asset:</span> Not set</span>
+                                                <span className="text-[11px] text-[var(--color-neutral-11)] truncate"><span className="text-[10px] text-[var(--color-neutral-8)] uppercase tracking-wide">Location:</span> Not set</span>
                                                 <MeterDetail />
                                               </div>
                                             )}
@@ -5070,9 +5073,9 @@ function CreatePMPageContent() {
                                           {/* Assignee avatars — inline edit */}
                                           <Popover.Root>
                                             <Popover.Trigger asChild>
-                                              <div className="group/user w-[96px] shrink-0 flex items-center justify-between h-7 cursor-pointer rounded-[var(--radius-md)] hover:bg-[var(--color-neutral-3)] transition-colors px-1">
+                                              <div className="group/user w-[132px] shrink-0 flex items-center justify-between h-7 cursor-pointer rounded-[var(--radius-md)] hover:bg-[var(--color-neutral-3)] transition-colors px-1">
                                                 {a.assignees.length === 0 ? (
-                                                  <span className={`text-[12px] font-medium ${!a.team ? 'text-[var(--color-error,#CE2C31)]' : 'text-[var(--color-neutral-8)]'}`}>Add</span>
+                                                  <span className={`text-[12px] font-medium whitespace-nowrap ${!a.team ? 'text-[var(--color-error,#CE2C31)]' : 'text-[var(--color-neutral-8)]'}`}>Not assigned</span>
                                                 ) : (
                                                   a.assignees.slice(0, 3).map((name, idx) => (
                                                     <TooltipProvider key={name} delayDuration={300}>
@@ -5118,7 +5121,9 @@ function CreatePMPageContent() {
                                           </Popover.Root>
                                           {/* Team — inline edit */}
                                           <Popover.Root>
-                                            <div className="group/team w-[80px] shrink-0 flex items-center justify-between h-7">
+                                            {/* Whole cell opens the team picker, like the technicians cell. */}
+                                            <Popover.Trigger asChild>
+                                            <div className="group/team w-[124px] shrink-0 flex items-center justify-between h-7 px-1 cursor-pointer rounded-[var(--radius-md)] hover:bg-[var(--color-neutral-3)] transition-colors">
                                               {a.team ? (
                                                 <TooltipProvider delayDuration={300}>
                                                   <Tooltip content={`${a.team}${a.teamInherited ? ' (inherited)' : ''}`} side="top">
@@ -5128,14 +5133,13 @@ function CreatePMPageContent() {
                                                   </Tooltip>
                                                 </TooltipProvider>
                                               ) : (
-                                                <span className="text-[12px] font-medium text-[var(--color-neutral-8)]">Add</span>
+                                                <span className="text-[12px] font-medium text-[var(--color-neutral-8)] whitespace-nowrap">Not assigned</span>
                                               )}
-                                              <Popover.Trigger asChild>
-                                                <IconButton label={a.team ? 'Edit team' : 'Assign team'} variant="secondary" size="sm" className="opacity-0 group-hover/team:opacity-100 transition-opacity shrink-0">
-                                                  {a.team ? <Pencil size={10} /> : <Plus size={11} />}
-                                                </IconButton>
-                                              </Popover.Trigger>
+                                              <IconButton label={a.team ? 'Edit team' : 'Assign team'} variant="secondary" size="sm" className="opacity-0 group-hover/team:opacity-100 transition-opacity shrink-0 pointer-events-none">
+                                                {a.team ? <Pencil size={10} /> : <Plus size={11} />}
+                                              </IconButton>
                                             </div>
+                                            </Popover.Trigger>
                                             <Popover.Portal>
                                               <Popover.Content sideOffset={4} align="start" className="z-[var(--z-dropdown)] w-[160px] rounded-[var(--radius-xl)] border border-[var(--border-default)] bg-[var(--surface-primary)] shadow-[var(--shadow-lg)] outline-none overflow-hidden py-1" onOpenAutoFocus={e => e.preventDefault()}>
                                                 {['', ...TEAMS.map(t => t.value)].map(team => (
@@ -5159,7 +5163,7 @@ function CreatePMPageContent() {
                                               <button className="group/dates w-[150px] shrink-0 flex items-center justify-between gap-1 py-1 px-1.5 rounded-[var(--radius-md)] hover:bg-[var(--color-neutral-3)] transition-colors cursor-pointer outline-none text-[11px] text-[var(--color-neutral-8)]">
                                                 <span className="flex flex-col items-start min-w-0">
                                                   <span><span className="text-[10px] text-[var(--color-neutral-8)] uppercase tracking-wide">Start:</span> {a.startDate ? displayDate(a.startDate) : '—'}</span>
-                                                  <span><span className="text-[10px] text-[var(--color-neutral-8)] uppercase tracking-wide">End:</span> {a.endDate ? displayDate(a.endDate) : '—'}</span>
+                                                  <span><span className="text-[10px] text-[var(--color-neutral-8)] uppercase tracking-wide">End:</span> {a.endDate ? displayDate(a.endDate) : 'Not set'}</span>
                                                 </span>
                                                 <CellEditHint mode={a.startDate || a.endDate ? 'edit' : 'add'} revealClass="group-hover/dates:opacity-100" />
                                               </button>
@@ -5207,7 +5211,7 @@ function CreatePMPageContent() {
                   <button
                     type="button"
                     onClick={() => { setEditingTriggerId(null); setCalendarModalKey(k => k + 1); setShowCalendarModal(true) }}
-                    className="w-full h-11 flex items-center justify-center gap-1.5 rounded-[var(--radius-lg)] bg-[var(--color-accent-1)] text-[14px] font-medium text-[var(--color-accent-11)] hover:bg-[var(--color-accent-2)] transition-colors cursor-pointer"
+                    className="w-full h-11 mt-2 flex items-center justify-center gap-1.5 rounded-[var(--radius-lg)] bg-[var(--color-accent-1)] text-[14px] font-medium text-[var(--color-accent-11)] hover:bg-[var(--color-accent-2)] transition-colors cursor-pointer"
                   >
                     <Plus size={16} />
                     New Schedule
