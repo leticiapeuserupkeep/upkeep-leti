@@ -2024,10 +2024,12 @@ const APPLIES_TO_LABEL: Record<AppliesToType, string> = { Asset: 'Assets', Locat
  * Pill switcher. Segments share the width equally, which lets a single sliding
  * indicator track the selection by translating whole segment widths.
  */
-function SegmentedSwitcher({ value, options, labels, onChange }: {
+function SegmentedSwitcher({ value, options, labels, counts, onChange }: {
   value: AppliesToType
   options: readonly AppliesToType[]
   labels: Record<AppliesToType, string>
+  /** Per-tab selection count, shown as a badge so hidden tabs still report. */
+  counts?: Record<AppliesToType, number>
   onChange: (v: AppliesToType) => void
 }) {
   const index = Math.max(0, options.indexOf(value))
@@ -2054,7 +2056,16 @@ function SegmentedSwitcher({ value, options, labels, onChange }: {
               active ? 'text-white font-semibold' : 'text-[var(--color-neutral-12)]'
             }`}
           >
-            {labels[o]}
+            <span className="inline-flex items-center gap-1.5">
+              {labels[o]}
+              {!!counts?.[o] && (
+                <span className={`inline-flex items-center justify-center min-w-[16px] h-4 px-[6px] rounded-full text-[10px] font-semibold ${
+                  active ? 'bg-[#274ABD] text-white' : 'bg-[var(--color-neutral-4)] text-[var(--color-neutral-11)]'
+                }`}>
+                  {counts[o]}
+                </span>
+              )}
+            </span>
           </button>
         )
       })}
@@ -2144,9 +2155,9 @@ function AssignAssetModal({
   }
 
   function handleTypeChange(type: AppliesToType) {
+    /* Each tab keeps its own selection — switching is just a change of view. */
     setAppliesToType(type)
     setValueQuery('')
-    setForm(f => ({ ...f, asset: [], location: [], meter: [] }))
   }
 
   const meterFieldRef = useRef<HTMLDivElement>(null)
@@ -2279,6 +2290,7 @@ function AssignAssetModal({
               value={appliesToType}
               options={APPLIES_TO_TYPES}
               labels={APPLIES_TO_LABEL}
+              counts={{ Asset: form.asset.length, Location: form.location.length, Meter: form.meter.length }}
               onChange={handleTypeChange}
             />
           </div>
@@ -2515,7 +2527,7 @@ function AssignAssetModal({
               }`}
             >
               <div className="overflow-hidden">
-                <div className={`flex items-center justify-between gap-4 p-3 rounded-[var(--radius-lg)] bg-[var(--surface-secondary)]`}>
+                <div className={`flex items-center justify-between gap-4 p-3 rounded-[var(--radius-lg)] transition-colors ${applyMeterToAll ? 'bg-[var(--chip-surface-bg)]' : 'bg-[var(--surface-secondary)]'}`}>
                   <div className="min-w-0">
                     <p className="text-[12px] leading-5 text-[var(--color-neutral-9)]">
                       Use same meter for all {entityWord}.
@@ -3830,8 +3842,9 @@ function CreatePMPageContent() {
           endDate: form.endDate,
         }
       })
-    } else if (form.location.length > 0) {
-      items = form.location.map(l => {
+    }
+    if (form.location.length > 0) {
+      items = items.concat(form.location.map(l => {
         const db = getLocationData(l)
         return {
           id: crypto.randomUUID(),
@@ -3844,8 +3857,11 @@ function CreatePMPageContent() {
           startDate: form.startDate,
           endDate: form.endDate,
         }
-      })
-    } else if (form.meter.length > 0) {
+      }))
+    }
+    /* Meters only stand on their own when nothing else was selected — otherwise
+       they are the meter for the assets and locations above. */
+    if (items.length === 0 && form.meter.length > 0) {
       // Meters picked directly — each becomes its own assignment.
       items = form.meter.map(m => ({
         id: crypto.randomUUID(),
