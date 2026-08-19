@@ -56,7 +56,6 @@ interface AssignAssetForm {
   /** Overwrite meters the selected assets already carry, rather than only filling blanks. */
   applyMeterToAll?: boolean
   /** Same, for technicians and team. */
-  applyTechToAll?: boolean
 }
 
 interface CalendarTrigger {
@@ -2013,7 +2012,7 @@ const EMPTY_FORM: AssignAssetForm = {
   startDate: '', endDate: '',
   /* Both overrides start on: what the user types here is meant for everything
      they selected, unless they deliberately keep the existing values. */
-  applyMeterToAll: true, applyTechToAll: true,
+  applyMeterToAll: true,
 }
 
 const APPLIES_TO_TYPES = ['Asset', 'Location', 'Meter'] as const
@@ -2105,7 +2104,6 @@ function AssignAssetModal({
   const appliesToMeasureRef = useRef<HTMLDivElement>(null)
   const [appliesToVisibleCount, setAppliesToVisibleCount] = useState(99)
   const set = (k: keyof AssignAssetForm) => (v: string) => setForm(f => ({ ...f, [k]: v }))
-  const [techAutoFilled, setTechAutoFilled] = useState(false)
   // Tracks whether the meter in the form came from the database rather than the
   // user, so a later selection change may replace it but a manual pick survives.
   const [meterAutoFilled, setMeterAutoFilled] = useState(false)
@@ -2151,39 +2149,18 @@ function AssignAssetModal({
     setForm(f => ({ ...f, asset: [], location: [], meter: [] }))
   }
 
+  const meterFieldRef = useRef<HTMLDivElement>(null)
   useEffect(() => {
-    if (valueOpen) setTimeout(() => valueInputRef.current?.focus(), 0)
-    else setValueQuery('')
+    if (valueOpen) { setTimeout(() => valueInputRef.current?.focus(), 0); return }
+    setValueQuery('')
+    /* Closing the picker with a meter still owed: send the cursor there rather
+       than leaving the requirement for the user to spot. */
+    if (needsMeterInput && appliesToSelected.length > 0 && form.meter.length === 0) {
+      setTimeout(() => meterFieldRef.current?.querySelector('button')?.focus(), 60)
+    }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [valueOpen])
 
-  useEffect(() => {
-    if (appliesToSelected.length === 1) {
-      const name = appliesToSelected[0]
-      const data = appliesToType === 'Asset' ? getAssetData(name) : getLocationData(name)
-      const assignee =(data as { assignee?: string; assignees?: string[] } | undefined)?.assignee
-        ?? (data as { assignees?: string[] } | undefined)?.assignees?.[0]
-      const team = (data as { team?: string } | undefined)?.team
-      if (assignee || team) {
-        // Always update auto-filled fields when the single selection changes
-        setForm(f => ({
-          ...f,
-          primaryAssignee: techAutoFilled || !f.primaryAssignee ? (assignee ?? '') : f.primaryAssignee,
-          team: techAutoFilled || !f.team ? (team ?? '') : f.team,
-        }))
-        setTechAutoFilled(true)
-      } else if (techAutoFilled) {
-        // Item changed to one with no assignments — clear auto-filled fields
-        setForm(f => ({ ...f, primaryAssignee: '', team: '' }))
-        setTechAutoFilled(false)
-      }
-    } else if (techAutoFilled) {
-      // Going to 0 or 2+ items — clear auto-filled values
-      setForm(f => ({ ...f, primaryAssignee: '', team: '' }))
-      setTechAutoFilled(false)
-    }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [appliesToSelected.join(','), appliesToType])
 
   // A single asset or location can lend its meter to the field. With several
   // selected there is no one right answer, so the field is left alone — the
@@ -2237,12 +2214,6 @@ function AssignAssetModal({
     return () => ro.disconnect()
   }, [appliesToSelected])
 
-  const multiItemsWithTech = appliesToSelected.length > 1 && appliesToSelected.some(name => {
-    const data = appliesToType === 'Asset' ? getAssetData(name) : getLocationData(name)
-    return !!(data as { assignee?: string; assignees?: string[]; team?: string } | undefined)?.team
-      || !!(data as { assignee?: string } | undefined)?.assignee
-      || !!((data as { assignees?: string[] } | undefined)?.assignees?.length)
-  })
 
   // Meter is mandatory for meter-triggered schedules — unless every selected item
   // already carries one from the database, in which case there's nothing to ask for.
@@ -2257,8 +2228,21 @@ function AssignAssetModal({
     ? appliesToSelected.filter(name => !!getAssetData(name)?.meter).length
     : appliesToSelected.filter(name => (getLocationData(name)?.meters?.length ?? 0) > 0).length
   const someAlreadyHaveMeter = appliesToSelected.length > 1 && selectedWithOwnMeter > 0
+  /** Selected items with no meter of their own — the ones this field is for. */
+  const itemsMissingMeter = appliesToSelected.filter(name => appliesToType === 'Asset'
+    ? !getAssetData(name)?.meter
+    : !(getLocationData(name)?.meters?.length))
+  /* Only demand a meter when some selection lacks one. When they all carry a
+     meter already, the field is an optional replacement instead. */
+  const meterRequired = needsMeterInput && itemsMissingMeter.length > 0
+  const metersAllPresent = needsMeterInput && appliesToSelected.length > 0 && itemsMissingMeter.length === 0
+  /* The override is only a question when some are missing and several are in
+     play, and only answerable once this modal has a meter of its own. */
+  const showMeterOverride = appliesToSelected.length > 1 && itemsMissingMeter.length > 0
+  const canApplyMeterToAll = form.meter.length > 0
+  const applyMeterToAll = canApplyMeterToAll && !!form.applyMeterToAll
   const canSubmit = !!(form.asset.length || form.location.length || form.meter.length || form.primaryAssignee || form.additionalAssignee.length || form.team)
-    && !(needsMeterInput && form.meter.length === 0)
+    && !(meterRequired && form.meter.length === 0)
   const [dateError, setDateError] = useState('')
 
   function handleSubmit() {
@@ -2266,7 +2250,9 @@ function AssignAssetModal({
     const err = validateDateRange(form.startDate, form.endDate)
     if (err) { setDateError(err); return }
     setDateError('')
-    onSubmit(form)
+    /* With nothing missing there is no toggle to ask — naming a meter here can
+       only mean "replace what they have". */
+    onSubmit(metersAllPresent && form.meter.length > 0 ? { ...form, applyMeterToAll: true } : form)
     setForm(EMPTY_FORM)
     setAppliesToType('Asset')
   }
@@ -2275,7 +2261,6 @@ function AssignAssetModal({
     setDateError('')
     setForm(EMPTY_FORM)
     setAppliesToType('Asset')
-    setTechAutoFilled(false)
     onClose()
   }
 
@@ -2373,7 +2358,30 @@ function AssignAssetModal({
                     ) : filteredAppliesToOptions.map(o => {
                       const checked = appliesToSelected.includes(o)
                       const alreadyUsed = usedList.includes(o)
-                      const assetLocation = appliesToType === 'Asset' ? getAssetData(o)?.location : undefined
+                      /* Sublabel carries what the option is attached to, so an asset
+                         shows its location and meter, a location its contents, and a
+                         meter the asset it sits on. */
+                      const optionDetail: Array<[string, string]> = (() => {
+                        if (appliesToType === 'Asset') {
+                          const d = getAssetData(o)
+                          return [
+                            ['Location', d?.location ?? ''],
+                            ['Meter', d?.meter ?? ''],
+                          ].filter(([, v]) => v) as Array<[string, string]>
+                        }
+                        if (appliesToType === 'Location') {
+                          const d = getLocationData(o)
+                          return [
+                            ['Assets', d?.assets?.length ? String(d.assets.length) : ''],
+                            ['Meters', d?.meters?.length ? String(d.meters.length) : ''],
+                          ].filter(([, v]) => v) as Array<[string, string]>
+                        }
+                        const m = getMeterData(o)
+                        return [
+                          ['Asset', m?.assetName ?? ''],
+                          ['Location', m?.locationName ?? ''],
+                        ].filter(([, v]) => v) as Array<[string, string]>
+                      })()
                       return (
                         <button
                           key={o}
@@ -2387,7 +2395,15 @@ function AssignAssetModal({
                           </span>
                           <div className="flex-1 flex flex-col min-w-0">
                             <span className="truncate">{o}</span>
-                            {assetLocation && <span className="text-[11px] text-[var(--color-neutral-8)] truncate">{assetLocation}</span>}
+                            {optionDetail.length > 0 && (
+                              <span className="flex items-center gap-2 text-[11px] text-[var(--color-neutral-11)] truncate">
+                                {optionDetail.map(([label, value]) => (
+                                  <span key={label} className="truncate">
+                                    <span className="text-[10px] uppercase tracking-wide text-[var(--color-neutral-8)]">{label}:</span> {value}
+                                  </span>
+                                ))}
+                              </span>
+                            )}
                           </div>
                         </button>
                       )
@@ -2424,15 +2440,18 @@ function AssignAssetModal({
             <div className="flex items-baseline justify-between gap-3 mb-2">
               <div className="flex items-center gap-1.5 min-w-0">
                 <p className="shrink-0 text-[11px] font-semibold uppercase tracking-wide text-[var(--color-neutral-11)]">
-                  Meter Reading <span className="text-[var(--color-error)]">*</span>
+                  Meter {meterRequired && <span className="text-[var(--color-error)]">*</span>}
                 </p>
-                <TooltipProvider delayDuration={200}>
-                  <Tooltip side="top" content="Meter-based schedules require an associated meter for each asset.">
-                    <span className="shrink-0 flex items-center text-[var(--color-neutral-7)] hover:text-[var(--color-neutral-9)] transition-colors cursor-help">
-                      <Info size={13} />
-                    </span>
-                  </Tooltip>
-                </TooltipProvider>
+                {/* Only worth explaining while a meter is actually required. */}
+                {meterRequired && (
+                  <TooltipProvider delayDuration={200}>
+                    <Tooltip side="top" content="Meter-based schedules require an associated meter for each asset.">
+                      <span className="shrink-0 flex items-center text-[var(--color-neutral-7)] hover:text-[var(--color-neutral-9)] transition-colors cursor-help">
+                        <Info size={13} />
+                      </span>
+                    </Tooltip>
+                  </TooltipProvider>
+                )}
               </div>
               {!!previousAssignment?.meter?.length && (
                 <button type="button"
@@ -2442,32 +2461,73 @@ function AssignAssetModal({
                 </button>
               )}
             </div>
-            <SearchableMultiSelect
-              values={form.meter}
-              onChange={v => { setForm(f => ({ ...f, meter: v })); setMeterTouched(false); setMeterAutoFilled(false) }}
-              options={METERS}
-              error={meterTouched && form.meter.length === 0}
-              onBlur={() => setMeterTouched(true)}
-              createEntity="Meter"
-            />
+            {metersAllPresent && (
+              <p className="mb-2 text-[12px] leading-5 text-[var(--color-neutral-10)]">
+                Some {entityWord} already have a meter. Select one here to replace them.
+              </p>
+            )}
+            {/* Which of the selected items still lack a meter — its own row, with
+                the full list in the tooltip when there are too many to name. */}
+            {itemsMissingMeter.length > 0 && (
+              <TooltipProvider delayDuration={200}>
+                <Tooltip
+                  side="top"
+                  content={
+                    <div className="flex flex-col gap-0.5 py-0.5">
+                      {itemsMissingMeter.map(name => <span key={name} className="text-[12px] leading-5">{name}</span>)}
+                    </div>
+                  }
+                >
+                  <span className="flex items-center gap-1 min-w-0 mb-2 text-[11px] text-[var(--color-neutral-8)]">
+                    {itemsMissingMeter.slice(0, 2).map(name => (
+                      <span key={name} className="shrink-0 inline-flex items-center h-4 px-1.5 rounded-full bg-[var(--color-neutral-3)] text-[10px] font-medium text-[var(--color-neutral-9)] max-w-[120px] truncate">
+                        {name}
+                      </span>
+                    ))}
+                    {itemsMissingMeter.length > 2 && (
+                      <span className="shrink-0 inline-flex items-center h-4 px-1.5 rounded-full bg-[var(--color-neutral-3)] text-[10px] font-medium text-[var(--color-neutral-9)]">
+                        +{itemsMissingMeter.length - 2}
+                      </span>
+                    )}
+                    <span className="shrink-0">
+                      {itemsMissingMeter.length === 1 ? 'is missing an associated meter' : 'are missing associated meter'}
+                    </span>
+                  </span>
+                </Tooltip>
+              </TooltipProvider>
+            )}
+            <div ref={meterFieldRef}>
+              <SearchableMultiSelect
+                values={form.meter}
+                onChange={v => { setForm(f => ({ ...f, meter: v })); setMeterTouched(false); setMeterAutoFilled(false) }}
+                options={METERS}
+                error={meterRequired && meterTouched && form.meter.length === 0}
+                onBlur={() => setMeterTouched(true)}
+                createEntity="Meter"
+              />
+            </div>
             {/* Stays mounted so it can fade out as well as in; the 0fr→1fr row
                 animates the collapse and the child clips its own overflow. */}
             <div
-              aria-hidden={!someAlreadyHaveMeter}
+              aria-hidden={!showMeterOverride}
               className={`grid transition-all duration-200 ease-out ${
-                someAlreadyHaveMeter ? 'grid-rows-[1fr] opacity-100 mt-3' : 'grid-rows-[0fr] opacity-0 mt-0'
+                showMeterOverride ? 'grid-rows-[1fr] opacity-100 mt-3' : 'grid-rows-[0fr] opacity-0 mt-0'
               }`}
             >
               <div className="overflow-hidden">
-                <div className="flex items-center justify-between gap-4 p-3 rounded-[var(--radius-lg)] bg-[var(--surface-secondary)]">
+                <div className={`flex items-center justify-between gap-4 p-3 rounded-[var(--radius-lg)] bg-[var(--surface-secondary)]`}>
                   <div className="min-w-0">
                     <p className="text-[12px] leading-5 text-[var(--color-neutral-9)]">
-                      Some selected {entityWord} already have a meter. Turn this on to use the same meter for all.
+                      Use same meter for all {entityWord}.
                     </p>
                   </div>
                   <Switch
                     size="sm"
-                    checked={!!form.applyMeterToAll}
+                    disabled={!canApplyMeterToAll}
+                    /* Keep the track legible while disabled — the gray state
+                       already says it is off. */
+                    className="disabled:opacity-100"
+                    checked={applyMeterToAll}
                     onCheckedChange={v => setForm(f => ({ ...f, applyMeterToAll: v }))}
                     aria-label={`Use same meter for all ${entityWord}`}
                   />
@@ -2480,8 +2540,8 @@ function AssignAssetModal({
 
 
         {/* PEOPLE */}
-        <div className="flex items-center justify-between mb-2">
-          <p className="text-[11px] font-semibold uppercase tracking-wide text-[var(--color-neutral-11)]">Assigned To</p>
+        <div className="flex items-center justify-between gap-3 mb-2">
+          <p className="shrink-0 text-[11px] font-semibold uppercase tracking-wide text-[var(--color-neutral-11)]">Assigned To</p>
           {(previousAssignment?.primaryAssignee || previousAssignment?.team) && (
             <button type="button"
               onClick={() => setForm(f => ({ ...f, primaryAssignee: previousAssignment.primaryAssignee!, additionalAssignee: previousAssignment.additionalAssignee ?? [], team: previousAssignment.team ?? '' }))}
@@ -2503,29 +2563,6 @@ function AssignAssetModal({
             </div>
             <div className="flex-1 min-w-0">
               <Select label="Team" value={form.team} onChange={set('team')} options={TEAMS} clearable placeholder="" createEntity="Team" />
-            </div>
-          </div>
-          {/* Same pattern as the meter override; stays mounted so it can fade both ways. */}
-          <div
-            aria-hidden={!multiItemsWithTech}
-            className={`grid transition-all duration-200 ease-out ${
-              multiItemsWithTech ? 'grid-rows-[1fr] opacity-100' : 'grid-rows-[0fr] opacity-0'
-            }`}
-          >
-            <div className="overflow-hidden">
-              <div className="flex items-center justify-between gap-4 p-3 rounded-[var(--radius-lg)] bg-[var(--surface-secondary)]">
-                <div className="min-w-0">
-                  <p className="text-[12px] leading-5 text-[var(--color-neutral-9)]">
-                    Some selected {entityWord} already have assignees. Turn this on to use the same assignees for all.
-                  </p>
-                </div>
-                <Switch
-                  size="sm"
-                  checked={!!form.applyTechToAll}
-                  onCheckedChange={v => setForm(f => ({ ...f, applyTechToAll: v }))}
-                  aria-label={`Use same assignees for all ${entityWord}`}
-                />
-              </div>
             </div>
           </div>
         </div>
@@ -3145,7 +3182,6 @@ interface TriggerAssignment {
   meterInherited?: boolean
   assignees: string[]
   team?: string
-  teamInherited?: boolean
   startDate: string
   endDate: string
 }
@@ -3773,6 +3809,8 @@ function CreatePMPageContent() {
   }
 
   function handleAssignToTrigger(triggerId: string, form: AssignAssetForm) {
+    /* "Same meter for all" only counts when a meter was actually chosen. */
+    const applyMeterToAll = !!form.applyMeterToAll && form.meter.length > 0
     let items: TriggerAssignment[] = []
     if (form.asset.length > 0) {
       items = form.asset.map(a => {
@@ -3783,14 +3821,11 @@ function CreatePMPageContent() {
           type: 'Asset' as const,
           subtext: form.location[0] || db?.location || '',
           // Unless told to apply to all, a meter the asset already owns wins.
-          meter: (form.applyMeterToAll ? form.meter.join(', ') : (db?.meter || form.meter.join(', '))) || '',
-          meterInherited: !form.applyMeterToAll && !!db?.meter,
-          // Unless told to apply to all, whoever the asset already has wins.
-          assignees: (!form.applyTechToAll && db?.assignee)
-            ? [db.assignee]
-            : [form.primaryAssignee, ...form.additionalAssignee].filter(Boolean),
-          team: (form.applyTechToAll ? form.team : (db?.team || form.team)) || '',
-          teamInherited: !form.applyTechToAll && !!db?.team,
+          meter: (applyMeterToAll ? form.meter.join(', ') : (db?.meter || form.meter.join(', '))) || '',
+          meterInherited: !applyMeterToAll && !!db?.meter,
+          // Assignments carry only what this modal named — nothing is inherited.
+          assignees: [form.primaryAssignee, ...form.additionalAssignee].filter(Boolean),
+          team: form.team || '',
           startDate: form.startDate,
           endDate: form.endDate,
         }
@@ -5150,7 +5185,7 @@ function CreatePMPageContent() {
                                             <div className="group/team w-[124px] shrink-0 flex items-center justify-between h-7 px-1 cursor-pointer rounded-[var(--radius-md)] hover:bg-[var(--color-neutral-3)] transition-colors">
                                               {a.team ? (
                                                 <TooltipProvider delayDuration={300}>
-                                                  <Tooltip content={`${a.team}${a.teamInherited ? ' (inherited)' : ''}`} side="top">
+                                                  <Tooltip content={a.team} side="top">
                                                     <div className="flex flex-col items-start">
                                                       <span style={{ background: TEAM_COLORS[a.team] }} className="w-6 h-6 rounded-full flex items-center justify-center text-white text-[10px] font-bold shrink-0 cursor-default">{a.team[0]}</span>
                                                     </div>
@@ -5308,7 +5343,9 @@ function CreatePMPageContent() {
         initial={editingTriggerId ? triggers.find(t => t.id === editingTriggerId)?.calendarTrigger : undefined}
         onSubmit={t => {
           if (editingTriggerId) {
-            setTriggers(ts => ts.map(tr => tr.id === editingTriggerId ? { ...tr, calendarTrigger: t } : tr))
+            /* Editing keeps the card open — collapsing it hides the work in progress. */
+            setTriggers(ts => ts.map(tr => tr.id === editingTriggerId ? { ...tr, calendarTrigger: t, expanded: true } : tr))
+            setActiveTriggerId(editingTriggerId)
           } else {
             const newId = crypto.randomUUID()
             setTriggers(ts => [...ts.map(tr => ({ ...tr, expanded: false })), { id: newId, calendarTrigger: t, assignments: [], expanded: true }])
