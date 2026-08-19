@@ -25,12 +25,10 @@ function CreateFooter({ entity, onClick }: { entity: string; onClick: () => void
     <button
       type="button"
       onClick={onClick}
-      className="w-full shrink-0 flex items-center justify-between gap-2 px-3 py-2 border-t border-[var(--border-subtle)] text-left text-[13px] font-medium text-[var(--color-accent-9)] cursor-pointer transition-colors hover:bg-[var(--color-accent-1)]"
+      className="w-full shrink-0 flex items-center gap-1.5 px-3 py-2 border-t border-[var(--border-subtle)] text-left text-[13px] font-medium text-[var(--color-accent-9)] cursor-pointer transition-colors hover:bg-[var(--color-neutral-3)]"
     >
+      <Plus size={14} className="shrink-0" />
       Create New {entity}
-      <span className="shrink-0 inline-flex items-center justify-center w-8 h-8 rounded-[var(--radius-md)] bg-[var(--chip-surface-bg)]">
-        <Plus size={16} />
-      </span>
     </button>
   )
 }

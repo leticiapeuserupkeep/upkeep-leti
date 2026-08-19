@@ -441,7 +441,7 @@ function ProgressCard({ states, onSelect }: { states: StepState[]; onSelect: (in
   )
 
   return (
-    <aside className="sticky top-0 self-start shrink-0 w-[208px] rounded-[var(--radius-xl)] border border-[var(--border-default)] bg-[var(--surface-primary)] overflow-hidden">
+    <aside className="sticky top-2 mt-2 self-start shrink-0 w-[208px] rounded-[var(--radius-xl)] border border-[var(--border-default)] bg-[var(--surface-primary)] overflow-hidden">
       <div className="flex items-center h-12 px-4 border-b border-[var(--border-subtle)]">
         <span className="text-[12px] font-semibold leading-4 text-[var(--color-neutral-12)]">Progress</span>
       </div>
@@ -675,6 +675,7 @@ function Select({
           {createEntity && (
             <div className="mt-1 pt-1 border-t border-[var(--border-subtle)]">
               <DropdownMenuItem className="text-[13px] font-medium text-[var(--color-accent-9)]">
+                <Plus size={14} className="mr-1.5 shrink-0" />
                 Create New {createEntity}
               </DropdownMenuItem>
             </div>
@@ -2425,12 +2426,10 @@ function AssignAssetModal({
                   <button
                     type="button"
                     onClick={() => setValueOpen(false)}
-                    className="w-full shrink-0 flex items-center justify-between gap-2 px-3 py-2 border-t border-[var(--border-subtle)] text-left text-[13px] font-medium text-[var(--color-accent-9)] cursor-pointer transition-colors hover:bg-[var(--color-accent-1)]"
+                    className="w-full shrink-0 flex items-center gap-1.5 px-3 py-2 border-t border-[var(--border-subtle)] text-left text-[13px] font-medium text-[var(--color-accent-9)] cursor-pointer transition-colors hover:bg-[var(--color-neutral-3)]"
                   >
+                    <Plus size={14} className="shrink-0" />
                     Create New {appliesToType}
-                    <span className="shrink-0 inline-flex items-center justify-center w-8 h-8 rounded-[var(--radius-md)] bg-[var(--chip-surface-bg)]">
-                      <Plus size={16} />
-                    </span>
                   </button>
                 </Popover.Content>
               </Popover.Portal>
@@ -4124,67 +4123,6 @@ function CreatePMPageContent() {
         <h1 className="text-[15px] font-semibold text-[var(--color-neutral-12)] flex-1">
           {isEditing ? 'Edit Preventive Maintenance' : 'Create a New Preventive Maintenance'}
         </h1>
-        {savedAt && (
-          <span className="text-[12px] text-[var(--color-neutral-8)] select-none">Draft saved</span>
-        )}
-        <div className="flex items-center gap-2 mr-2">
-          <span className="text-[13px] text-[var(--color-neutral-9)]">Create First Work Order Now</span>
-          <Switch checked={createWONow} onCheckedChange={setCreateWONow} size="md" aria-label="Create first Work Order Now" />
-        </div>
-        <div className="w-px h-5 bg-[var(--border-subtle)]" />
-        <button
-          type="button"
-          onClick={() => handleNavigateAway('/predictive-maintenance')}
-          className="text-[14px] font-medium text-[var(--color-neutral-9)] hover:text-[var(--color-neutral-12)] transition-colors cursor-pointer px-1"
-        >
-          Cancel
-        </button>
-        {/* Edit active PM: just "Save" as primary, no draft button */}
-        {isEditing && editingPmStatus === 'Active' ? (
-          <div className="relative group/create">
-            <Button variant="primary" size="md" onClick={handleSaveEdit} disabled={createDisabled}>
-              Save
-            </Button>
-          </div>
-        ) : (
-          <>
-            {/* Drafts save themselves, so this slot shows the preview instead. */}
-            <button
-              type="button"
-              disabled={createDisabled}
-              onClick={() => setPreviewOpen(true)}
-              className="inline-flex items-center justify-center h-8 px-3 rounded-[var(--radius-lg)] bg-[var(--color-accent-1)] text-[14px] font-medium text-[var(--color-accent-11)] hover:bg-[var(--color-accent-2)] transition-colors cursor-pointer select-none disabled:bg-[var(--color-neutral-3)] disabled:text-[var(--color-neutral-8)] disabled:cursor-not-allowed"
-            >
-              Preview
-            </button>
-            <div ref={createBtnRef} className="relative">
-              <Button variant="primary" size="md" onClick={handleCreatePM} disabled={createDisabled}>
-                Create PM
-              </Button>
-              {createDisabled && (
-                <div className="absolute inset-0 cursor-pointer" onClick={() => {
-                  if (createBtnRef.current) {
-                    const r = createBtnRef.current.getBoundingClientRect()
-                    setCreateErrorPos({ top: r.bottom + 8, right: window.innerWidth - r.right })
-                  }
-                  setShowCreateErrors(true)
-                  setTimeout(() => setShowCreateErrors(false), 3000)
-                }} />
-              )}
-            </div>
-            {showCreateErrors && createErrorPos && missingFields.length > 0 && (
-              <div style={{ position: 'fixed', top: createErrorPos.top, right: createErrorPos.right }} className="flex flex-col gap-1 bg-[var(--color-neutral-12)] text-white rounded-[var(--radius-lg)] px-3 py-2.5 shadow-lg pointer-events-none z-[9999] min-w-[220px]">
-                <span className="text-[11px] font-semibold uppercase tracking-wide text-white/60 mb-0.5">Required to create</span>
-                {missingFields.map(f => (
-                  <span key={f} className="flex items-center gap-1.5 text-[12px]">
-                    <span className="w-1 h-1 rounded-full bg-[var(--color-error-8,#FF6369)] shrink-0" />
-                    {f}
-                  </span>
-                ))}
-              </div>
-            )}
-          </>
-        )}
       </div>
 
       {previewOpen && (
@@ -4221,12 +4159,12 @@ function CreatePMPageContent() {
 
         </div>
 
-        <div className="max-w-[1320px] mx-auto w-full flex items-start gap-6 px-6 pt-6">
+        <div className="max-w-[1320px] mx-auto w-full flex items-start gap-6 px-6">
           <ProgressCard states={stepStates} onSelect={scrollToStep} />
           <div className="flex-1 min-w-0">
 
           {/* DETAILS */}
-          <div id="pm-section-details" className="pb-6 flex flex-col gap-5 scroll-mt-[92px]">
+          <div id="pm-section-details" className="mt-2 pb-6 flex flex-col gap-5 scroll-mt-[92px]">
               <div className={`rounded-[var(--radius-xl)] border bg-[var(--surface-primary)] overflow-hidden transition-[border-color,box-shadow] duration-[var(--duration-fast)] ${cardChrome}`}>
                 {/* Card header */}
                 <div className="flex items-center gap-3 px-4 h-[56px] bg-[#F9F9FB] border-b border-[var(--border-subtle)]">
@@ -4662,7 +4600,7 @@ function CreatePMPageContent() {
                                 onClick={e => { e.stopPropagation(); setShowFillMissingModal({ triggerId: trigger.id, type: 'tech' }) }}
                                 className="flex items-center gap-1 rounded-full bg-[var(--color-error-3,#FFEFEF)] text-[var(--color-error,#CE2C31)] text-[11px] px-2.5 py-0.5 font-medium shrink-0 hover:bg-[#FFDCDC] transition-colors cursor-pointer"
                               >
-                                {missingTech} missing technician{missingTech > 1 ? 's' : ''}
+                                Add {missingTech} missing technician{missingTech > 1 ? 's' : ''}
                               </button>
                             )}
                           </>)
@@ -5348,6 +5286,64 @@ function CreatePMPageContent() {
             return [...ts.map(x => ({ ...x, expanded: false })), t]
           })}
         />
+      </div>
+
+      {/* Actions live at the foot of the page, always in reach of the form. */}
+      <div className="shrink-0 flex items-center gap-3 h-[64px] px-6 border-t border-[var(--border-default)] bg-[var(--surface-primary)]">
+        <div className="flex items-center gap-3 mr-auto">
+          <div className="flex items-center gap-2">
+            <span className="text-[13px] text-[var(--color-neutral-9)]">Create First Work Order Now</span>
+            <Switch checked={createWONow} onCheckedChange={setCreateWONow} size="md" aria-label="Create first Work Order Now" />
+          </div>
+        </div>
+        {savedAt && (
+          <span className="text-[12px] text-[var(--color-neutral-8)] select-none">Draft saved</span>
+        )}
+        <button
+          type="button"
+          onClick={() => handleNavigateAway('/predictive-maintenance')}
+          className="inline-flex items-center h-10 px-3 text-[length:var(--font-size-md)] font-medium text-[var(--color-neutral-9)] hover:text-[var(--color-neutral-12)] transition-colors cursor-pointer"
+        >
+          Cancel
+        </button>
+        {/* Edit active PM: just "Save" as primary, no draft button */}
+        {isEditing && editingPmStatus === 'Active' ? (
+          <div className="relative group/create">
+            <Button variant="primary" size="lg" onClick={handleSaveEdit} disabled={createDisabled}>
+              Save
+            </Button>
+          </div>
+        ) : (
+          <>
+            <div ref={createBtnRef} className="relative">
+              <Button variant="primary" size="lg" onClick={handleCreatePM} disabled={createDisabled}>
+                Create PM
+              </Button>
+              {createDisabled && (
+                <div className="absolute inset-0 cursor-pointer" onClick={() => {
+                  if (createBtnRef.current) {
+                    const r = createBtnRef.current.getBoundingClientRect()
+                    setCreateErrorPos({ top: r.top - 8, right: window.innerWidth - r.right })
+                  }
+                  setShowCreateErrors(true)
+                  setTimeout(() => setShowCreateErrors(false), 3000)
+                }} />
+              )}
+            </div>
+            {/* Anchored above the bar now that the actions sit at the bottom. */}
+            {showCreateErrors && createErrorPos && missingFields.length > 0 && (
+              <div style={{ position: 'fixed', top: createErrorPos.top, right: createErrorPos.right, transform: 'translateY(-100%)' }} className="flex flex-col gap-1 bg-[var(--color-neutral-12)] text-white rounded-[var(--radius-lg)] px-3 py-2.5 shadow-lg pointer-events-none z-[9999] min-w-[220px]">
+                <span className="text-[11px] font-semibold uppercase tracking-wide text-white/60 mb-0.5">Required to create</span>
+                {missingFields.map(f => (
+                  <span key={f} className="flex items-center gap-1.5 text-[12px]">
+                    <span className="w-1 h-1 rounded-full bg-[var(--color-error-8,#FF6369)] shrink-0" />
+                    {f}
+                  </span>
+                ))}
+              </div>
+            )}
+          </>
+        )}
       </div>
 
       {/* Calendar trigger modal */}
