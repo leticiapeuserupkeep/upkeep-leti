@@ -8,7 +8,7 @@ import {
   ChevronLeft, ChevronRight, ChevronUp, ChevronDown, ChevronsUpDown, FileText, Box,
   Plus, X, MapPin, Gauge, Clock, Users, Upload, Trash2, PanelLeft, Info,
   Calendar, ArrowRight, ArrowDown, Sparkle, MoreHorizontal, Pencil, Activity, CalendarClock,
-  User, UserX, RotateCcw, RefreshCw, Camera, Link2, Search, Ban, Flag, SlidersHorizontal, Check,
+  User, UserX, RotateCcw, RefreshCw, Camera, Link2, Search, Ban, Flag, SlidersHorizontal, Check, Play,
 } from 'lucide-react'
 import { Button } from '@/app/components/ui/Button'
 import { IconButton } from '@/app/components/ui/IconButton'
@@ -422,29 +422,25 @@ function ProgressCard({ states, onSelect }: { states: StepState[]; onSelect: (in
   }
   /* Step markers come from the design set rather than the icon library, so the
      stroke colours are the spec's own. */
-  const ring = 'M12.3971 6.99935C12.3971 9.97939 9.98134 12.3952 7.0013 12.3952C4.02127 12.3952 1.60547 9.97939 1.60547 6.99935C1.60547 4.01931 4.02127 1.60352 7.0013 1.60352C9.98134 1.60352 12.3971 4.01931 12.3971 6.99935Z'
-  const icon: Record<StepState, React.ReactNode> = {
-    done: (
-      <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true">
-        <path d={`M8.7513 5.54102L6.1263 8.74935L4.95964 7.58268M${ring.slice(1)}`} stroke="#3E63DD" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-      </svg>
-    ),
-    current: (
-      <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true">
-        <path d={ring} stroke="#1F2D5C" strokeWidth="1.5" strokeLinecap="square" />
-      </svg>
-    ),
-    error: (
-      <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true">
-        <path d={`M8.7513 5.24935L5.2513 8.74935M8.7513 8.74935L5.2513 5.24935M${ring.slice(1)}`} stroke="#CC4E00" strokeWidth="1.5" strokeLinecap="round" />
-      </svg>
-    ),
-    pending: (
-      <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true">
-        <path d={ring} stroke="#CDCED6" strokeWidth="1.5" strokeLinecap="square" />
-      </svg>
-    ),
+  const ringStroke: Record<StepState, string> = {
+    done: '#3E63DD',
+    current: '#1F2D5C',
+    error: '#CC4E00',
+    pending: '#CDCED6',
   }
+  /* Drawn on an 18px grid rather than a scaled-up 14px one, so the ring and the
+     numerals stay crisp. Steps carry their number until they are done. */
+  const marker = (state: StepState, index: number) => (
+    <svg width="18" height="18" viewBox="0 0 18 18" fill="none" aria-hidden="true">
+      <circle cx="9" cy="9" r="7.25" stroke={ringStroke[state]} strokeWidth="1.5" />
+      {state === 'done' ? (
+        <path d="M5.9 9.2 8 11.3 12.1 6.8" stroke={ringStroke.done} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+      ) : (
+        <text x="9" y="9.5" textAnchor="middle" dominantBaseline="middle" fontSize="9" fontWeight="600" fill={ringStroke[state]}>{index + 1}</text>
+      )}
+    </svg>
+  )
+
   return (
     <aside className="sticky top-0 self-start shrink-0 w-[208px] rounded-[var(--radius-xl)] border border-[var(--border-default)] bg-[var(--surface-primary)] overflow-hidden">
       <div className="flex items-center h-12 px-4 border-b border-[var(--border-subtle)]">
@@ -465,7 +461,7 @@ function ProgressCard({ states, onSelect }: { states: StepState[]; onSelect: (in
                 state === 'pending' ? 'cursor-default' : 'cursor-pointer font-medium'
               } ${state === 'current' ? 'bg-[var(--chip-surface-bg)]' : state === 'pending' ? '' : 'hover:bg-[var(--color-neutral-3)]'} ${tone[state]}`}
             >
-              <span className="shrink-0">{icon[state]}</span>
+              <span className="shrink-0">{marker(state, i)}</span>
               {step}
             </button>
           )
@@ -526,7 +522,7 @@ function Stepper({ states }: { states: StepState[] }) {
  * optional action. A done step wears a check and dims; a pending step dims too
  * but keeps its outlined number.
  */
-function StepRow({ state, number, title, description, action, lockedHint, onRowClick, badge }: {
+function StepRow({ state, number, title, description, action, lockedHint, onRowClick, badge, badgeActive }: {
   state: 'done' | 'current' | 'pending'
   number: number
   title: string
@@ -538,6 +534,8 @@ function StepRow({ state, number, title, description, action, lockedHint, onRowC
   onRowClick?: () => void
   /** Replaces the step number, e.g. a plus once the steps stop being a sequence. */
   badge?: React.ReactNode
+  /** Fills the badge in at rest — the step before it is finished, so this is next. */
+  badgeActive?: boolean
 }) {
   /* Fixed to the pointer: the card clips its overflow, so an absolutely
      positioned bubble would be cut off at the card's edge. */
@@ -551,9 +549,12 @@ function StepRow({ state, number, title, description, action, lockedHint, onRowC
   const row = (
     <>
       <span
-        className={`shrink-0 w-10 h-10 flex items-center justify-center rounded-[var(--radius-sm)] text-[14px] font-semibold ${
+        className={`shrink-0 w-8 h-8 flex items-center justify-center rounded-[var(--radius-sm)] text-[14px] font-semibold ${
           state === 'done' ? 'bg-[var(--chip-surface-bg)] text-[var(--chip-outline-fg)]'
-          : state === 'current' ? 'bg-[var(--chip-solid-bg)] text-white'
+          /* Solid once the step before it is done; otherwise neutral until hover. */
+          : state === 'current' ? (badgeActive
+            ? 'bg-[var(--chip-solid-bg)] text-white'
+            : 'border border-[var(--color-neutral-6)] text-[var(--color-neutral-9)] group-hover/step:border-transparent group-hover/step:bg-[var(--chip-solid-bg)] group-hover/step:text-white group-focus-visible/step:border-transparent group-focus-visible/step:bg-[var(--chip-solid-bg)] group-focus-visible/step:text-white')
           : 'border border-[var(--color-neutral-6)] text-[var(--color-neutral-9)]'
         }`}
       >
@@ -566,7 +567,12 @@ function StepRow({ state, number, title, description, action, lockedHint, onRowC
       {action}
     </>
   )
-  const rowClass = `w-full flex items-center gap-3 p-4 rounded-[var(--radius-lg)] border border-[var(--border-default)] bg-[var(--surface-primary)] ${state === 'current' ? '' : 'opacity-50'}`
+  /* The accent treatment is a hover/focus state, not a resting one — an idle row
+     should not look like it is already selected. */
+  const rowClass = `group/step w-full flex items-center gap-3 p-4 rounded-[var(--radius-lg)] border border-[var(--border-default)] bg-[var(--surface-primary)] transition-colors ${state === 'current' ? '' : 'opacity-50'}`
+  const rowHover = state === 'current'
+    ? 'hover:border-[var(--color-accent-7)] hover:bg-[var(--color-accent-1)] focus-visible:border-[var(--color-accent-7)] focus-visible:bg-[var(--color-accent-1)]'
+    : 'hover:bg-[var(--color-neutral-2)]'
 
   return (
     <div className="relative">
@@ -574,7 +580,7 @@ function StepRow({ state, number, title, description, action, lockedHint, onRowC
         <button
           type="button"
           onClick={e => setHintAt(prev => prev ? null : { x: Math.min(e.clientX + 12, window.innerWidth - 332), y: e.clientY + 14 })}
-          className={`${rowClass} cursor-pointer transition-colors hover:bg-[var(--color-neutral-2)]`}
+          className={`${rowClass} ${rowHover} cursor-pointer`}
         >
           {row}
         </button>
@@ -586,7 +592,7 @@ function StepRow({ state, number, title, description, action, lockedHint, onRowC
           tabIndex={0}
           onClick={onRowClick}
           onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onRowClick() } }}
-          className={`${rowClass} cursor-pointer transition-colors hover:bg-[var(--color-neutral-2)]`}
+          className={`${rowClass} ${rowHover} cursor-pointer`}
         >
           {row}
         </div>
@@ -3870,6 +3876,15 @@ function CreatePMPageContent() {
   /* The pinned progress bar only grows a divider once there is content behind it. */
   const [pageScrolled, setPageScrolled] = useState(false)
 
+  /* Creating a schedule is never blocked — but with no title yet, step 1 is
+     flagged so the missing piece is obvious. */
+  function openScheduleModal() {
+    if (!title.trim()) setTitleError(true)
+    setEditingTriggerId(null)
+    setCalendarModalKey(k => k + 1)
+    setShowCalendarModal(true)
+  }
+
   /** Rail steps jump to the part of the form they belong to. */
   function scrollToStep(index: number) {
     const id = index === 0 ? 'pm-section-details' : 'pm-section-schedules'
@@ -3889,8 +3904,10 @@ function CreatePMPageContent() {
     const movedOn = triggers.length > 0 || titleError
     const states: StepState[] = done.map(d => (d ? 'done' : 'pending'))
     if (!done[0] && movedOn) states[0] = 'error'
-    /* Anything the schedule cards flag in red belongs on the rail too. */
-    if (hasUnassignedTriggers || hasMissingTechnicians || hasMissingMeters) states[2] = 'error'
+    /* Schedule problems belong on the rail too — except the schedule just
+       created, which is the one the user is still filling in. */
+    const abandonedTrigger = triggers.slice(0, -1).some(t => t.assignments.length === 0)
+    if (abandonedTrigger || hasMissingTechnicians || hasMissingMeters) states[2] = 'error'
     const current = states.findIndex(st => st === 'pending')
     if (current !== -1) states[current] = 'current'
     return states
@@ -4162,7 +4179,12 @@ function CreatePMPageContent() {
               <div className={`rounded-[var(--radius-xl)] border bg-[var(--surface-primary)] overflow-hidden transition-[border-color,box-shadow] duration-[var(--duration-fast)] ${cardChrome}`}>
                 {/* Card header */}
                 <div className="flex items-center gap-3 px-4 h-[56px] bg-[#F9F9FB] border-b border-[var(--border-subtle)]">
-                  <FileText size={18} className="text-[var(--color-neutral-7)]" />
+                  {/* Same badge the step rows use, so the sections read as steps too. */}
+                  <span className={`shrink-0 w-8 h-8 flex items-center justify-center rounded-[var(--radius-sm)] text-[14px] font-semibold ${
+                    title.trim() ? 'bg-[var(--chip-surface-bg)] text-[var(--chip-outline-fg)]' : 'bg-[var(--chip-solid-bg)] text-white'
+                  }`}>
+                    {title.trim() ? <Check size={16} /> : 1}
+                  </span>
                   <span className="text-[16px] font-semibold text-[var(--color-neutral-12)]">Details</span>
                 </div>
                 {/* Card content */}
@@ -4178,6 +4200,7 @@ function CreatePMPageContent() {
                           autoFocus
                           placeholder="e.g. Monthly HVAC filter replacement"
                           value={title}
+                          highlight={!title.trim()}
                           error={titleError}
                           errorMessage={titleError ? 'Title is required' : undefined}
                           onChange={e => { setTitle((e.target as HTMLInputElement).value); if (titleError) setTitleError(false) }}
@@ -4448,10 +4471,9 @@ function CreatePMPageContent() {
               )}
               </div>
 
-          </div>
 
           {/* TRIGGERS */}
-          <div id="pm-section-schedules" className="pb-6 scroll-mt-[92px]">
+          <div id="pm-section-schedules" className="scroll-mt-[92px]">
             <div className={`rounded-[var(--radius-xl)] border bg-[var(--surface-primary)] overflow-hidden transition-[border-color,box-shadow] duration-[var(--duration-fast)] ${cardChrome}`}>
 
               {/* Card header */}
@@ -4481,12 +4503,13 @@ function CreatePMPageContent() {
                 <div className="flex flex-col gap-3 px-4 py-4">
                   <StepRow
                     state="current"
-                    number={1}
+                    number={2}
+                    badgeActive={!!title.trim()}
                     title="Create a new Schedule"
                     description="Create a schedule to define when maintenance happens."
-                    onRowClick={() => { setCalendarModalKey(k => k + 1); setShowCalendarModal(true) }}
+                    onRowClick={openScheduleModal}
                     action={
-                      <Button variant="primary" onClick={() => { setCalendarModalKey(k => k + 1); setShowCalendarModal(true) }}>
+                      <Button variant="primary" onClick={openScheduleModal}>
                         <Plus size={16} />
                         New Schedule
                       </Button>
@@ -4494,7 +4517,7 @@ function CreatePMPageContent() {
                   />
                   <StepRow
                     state="pending"
-                    number={2}
+                    number={3}
                     title="Assets, Locations &amp; Meters"
                     description="Available after you create a schedule."
                     lockedHint={{
@@ -4664,14 +4687,15 @@ function CreatePMPageContent() {
                                 {triggerIndex === 0 && (
                                   <StepRow
                                     state="done"
-                                    number={1}
+                                    number={2}
                                     title="Create a new Schedule"
                                     description="Create a schedule to define when maintenance happens."
                                   />
                                 )}
                                 <StepRow
                                   state="current"
-                                  number={2}
+                                  number={3}
+                                  badgeActive
                                   badge={triggerIndex === 0 ? undefined : <Plus size={18} />}
                                   title="Assets, Locations &amp; Meters"
                                   description="Choose where this schedule applies."
@@ -5220,6 +5244,37 @@ function CreatePMPageContent() {
               )}
 
             </div>
+
+          </div>
+
+          {/* Step 4 — the last thing left once the PM has everything it needs. */}
+          <div className="pb-6">
+            <StepRow
+              state={createDisabled ? 'pending' : 'current'}
+              number={4}
+              badgeActive
+              title="Preview"
+              description={createDisabled ? 'Available once the details and schedules are complete.' : 'Review the PM before creating it.'}
+              onRowClick={createDisabled ? undefined : () => setPreviewOpen(true)}
+              lockedHint={createDisabled ? {
+                title: 'Finish the steps above first',
+                body: 'Add a title, a schedule, and what each schedule applies to before previewing.',
+              } : undefined}
+              action={createDisabled ? (
+                /* A span while locked: the row itself is a button then, and
+                   nesting buttons is invalid HTML. */
+                <span className="shrink-0 inline-flex items-center justify-center w-8 h-8 rounded-[var(--radius-lg)] bg-[var(--color-neutral-3)] text-[var(--color-neutral-8)]">
+                  <Play size={14} />
+                </span>
+              ) : (
+                <IconButton label="Preview" variant="primary" size="md" onClick={() => setPreviewOpen(true)}>
+                  <Play size={14} />
+                </IconButton>
+              )}
+            />
+
+          </div>
+
           </div>
 
           </div>
