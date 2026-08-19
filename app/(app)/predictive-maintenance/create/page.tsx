@@ -8,7 +8,7 @@ import {
   ChevronLeft, ChevronRight, ChevronUp, ChevronDown, ChevronsUpDown, FileText, Box,
   Plus, X, MapPin, Gauge, Clock, Users, Upload, Trash2, PanelLeft, Info,
   Calendar, ArrowRight, ArrowDown, Sparkle, MoreHorizontal, Pencil, Activity, CalendarClock,
-  User, UserX, RotateCcw, RefreshCw, Camera, Link2, Search, Ban, Flag, SlidersHorizontal, Check, Play,
+  User, UserX, RotateCcw, RefreshCw, Camera, Link2, Search, Ban, Flag, SlidersHorizontal, Check, Play, Eye,
 } from 'lucide-react'
 import { Button } from '@/app/components/ui/Button'
 import { IconButton } from '@/app/components/ui/IconButton'
@@ -547,6 +547,8 @@ function StepRow({ state, number, title, description, action, lockedHint, onRowC
 
   const row = (
     <>
+      {/* A supplied badge is an icon, not a step marker — it carries no chip. */}
+      {badge ? <span className="shrink-0 w-8 h-8 flex items-center justify-center">{badge}</span> : (
       <span
         className={`shrink-0 w-8 h-8 flex items-center justify-center rounded-[var(--radius-sm)] text-[14px] font-semibold ${
           state === 'done' ? 'bg-[var(--chip-surface-bg)] text-[var(--chip-outline-fg)]'
@@ -557,8 +559,9 @@ function StepRow({ state, number, title, description, action, lockedHint, onRowC
           : 'border border-[var(--color-neutral-6)] text-[var(--color-neutral-9)]'
         }`}
       >
-        {badge ?? (state === 'done' ? <Check size={16} /> : number)}
+        {state === 'done' ? <Check size={16} /> : number}
       </span>
+      )}
       <div className="flex-1 min-w-0 text-left">
         <p className="text-[16px] font-semibold leading-6 text-[var(--color-neutral-12)]">{title}</p>
         <p className="text-[12px] leading-4 text-[var(--color-neutral-9)]">{description}</p>
@@ -1323,14 +1326,14 @@ function CreateCalendarTriggerModal({
 
       </ModalBody>
       <ModalFooter className="flex items-center justify-end gap-2 px-6 py-4">
-        <Button variant="secondary" size="md" onClick={handleClose}>Cancel</Button>
+        <Button variant="secondary" size="lg" onClick={handleClose}>Cancel</Button>
         {(() => {
           const calendarValid = !!(form.scheduleType && form.every && form.period && (form.period !== 'Week' || !!form.weekday) && (!form.woCreationMode || (form.woCreationMode === 'relative' && !!form.woRelativeN && !!form.woRelativePeriod) || (form.woCreationMode === 'on-the' && !!form.woOnThePeriod)))
           const calendarPartial = !!(form.every || form.period || form.woCreationMode) && !calendarValid
           const meterPartial = (meterCondition !== '' || meterValue.trim() !== '') && !meterComplete
           const hasValidTrigger = calendarValid || meterComplete
           return (
-            <Button variant="primary" size="md" onClick={handleSubmit} disabled={!hasValidTrigger || meterPartial || calendarPartial || (isEditing && !hasChanges)}>
+            <Button variant="primary" size="lg" onClick={handleSubmit} disabled={!hasValidTrigger || meterPartial || calendarPartial || (isEditing && !hasChanges)}>
               {isEditing ? 'Save Changes' : 'Create Schedule'}
             </Button>
           )
@@ -3516,7 +3519,7 @@ function PreviewScheduleCard({ trigger }: { trigger: PMTrigger }) {
  * Read-only run-through of the PM before it is created: the details as saved,
  * then every schedule with the rows it will generate work orders for.
  */
-function PMPreview({ title, description, category, priority, duration, signature, checklists, images, triggers, onBack, onCreate }: {
+function PMPreview({ title, description, category, priority, duration, signature, checklists, images, triggers, onBack, onCreate, createWO }: {
   title: string
   description: string
   category: string
@@ -3528,6 +3531,8 @@ function PMPreview({ title, description, category, priority, duration, signature
   triggers: PMTrigger[]
   onBack: () => void
   onCreate: () => void
+  /** Only while creating: the same first-work-order switch the form carries. */
+  createWO?: { value: boolean; onChange: (v: boolean) => void }
 }) {
   const assignmentCount = triggers.reduce((n, t) => n + t.assignments.length, 0)
   const taskCount = checklists.reduce((n, c) => n + c.tasks.length, 0)
@@ -3560,14 +3565,10 @@ function PMPreview({ title, description, category, priority, duration, signature
           <ChevronLeft size={20} />
         </button>
         <h1 className="text-[15px] font-semibold text-[var(--color-neutral-12)]">Preview</h1>
-        <div className="ml-auto flex items-center gap-2">
-          <Button variant="secondary" size="md" onClick={onBack}>Back to edit</Button>
-          <Button variant="primary" size="md" onClick={onCreate}>Create PM</Button>
-        </div>
       </div>
 
       <div className="flex-1 overflow-y-auto">
-        <div className="max-w-[900px] mx-auto w-full px-6 py-8 flex flex-col gap-6">
+        <div className="max-w-[1320px] mx-auto w-full px-6 py-8 flex flex-col gap-6">
 
           <div className="flex flex-col gap-2">
             <h2 className="text-[24px] font-semibold leading-8 text-[var(--color-neutral-12)]">{title}</h2>
@@ -3618,6 +3619,26 @@ function PMPreview({ title, description, category, priority, duration, signature
           {triggers.map(trigger => (
             <PreviewScheduleCard key={trigger.id} trigger={trigger} />
           ))}
+        </div>
+      </div>
+
+      {/* Same bar as the form pages, so the two screens read as one flow. */}
+      <div className="shrink-0 h-[64px] border-t border-[var(--border-default)] bg-[var(--surface-primary)]">
+        <div className="max-w-[1320px] mx-auto w-full h-full flex items-center justify-end gap-3 px-6">
+          {createWO && (
+            <div className="flex items-center gap-2 mr-auto">
+              <span className="text-[13px] text-[var(--color-neutral-9)]">Create First Work Order Now</span>
+              <Switch checked={createWO.value} onCheckedChange={createWO.onChange} size="md" aria-label="Create first Work Order Now" />
+            </div>
+          )}
+          <button
+            type="button"
+            onClick={onBack}
+            className="inline-flex items-center h-10 px-3 text-[length:var(--font-size-md)] font-medium text-[var(--color-neutral-9)] hover:text-[var(--color-neutral-12)] transition-colors cursor-pointer"
+          >
+            Back to edit
+          </button>
+          <Button variant="primary" size="lg" onClick={onCreate}>Create PM</Button>
         </div>
       </div>
     </div>
@@ -4138,6 +4159,7 @@ function CreatePMPageContent() {
           triggers={triggers}
           onBack={() => setPreviewOpen(false)}
           onCreate={handleCreatePM}
+          createWO={isEditing ? undefined : { value: createWONow, onChange: setCreateWONow }}
         />
       )}
 
@@ -4160,7 +4182,8 @@ function CreatePMPageContent() {
         </div>
 
         <div className="max-w-[1320px] mx-auto w-full flex items-start gap-6 px-6">
-          <ProgressCard states={stepStates} onSelect={scrollToStep} />
+          {/* The rail guides a first pass; editing is not one. */}
+          {!isEditing && <ProgressCard states={stepStates} onSelect={scrollToStep} />}
           <div className="flex-1 min-w-0">
 
           {/* DETAILS */}
@@ -4169,11 +4192,16 @@ function CreatePMPageContent() {
                 {/* Card header */}
                 <div className="flex items-center gap-3 px-4 h-[56px] bg-[#F9F9FB] border-b border-[var(--border-subtle)]">
                   {/* Same badge the step rows use, so the sections read as steps too. */}
-                  <span className={`shrink-0 w-8 h-8 flex items-center justify-center rounded-[var(--radius-sm)] text-[14px] font-semibold ${
-                    title.trim() ? 'bg-[var(--chip-surface-bg)] text-[var(--chip-outline-fg)]' : 'bg-[var(--chip-solid-bg)] text-white'
-                  }`}>
-                    {title.trim() ? <Check size={16} /> : 1}
-                  </span>
+                  {isEditing ? (
+                    /* Editing has no step sequence, so the section just wears its icon. */
+                    <FileText size={18} className="shrink-0 text-[var(--color-neutral-7)]" />
+                  ) : (
+                    <span className={`shrink-0 w-8 h-8 flex items-center justify-center rounded-[var(--radius-sm)] text-[14px] font-semibold ${
+                      title.trim() ? 'bg-[var(--chip-surface-bg)] text-[var(--chip-outline-fg)]' : 'bg-[var(--chip-solid-bg)] text-white'
+                    }`}>
+                      {title.trim() ? <Check size={16} /> : 1}
+                    </span>
+                  )}
                   <span className="text-[16px] font-semibold text-[var(--color-neutral-12)]">Details</span>
                 </div>
                 {/* Card content */}
@@ -5241,6 +5269,7 @@ function CreatePMPageContent() {
             <StepRow
               state={createDisabled ? 'pending' : 'current'}
               number={4}
+              badge={isEditing ? <Eye size={18} className="text-[var(--color-neutral-7)]" /> : undefined}
               badgeActive
               title="Preview"
               description={createDisabled ? 'Available once the details and schedules are complete.' : 'Review the PM before creating it.'}
@@ -5289,61 +5318,64 @@ function CreatePMPageContent() {
       </div>
 
       {/* Actions live at the foot of the page, always in reach of the form. */}
-      <div className="shrink-0 flex items-center gap-3 h-[64px] px-6 border-t border-[var(--border-default)] bg-[var(--surface-primary)]">
-        <div className="flex items-center gap-3 mr-auto">
-          <div className="flex items-center gap-2">
-            <span className="text-[13px] text-[var(--color-neutral-9)]">Create First Work Order Now</span>
-            <Switch checked={createWONow} onCheckedChange={setCreateWONow} size="md" aria-label="Create first Work Order Now" />
-          </div>
-        </div>
-        {savedAt && (
-          <span className="text-[12px] text-[var(--color-neutral-8)] select-none">Draft saved</span>
-        )}
-        <button
-          type="button"
-          onClick={() => handleNavigateAway('/predictive-maintenance')}
-          className="inline-flex items-center h-10 px-3 text-[length:var(--font-size-md)] font-medium text-[var(--color-neutral-9)] hover:text-[var(--color-neutral-12)] transition-colors cursor-pointer"
-        >
-          Cancel
-        </button>
-        {/* Edit active PM: just "Save" as primary, no draft button */}
-        {isEditing && editingPmStatus === 'Active' ? (
-          <div className="relative group/create">
+      {/* Actions sit at the foot, lined up with the form rather than the window edge. */}
+      <div className="shrink-0 h-[64px] border-t border-[var(--border-default)] bg-[var(--surface-primary)]">
+        <div className="max-w-[1320px] mx-auto w-full h-full flex items-center justify-end gap-3 px-6">
+          {/* Creating a PM has a draft behind it and a first work order to decide;
+              editing an existing one has neither. */}
+          {!isEditing && (
+            <div className="flex items-center gap-2 mr-auto">
+              <span className="text-[13px] text-[var(--color-neutral-9)]">Create First Work Order Now</span>
+              <Switch checked={createWONow} onCheckedChange={setCreateWONow} size="md" aria-label="Create first Work Order Now" />
+            </div>
+          )}
+          {!isEditing && savedAt && (
+            <span className="text-[12px] text-[var(--color-neutral-8)] select-none">Draft saved</span>
+          )}
+          <button
+            type="button"
+            onClick={() => handleNavigateAway('/predictive-maintenance')}
+            className="inline-flex items-center h-10 px-3 text-[length:var(--font-size-md)] font-medium text-[var(--color-neutral-9)] hover:text-[var(--color-neutral-12)] transition-colors cursor-pointer"
+          >
+            Cancel
+          </button>
+          {/* Edit active PM: just "Save" as primary, no draft button */}
+          {isEditing && editingPmStatus === 'Active' ? (
             <Button variant="primary" size="lg" onClick={handleSaveEdit} disabled={createDisabled}>
               Save
             </Button>
-          </div>
-        ) : (
-          <>
-            <div ref={createBtnRef} className="relative">
-              <Button variant="primary" size="lg" onClick={handleCreatePM} disabled={createDisabled}>
-                Create PM
-              </Button>
-              {createDisabled && (
-                <div className="absolute inset-0 cursor-pointer" onClick={() => {
-                  if (createBtnRef.current) {
-                    const r = createBtnRef.current.getBoundingClientRect()
-                    setCreateErrorPos({ top: r.top - 8, right: window.innerWidth - r.right })
-                  }
-                  setShowCreateErrors(true)
-                  setTimeout(() => setShowCreateErrors(false), 3000)
-                }} />
-              )}
-            </div>
-            {/* Anchored above the bar now that the actions sit at the bottom. */}
-            {showCreateErrors && createErrorPos && missingFields.length > 0 && (
-              <div style={{ position: 'fixed', top: createErrorPos.top, right: createErrorPos.right, transform: 'translateY(-100%)' }} className="flex flex-col gap-1 bg-[var(--color-neutral-12)] text-white rounded-[var(--radius-lg)] px-3 py-2.5 shadow-lg pointer-events-none z-[9999] min-w-[220px]">
-                <span className="text-[11px] font-semibold uppercase tracking-wide text-white/60 mb-0.5">Required to create</span>
-                {missingFields.map(f => (
-                  <span key={f} className="flex items-center gap-1.5 text-[12px]">
-                    <span className="w-1 h-1 rounded-full bg-[var(--color-error-8,#FF6369)] shrink-0" />
-                    {f}
-                  </span>
-                ))}
+          ) : (
+            <>
+              <div ref={createBtnRef} className="relative">
+                <Button variant="primary" size="lg" onClick={handleCreatePM} disabled={createDisabled}>
+                  Create PM
+                </Button>
+                {createDisabled && (
+                  <div className="absolute inset-0 cursor-pointer" onClick={() => {
+                    if (createBtnRef.current) {
+                      const r = createBtnRef.current.getBoundingClientRect()
+                      setCreateErrorPos({ top: r.top - 8, right: window.innerWidth - r.right })
+                    }
+                    setShowCreateErrors(true)
+                    setTimeout(() => setShowCreateErrors(false), 3000)
+                  }} />
+                )}
               </div>
-            )}
-          </>
-        )}
+              {/* Anchored above the bar now that the actions sit at the bottom. */}
+              {showCreateErrors && createErrorPos && missingFields.length > 0 && (
+                <div style={{ position: 'fixed', top: createErrorPos.top, right: createErrorPos.right, transform: 'translateY(-100%)' }} className="flex flex-col gap-1 bg-[var(--color-neutral-12)] text-white rounded-[var(--radius-lg)] px-3 py-2.5 shadow-lg pointer-events-none z-[9999] min-w-[220px]">
+                  <span className="text-[11px] font-semibold uppercase tracking-wide text-white/60 mb-0.5">Required to create</span>
+                  {missingFields.map(f => (
+                    <span key={f} className="flex items-center gap-1.5 text-[12px]">
+                      <span className="w-1 h-1 rounded-full bg-[var(--color-error-8,#FF6369)] shrink-0" />
+                      {f}
+                    </span>
+                  ))}
+                </div>
+              )}
+            </>
+          )}
+        </div>
       </div>
 
       {/* Calendar trigger modal */}
