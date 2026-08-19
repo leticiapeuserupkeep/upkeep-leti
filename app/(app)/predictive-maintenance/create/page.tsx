@@ -4958,7 +4958,7 @@ function CreatePMPageContent() {
                                           {/* Bulk: Add Meter */}
                                           <Popover.Root>
                                             <Popover.Trigger asChild>
-                                              <button type="button" className="flex items-center gap-1 text-[13px] font-semibold text-white cursor-pointer hover:opacity-80 transition-opacity shrink-0">Update Meter</button>
+                                              <button type="button" className="flex items-center gap-1 text-[13px] font-semibold text-white cursor-pointer hover:opacity-80 transition-opacity shrink-0">Meter</button>
                                             </Popover.Trigger>
                                             <Popover.Portal>
                                               <Popover.Content sideOffset={8} align="start" className="z-[var(--z-dropdown)] w-[200px] rounded-[var(--radius-xl)] border border-[var(--border-default)] bg-[var(--surface-primary)] shadow-[var(--shadow-lg)] outline-none overflow-hidden" onOpenAutoFocus={e => e.preventDefault()}>
@@ -5010,7 +5010,7 @@ function CreatePMPageContent() {
                                               </Popover.Content>
                                             </Popover.Portal>
                                           </Popover.Root>
-                                          <button type="button" onClick={() => setBulkDeleteConfirm(trigger.id)} className="flex items-center gap-1 text-[13px] font-semibold text-red-400 hover:text-red-300 cursor-pointer transition-colors shrink-0">
+                                          <button type="button" onClick={() => setBulkDeleteConfirm(trigger.id)} className="flex items-center gap-1 ml-10 text-[13px] font-semibold text-red-400 hover:text-red-300 cursor-pointer transition-colors shrink-0">
                                             Delete
                                           </button>
                                           <div className="w-px h-4 bg-white/20 shrink-0 mx-1" />
