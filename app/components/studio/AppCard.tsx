@@ -103,12 +103,17 @@ function CardActions({
   onInstall,
   onReuse,
   reuseLabel,
+  menuId,
 }: {
   status: AppStatus
   phase: CardPhase
   onInstall?: () => void
   onReuse?: () => void
   reuseLabel?: string
+  /** Stable id for the menu trigger — Radix would otherwise generate one from
+      useId, whose value depends on tree position and so differed between the
+      server and client render, tripping a hydration warning. */
+  menuId?: string
 }) {
   if (phase === 'installing') {
     return (
@@ -142,6 +147,7 @@ function CardActions({
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
         <button
+          id={menuId}
           className="flex items-center justify-center w-8 h-8 shrink-0 rounded-[var(--radius-lg)] border border-[var(--border-default)] hover:bg-[var(--color-neutral-3)] transition-colors duration-[var(--duration-fast)] cursor-pointer"
           onClick={(e) => e.stopPropagation()}
           aria-label="More actions"
@@ -452,6 +458,7 @@ export function AppCard({
           onInstall={handleInstall}
           onReuse={onReuse}
           reuseLabel={reuseLabel}
+          menuId={`app-actions-${title.toLowerCase().replace(/[^a-z0-9]+/g, '-')}`}
         />
       </div>
     </div>
