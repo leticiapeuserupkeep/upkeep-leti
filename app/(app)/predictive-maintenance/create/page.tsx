@@ -737,15 +737,16 @@ const MONTH_NAMES = ['January', 'February', 'March', 'April', 'May', 'June', 'Ju
 const FULL_WEEKDAYS = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday']
 const MONTH_DAYS = Array.from({ length: 31 }, (_, i) => String(i + 1))
 
-/* A new schedule starts empty; opening a trigger card fills in the suggestion
-   below so the user chooses which kind of trigger to use. */
+/* A new schedule opens on the calendar card, laid out but undecided: the shape
+   of the rule is there, every real choice is blank. Meter values stay empty
+   until that card is opened. */
 const EMPTY_TRIGGER: Omit<CalendarTrigger, 'id'> = {
-  scheduleType: '', every: '', period: '',
-  weekday: '',
+  scheduleType: 'Regular Interval', every: '1', period: 'Day',
+  weekday: 'Mon',
   monthMode: 'on-day', monthDay: '1', monthOrdinal: 'first', monthWeekday: 'Day',
   yearMode: 'on-day', yearMonth: 'January', yearDay: '1', yearOrdinal: 'first', yearWeekday: 'Day',
   atTime: '',
-  woCreationMode: '', woRelativeN: '', woRelativePeriod: '',
+  woCreationMode: 'relative', woRelativeN: '1', woRelativePeriod: 'Day(s)',
   woOnThePeriod: '', woAtTime: '', woOnTheAtTime: '',
   meterCondition: '', meterValue: '', meterUnit: 'Units', meterDueN: '1', meterDuePeriod: 'Day',
 }
@@ -755,7 +756,7 @@ const EMPTY_TRIGGER: Omit<CalendarTrigger, 'id'> = {
    Every choice that is really the user's (how often, which day, what time) is
    left blank for them to pick. */
 const SUGGESTED_CALENDAR = {
-  scheduleType: 'Regular Interval', every: '1', period: '', weekday: 'Mon', atTime: '',
+  scheduleType: 'Regular Interval', every: '1', period: 'Day', weekday: 'Mon', atTime: '',
   woCreationMode: 'relative' as const, woRelativeN: '1', woRelativePeriod: 'Day(s)',
   woOnThePeriod: '', woAtTime: '', woOnTheAtTime: '',
 }
@@ -811,7 +812,22 @@ function CreateCalendarTriggerModal({
   initial?: CalendarTrigger
   isEditing?: boolean
 }) {
-  const [form, setForm] = useState<Omit<CalendarTrigger, 'id'>>(initial ?? EMPTY_TRIGGER)
+  /* Every time on a new schedule opens on the hour it is being created — the
+     most likely time the user means, and still theirs to change. */
+  const [form, setForm] = useState<Omit<CalendarTrigger, 'id'>>(() => {
+    if (initial) return initial
+    const now = new Date()
+    const thisHour = `${String(now.getHours()).padStart(2, '0')}:00`
+    return {
+      ...EMPTY_TRIGGER,
+      atTime: thisHour, woAtTime: thisHour, woOnTheAtTime: thisHour,
+      /* Weekly, monthly and yearly rules all open on today. */
+      weekday: ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'][now.getDay()],
+      monthDay: String(now.getDate()),
+      yearMonth: MONTH_NAMES[now.getMonth()],
+      yearDay: String(now.getDate()),
+    }
+  })
   const [fieldsTouched, setFieldsTouched] = useState(false)
   const [woRelativeNTouched, setWoRelativeNTouched] = useState(false)
   const [woRelativePeriodTouched, setWoRelativePeriodTouched] = useState(false)
@@ -823,9 +839,9 @@ function CreateCalendarTriggerModal({
 
   const [showInactivePeriods, setShowInactivePeriods] = useState(false)
   const [showMeterTrigger, setShowMeterTrigger] = useState(!!(initial?.meterValue || initial?.meterCondition))
-  /* Open on load only when there is something to show; an empty card waits for
-     the user to ask for a calendar trigger. */
-  const [showCalendarBased, setShowCalendarBased] = useState(!!(initial?.every || initial?.period || initial?.woCreationMode))
+  /* The calendar card is where a schedule starts, so it opens with the modal.
+     Reset collapses it back to a plus. */
+  const [showCalendarBased, setShowCalendarBased] = useState(true)
   /* 0fr→1fr animates the reveal, but leaving the row at 1fr can clip the card on
      short screens. Once the transition is over the row goes back to auto. */
   const [calendarSettled, setCalendarSettled] = useState(showCalendarBased)
@@ -925,9 +941,9 @@ function CreateCalendarTriggerModal({
 
         {/* Calendar Based card */}
         <div className="shrink-0 rounded-[var(--radius-xl)] border border-[var(--border-default)] overflow-hidden transition-[border-color,box-shadow] duration-[var(--duration-fast)] hover:border-[var(--color-accent-7)] hover:shadow-[0_0_1px_3px_rgba(0,106,220,0.1)]">
-          <div className="flex items-center gap-3 px-4 py-3 bg-[var(--color-neutral-2)] rounded-t-[var(--radius-xl)] hover:bg-[var(--color-neutral-3)] transition-colors">
-            <button type="button" onClick={toggleCalendarBased}
-              className="flex items-center gap-3 flex-1 min-w-0 text-left cursor-pointer">
+          <div onClick={toggleCalendarBased}
+            className="flex items-center gap-3 px-4 py-3 bg-[var(--color-neutral-2)] rounded-t-[var(--radius-xl)] hover:bg-[var(--color-neutral-3)] transition-colors cursor-pointer select-none">
+            <div className="flex items-center gap-3 flex-1 min-w-0 text-left">
               <div className="w-10 h-10 rounded-[var(--radius-md)] flex items-center justify-center shrink-0 bg-[var(--color-neutral-3)]">
                 {calendarComplete
                   ? <Check size={16} className="text-[var(--color-accent-9)]" />
@@ -968,10 +984,11 @@ function CreateCalendarTriggerModal({
                   return <p className="text-[11px] font-[500] text-[var(--color-neutral-8)] mt-0.5 leading-4">Schedule work orders on set dates or after completion</p>
                 })()}
               </div>
-            </button>
+            </div>
             {(form.every || form.period || form.woCreationMode) ? (
               <button type="button"
-                onClick={() => {
+                onClick={e => {
+                  e.stopPropagation()
                   setForm(f => ({ ...f, scheduleType: 'Regular Interval', every: '', period: '', atTime: '', weekday: '', monthDay: '1', woCreationMode: '', woRelativeN: '', woRelativePeriod: '', woOnThePeriod: '', woAtTime: '', woOnTheAtTime: '' }))
                   setEveryTouched(false)
                   setShowCalendarBased(false)
@@ -981,15 +998,15 @@ function CreateCalendarTriggerModal({
               </button>
             ) : null}
             {(form.every && form.period && form.woCreationMode) ? (
-              <div onClick={toggleCalendarBased} className={toggleTile(true)}>
+              <div onClick={e => { e.stopPropagation(); toggleCalendarBased() }} className={toggleTile(true)}>
                 {showCalendarBased ? <ChevronUp size={16} className={toggleIcon(true)} /> : <ChevronDown size={16} className={toggleIcon(true)} />}
               </div>
             ) : showCalendarBased ? (
-              <div onClick={toggleCalendarBased} className={toggleTile(true)}>
+              <div onClick={e => { e.stopPropagation(); toggleCalendarBased() }} className={toggleTile(true)}>
                 <ChevronUp size={16} className={toggleIcon(true)} />
               </div>
             ) : (
-              <div onClick={toggleCalendarBased} className={toggleTile(false)}>
+              <div onClick={e => { e.stopPropagation(); toggleCalendarBased() }} className={toggleTile(false)}>
                 <Plus size={16} className={toggleIcon(false)} />
               </div>
             )}
@@ -1199,9 +1216,15 @@ function CreateCalendarTriggerModal({
               meterDueN.trim() && `due in ${meterDueN} ${meterDuePeriod.toLowerCase()}(s)`,
             ].filter(Boolean).join(' · ')
             const clearMeter = () => { setMeterEdited(false); setMeterCondition(''); setMeterValue(''); setMeterUnit('Units'); setMeterDueN(''); setMeterDuePeriod(''); setShowMeterTrigger(false) }
-            /* Opening the card just opens it — every meter value is the user's
-               call, so nothing is filled in for them. */
+            /* Opening the card lays out a usable rule — a condition and a round
+               number — which the user then adjusts. */
             const openMeterTrigger = () => {
+              if (!meterCondition && !meterValue.trim()) {
+                setMeterEdited(true)
+                setMeterCondition('is below')
+                setMeterValue('100')
+                setMeterUnit('Units')
+              }
               if (!meterDueN.trim()) setMeterDueN('1')
               if (!meterDuePeriod) setMeterDuePeriod('Day')
               setShowMeterTrigger(true)
@@ -1285,8 +1308,21 @@ function CreateCalendarTriggerModal({
               const lastPeriod = inactivePeriods[inactivePeriods.length - 1]
               const lastPeriodComplete = !lastPeriod || (!!lastPeriod.fromDate && !!lastPeriod.toDate)
               const hasAnyPeriod = inactivePeriods.length > 0
+              const addPeriod = () => {
+                const newId = crypto.randomUUID()
+                lastAddedIdRef.current = newId
+                setShowInactivePeriods(true)
+                setInactivePeriods(ps => [...ps, { id: newId, fromDate: '', fromTime: '', toDate: '', toTime: '' }])
+              }
+              /* The whole header does what its button does: open what is there,
+                 or start the first period. */
+              const headerClick = () => {
+                if (!hasAnyPeriod) { addPeriod(); return }
+                setShowInactivePeriods(v => !v)
+              }
               return (
-                <div className="flex items-center gap-4 px-4 py-3 bg-[var(--color-neutral-2)]">
+                <div onClick={headerClick}
+                  className="flex items-center gap-4 px-4 py-3 bg-[var(--color-neutral-2)] hover:bg-[var(--color-neutral-3)] transition-colors cursor-pointer select-none">
                   <div className="w-10 h-10 rounded-[var(--radius-md)] bg-[var(--color-neutral-3)] flex items-center justify-center shrink-0">
                     <Ban size={15} className="text-[var(--color-neutral-9)]" />
                   </div>
@@ -1300,30 +1336,20 @@ function CreateCalendarTriggerModal({
                     {hasAnyPeriod && (
                       <button type="button"
                         disabled={!lastPeriodComplete}
-                        onClick={() => {
-                          const newId = crypto.randomUUID()
-                          lastAddedIdRef.current = newId
-                          setShowInactivePeriods(true)
-                          setInactivePeriods(ps => [...ps, { id: newId, fromDate: '', fromTime: '', toDate: '', toTime: '' }])
-                        }}
+                        onClick={e => { e.stopPropagation(); addPeriod() }}
                         className="h-6 px-2 rounded-[var(--radius-sm)] border border-[var(--border-default)] bg-[var(--surface-primary)] text-[12px] font-medium text-[var(--color-neutral-11)] hover:bg-[var(--color-neutral-3)] transition-colors cursor-pointer disabled:opacity-40 disabled:pointer-events-none">
                         Add Period
                       </button>
                     )}
                     {hasAnyPeriod ? (
                       <button type="button"
-                        onClick={() => setShowInactivePeriods(v => !v)}
+                        onClick={e => { e.stopPropagation(); setShowInactivePeriods(v => !v) }}
                         className={toggleTile(true)}>
                         {showInactivePeriods ? <ChevronUp size={16} className={toggleIcon(true)} /> : <ChevronDown size={16} className={toggleIcon(true)} />}
                       </button>
                     ) : (
                       <button type="button"
-                        onClick={() => {
-                          const newId = crypto.randomUUID()
-                          lastAddedIdRef.current = newId
-                          setShowInactivePeriods(true)
-                          setInactivePeriods(ps => [...ps, { id: newId, fromDate: '', fromTime: '', toDate: '', toTime: '' }])
-                        }}
+                        onClick={e => { e.stopPropagation(); addPeriod() }}
                         className={toggleTile(false)}>
                         <Plus size={16} className={toggleIcon(false)} />
                       </button>
@@ -4954,7 +4980,10 @@ function CreatePMPageContent() {
                                           <Popover.Root>
                                             <Popover.Trigger asChild>
                                               <button
-                                                className={`group/meter relative inline-flex items-center gap-1 -ml-1.5 px-1.5 w-fit rounded-[var(--radius-sm)] text-left ${showLabel ? 'text-[11px]' : 'text-[12px]'} outline-none cursor-pointer hover:bg-[var(--color-neutral-3)] transition-colors ${isMeterTrigger && meters.length === 0 ? 'text-[var(--color-error,#CE2C31)] font-medium' : 'text-[var(--color-neutral-11)]'}`}
+                                                /* In its own column the meter behaves like the people
+                                                   cells: a full-width target that lights up on hover with
+                                                   the edit affordance tucked inside. */
+                                                className={`group/meter relative flex items-center gap-1 rounded-[var(--radius-md)] text-left outline-none cursor-pointer hover:bg-[var(--color-neutral-3)] transition-colors ${showLabel ? 'text-[11px] -ml-1.5 px-1.5 w-fit' : 'text-[12px] w-full justify-between h-7 px-1'} ${isMeterTrigger && meters.length === 0 ? 'text-[var(--color-error,#CE2C31)] font-medium' : 'text-[var(--color-neutral-11)]'}`}
                                               >
                                                 {showLabel && <span className="text-[10px] text-[var(--color-neutral-8)] uppercase tracking-wide">Meter:</span>}
                                                 {meters.length === 0 ? (
@@ -4977,10 +5006,11 @@ function CreatePMPageContent() {
                                                   )}
                                                 </>)}
                                                 {/* A span, not IconButton — this sits inside the popover
-                                                    trigger button and nested buttons are invalid. */}
-                                                {/* Floated out of flow so the edit affordance never grows the row. */}
-                                                <span className="absolute left-full top-1/2 -translate-y-1/2 ml-2 shrink-0 inline-flex items-center justify-center w-[var(--control-height-sm)] h-[var(--control-height-sm)] rounded-[var(--radius-sm)] border border-[var(--border-default)] bg-[var(--surface-primary)] text-[var(--color-neutral-8)] opacity-0 group-hover/meter:opacity-100 transition-opacity">
-                                                  <Pencil size={11} />
+                                                    trigger button and nested buttons are invalid. As a
+                                                    detail line it floats out of flow so the row keeps its
+                                                    height; as a column it sits at the end of the cell. */}
+                                                <span className={`shrink-0 inline-flex items-center justify-center w-[var(--control-height-sm)] h-[var(--control-height-sm)] rounded-[var(--radius-sm)] border border-[var(--border-default)] bg-[var(--surface-primary)] text-[var(--color-neutral-8)] opacity-0 group-hover/meter:opacity-100 transition-opacity ${showLabel ? 'absolute left-full top-1/2 -translate-y-1/2 ml-2' : 'ml-auto'}`}>
+                                                  {meters.length > 0 ? <Pencil size={11} /> : <Plus size={11} />}
                                                 </span>
                                               </button>
                                             </Popover.Trigger>

@@ -4,9 +4,6 @@ import { useState, useRef, useEffect } from 'react'
 import * as Popover from '@radix-ui/react-popover'
 import { Clock } from 'lucide-react'
 
-const HOURS = Array.from({ length: 12 }, (_, i) => String(i + 1).padStart(2, '0'))
-const MINUTES = Array.from({ length: 60 }, (_, i) => String(i).padStart(2, '0'))
-const PERIODS = ['AM', 'PM']
 
 function parseTime(value: string): { hour: string; minute: string; period: string } {
   if (!value) return { hour: '12', minute: '00', period: 'AM' }
@@ -80,43 +77,49 @@ function parseInputTime(raw: string): string | null {
   return null
 }
 
-function ScrollColumn({ items, selected, onSelect }: { items: string[]; selected: string; onSelect: (v: string) => void }) {
+/* One list of times rather than three columns to reconcile: every half hour of
+   the day, scrolled to whatever is currently set. */
+const TIME_OPTIONS = Array.from({ length: 48 }, (_, i) => {
+  const h24 = Math.floor(i / 2)
+  const m = i % 2 === 0 ? '00' : '30'
+  return `${String(h24).padStart(2, '0')}:${m}`
+})
+
+function TimeList({ selected, onSelect }: { selected: string; onSelect: (v: string) => void }) {
   const listRef = useRef<HTMLDivElement>(null)
   const ITEM_H = 32
 
   useEffect(() => {
-    const idx = items.indexOf(selected)
+    const idx = TIME_OPTIONS.indexOf(selected)
     if (idx >= 0 && listRef.current) {
-      listRef.current.scrollTop = idx * ITEM_H
+      /* Keep the selected time a couple of rows down so its neighbours show. */
+      listRef.current.scrollTop = Math.max(0, (idx - 2) * ITEM_H)
     }
-  }, [selected, items])
+  }, [selected])
 
   return (
     <div
       ref={listRef}
-      className="flex flex-col overflow-y-auto h-[192px]"
-      style={{ scrollbarWidth: 'none' }}
+      className="flex flex-col overflow-y-auto max-h-[240px] w-[130px] py-1"
       onWheel={e => {
         e.stopPropagation()
         if (listRef.current) listRef.current.scrollTop += e.deltaY
       }}
     >
-      <div className="flex flex-col py-2">
-        {items.map(item => (
-          <button
-            key={item}
-            type="button"
-            onClick={() => onSelect(item)}
-            className={`h-8 w-12 flex items-center justify-center text-[14px] font-medium transition-colors cursor-pointer shrink-0 mx-1 ${
-              item === selected
-                ? 'bg-[var(--color-accent-1)] text-[var(--color-accent-9)] rounded-[4px]'
-                : 'text-[var(--color-neutral-11)] hover:bg-[var(--color-neutral-3)] rounded-[4px]'
-            }`}
-          >
-            {item}
-          </button>
-        ))}
-      </div>
+      {TIME_OPTIONS.map(t => (
+        <button
+          key={t}
+          type="button"
+          onClick={() => onSelect(t)}
+          className={`h-8 shrink-0 flex items-center justify-center text-[13px] font-medium transition-colors cursor-pointer ${
+            t === selected
+              ? 'bg-[var(--color-accent-9)] text-white'
+              : 'text-[var(--color-neutral-11)] hover:bg-[var(--color-neutral-3)]'
+          }`}
+        >
+          {formatDisplay(t)}
+        </button>
+      ))}
     </div>
   )
 }
@@ -138,9 +141,9 @@ export function TimePicker({ value, onChange, className = '' }: TimePickerProps)
     setInputVal(value ? formatDisplay(value) : '')
   }, [value, open])
 
-  function setHour(h: string) { onChange(toTime24(h, minute, period)) }
-  function setMinute(m: string) { onChange(toTime24(hour, m, period)) }
-  function setPeriod(p: string) { onChange(toTime24(hour, minute, p)) }
+  /* The list moves in half hours; anything in between highlights the slot it
+     falls in rather than nothing at all. */
+  const selectedSlot = value ? `${value.slice(0, 2)}:${parseInt(value.slice(3, 5), 10) < 30 ? '00' : '30'}` : ''
 
   function handleInputChange(raw: string) {
     // Allow digits, colon, space, and AM/PM letters; uppercase letters as typed
@@ -227,11 +230,10 @@ export function TimePicker({ value, onChange, className = '' }: TimePickerProps)
           onOpenAutoFocus={e => e.preventDefault()}
           onInteractOutside={() => setOpen(false)}
         >
-          <div className="flex divide-x divide-[var(--border-subtle)]">
-            <ScrollColumn items={HOURS} selected={hour} onSelect={setHour} />
-            <ScrollColumn items={MINUTES} selected={minute} onSelect={setMinute} />
-            <ScrollColumn items={PERIODS} selected={period} onSelect={setPeriod} />
-          </div>
+          <TimeList
+            selected={selectedSlot}
+            onSelect={t => { onChange(t); setOpen(false) }}
+          />
         </Popover.Content>
       </Popover.Portal>
     </Popover.Root>
