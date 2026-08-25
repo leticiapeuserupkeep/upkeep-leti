@@ -785,9 +785,10 @@ export default function PreventiveMaintenancePage() {
                                     const key = `${pm.id}|${sched.id}`
                                     const isSchedExp = expandedSchedules.has(key)
                                     const missingTechCount = sched.assignments.filter(a => a.technicians.length === 0).length
-                                    const schedHasError = sched.assignments.length === 0 || missingTechCount > 0
+                                    /* An empty schedule is work left to do, not an error: the card
+                                       stays neutral and the tag does the telling. */
                                     return (
-                                      <div key={sched.id} className={`rounded-[8px] border overflow-hidden ${schedHasError ? 'border-[var(--color-error,#CE2C31)] shadow-[0_0_1px_3px_rgba(206,44,49,0.1)]' : 'border-[var(--border-default)]'}`}>
+                                      <div key={sched.id} className="rounded-[8px] border border-[var(--border-default)] overflow-hidden">
                                         {/* Schedule card header */}
                                         <div
                                           className="flex items-center gap-3 p-4 bg-[var(--surface-secondary)] cursor-pointer select-none"
@@ -803,12 +804,12 @@ export default function PreventiveMaintenancePage() {
                                             </button>
                                           </div>
                                           {missingTechCount > 0 && (
-                                            <span className="flex items-center gap-1 rounded-full bg-[#FFEFEF] text-[var(--color-error)] text-[11px] px-2.5 py-0.5 font-medium shrink-0">
+                                            <span className="flex items-center gap-1 rounded-full bg-[var(--color-accent-2)] text-[var(--color-accent-11)] text-[11px] px-2.5 py-0.5 font-medium shrink-0">
                                               {missingTechCount} missing technician{missingTechCount !== 1 ? 's' : ''}
                                             </span>
                                           )}
                                           {sched.assignments.length === 0 ? (
-                                            <span className="rounded-full text-[11px] px-2.5 py-0.5 font-medium shrink-0 bg-[#FFEFEF] text-[var(--color-error)]">
+                                            <span className="rounded-full text-[11px] px-2.5 py-0.5 font-medium shrink-0 bg-[var(--color-accent-2)] text-[var(--color-accent-11)]">
                                               No Assignments
                                             </span>
                                           ) : (() => {
