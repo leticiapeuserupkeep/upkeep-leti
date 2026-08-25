@@ -571,10 +571,10 @@ function StepRow({ state, number, title, description, action, lockedHint, onRowC
   )
   /* The accent treatment is a hover/focus state, not a resting one — an idle row
      should not look like it is already selected. */
-  const rowClass = `group/step w-full flex items-center gap-3 p-4 rounded-[var(--radius-lg)] border border-[var(--border-default)] bg-[var(--surface-primary)] transition-colors ${state === 'current' ? '' : 'opacity-50'}`
+  const rowClass = `group/step w-full flex items-center gap-3 p-4 rounded-[var(--radius-lg)] bg-[var(--color-neutral-2)] transition-colors ${state === 'current' ? '' : 'opacity-50'}`
   const rowHover = state === 'current'
-    ? 'hover:border-[var(--color-accent-7)] hover:bg-[var(--color-accent-1)] focus-visible:border-[var(--color-accent-7)] focus-visible:bg-[var(--color-accent-1)]'
-    : 'hover:bg-[var(--color-neutral-2)]'
+    ? 'hover:bg-[var(--color-accent-1)] focus-visible:bg-[var(--color-accent-1)]'
+    : 'hover:bg-[var(--color-neutral-3)]'
 
   return (
     <div className="relative">
@@ -737,8 +737,10 @@ const MONTH_NAMES = ['January', 'February', 'March', 'April', 'May', 'June', 'Ju
 const FULL_WEEKDAYS = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday']
 const MONTH_DAYS = Array.from({ length: 31 }, (_, i) => String(i + 1))
 
+/* A new schedule starts empty; opening a trigger card fills in the suggestion
+   below so the user chooses which kind of trigger to use. */
 const EMPTY_TRIGGER: Omit<CalendarTrigger, 'id'> = {
-  scheduleType: 'Regular Interval', every: '', period: '',
+  scheduleType: '', every: '', period: '',
   weekday: '',
   monthMode: 'on-day', monthDay: '1', monthOrdinal: 'first', monthWeekday: 'Day',
   yearMode: 'on-day', yearMonth: 'January', yearDay: '1', yearOrdinal: 'first', yearWeekday: 'Day',
@@ -746,6 +748,16 @@ const EMPTY_TRIGGER: Omit<CalendarTrigger, 'id'> = {
   woCreationMode: '', woRelativeN: '', woRelativePeriod: '',
   woOnThePeriod: '', woAtTime: '', woOnTheAtTime: '',
   meterCondition: '', meterValue: '', meterUnit: 'Units', meterDueN: '1', meterDuePeriod: 'Day',
+}
+
+/* What the Calendar Based card fills in when it is opened for the first time:
+   just the shape of a schedule — the counts and which work-order rule is on.
+   Every choice that is really the user's (how often, which day, what time) is
+   left blank for them to pick. */
+const SUGGESTED_CALENDAR = {
+  scheduleType: 'Regular Interval', every: '1', period: '', weekday: 'Mon', atTime: '',
+  woCreationMode: 'relative' as const, woRelativeN: '1', woRelativePeriod: 'Day(s)',
+  woOnThePeriod: '', woAtTime: '', woOnTheAtTime: '',
 }
 
 const WEEKDAY_LETTERS = [
@@ -811,7 +823,9 @@ function CreateCalendarTriggerModal({
 
   const [showInactivePeriods, setShowInactivePeriods] = useState(false)
   const [showMeterTrigger, setShowMeterTrigger] = useState(!!(initial?.meterValue || initial?.meterCondition))
-  const [showCalendarBased, setShowCalendarBased] = useState(!!(initial?.scheduleType && initial?.every && initial?.period))
+  /* Open on load only when there is something to show; an empty card waits for
+     the user to ask for a calendar trigger. */
+  const [showCalendarBased, setShowCalendarBased] = useState(!!(initial?.every || initial?.period || initial?.woCreationMode))
   /* 0fr→1fr animates the reveal, but leaving the row at 1fr can clip the card on
      short screens. Once the transition is over the row goes back to auto. */
   const [calendarSettled, setCalendarSettled] = useState(showCalendarBased)
@@ -835,6 +849,9 @@ function CreateCalendarTriggerModal({
       lastAddedIdRef.current = null
     }
   }, [inactivePeriods])
+  /* Values the card seeds for itself do not count as content — the header keeps
+     its subtitle until the user edits a meter field. */
+  const [meterEdited, setMeterEdited] = useState(!!(initial?.meterCondition || initial?.meterValue))
   const [meterCondition, setMeterCondition] = useState(initial?.meterCondition ?? '')
   const [meterValue, setMeterValue] = useState(initial?.meterValue ?? '')
   const [meterUnit, setMeterUnit] = useState(initial?.meterUnit ?? 'Units')
@@ -879,6 +896,28 @@ function CreateCalendarTriggerModal({
     <TimePicker value={value} onChange={onChange} className={className ?? ''} />
   )
 
+  /* A card with nothing in it invites a click with a solid blue tile; once it
+     holds something the toggle steps back to a plain grey icon. */
+  const toggleTile = (filled: boolean) =>
+    `w-8 h-8 rounded-[var(--radius-md)] flex items-center justify-center shrink-0 cursor-pointer transition-colors ${filled
+      ? 'hover:bg-[var(--color-neutral-4)]'
+      : 'bg-[var(--color-accent-9)] hover:bg-[var(--color-accent-10)]'}`
+  const toggleIcon = (filled: boolean) => filled ? 'text-[var(--color-neutral-9)]' : 'text-white'
+
+  /* The card starts empty; opening it is the user asking for a calendar trigger,
+     so it fills in SUGGESTED_CALENDAR to edit from. */
+  const openCalendarBased = () => {
+    if (!form.every && !form.period && !form.woCreationMode) setForm(f => ({ ...f, ...SUGGESTED_CALENDAR }))
+    setShowCalendarBased(true)
+  }
+  const toggleCalendarBased = () => { if (showCalendarBased) setShowCalendarBased(false); else openCalendarBased() }
+
+  /* Once the calendar trigger has everything it needs the card badge turns into
+     a check, so a collapsed card still reads as done. */
+  const calendarComplete = !!(form.scheduleType && form.every && form.period
+    && (form.period !== 'Week' || form.weekday)
+    && (form.woCreationMode === 'relative' ? !!form.woRelativeN && !!form.woRelativePeriod : form.woCreationMode === 'on-the' ? !!form.woOnThePeriod : false))
+
   return (
     <Modal open={open} onOpenChange={v => !v && handleClose()} maxWidth="720px">
       <ModalHeader title={isEditing ? 'Edit Schedule' : 'New Schedule'} />
@@ -887,10 +926,12 @@ function CreateCalendarTriggerModal({
         {/* Calendar Based card */}
         <div className="shrink-0 rounded-[var(--radius-xl)] border border-[var(--border-default)] overflow-hidden transition-[border-color,box-shadow] duration-[var(--duration-fast)] hover:border-[var(--color-accent-7)] hover:shadow-[0_0_1px_3px_rgba(0,106,220,0.1)]">
           <div className="flex items-center gap-3 px-4 py-3 bg-[var(--color-neutral-2)] rounded-t-[var(--radius-xl)] hover:bg-[var(--color-neutral-3)] transition-colors">
-            <button type="button" onClick={() => setShowCalendarBased(v => !v)}
+            <button type="button" onClick={toggleCalendarBased}
               className="flex items-center gap-3 flex-1 min-w-0 text-left cursor-pointer">
-              <div className="w-10 h-10 rounded-[var(--radius-md)] bg-[var(--color-neutral-3)] flex items-center justify-center shrink-0">
-                <Calendar size={15} className="text-[var(--color-neutral-9)]" />
+              <div className="w-10 h-10 rounded-[var(--radius-md)] flex items-center justify-center shrink-0 bg-[var(--color-neutral-3)]">
+                {calendarComplete
+                  ? <Check size={16} className="text-[var(--color-accent-9)]" />
+                  : <Calendar size={15} className="text-[var(--color-neutral-9)]" />}
               </div>
               <div className="flex-1 min-w-0">
                 <span className="text-[14px] font-medium text-[var(--color-neutral-12)]">Calendar Based</span>
@@ -935,21 +976,21 @@ function CreateCalendarTriggerModal({
                   setEveryTouched(false)
                   setShowCalendarBased(false)
                 }}
-                className="h-6 px-2 rounded-[var(--radius-sm)] border border-[var(--border-default)] bg-[var(--surface-primary)] text-[12px] font-medium text-[var(--color-neutral-11)] hover:bg-[var(--color-neutral-3)] transition-colors cursor-pointer shrink-0">
+                className="h-6 px-1 text-[12px] font-medium text-[var(--color-neutral-10)] hover:text-[var(--color-neutral-12)] transition-colors cursor-pointer shrink-0">
                 Reset
               </button>
             ) : null}
             {(form.every && form.period && form.woCreationMode) ? (
-              <div onClick={() => setShowCalendarBased(v => !v)} className="w-6 h-6 rounded-[var(--radius-sm)] bg-[var(--color-neutral-3)] flex items-center justify-center shrink-0 cursor-pointer">
-                {showCalendarBased ? <ChevronUp size={13} className="text-[var(--color-neutral-9)]" /> : <ChevronDown size={13} className="text-[var(--color-neutral-9)]" />}
+              <div onClick={toggleCalendarBased} className={toggleTile(true)}>
+                {showCalendarBased ? <ChevronUp size={16} className={toggleIcon(true)} /> : <ChevronDown size={16} className={toggleIcon(true)} />}
               </div>
             ) : showCalendarBased ? (
-              <div onClick={() => setShowCalendarBased(v => !v)} className="w-6 h-6 rounded-[var(--radius-sm)] bg-[var(--color-neutral-3)] flex items-center justify-center shrink-0 cursor-pointer">
-                <ChevronUp size={13} className="text-[var(--color-neutral-9)]" />
+              <div onClick={toggleCalendarBased} className={toggleTile(true)}>
+                <ChevronUp size={16} className={toggleIcon(true)} />
               </div>
             ) : (
-              <div onClick={() => setShowCalendarBased(v => !v)} className="w-8 h-8 rounded-[var(--radius-lg)] bg-[var(--color-accent-9)] flex items-center justify-center shrink-0 cursor-pointer">
-                <Plus size={13} className="text-white" />
+              <div onClick={toggleCalendarBased} className={toggleTile(false)}>
+                <Plus size={16} className={toggleIcon(false)} />
               </div>
             )}
           </div>
@@ -968,7 +1009,7 @@ function CreateCalendarTriggerModal({
                       const active = form.scheduleType === value
                       return (
                         <button key={value} type="button" onClick={() => set('scheduleType')(value)}
-                          className={`flex items-center gap-3 px-4 py-3 rounded-[var(--radius-xl)] border text-left transition-colors cursor-pointer ${active ? 'border-[var(--color-accent-7)] bg-[var(--color-accent-1)]' : 'border-[var(--border-default)] hover:bg-[var(--color-neutral-2)]'}`}>
+                          className={`flex items-center gap-3 px-4 py-3 rounded-[var(--radius-xl)] text-left transition-colors cursor-pointer ${active ? 'bg-[var(--color-accent-1)]' : 'bg-[var(--color-neutral-2)] hover:bg-[var(--color-neutral-3)]'}`}>
                           <div className="flex-1 min-w-0">
                             <p className={`text-[14px] font-semibold ${active ? 'text-[var(--color-accent-9)]' : 'text-[var(--color-neutral-12)]'}`}>{label}</p>
                             <p className="text-[12px] text-[var(--color-neutral-8)] mt-0.5 leading-4">{desc}</p>
@@ -1097,54 +1138,42 @@ function CreateCalendarTriggerModal({
 
                 <div className="h-px bg-[var(--border-subtle)]" />
 
-                {/* Create Work Order */}
+                {/* Create Work Order — one of two prefilled timings */}
                 <div className="flex flex-col gap-3">
                   <p className="text-[14px] font-semibold text-[var(--color-neutral-12)]">Create Work Order</p>
-                  <div className="grid grid-cols-2 gap-4">
-                    {([
-                      { mode: 'relative' as const, label: 'Relative' },
-                      { mode: 'on-the' as const, label: 'Weekday' },
-                    ] as const).map(({ mode, label }) => {
-                      const isSelected = form.woCreationMode === mode
-                      return (
-                        <div key={mode}
-                          className={`flex flex-col rounded-lg border overflow-hidden transition-colors ${isSelected ? 'border-[var(--color-accent-7)] bg-[var(--color-accent-1)]' : 'border-[#F0F0F3] bg-[#FCFCFD]'}`}>
-                          <button type="button" onClick={() => set('woCreationMode')(isSelected ? '' : mode)} className={`flex items-center gap-[10px] px-4 h-[52px] shrink-0 cursor-pointer w-full text-left ${isSelected ? 'bg-[var(--color-accent-2)]' : 'bg-[#F0F0F3]'}`}>
-                            <span className={`flex-shrink-0 w-4 h-4 rounded-[var(--radius-sm)] border flex items-center justify-center transition-colors ${isSelected ? 'bg-[var(--color-accent-9)] border-[var(--color-accent-9)]' : 'border-[var(--color-neutral-6)] bg-[var(--surface-primary)]'}`}>
-                              {isSelected && <svg width="10" height="8" viewBox="0 0 10 8" fill="none"><path d="M1 4L3.5 6.5L9 1" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>}
-                            </span>
-                            <span className="text-[14px] text-[var(--color-neutral-12)]">{label}</span>
-                          </button>
-                          <div className="p-4 flex-1" onClick={e => { e.stopPropagation(); if (!isSelected) set('woCreationMode')(mode) }}>
-                            {mode === 'relative' ? (
-                              <div className="flex flex-col gap-2">
-                                <div className="flex items-center gap-2">
-                                  <NumberInput value={form.woRelativeN} onChange={set('woRelativeN')} min={1} className="w-[80px] shrink-0" onBlur={() => setWoRelativeNTouched(true)} error={isSelected && woRelativeNTouched && !form.woRelativeN} />
-                                  <InlineSelect value={form.woRelativePeriod} onChange={set('woRelativePeriod')} options={woPeriodOptions} placeholder="Period" className="flex-1 justify-between" onBlur={() => setWoRelativePeriodTouched(true)} error={isSelected && woRelativePeriodTouched && !form.woRelativePeriod} />
-                                </div>
-                                <div className="flex items-center gap-2">
-                                  <span className="text-[12px] text-[var(--color-neutral-9)] shrink-0">Before the due date</span>
-                                  <span className="text-[12px] font-medium text-[var(--color-neutral-9)] shrink-0">At</span>
-                                  {timeInput(form.woAtTime, set('woAtTime'), 'flex-1 min-w-0')}
-                                </div>
-                              </div>
-                            ) : (
-                              <div className="flex flex-col gap-2">
-                                <div className="flex items-center gap-2">
-                                  <span className="text-[12px] font-medium text-[var(--color-neutral-9)] shrink-0">On</span>
-                                  <InlineSelect value={form.woOnThePeriod} onChange={set('woOnThePeriod')} options={FULL_WEEKDAYS} placeholder="Day" className="flex-1 justify-between" onBlur={() => setWoOnThePeriodTouched(true)} error={isSelected && woOnThePeriodTouched && !form.woOnThePeriod} />
-                                </div>
-                                <div className="flex items-center gap-2">
-                                  <span className="text-[12px] text-[var(--color-neutral-9)] shrink-0">Before the due date</span>
-                                  <span className="text-[12px] font-medium text-[var(--color-neutral-9)] shrink-0">At</span>
-                                  {timeInput(form.woOnTheAtTime, set('woOnTheAtTime'), 'flex-1 min-w-0')}
-                                </div>
-                              </div>
-                            )}
+                  <div className="flex flex-col gap-2" role="radiogroup" aria-label="Create work order">
+                  {([
+                    { mode: 'relative' as const },
+                    { mode: 'on-the' as const },
+                  ] as const).map(({ mode }) => {
+                    const isSelected = form.woCreationMode === mode
+                    return (
+                      <div key={mode}
+                        onClick={() => { if (!isSelected) set('woCreationMode')(mode) }}
+                        className={`flex items-center gap-[10px] px-4 py-3 rounded-lg transition-colors cursor-pointer ${isSelected ? 'bg-[var(--color-accent-1)]' : 'bg-[var(--color-neutral-2)] hover:bg-[var(--color-neutral-3)]'}`}>
+                        <span role="radio" aria-checked={isSelected} tabIndex={0}
+                          onKeyDown={e => { if (e.key === ' ' || e.key === 'Enter') { e.preventDefault(); set('woCreationMode')(mode) } }}
+                          className={`shrink-0 w-4 h-4 rounded-full border flex items-center justify-center transition-colors ${isSelected ? 'border-[var(--color-accent-9)]' : 'border-[var(--color-neutral-6)] bg-[var(--surface-primary)]'}`}>
+                          {isSelected && <span className="w-[8px] h-[8px] rounded-full bg-[var(--color-accent-9)]" />}
+                        </span>
+                        {mode === 'relative' ? (
+                          <div className={`flex items-center gap-2 flex-1 min-w-0 ml-2 transition-opacity ${isSelected ? '' : 'opacity-60'}`}>
+                            <NumberInput value={form.woRelativeN} onChange={set('woRelativeN')} min={1} className="w-[72px] shrink-0" onBlur={() => setWoRelativeNTouched(true)} error={isSelected && woRelativeNTouched && !form.woRelativeN} />
+                            <InlineSelect value={form.woRelativePeriod} onChange={set('woRelativePeriod')} options={woPeriodOptions} placeholder="Period" className="flex-1 min-w-0 justify-between" onBlur={() => setWoRelativePeriodTouched(true)} error={isSelected && woRelativePeriodTouched && !form.woRelativePeriod} />
+                            <span className="text-[13px] text-[var(--color-neutral-10)] shrink-0">Before the due date at</span>
+                            {timeInput(form.woAtTime, set('woAtTime'), 'w-[130px] shrink-0')}
                           </div>
-                        </div>
-                      )
-                    })}
+                        ) : (
+                          <div className={`flex items-center gap-2 flex-1 min-w-0 ml-2 transition-opacity ${isSelected ? '' : 'opacity-60'}`}>
+                            <span className="text-[13px] text-[var(--color-neutral-10)] shrink-0">On</span>
+                            <InlineSelect value={form.woOnThePeriod} onChange={set('woOnThePeriod')} options={FULL_WEEKDAYS} placeholder="Day" className="flex-1 min-w-0 justify-between" onBlur={() => setWoOnThePeriodTouched(true)} error={isSelected && woOnThePeriodTouched && !form.woOnThePeriod} />
+                            <span className="text-[13px] text-[var(--color-neutral-10)] shrink-0">Before the due date at</span>
+                            {timeInput(form.woOnTheAtTime, set('woOnTheAtTime'), 'w-[130px] shrink-0')}
+                          </div>
+                        )}
+                      </div>
+                    )
+                  })}
                   </div>
                 </div>
 
@@ -1169,18 +1198,28 @@ function CreateCalendarTriggerModal({
               meterValue.trim() && `${meterValue}${meterUnit ? ' ' + meterUnit : ''}`,
               meterDueN.trim() && `due in ${meterDueN} ${meterDuePeriod.toLowerCase()}(s)`,
             ].filter(Boolean).join(' · ')
-            const clearMeter = () => { setMeterCondition(''); setMeterValue(''); setMeterUnit('Units'); setMeterDueN(''); setMeterDuePeriod(''); setShowMeterTrigger(false) }
+            const clearMeter = () => { setMeterEdited(false); setMeterCondition(''); setMeterValue(''); setMeterUnit('Units'); setMeterDueN(''); setMeterDuePeriod(''); setShowMeterTrigger(false) }
+            /* Opening the card just opens it — every meter value is the user's
+               call, so nothing is filled in for them. */
+            const openMeterTrigger = () => {
+              if (!meterDueN.trim()) setMeterDueN('1')
+              if (!meterDuePeriod) setMeterDuePeriod('Day')
+              setShowMeterTrigger(true)
+              setTimeout(() => meterCardRef.current?.scrollIntoView({ behavior: 'smooth', block: 'nearest' }), 240)
+            }
             return (
               <div ref={meterCardRef} className="shrink-0 rounded-[var(--radius-xl)] border border-[var(--border-default)] overflow-hidden transition-[border-color,box-shadow] duration-[var(--duration-fast)] hover:border-[var(--color-accent-7)] hover:shadow-[0_0_1px_3px_rgba(0,106,220,0.1)]">
                 <div className="flex items-center gap-4 px-4 py-3 bg-[var(--color-neutral-2)]">
-                  <button type="button" onClick={() => { setShowMeterTrigger(v => { if (!v) setTimeout(() => meterCardRef.current?.scrollIntoView({ behavior: 'smooth', block: 'nearest' }), 240); return !v }) }}
+                  <button type="button" onClick={() => { if (showMeterTrigger) setShowMeterTrigger(false); else openMeterTrigger() }}
                     className="flex items-center gap-4 flex-1 min-w-0 text-left cursor-pointer">
-                    <div className="w-10 h-10 rounded-[var(--radius-md)] bg-[var(--color-neutral-3)] flex items-center justify-center shrink-0">
-                      <Gauge size={15} className="text-[var(--color-neutral-9)]" />
+                    <div className="w-10 h-10 rounded-[var(--radius-md)] flex items-center justify-center shrink-0 bg-[var(--color-neutral-3)]">
+                      {meterComplete
+                        ? <Check size={16} className="text-[var(--color-accent-9)]" />
+                        : <Gauge size={15} className="text-[var(--color-neutral-9)]" />}
                     </div>
                     <div className="flex-1 min-w-0">
                       <span className="text-[14px] font-medium text-[var(--color-neutral-12)]">Add Meter-Based Trigger</span>
-                      {(meterComplete || meterPartial) ? (
+                      {(meterEdited && (meterComplete || meterPartial)) ? (
                         <p className="text-[11px] mt-0.5 leading-4 truncate">
                           {filledSummary && <span className="font-medium text-[var(--color-neutral-9)]">{filledSummary}</span>}
                           {filledSummary && missingParts.length > 0 && <span className="text-[var(--color-neutral-6)]"> · </span>}
@@ -1192,21 +1231,21 @@ function CreateCalendarTriggerModal({
                     </div>
                   </button>
                   <div className="flex items-center gap-2 shrink-0">
-                    {meterHasData && (
+                    {meterEdited && meterHasData && (
                       <button type="button" onClick={clearMeter}
-                        className="h-6 px-2 rounded-[var(--radius-sm)] border border-[var(--border-default)] bg-[var(--surface-primary)] text-[12px] font-medium text-[var(--color-neutral-11)] hover:bg-[var(--color-neutral-3)] transition-colors cursor-pointer">
+                        className="h-6 px-1 text-[12px] font-medium text-[var(--color-neutral-10)] hover:text-[var(--color-neutral-12)] transition-colors cursor-pointer shrink-0">
                         Reset
                       </button>
                     )}
                     {meterHasData || showMeterTrigger ? (
-                      <button type="button" onClick={() => { setShowMeterTrigger(v => { if (!v) setTimeout(() => meterCardRef.current?.scrollIntoView({ behavior: 'smooth', block: 'nearest' }), 240); return !v }) }}
-                        className="w-6 h-6 rounded-[var(--radius-sm)] bg-[var(--color-neutral-3)] flex items-center justify-center shrink-0 hover:bg-[var(--color-neutral-4)] transition-colors cursor-pointer">
-                        {showMeterTrigger ? <ChevronUp size={13} className="text-[var(--color-neutral-9)]" /> : <ChevronDown size={13} className="text-[var(--color-neutral-9)]" />}
+                      <button type="button" onClick={() => { if (showMeterTrigger) setShowMeterTrigger(false); else openMeterTrigger() }}
+                        className={toggleTile(true)}>
+                        {showMeterTrigger ? <ChevronUp size={16} className={toggleIcon(true)} /> : <ChevronDown size={16} className={toggleIcon(true)} />}
                       </button>
                     ) : (
-                      <button type="button" onClick={() => { setShowMeterTrigger(true); setTimeout(() => meterCardRef.current?.scrollIntoView({ behavior: 'smooth', block: 'nearest' }), 240) }}
-                        className="w-8 h-8 rounded-[var(--radius-lg)] bg-[var(--color-accent-9)] flex items-center justify-center shrink-0 hover:bg-[var(--color-accent-10)] transition-colors cursor-pointer">
-                        <Plus size={13} className="text-white" />
+                      <button type="button" onClick={() => { openMeterTrigger() }}
+                        className={toggleTile(false)}>
+                        <Plus size={16} className={toggleIcon(false)} />
                       </button>
                     )}
                   </div>
@@ -1218,19 +1257,19 @@ function CreateCalendarTriggerModal({
                       <div className="flex flex-col gap-1.5 flex-1">
                         <label className="text-[13px] font-medium text-[var(--color-neutral-11)]">When Meter</label>
                         <InlineSelect value={meterCondition}
-                          onChange={v => { setMeterCondition(v); setMeterConditionTouched(true); setTimeout(() => meterValueInputRef.current?.focus(), 50) }}
+                          onChange={v => { setMeterEdited(true); setMeterCondition(v); setMeterConditionTouched(true); setTimeout(() => meterValueInputRef.current?.focus(), 50) }}
                           options={['is above', 'is below', 'equals']} placeholder="Condition" className="w-full justify-between" onBlur={() => setMeterConditionTouched(true)} error={meterConditionTouched && !meterCondition} />
                       </div>
                       <div className="flex flex-col gap-1.5 flex-1">
                         <label className="text-[13px] font-medium text-[var(--color-neutral-11)]">Units</label>
-                        <NumberInput ref={meterValueInputRef} value={meterValue} onChange={setMeterValue} min={0} placeholder="0" className="w-full" onBlur={() => setMeterValueTouched(true)} error={meterValueTouched && !meterValue.trim()} />
+                        <NumberInput ref={meterValueInputRef} value={meterValue} onChange={v => { setMeterEdited(true); setMeterValue(v) }} min={0} placeholder="0" className="w-full" onBlur={() => setMeterValueTouched(true)} error={meterValueTouched && !meterValue.trim()} />
                       </div>
                     </div>
                     <div className={`flex flex-col gap-1.5 border-l border-[var(--border-default)] pl-4 min-w-[220px] transition-opacity ${meterCondition && meterValue.trim() ? '' : 'opacity-40 pointer-events-none'}`}>
                       <label className="text-[13px] font-medium text-[var(--color-neutral-11)]">Work Order Due Date</label>
                       <div className="flex items-center gap-2">
-                        <NumberInput value={meterDueN} onChange={setMeterDueN} min={1} className="w-[80px] shrink-0" />
-                        <InlineSelect value={meterDuePeriod} onChange={setMeterDuePeriod} options={['Day', 'Week', 'Month']} placeholder="Period" className="flex-1 justify-between" />
+                        <NumberInput value={meterDueN} onChange={v => { setMeterEdited(true); setMeterDueN(v) }} min={1} className="w-[80px] shrink-0" />
+                        <InlineSelect value={meterDuePeriod} onChange={v => { setMeterEdited(true); setMeterDuePeriod(v) }} options={['Day', 'Week', 'Month']} placeholder="Period" className="flex-1 justify-between" />
                       </div>
                     </div>
                   </div>
@@ -1274,8 +1313,8 @@ function CreateCalendarTriggerModal({
                     {hasAnyPeriod ? (
                       <button type="button"
                         onClick={() => setShowInactivePeriods(v => !v)}
-                        className="w-6 h-6 rounded-[var(--radius-sm)] bg-[var(--color-neutral-3)] flex items-center justify-center shrink-0 hover:bg-[var(--color-neutral-4)] transition-colors cursor-pointer">
-                        {showInactivePeriods ? <ChevronUp size={13} className="text-[var(--color-neutral-9)]" /> : <ChevronDown size={13} className="text-[var(--color-neutral-9)]" />}
+                        className={toggleTile(true)}>
+                        {showInactivePeriods ? <ChevronUp size={16} className={toggleIcon(true)} /> : <ChevronDown size={16} className={toggleIcon(true)} />}
                       </button>
                     ) : (
                       <button type="button"
@@ -1285,8 +1324,8 @@ function CreateCalendarTriggerModal({
                           setShowInactivePeriods(true)
                           setInactivePeriods(ps => [...ps, { id: newId, fromDate: '', fromTime: '', toDate: '', toTime: '' }])
                         }}
-                        className="w-6 h-6 rounded-[var(--radius-sm)] bg-[var(--color-neutral-3)] flex items-center justify-center shrink-0 hover:bg-[var(--color-neutral-4)] transition-colors cursor-pointer">
-                        <Plus size={14} className="text-[var(--color-neutral-11)]" />
+                        className={toggleTile(false)}>
+                        <Plus size={16} className={toggleIcon(false)} />
                       </button>
                     )}
                   </div>
@@ -2084,7 +2123,7 @@ function ModalSectionLabel({ children }: { children: React.ReactNode }) {
 }
 
 function AssignAssetModal({
-  open, onClose, onSubmit, existingAssets = [], initialValues, previousAssignment, isMeterBased = false,
+  open, onClose, onSubmit, existingAssets = [], initialValues, previousAssignment,
 }: {
   open: boolean
   onClose: () => void
@@ -2092,12 +2131,10 @@ function AssignAssetModal({
   existingAssets?: Array<{ name: string; location?: string; meter?: string }>
   initialValues?: AssignAssetForm
   previousAssignment?: { primaryAssignee?: string; additionalAssignee?: string[]; team?: string; meter?: string[]; startDate?: string; endDate?: string }
-  isMeterBased?: boolean
 
 }) {
   const [form, setForm] = useState<AssignAssetForm>(EMPTY_FORM)
   const [appliesToType, setAppliesToType] = useState<AppliesToType>('Asset')
-  const [meterTouched, setMeterTouched] = useState(false)
 
   useEffect(() => {
     if (open) {
@@ -2108,7 +2145,6 @@ function AssignAssetModal({
         setForm(EMPTY_FORM)
         setAppliesToType('Asset')
       }
-      setMeterTouched(false)
       setMeterAutoFilled(false)
     }
   }, [open])
@@ -2164,15 +2200,9 @@ function AssignAssetModal({
     setValueQuery('')
   }
 
-  const meterFieldRef = useRef<HTMLDivElement>(null)
   useEffect(() => {
     if (valueOpen) { setTimeout(() => valueInputRef.current?.focus(), 0); return }
     setValueQuery('')
-    /* Closing the picker with a meter still owed: send the cursor there rather
-       than leaving the requirement for the user to spot. */
-    if (needsMeterInput && appliesToSelected.length > 0 && form.meter.length === 0) {
-      setTimeout(() => meterFieldRef.current?.querySelector('button')?.focus(), 60)
-    }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [valueOpen])
 
@@ -2233,31 +2263,15 @@ function AssignAssetModal({
   // Meter is mandatory for meter-triggered schedules — unless every selected item
   // already carries one from the database, in which case there's nothing to ask for.
   // Selecting meters directly already answers the question, so the field goes away.
-  /** Plural, lowercase noun for whatever the schedule applies to — copy reads
-     "for all assets" / "for all locations" depending on the switcher. */
-  const entityWord = appliesToType === 'Location' ? 'locations' : appliesToType === 'Meter' ? 'meters' : 'assets'
-  const needsMeterInput = isMeterBased && appliesToType !== 'Meter'
-  // With several items selected and only some carrying a meter, the choice is
-  // ambiguous: fill the gaps, or overwrite everything?
-  const selectedWithOwnMeter = appliesToType === 'Asset'
-    ? appliesToSelected.filter(name => !!getAssetData(name)?.meter).length
-    : appliesToSelected.filter(name => (getLocationData(name)?.meters?.length ?? 0) > 0).length
-  const someAlreadyHaveMeter = appliesToSelected.length > 1 && selectedWithOwnMeter > 0
-  /** Selected items with no meter of their own — the ones this field is for. */
-  const itemsMissingMeter = appliesToSelected.filter(name => appliesToType === 'Asset'
-    ? !getAssetData(name)?.meter
-    : !(getLocationData(name)?.meters?.length))
-  /* Only demand a meter when some selection lacks one. When they all carry a
-     meter already, the field is an optional replacement instead. */
-  const meterRequired = needsMeterInput && itemsMissingMeter.length > 0
-  const metersAllPresent = needsMeterInput && appliesToSelected.length > 0 && itemsMissingMeter.length === 0
-  /* The override is only a question when some are missing and several are in
-     play, and only answerable once this modal has a meter of its own. */
-  const showMeterOverride = appliesToSelected.length > 1 && itemsMissingMeter.length > 0
-  const canApplyMeterToAll = form.meter.length > 0
-  const applyMeterToAll = canApplyMeterToAll && !!form.applyMeterToAll
+
+  /* A meter-based schedule has nothing to read without a meter, so the field is
+     required as soon as something is selected. One item lends its own meter (see
+     the autofill effect below); several items are answered by a single meter that
+     overrides them all, which is why there is no "apply to all" question. */
+
+  /* Optional: an item can lend its own meter, and leaving it blank is a valid
+     answer — nothing about the meter blocks the assignment. */
   const canSubmit = !!(form.asset.length || form.location.length || form.meter.length || form.primaryAssignee || form.additionalAssignee.length || form.team)
-    && !(meterRequired && form.meter.length === 0)
   const [dateError, setDateError] = useState('')
 
   function handleSubmit() {
@@ -2265,9 +2279,8 @@ function AssignAssetModal({
     const err = validateDateRange(form.startDate, form.endDate)
     if (err) { setDateError(err); return }
     setDateError('')
-    /* With nothing missing there is no toggle to ask — naming a meter here can
-       only mean "replace what they have". */
-    onSubmit(metersAllPresent && form.meter.length > 0 ? { ...form, applyMeterToAll: true } : form)
+    /* Naming a meter here can only mean "use this one for everything selected". */
+    onSubmit(form.meter.length > 0 ? { ...form, applyMeterToAll: true } : form)
     setForm(EMPTY_FORM)
     setAppliesToType('Asset')
   }
@@ -2441,117 +2454,6 @@ function AssignAssetModal({
           </div>
           </div>
         </div>
-
-        {/* Meter — its own row; collapses away when meters are what the schedule
-            applies to. Stays mounted so the modal resizes instead of jumping. */}
-        <div
-          aria-hidden={!needsMeterInput}
-          className={`grid transition-all duration-300 ease-out ${
-            needsMeterInput ? 'grid-rows-[1fr] opacity-100 mb-8' : 'grid-rows-[0fr] opacity-0 mb-0'
-          }`}
-        >
-          <div className="overflow-hidden">
-            <div className="flex items-baseline justify-between gap-3 mb-2">
-              <div className="flex items-center gap-1.5 min-w-0">
-                <p className="shrink-0 text-[11px] font-semibold uppercase tracking-wide text-[var(--color-neutral-11)]">
-                  Meter {meterRequired && <span className="text-[var(--color-error)]">*</span>}
-                </p>
-                {/* Only worth explaining while a meter is actually required. */}
-                {meterRequired && (
-                  <TooltipProvider delayDuration={200}>
-                    <Tooltip side="top" content="Meter-based schedules require an associated meter for each asset.">
-                      <span className="shrink-0 flex items-center text-[var(--color-neutral-7)] hover:text-[var(--color-neutral-9)] transition-colors cursor-help">
-                        <Info size={13} />
-                      </span>
-                    </Tooltip>
-                  </TooltipProvider>
-                )}
-              </div>
-              {!!previousAssignment?.meter?.length && (
-                <button type="button"
-                  onClick={() => { setForm(f => ({ ...f, meter: previousAssignment.meter! })); setMeterTouched(false); setMeterAutoFilled(false) }}
-                  className="shrink-0 text-[11px] font-medium underline text-[var(--color-neutral-8)] hover:text-[var(--color-neutral-11)] cursor-pointer">
-                  Use Last
-                </button>
-              )}
-            </div>
-            {metersAllPresent && (
-              <p className="mb-2 text-[12px] leading-5 text-[var(--color-neutral-10)]">
-                Some {entityWord} already have a meter. Select one here to replace them.
-              </p>
-            )}
-            {/* Which of the selected items still lack a meter — its own row, with
-                the full list in the tooltip when there are too many to name. */}
-            {itemsMissingMeter.length > 0 && (
-              <TooltipProvider delayDuration={200}>
-                <Tooltip
-                  side="top"
-                  content={
-                    <div className="flex flex-col gap-0.5 py-0.5">
-                      {itemsMissingMeter.map(name => <span key={name} className="text-[12px] leading-5">{name}</span>)}
-                    </div>
-                  }
-                >
-                  <span className="flex items-center gap-1 min-w-0 mb-2 text-[11px] text-[var(--color-neutral-8)]">
-                    {itemsMissingMeter.slice(0, 2).map(name => (
-                      <span key={name} className="shrink-0 inline-flex items-center h-4 px-1.5 rounded-full bg-[var(--color-neutral-3)] text-[10px] font-medium text-[var(--color-neutral-9)] max-w-[120px] truncate">
-                        {name}
-                      </span>
-                    ))}
-                    {itemsMissingMeter.length > 2 && (
-                      <span className="shrink-0 inline-flex items-center h-4 px-1.5 rounded-full bg-[var(--color-neutral-3)] text-[10px] font-medium text-[var(--color-neutral-9)]">
-                        +{itemsMissingMeter.length - 2}
-                      </span>
-                    )}
-                    <span className="shrink-0">
-                      {itemsMissingMeter.length === 1 ? 'is missing an associated meter' : 'are missing associated meter'}
-                    </span>
-                  </span>
-                </Tooltip>
-              </TooltipProvider>
-            )}
-            <div ref={meterFieldRef}>
-              <SearchableMultiSelect
-                values={form.meter}
-                onChange={v => { setForm(f => ({ ...f, meter: v })); setMeterTouched(false); setMeterAutoFilled(false) }}
-                options={METERS}
-                error={meterRequired && meterTouched && form.meter.length === 0}
-                onBlur={() => setMeterTouched(true)}
-                createEntity="Meter"
-              />
-            </div>
-            {/* Stays mounted so it can fade out as well as in; the 0fr→1fr row
-                animates the collapse and the child clips its own overflow. */}
-            <div
-              aria-hidden={!showMeterOverride}
-              className={`grid transition-all duration-200 ease-out ${
-                showMeterOverride ? 'grid-rows-[1fr] opacity-100 mt-3' : 'grid-rows-[0fr] opacity-0 mt-0'
-              }`}
-            >
-              <div className="overflow-hidden">
-                <div className={`flex items-center justify-between gap-4 p-3 rounded-[var(--radius-lg)] transition-colors ${applyMeterToAll ? 'bg-[var(--chip-surface-bg)]' : 'bg-[var(--surface-secondary)]'}`}>
-                  <div className="min-w-0">
-                    <p className="text-[12px] leading-5 text-[var(--color-neutral-9)]">
-                      Use same meter for all {entityWord}.
-                    </p>
-                  </div>
-                  <Switch
-                    size="sm"
-                    disabled={!canApplyMeterToAll}
-                    /* Keep the track legible while disabled — the gray state
-                       already says it is off. */
-                    className="disabled:opacity-100"
-                    checked={applyMeterToAll}
-                    onCheckedChange={v => setForm(f => ({ ...f, applyMeterToAll: v }))}
-                    aria-label={`Use same meter for all ${entityWord}`}
-                  />
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-
-
 
         {/* PEOPLE */}
         <div className="flex items-center justify-between gap-3 mb-2">
@@ -3634,11 +3536,11 @@ function PMPreview({ title, description, category, priority, duration, signature
           <button
             type="button"
             onClick={onBack}
-            className="inline-flex items-center h-10 px-3 text-[length:var(--font-size-md)] font-medium text-[var(--color-neutral-9)] hover:text-[var(--color-neutral-12)] transition-colors cursor-pointer"
+            className="inline-flex items-center h-8 px-2 text-[length:var(--font-size-base)] font-medium text-[var(--color-neutral-9)] hover:text-[var(--color-neutral-12)] transition-colors cursor-pointer"
           >
             Back to edit
           </button>
-          <Button variant="primary" size="lg" onClick={onCreate}>Create PM</Button>
+          <Button variant="primary" size="md" onClick={onCreate}>Create PM</Button>
         </div>
       </div>
     </div>
@@ -3657,6 +3559,7 @@ function CreatePMPageContent() {
   const [checklists, setChecklists] = useState<ChecklistGroup[]>([])
   const [checklistsOpen, setChecklistsOpen] = useState(false)
   const [filesPartsOpen, setFilesPartsOpen] = useState(false)
+  const [partsOpen, setPartsOpen] = useState(false)
   const [images, setImages] = useState<string[]>([])
   const [triggers, setTriggers] = useState<PMTrigger[]>([])
   /* Page sections stay neutral — no hover ring, no focused state. */
@@ -3978,25 +3881,28 @@ function CreatePMPageContent() {
     /* Schedule problems belong on the rail too — except the schedule just
        created, which is the one the user is still filling in. */
     const abandonedTrigger = triggers.slice(0, -1).some(t => t.assignments.length === 0)
-    if (abandonedTrigger || hasMissingTechnicians || hasMissingMeters) states[2] = 'error'
+    /* Technicians are optional, so a missing one is never an error on the rail. */
+    if (abandonedTrigger || hasMissingMeters) states[2] = 'error'
     const current = states.findIndex(st => st === 'pending')
     if (current !== -1) states[current] = 'current'
     return states
   })()
-  const hasAnyError = triggers.length === 0 || hasUnassignedTriggers || hasMissingMeters || hasMissingTechnicians
+  /* Preview and Create only wait on the two things that define a PM — details
+     and at least one schedule. Anything still missing inside a schedule shows
+     as an inline error and on the rail, but no longer blocks the way out. */
+  const hasAnyError = triggers.length === 0
   const isTitleValid = title.trim() !== '' && title.trim().toLowerCase() !== 'untitled pm' && title.trim().toLowerCase() !== 'untitled'
   const missingFields: string[] = [
     ...(!isTitleValid ? ['Title is required'] : []),
     ...(triggers.length === 0 ? ['At least one schedule is required'] : []),
     ...(hasUnassignedTriggers ? ['All schedules need at least one asset, location, or meter'] : []),
-    ...(hasMissingTechnicians ? ['Some assignments are missing a technician or team'] : []),
     ...(hasMissingMeters ? ['Some assignments are missing a meter reading'] : []),
   ]
   const createDisabled = !isTitleValid || hasAnyError
 
 
   function handleCreatePM() {
-    if (!isTitleValid || hasAnyError) return
+    if (createDisabled) return
     persistPM('Active')
     const scheduleCount = triggers.length
     const assignmentCount = triggers.reduce((n, t) => n + t.assignments.length, 0)
@@ -4259,7 +4165,7 @@ function CreatePMPageContent() {
                   {/* Signature Required — full-width row */}
                   <div
                     onClick={() => setSignature(v => !v)}
-                    className="flex items-center justify-between gap-3 p-3 rounded-2xl border cursor-pointer transition-colors border-[#E0E1E6] bg-[#F9F9FB] hover:bg-[var(--color-neutral-3)]"
+                    className="flex items-center justify-between gap-3 p-3 rounded-2xl cursor-pointer transition-colors bg-[#F9F9FB] hover:bg-[var(--color-neutral-3)]"
                   >
                     <div className="flex-1 min-w-0">
                       <p className="text-[14px] font-semibold text-[var(--color-neutral-12)]">Signature Required</p>
@@ -4270,85 +4176,6 @@ function CreatePMPageContent() {
                     </div>
                   </div>
                 </div>
-
-                  {/* Images, Files & Parts */}
-              <button
-                onClick={() => setFilesPartsOpen(o => !o)}
-                className="w-full flex items-center gap-2 px-4 h-[56px] border-y border-[#F0F0F3] bg-[#F9F9FB] hover:bg-[var(--color-neutral-3)] transition-colors cursor-pointer"
-              >
-                <svg width="20" height="20" viewBox="0 0 18 18" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" className="text-[var(--color-neutral-7)]">
-                  <path d="M9.1875 15.9375H4.3125C3.89829 15.9375 3.5625 15.6017 3.5625 15.1875V2.8125C3.5625 2.39829 3.89829 2.0625 4.3125 2.0625H13.6875C14.1017 2.0625 14.4375 2.39829 14.4375 2.8125V9.1875M13.6875 11.4375V13.6875M13.6875 13.6875V15.9375M13.6875 13.6875H11.4375M13.6875 13.6875H15.9375M6.5625 5.0625H11.4375M6.5625 8.0625H8.4375" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-                </svg>
-                <span className="flex-1 text-left text-[14px] font-semibold text-[var(--color-neutral-12)]">Images, Files &amp; Parts</span>
-                {filesPartsOpen ? <ChevronUp size={16} className="text-[var(--color-neutral-9)]" /> : <ChevronDown size={16} className="text-[var(--color-neutral-9)]" />}
-              </button>
-              {filesPartsOpen && (
-                <div className="p-5 flex flex-col gap-5">
-                  {/* Images */}
-                  <div className="flex flex-col gap-3">
-                    <div className="flex items-center justify-between">
-                      <span className="text-[13px] font-semibold text-[var(--color-neutral-11)]">Images</span>
-                      <div className="flex items-center gap-1.5">
-                        {images.length > 0 && (
-                          <span className="text-[12px] text-[var(--color-neutral-8)]">{images.length} Images Added</span>
-                        )}
-                        <button onClick={() => imageScrollRef.current?.scrollBy({ left: -200, behavior: 'smooth' })} className="w-7 h-7 flex items-center justify-center rounded-[var(--radius-md)] border border-[var(--border-default)] bg-[var(--surface-primary)] text-[var(--color-neutral-7)] hover:bg-[var(--color-neutral-3)] transition-colors cursor-pointer">
-                          <ChevronLeft size={14} />
-                        </button>
-                        <button onClick={() => imageScrollRef.current?.scrollBy({ left: 200, behavior: 'smooth' })} className="w-7 h-7 flex items-center justify-center rounded-[var(--radius-md)] border border-[var(--border-default)] bg-[var(--surface-primary)] text-[var(--color-neutral-7)] hover:bg-[var(--color-neutral-3)] transition-colors cursor-pointer">
-                          <ChevronRight size={14} />
-                        </button>
-                      </div>
-                    </div>
-                    <div className="relative">
-                      <div ref={imageScrollRef} className="flex items-center gap-3 overflow-x-auto" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
-                        <button onClick={() => imageInputRef.current?.click()} className="shrink-0 w-[80px] h-[80px] rounded-[var(--radius-lg)] border-2 border-dashed border-[var(--color-accent-4)] bg-[var(--color-accent-1)] flex items-center justify-center text-[var(--color-accent-7)] hover:border-[var(--color-accent-6)] transition-colors cursor-pointer">
-                          <Plus size={20} />
-                        </button>
-                        <input ref={imageInputRef} type="file" accept="image/*" multiple className="hidden" onChange={handleImageUpload} />
-                        {images.map((src, i) => (
-                          <ImageThumb key={i} src={src} onRemove={() => setImages(imgs => imgs.filter((_, j) => j !== i))} />
-                        ))}
-                      </div>
-                      <div className="pointer-events-none absolute right-0 top-0 h-full w-16 bg-gradient-to-l from-[var(--surface-primary)] to-transparent" />
-                    </div>
-                  </div>
-
-                  <div className="h-px bg-[var(--border-subtle)]" />
-
-                  {/* Files */}
-                  <div className="flex flex-col gap-3">
-                    <div className="flex items-center justify-between">
-                      <span className="text-[13px] font-semibold text-[var(--color-neutral-11)]">Files</span>
-                      <button className="text-[13px] text-[var(--color-accent-9)] font-medium hover:text-[var(--color-accent-11)] cursor-pointer">Add from Saved Files</button>
-                    </div>
-                    <button onClick={() => fileInputRef.current?.click()} className="w-full h-[72px] rounded-[var(--radius-lg)] border-2 border-dashed border-[var(--border-default)] flex items-center justify-center gap-3 text-[var(--color-neutral-8)] hover:border-[var(--color-accent-7)] hover:text-[var(--color-accent-9)] transition-colors cursor-pointer">
-                      <Upload size={16} />
-                      <span className="text-[13px] font-medium">Upload</span>
-                      <span className="text-[13px] text-[var(--color-neutral-7)]">or drop a file</span>
-                    </button>
-                    <input ref={fileInputRef} type="file" multiple className="hidden" />
-                  </div>
-
-                  <div className="h-px bg-[var(--border-subtle)]" />
-
-                  {/* Parts */}
-                  <div className="flex items-center justify-between">
-                    <span className="text-[13px] font-semibold text-[var(--color-neutral-11)]">Parts</span>
-                    <DropdownMenu modal={false}>
-                      <DropdownMenuTrigger asChild>
-                        <button className="inline-flex items-center gap-1 h-6 px-1.5 rounded-[var(--radius-sm)] bg-[var(--surface-primary)] border border-[var(--border-default)] text-[var(--color-neutral-11)] text-[length:var(--font-size-sm)] leading-4 font-medium hover:bg-[var(--color-neutral-4)] hover:border-[var(--color-neutral-5)] transition-colors cursor-pointer">
-                          Add Part
-                        </button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end" minWidth="160px">
-                        <DropdownMenuItem><Plus size={13} className="mr-2" />Add Part</DropdownMenuItem>
-                        <DropdownMenuItem><Plus size={13} className="mr-2" />From Inventory</DropdownMenuItem>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
-                  </div>
-                </div>
-              )}
 
                   {/* Tasks & Checklists */}
               <div
@@ -4486,6 +4313,96 @@ function CreatePMPageContent() {
                   )}
                 </div>
               )}
+
+                  {/* Images, Files & Parts */}
+              <button
+                onClick={() => setFilesPartsOpen(o => !o)}
+                className="w-full flex items-center gap-2 px-4 h-[56px] border-y border-[#F0F0F3] bg-[#F9F9FB] hover:bg-[var(--color-neutral-3)] transition-colors cursor-pointer"
+              >
+                <svg width="20" height="20" viewBox="0 0 18 18" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" className="text-[var(--color-neutral-7)]">
+                  <path d="M9.1875 15.9375H4.3125C3.89829 15.9375 3.5625 15.6017 3.5625 15.1875V2.8125C3.5625 2.39829 3.89829 2.0625 4.3125 2.0625H13.6875C14.1017 2.0625 14.4375 2.39829 14.4375 2.8125V9.1875M13.6875 11.4375V13.6875M13.6875 13.6875V15.9375M13.6875 13.6875H11.4375M13.6875 13.6875H15.9375M6.5625 5.0625H11.4375M6.5625 8.0625H8.4375" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                </svg>
+                <span className="flex-1 text-left text-[14px] font-semibold text-[var(--color-neutral-12)]">Images &amp; Files</span>
+                {filesPartsOpen ? <ChevronUp size={16} className="text-[var(--color-neutral-9)]" /> : <ChevronDown size={16} className="text-[var(--color-neutral-9)]" />}
+              </button>
+              {filesPartsOpen && (
+                <div className="p-5 flex flex-col gap-5">
+                  {/* Images */}
+                  <div className="flex flex-col gap-3">
+                    <div className="flex items-center justify-between">
+                      <span className="text-[13px] font-semibold text-[var(--color-neutral-11)]">Images</span>
+                      <div className="flex items-center gap-1.5">
+                        {images.length > 0 && (
+                          <span className="text-[12px] text-[var(--color-neutral-8)]">{images.length} Images Added</span>
+                        )}
+                        <button onClick={() => imageScrollRef.current?.scrollBy({ left: -200, behavior: 'smooth' })} className="w-7 h-7 flex items-center justify-center rounded-[var(--radius-md)] border border-[var(--border-default)] bg-[var(--surface-primary)] text-[var(--color-neutral-7)] hover:bg-[var(--color-neutral-3)] transition-colors cursor-pointer">
+                          <ChevronLeft size={14} />
+                        </button>
+                        <button onClick={() => imageScrollRef.current?.scrollBy({ left: 200, behavior: 'smooth' })} className="w-7 h-7 flex items-center justify-center rounded-[var(--radius-md)] border border-[var(--border-default)] bg-[var(--surface-primary)] text-[var(--color-neutral-7)] hover:bg-[var(--color-neutral-3)] transition-colors cursor-pointer">
+                          <ChevronRight size={14} />
+                        </button>
+                      </div>
+                    </div>
+                    <div className="relative">
+                      <div ref={imageScrollRef} className="flex items-center gap-3 overflow-x-auto" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
+                        <button onClick={() => imageInputRef.current?.click()} className="shrink-0 w-[80px] h-[80px] rounded-[var(--radius-lg)] border-2 border-dashed border-[var(--color-accent-4)] bg-[var(--color-accent-1)] flex items-center justify-center text-[var(--color-accent-7)] hover:border-[var(--color-accent-6)] transition-colors cursor-pointer">
+                          <Plus size={20} />
+                        </button>
+                        <input ref={imageInputRef} type="file" accept="image/*" multiple className="hidden" onChange={handleImageUpload} />
+                        {images.map((src, i) => (
+                          <ImageThumb key={i} src={src} onRemove={() => setImages(imgs => imgs.filter((_, j) => j !== i))} />
+                        ))}
+                      </div>
+                      <div className="pointer-events-none absolute right-0 top-0 h-full w-16 bg-gradient-to-l from-[var(--surface-primary)] to-transparent" />
+                    </div>
+                  </div>
+
+                  <div className="h-px bg-[var(--border-subtle)]" />
+
+                  {/* Files */}
+                  <div className="flex flex-col gap-3">
+                    <div className="flex items-center justify-between">
+                      <span className="text-[13px] font-semibold text-[var(--color-neutral-11)]">Files</span>
+                      <button className="text-[13px] text-[var(--color-accent-9)] font-medium hover:text-[var(--color-accent-11)] cursor-pointer">Add from Saved Files</button>
+                    </div>
+                    <button onClick={() => fileInputRef.current?.click()} className="w-full h-[72px] rounded-[var(--radius-lg)] border-2 border-dashed border-[var(--border-default)] flex items-center justify-center gap-3 text-[var(--color-neutral-8)] hover:border-[var(--color-accent-7)] hover:text-[var(--color-accent-9)] transition-colors cursor-pointer">
+                      <Upload size={16} />
+                      <span className="text-[13px] font-medium">Upload</span>
+                      <span className="text-[13px] text-[var(--color-neutral-7)]">or drop a file</span>
+                    </button>
+                    <input ref={fileInputRef} type="file" multiple className="hidden" />
+                  </div>
+
+                </div>
+              )}
+
+              {/* Parts */}
+              <div
+                onClick={() => setPartsOpen(o => !o)}
+                className="w-full flex items-center gap-2 px-4 h-[56px] border-b border-[#F0F0F3] bg-[#F9F9FB] hover:bg-[var(--color-neutral-3)] transition-colors cursor-pointer select-none"
+              >
+                <Box size={18} className="text-[var(--color-neutral-7)]" />
+                <span className="flex-1 text-left text-[14px] font-semibold text-[var(--color-neutral-12)]">Parts</span>
+                <div onClick={e => e.stopPropagation()} className="shrink-0">
+                    <DropdownMenu modal={false}>
+                      <DropdownMenuTrigger asChild>
+                        <button className="inline-flex items-center gap-1 h-6 px-1.5 rounded-[var(--radius-sm)] bg-[var(--surface-primary)] border border-[var(--border-default)] text-[var(--color-neutral-11)] text-[length:var(--font-size-sm)] leading-4 font-medium hover:bg-[var(--color-neutral-4)] hover:border-[var(--color-neutral-5)] transition-colors cursor-pointer">
+                          Add Part
+                        </button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end" minWidth="160px">
+                        <DropdownMenuItem><Plus size={13} className="mr-2" />Add Part</DropdownMenuItem>
+                        <DropdownMenuItem><Plus size={13} className="mr-2" />From Inventory</DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                </div>
+                {partsOpen ? <ChevronUp size={16} className="text-[var(--color-neutral-9)]" /> : <ChevronDown size={16} className="text-[var(--color-neutral-9)]" />}
+              </div>
+              {partsOpen && (
+                <div className="p-5">
+                  <p className="text-[13px] text-[var(--color-neutral-8)]">No parts added yet. Use Add Part to attach the parts this maintenance consumes.</p>
+                </div>
+              )}
               </div>
 
 
@@ -4548,15 +4465,12 @@ function CreatePMPageContent() {
                   {triggers.map((trigger, triggerIndex) => {
                     const hasMissingMeters = !!trigger.calendarTrigger.meterCondition && trigger.assignments.some(a => !a.meter)
                     const hasMissingTech = trigger.assignments.some(a => a.assignees.length === 0 && !a.team)
-                    const hasNoAssignments = !trigger.expanded && trigger.assignments.length === 0
-                    const hasError = hasMissingMeters || hasMissingTech || hasNoAssignments
-                    // The active card wears the same accent border + ring the form
-                    // controls use when focused; every other card stays neutral.
+                    /* What is missing is called out on the row that owns it and in
+                       the header tag — the card itself stays neutral. */
                     const isActive = activeTriggerId === trigger.id
-                    const borderClass = hasError ? 'border-[var(--color-error,#CE2C31)]' : isActive ? 'border-[var(--color-accent-7)]' : 'border-[var(--border-default)]'
-                    const shadowClass = hasError ? 'shadow-[0_0_1px_3px_rgba(206,44,49,0.2)]' : isActive ? 'shadow-[0_0_1px_3px_rgba(0,106,220,0.1)]' : ''
-                    // Hover previews the focus ring; the error ring stays untouched.
-                    const hoverClass = hasError || isActive ? '' : 'hover:border-[var(--color-accent-7)] hover:shadow-[0_0_1px_3px_rgba(0,106,220,0.1)]'
+                    const borderClass = isActive ? 'border-[var(--color-accent-7)]' : 'border-[var(--border-default)]'
+                    const shadowClass = isActive ? 'shadow-[0_0_1px_3px_rgba(0,106,220,0.1)]' : ''
+                    const hoverClass = isActive ? '' : 'hover:border-[var(--color-accent-7)] hover:shadow-[0_0_1px_3px_rgba(0,106,220,0.1)]'
                     return (
                     <div key={trigger.id} id={`trigger-card-${trigger.id}`} className={`rounded-[8px] border overflow-hidden transition-[border-color,box-shadow] duration-[var(--duration-fast)] ${borderClass} ${shadowClass} ${hoverClass} ${newTriggerIds.has(trigger.id) ? 'trigger-card-new' : ''}`}>
                       {skeletonTriggerIds.has(trigger.id) ? (
@@ -4626,7 +4540,7 @@ function CreatePMPageContent() {
                               <button
                                 type="button"
                                 onClick={e => { e.stopPropagation(); setShowFillMissingModal({ triggerId: trigger.id, type: 'tech' }) }}
-                                className="flex items-center gap-1 rounded-full bg-[var(--color-error-3,#FFEFEF)] text-[var(--color-error,#CE2C31)] text-[11px] px-2.5 py-0.5 font-medium shrink-0 hover:bg-[#FFDCDC] transition-colors cursor-pointer"
+                                className="flex items-center gap-1 rounded-full bg-[var(--color-accent-2)] text-[var(--color-accent-11)] text-[11px] px-2.5 py-0.5 font-medium shrink-0 hover:bg-[var(--color-accent-3)] transition-colors cursor-pointer"
                               >
                                 Add {missingTech} missing technician{missingTech > 1 ? 's' : ''}
                               </button>
@@ -4651,17 +4565,17 @@ function CreatePMPageContent() {
                           </div>
                         )}
                         {!trigger.expanded && trigger.assignments.length === 0 && (
-                          <span className="text-[11px] text-[var(--color-error,#CE2C31)] font-medium shrink-0">At least one item is required.</span>
+                          <span className="text-[11px] text-[var(--color-neutral-9)] font-medium shrink-0">No assets, locations, or meters yet.</span>
                         )}
                         {!trigger.expanded && (
-                          <Button variant="secondary" size="sm" onClick={e => { e.stopPropagation(); setShowAssignModal(trigger.id) }}>
+                          <Button variant="primary" size="sm" onClick={e => { e.stopPropagation(); setShowAssignModal(trigger.id) }}>
                             <Plus size={12} />
                             Add
                           </Button>
                         )}
                         <DropdownMenu modal={false}>
                           <DropdownMenuTrigger asChild>
-                            <button onClick={e => e.stopPropagation()} className="w-7 h-7 flex items-center justify-center rounded-[var(--radius-md)] hover:bg-[var(--color-neutral-4)] transition-colors cursor-pointer text-[var(--color-neutral-7)]">
+                            <button onClick={e => e.stopPropagation()} className="w-7 h-7 flex items-center justify-center rounded-[var(--radius-md)] hover:bg-[var(--color-neutral-4)] transition-colors cursor-pointer text-[var(--color-neutral-10)]">
                               <MoreHorizontal size={15} />
                             </button>
                           </DropdownMenuTrigger>
@@ -4687,7 +4601,7 @@ function CreatePMPageContent() {
                         </DropdownMenu>
                         <button
                           onClick={e => { e.stopPropagation(); setTriggers(ts => ts.map(t => t.id === trigger.id ? { ...t, expanded: !t.expanded } : t)) }}
-                          className="w-7 h-7 flex items-center justify-center rounded-[var(--radius-md)] hover:bg-[var(--color-neutral-4)] transition-colors cursor-pointer text-[var(--color-neutral-7)]"
+                          className="w-7 h-7 flex items-center justify-center rounded-[var(--radius-md)] hover:bg-[var(--color-neutral-4)] transition-colors cursor-pointer text-[var(--color-neutral-10)]"
                         >
                           {trigger.expanded ? <ChevronUp size={15} /> : <ChevronDown size={15} />}
                         </button>
@@ -4747,7 +4661,8 @@ function CreatePMPageContent() {
                                       const dir = sort.dir === 'asc' ? 1 : -1
                                       if (sort.col === 'name') return dir * a.name.localeCompare(b.name)
                                       if (sort.col === 'meter') return dir * (a.meter || '').localeCompare(b.meter || '')
-                                      if (sort.col === 'user') return dir * ((a.assignees[0] || '').localeCompare(b.assignees[0] || ''))
+                                      if (sort.col === 'primary') return dir * ((a.assignees[0] || '').localeCompare(b.assignees[0] || ''))
+                                      if (sort.col === 'user') return dir * ((a.assignees[1] || '').localeCompare(b.assignees[1] || ''))
                                       if (sort.col === 'team') return dir * ((a.team || '').localeCompare(b.team || ''))
                                       if (sort.col === 'start') return dir * ((a.startDate || '').localeCompare(b.startDate || ''))
                                       return 0
@@ -4994,7 +4909,7 @@ function CreatePMPageContent() {
                                           const active = sort?.col === col
                                           const toggle = () => setAssignmentSort(s => ({ ...s, [trigger.id]: { col, dir: active && s[trigger.id]?.dir === 'asc' ? 'desc' : 'asc' } }))
                                           return (
-                                            <button type="button" onClick={toggle} className={`${className} flex items-center gap-0.5 text-[11px] font-medium uppercase tracking-wide cursor-pointer hover:text-[var(--color-neutral-11)] transition-colors ${active ? 'text-[var(--color-neutral-11)]' : 'text-[var(--color-neutral-8)]'}`}>
+                                            <button type="button" onClick={toggle} className={`${className} flex items-center gap-0.5 text-[12px] font-[500] cursor-pointer hover:text-[var(--color-neutral-12)] transition-colors ${active ? 'text-[var(--color-neutral-12)]' : 'text-[var(--color-neutral-10)]'}`}>
                                               {label}
                                               {active ? (sort?.dir === 'asc' ? <ChevronUp size={10} /> : <ChevronDown size={10} />) : <ChevronsUpDown size={10} className="opacity-40" />}
                                             </button>
@@ -5002,6 +4917,8 @@ function CreatePMPageContent() {
                                         }
                                         return (<>
                                           <SortHeader col="name" label="Applies To" className="flex-1 min-w-0" />
+                                          <SortHeader col="meter" label="Meter" className="w-[150px] shrink-0" />
+                                          <SortHeader col="primary" label="Primary" className="w-[90px] shrink-0" />
                                           <SortHeader col="user" label="Technicians" className="w-[132px] shrink-0" />
                                           <SortHeader col="team" label="Team" className="w-[124px] shrink-0" />
                                           <SortHeader col="start" label="Dates" className="w-[150px] shrink-0" />
@@ -5033,15 +4950,15 @@ function CreatePMPageContent() {
                                         /* Meter reads as a detail of the asset or location it belongs to.
                                            A Meter-type row needs none — the row already is the meter. */
                                         const meters = splitMeters(a.meter)
-                                        const MeterDetail = () => (
+                                        const MeterDetail = ({ showLabel = true }: { showLabel?: boolean }) => (
                                           <Popover.Root>
                                             <Popover.Trigger asChild>
                                               <button
-                                                className={`group/meter relative inline-flex items-center gap-1 -ml-1.5 px-1.5 w-fit rounded-[var(--radius-sm)] text-left text-[11px] outline-none cursor-pointer hover:bg-[var(--color-neutral-3)] transition-colors ${isMeterTrigger && meters.length === 0 ? 'text-[var(--color-error,#CE2C31)] font-medium' : 'text-[var(--color-neutral-11)]'}`}
+                                                className={`group/meter relative inline-flex items-center gap-1 -ml-1.5 px-1.5 w-fit rounded-[var(--radius-sm)] text-left ${showLabel ? 'text-[11px]' : 'text-[12px]'} outline-none cursor-pointer hover:bg-[var(--color-neutral-3)] transition-colors ${isMeterTrigger && meters.length === 0 ? 'text-[var(--color-error,#CE2C31)] font-medium' : 'text-[var(--color-neutral-11)]'}`}
                                               >
-                                                <span className="text-[10px] text-[var(--color-neutral-8)] uppercase tracking-wide">Meter:</span>
+                                                {showLabel && <span className="text-[10px] text-[var(--color-neutral-8)] uppercase tracking-wide">Meter:</span>}
                                                 {meters.length === 0 ? (
-                                                  <span className="truncate">{isMeterTrigger ? 'Add' : 'Not set'}</span>
+                                                  <span className="truncate">{isMeterTrigger ? 'Add' : '—'}</span>
                                                 ) : (<>
                                                   <span className="truncate">{meters[0]}</span>
                                                   {meters.length > 1 && (
@@ -5075,7 +4992,7 @@ function CreatePMPageContent() {
                                           </Popover.Root>
                                         )
                                         return (
-                                        <div key={a.id} id={`assignment-row-${a.id}`} className={`flex items-center gap-5 px-3 py-4 border-b border-[#F0F0F3] last:border-0 text-[13px] ${newAssignmentIds.has(a.id) ? 'assignment-row-new' : ''} ${isMeterTrigger && !a.meter ? 'bg-[#FFF8F8]' : sel.has(a.id) ? 'bg-[#F8FAFF]' : 'bg-white'}`}>
+                                        <div key={a.id} id={`assignment-row-${a.id}`} className={`flex items-center gap-5 px-3 py-4 border-b border-[#F0F0F3] last:border-0 text-[13px] ${newAssignmentIds.has(a.id) ? 'assignment-row-new' : ''} ${sel.has(a.id) ? 'bg-[#F8FAFF]' : 'bg-white'}`}>
                                           <button type="button" onClick={() => toggleOne(a.id)} className={`flex-shrink-0 w-4 h-4 rounded-[var(--radius-sm)] border flex items-center justify-center transition-colors ${sel.has(a.id) ? 'bg-[var(--color-accent-9)] border-[var(--color-accent-9)]' : 'border-[var(--color-neutral-6)] bg-[var(--surface-primary)]'}`}>
                                             {sel.has(a.id) && <svg width="10" height="8" viewBox="0 0 10 8" fill="none"><path d="M1 4L3.5 6.5L9 1" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>}
                                           </button>
@@ -5088,8 +5005,7 @@ function CreatePMPageContent() {
                                                   <span className="font-medium text-[var(--color-neutral-12)] truncate">{a.name}</span>
                                                   <span className="shrink-0 inline-flex items-center h-[18px] px-1.5 rounded-[4px] text-[10px] font-medium bg-[var(--color-neutral-3)] text-[var(--color-neutral-9)]">Location</span>
                                                 </div>
-                                                <span className="text-[11px] text-[var(--color-neutral-11)] truncate"><span className="text-[10px] text-[var(--color-neutral-8)] uppercase tracking-wide">Asset:</span> Not set</span>
-                                                <MeterDetail />
+                                                <span className="text-[12px] text-[var(--color-neutral-9)] truncate"><span className="text-[var(--color-neutral-9)]">Asset:</span> —</span>
                                               </div>
                                             ) : a.type === 'Asset' ? (
                                               /* Asset row: name · Asset badge, then Location: subtext */
@@ -5098,27 +5014,75 @@ function CreatePMPageContent() {
                                                   <span className="font-medium text-[var(--color-neutral-12)] truncate">{a.name}</span>
                                                   <span className="shrink-0 inline-flex items-center h-[18px] px-1.5 rounded-[4px] text-[10px] font-medium bg-[var(--color-neutral-3)] text-[var(--color-neutral-9)]">Asset</span>
                                                 </div>
-                                                <span className="text-[11px] text-[var(--color-neutral-11)] truncate"><span className="text-[10px] text-[var(--color-neutral-8)] uppercase tracking-wide">Location:</span> {a.subtext || 'Not set'}</span>
-                                                <MeterDetail />
+                                                <span className="text-[12px] text-[var(--color-neutral-9)] truncate"><span className="text-[var(--color-neutral-9)]">Location:</span> {a.subtext || '—'}</span>
                                               </div>
                                             ) : (
                                               /* Person-only row: empty applies-to block, but the meter is
                                                  still editable — a meter-based schedule needs one here too. */
                                               <div className="flex flex-col gap-1 min-w-0">
-                                                <span className="text-[11px] text-[var(--color-neutral-11)] truncate"><span className="text-[10px] text-[var(--color-neutral-8)] uppercase tracking-wide">Asset:</span> Not set</span>
-                                                <span className="text-[11px] text-[var(--color-neutral-11)] truncate"><span className="text-[10px] text-[var(--color-neutral-8)] uppercase tracking-wide">Location:</span> Not set</span>
-                                                <MeterDetail />
+                                                <span className="text-[12px] text-[var(--color-neutral-9)] truncate"><span className="text-[var(--color-neutral-9)]">Asset:</span> —</span>
+                                                <span className="text-[12px] text-[var(--color-neutral-9)] truncate"><span className="text-[var(--color-neutral-9)]">Location:</span> —</span>
                                               </div>
                                             )}
                                           </div>
-                                          {/* Assignee avatars — inline edit */}
+                                          <div className="w-[150px] shrink-0 min-w-0">
+                                            <MeterDetail showLabel={false} />
+                                          </div>
+                                          {/* Primary technician — one avatar, picked inline */}
+                                          <Popover.Root>
+                                            <Popover.Trigger asChild>
+                                              <div className="group/primary w-[90px] shrink-0 flex items-center gap-1 h-7 cursor-pointer rounded-[var(--radius-md)] hover:bg-[var(--color-neutral-3)] transition-colors px-1">
+                                                {a.assignees[0] ? (
+                                                  <TooltipProvider delayDuration={300}>
+                                                    <Tooltip content={a.assignees[0]} side="top">
+                                                      <div><Avatar name={a.assignees[0]} size="xs" className="!w-7 !h-7" /></div>
+                                                    </Tooltip>
+                                                  </TooltipProvider>
+                                                ) : (
+                                                  <span className="text-[12px] font-medium whitespace-nowrap text-[var(--color-neutral-8)]">—</span>
+                                                )}
+                                                <IconButton label={a.assignees[0] ? 'Change primary technician' : 'Set primary technician'} variant="secondary" size="sm" className="opacity-0 group-hover/primary:opacity-100 transition-opacity shrink-0 pointer-events-none ml-auto">
+                                                  {a.assignees[0] ? <Pencil size={10} /> : <Plus size={11} />}
+                                                </IconButton>
+                                              </div>
+                                            </Popover.Trigger>
+                                            <Popover.Portal>
+                                              <Popover.Content sideOffset={4} align="start" className="z-[var(--z-dropdown)] w-[200px] rounded-[var(--radius-xl)] border border-[var(--border-default)] bg-[var(--surface-primary)] shadow-[var(--shadow-lg)] outline-none overflow-hidden" onOpenAutoFocus={e => e.preventDefault()}>
+                                                <div className="py-1 max-h-[220px] overflow-y-auto">
+                                                  <Popover.Close asChild>
+                                                    <button type="button"
+                                                      onClick={() => setTriggers(ts => ts.map(t => t.id === trigger.id ? { ...t, assignments: t.assignments.map(x => x.id === a.id ? { ...x, assignees: x.assignees.slice(1) } : x) } : t))}
+                                                      className="w-full flex items-center gap-2 px-2.5 py-1.5 text-[13px] text-left cursor-pointer hover:bg-[var(--color-neutral-3)] transition-colors text-[var(--color-neutral-11)]">
+                                                      None
+                                                    </button>
+                                                  </Popover.Close>
+                                                  {ASSIGNEES.map(name => (
+                                                    <Popover.Close asChild key={name}>
+                                                      <button type="button"
+                                                        /* Promoting someone keeps the rest of the crew, minus any duplicate. */
+                                                        onClick={() => setTriggers(ts => ts.map(t => t.id === trigger.id ? { ...t, assignments: t.assignments.map(x => x.id === a.id ? { ...x, assignees: [name, ...x.assignees.filter(n => n !== name).slice(x.assignees[0] && x.assignees[0] !== name ? 1 : 0)] } : x) } : t))}
+                                                        className={`w-full flex items-center gap-2 px-2.5 py-1.5 text-[13px] text-left cursor-pointer hover:bg-[var(--color-neutral-3)] transition-colors ${a.assignees[0] === name ? 'bg-[var(--color-accent-1)] text-[var(--color-accent-11)]' : 'text-[var(--color-neutral-11)]'}`}>
+                                                        <Avatar name={name} size="xs" className="shrink-0" />
+                                                        <div className="flex flex-col flex-1 min-w-0">
+                                                          <span className="truncate">{name}</span>
+                                                          {ASSIGNEE_ROLES[name] && <span className="text-[11px] text-[var(--color-neutral-8)] truncate">{ASSIGNEE_ROLES[name]}</span>}
+                                                        </div>
+                                                      </button>
+                                                    </Popover.Close>
+                                                  ))}
+                                                </div>
+                                              </Popover.Content>
+                                            </Popover.Portal>
+                                          </Popover.Root>
+                                          {/* Additional technicians — inline edit */}
                                           <Popover.Root>
                                             <Popover.Trigger asChild>
                                               <div className="group/user w-[132px] shrink-0 flex items-center justify-between h-7 cursor-pointer rounded-[var(--radius-md)] hover:bg-[var(--color-neutral-3)] transition-colors px-1">
-                                                {a.assignees.length === 0 ? (
-                                                  <span className={`text-[12px] font-medium whitespace-nowrap ${!a.team ? 'text-[var(--color-error,#CE2C31)]' : 'text-[var(--color-neutral-8)]'}`}>Not assigned</span>
+                                                {/* The primary has its own column; this one holds the rest. */}
+                                                {a.assignees.length <= 1 ? (
+                                                  <span className="text-[12px] font-medium whitespace-nowrap text-[var(--color-neutral-8)]">—</span>
                                                 ) : (
-                                                  a.assignees.slice(0, 3).map((name, idx) => (
+                                                  a.assignees.slice(1, 4).map((name, idx) => (
                                                     <TooltipProvider key={name} delayDuration={300}>
                                                       <Tooltip content={name} side="top">
                                                         <div style={{ marginLeft: idx > 0 ? '-6px' : '0', zIndex: 10 - idx, position: 'relative' }}>
@@ -5128,9 +5092,9 @@ function CreatePMPageContent() {
                                                     </TooltipProvider>
                                                   ))
                                                 )}
-                                                {a.assignees.length > 3 && <span className="text-[10px] text-[var(--color-neutral-8)] ml-0.5">+{a.assignees.length - 3}</span>}
-                                                <IconButton label={a.assignees.length > 0 ? 'Edit assignees' : 'Add assignee'} variant="secondary" size="sm" className="opacity-0 group-hover/user:opacity-100 transition-opacity shrink-0 pointer-events-none">
-                                                  {a.assignees.length > 0 ? <Pencil size={10} /> : <Plus size={11} />}
+                                                {a.assignees.length > 4 && <span className="text-[10px] text-[var(--color-neutral-8)] ml-0.5">+{a.assignees.length - 4}</span>}
+                                                <IconButton label={a.assignees.length > 1 ? 'Edit technicians' : 'Add technician'} variant="secondary" size="sm" className="opacity-0 group-hover/user:opacity-100 transition-opacity shrink-0 pointer-events-none">
+                                                  {a.assignees.length > 1 ? <Pencil size={10} /> : <Plus size={11} />}
                                                 </IconButton>
                                               </div>
                                             </Popover.Trigger>
@@ -5174,7 +5138,7 @@ function CreatePMPageContent() {
                                                   </Tooltip>
                                                 </TooltipProvider>
                                               ) : (
-                                                <span className="text-[12px] font-medium text-[var(--color-neutral-8)] whitespace-nowrap">Not assigned</span>
+                                                <span className="text-[12px] font-medium text-[var(--color-neutral-8)] whitespace-nowrap">—</span>
                                               )}
                                               <IconButton label={a.team ? 'Edit team' : 'Assign team'} variant="secondary" size="sm" className="opacity-0 group-hover/team:opacity-100 transition-opacity shrink-0 pointer-events-none">
                                                 {a.team ? <Pencil size={10} /> : <Plus size={11} />}
@@ -5204,7 +5168,7 @@ function CreatePMPageContent() {
                                               <button className="group/dates w-[150px] shrink-0 flex items-center justify-between gap-1 py-1 px-1.5 rounded-[var(--radius-md)] hover:bg-[var(--color-neutral-3)] transition-colors cursor-pointer outline-none text-[11px] text-[var(--color-neutral-8)]">
                                                 <span className="flex flex-col items-start min-w-0">
                                                   <span><span className="text-[10px] text-[var(--color-neutral-8)] uppercase tracking-wide">Start:</span> {a.startDate ? displayDate(a.startDate) : '—'}</span>
-                                                  <span><span className="text-[10px] text-[var(--color-neutral-8)] uppercase tracking-wide">End:</span> {a.endDate ? displayDate(a.endDate) : 'Not set'}</span>
+                                                  <span><span className="text-[10px] text-[var(--color-neutral-8)] uppercase tracking-wide">End:</span> {a.endDate ? displayDate(a.endDate) : '—'}</span>
                                                 </span>
                                                 <CellEditHint mode={a.startDate || a.endDate ? 'edit' : 'add'} revealClass="group-hover/dates:opacity-100" />
                                               </button>
@@ -5335,19 +5299,24 @@ function CreatePMPageContent() {
           <button
             type="button"
             onClick={() => handleNavigateAway('/predictive-maintenance')}
-            className="inline-flex items-center h-10 px-3 text-[length:var(--font-size-md)] font-medium text-[var(--color-neutral-9)] hover:text-[var(--color-neutral-12)] transition-colors cursor-pointer"
+            className="inline-flex items-center h-8 px-2 text-[length:var(--font-size-base)] font-medium text-[var(--color-neutral-9)] hover:text-[var(--color-neutral-12)] transition-colors cursor-pointer"
           >
             Cancel
           </button>
           {/* Edit active PM: just "Save" as primary, no draft button */}
           {isEditing && editingPmStatus === 'Active' ? (
-            <Button variant="primary" size="lg" onClick={handleSaveEdit} disabled={createDisabled}>
+            <Button variant="primary" size="md" onClick={handleSaveEdit} disabled={createDisabled}>
               Save
             </Button>
           ) : (
             <>
+              {/* A soft companion to Create: look before you commit. */}
+              <Button variant="subtle" size="md" onClick={() => setPreviewOpen(true)} disabled={createDisabled}>
+                <Eye size={16} />
+                Preview
+              </Button>
               <div ref={createBtnRef} className="relative">
-                <Button variant="primary" size="lg" onClick={handleCreatePM} disabled={createDisabled}>
+                <Button variant="primary" size="md" onClick={handleCreatePM} disabled={createDisabled}>
                   Create PM
                 </Button>
                 {createDisabled && (
@@ -5446,7 +5415,6 @@ function CreatePMPageContent() {
             }
             return undefined
           })()}
-          isMeterBased={!!(triggers.find(t => t.id === showAssignModal)?.calendarTrigger?.meterCondition)}
         />
       )}
 
