@@ -38,7 +38,7 @@ function getPageTitle(pathname: string): string {
 }
 
 export default function AppLayout({ children }: { children: React.ReactNode }) {
-  const [sidebarCollapsed, setSidebarCollapsed] = useState(true)
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false)
   const [role, setRole] = useState<Role>('supervisor')
   const [site, setSite] = useState('All Sites')
   const [timeRange, setTimeRange] = useState('Today')
@@ -58,6 +58,12 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
       window.removeEventListener('toggle-sidebar', handleToggleSidebar)
     }
   }, [handleCollapseSidebar, handleToggleSidebar])
+
+  /* The nav starts open everywhere, but building a new PM wants the room —
+     collapse on arrival, then leave it to the user. */
+  useEffect(() => {
+    if (pathname.startsWith('/predictive-maintenance/create')) setSidebarCollapsed(true)
+  }, [pathname])
 
   const title = getPageTitle(pathname)
   const isCreateApp = pathname === '/studio/create'
