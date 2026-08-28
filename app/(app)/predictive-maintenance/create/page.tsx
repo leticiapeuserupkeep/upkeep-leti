@@ -1219,12 +1219,9 @@ function CreateCalendarTriggerModal({
             /* Opening the card lays out a usable rule — a condition and a round
                number — which the user then adjusts. */
             const openMeterTrigger = () => {
-              if (!meterCondition && !meterValue.trim()) {
-                setMeterEdited(true)
-                setMeterCondition('is below')
-                setMeterValue('100')
-                setMeterUnit('Units')
-              }
+              /* The reading is the user's call; condition and due window get a
+                 plausible default so the card isn't asking three things at once. */
+              if (!meterCondition) { setMeterEdited(true); setMeterCondition('is above') }
               if (!meterDueN.trim()) setMeterDueN('1')
               if (!meterDuePeriod) setMeterDuePeriod('Day')
               setShowMeterTrigger(true)
