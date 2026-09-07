@@ -131,13 +131,32 @@ const splitMeters = (v?: string) => (v ? v.split(', ').filter(Boolean) : [])
  * than an IconButton because these cells are themselves popover-trigger
  * buttons, and a nested button is invalid HTML.
  */
-function CellEditHint({ mode, revealClass }: { mode: 'add' | 'edit'; revealClass: string }) {
+/* A filled cell reveals its edit icon on hover, same as any other row action —
+   the "+ Add" text link is the always-visible affordance for an empty one, so
+   this only ever renders the edit half. */
+function CellEditHint({ mode = 'edit', hoverClass, posClass }: { mode?: 'add' | 'edit'; hoverClass: string; posClass?: string }) {
   return (
     <span
       aria-hidden
-      className={`inline-flex items-center justify-center shrink-0 w-6 h-6 rounded-[var(--radius-sm)] border border-[var(--border-default)] bg-[var(--surface-primary)] text-[var(--color-neutral-11)] opacity-0 transition-opacity ${revealClass}`}
+      className={`inline-flex items-center justify-center shrink-0 w-6 h-6 rounded-[var(--radius-sm)] border border-[var(--border-default)] bg-[var(--surface-primary)] text-[var(--color-neutral-11)] opacity-0 transition-opacity ${hoverClass} ${posClass ?? ''}`}
     >
-      {mode === 'edit' ? <Pencil size={10} /> : <Plus size={11} />}
+      {mode === 'add' ? <Plus size={11} /> : <Pencil size={10} />}
+    </span>
+  )
+}
+
+/** The empty-cell affordance: underlined "+ Add", always visible. */
+/** The empty-cell affordance for a person/team slot — the dashed-ring "click to
+ * assign" glyph used across Asana/Linear/Jira, so a whole column of them reads
+ * as "assignable" without repeating a button down every row. */
+function EmptyAvatarSlot({ size = 28, groupHoverClass }: { size?: number; groupHoverClass?: string }) {
+  return (
+    <span
+      aria-hidden
+      className={`shrink-0 rounded-full border border-dashed border-[var(--color-neutral-6)] flex items-center justify-center text-[var(--color-neutral-6)] transition-colors duration-[var(--duration-fast)] ${groupHoverClass ?? ''}`}
+      style={{ width: size, height: size }}
+    >
+      <Plus size={Math.round(size * 0.45)} />
     </span>
   )
 }
@@ -4939,11 +4958,11 @@ function CreatePMPageContent() {
                                           )
                                         }
                                         return (<>
-                                          <SortHeader col="name" label="Applies To" className="flex-1 min-w-0" />
+                                          <SortHeader col="name" label="Assets & Locations" className="flex-1 min-w-0" />
                                           <SortHeader col="meter" label="Meter" className="w-[150px] shrink-0" />
-                                          <SortHeader col="primary" label="Primary" className="w-[90px] shrink-0" />
-                                          <SortHeader col="user" label="Technicians" className="w-[132px] shrink-0" />
-                                          <SortHeader col="team" label="Team" className="w-[124px] shrink-0" />
+                                          <SortHeader col="primary" label="Primary" className="w-[64px] shrink-0" />
+                                          <SortHeader col="user" label="Technicians" className="w-[116px] shrink-0" />
+                                          <SortHeader col="team" label="Team" className="w-[64px] shrink-0" />
                                           <SortHeader col="start" label="Dates" className="w-[150px] shrink-0" />
                                         </>)
                                       })()}
@@ -4980,11 +4999,11 @@ function CreatePMPageContent() {
                                                 /* In its own column the meter behaves like the people
                                                    cells: a full-width target that lights up on hover with
                                                    the edit affordance tucked inside. */
-                                                className={`group/meter relative flex items-center gap-1 rounded-[var(--radius-md)] text-left outline-none cursor-pointer hover:bg-[var(--color-neutral-3)] transition-colors ${showLabel ? 'text-[11px] -ml-1.5 px-1.5 w-fit' : 'text-[12px] w-full justify-between h-7 px-1'} ${isMeterTrigger && meters.length === 0 ? 'text-[var(--color-error,#CE2C31)] font-medium' : 'text-[var(--color-neutral-11)]'}`}
+                                                className={`group/meter relative flex items-center gap-1 rounded-[var(--radius-md)] text-left outline-none cursor-pointer hover:bg-[var(--color-neutral-2)] transition-colors duration-[var(--duration-fast)] ${showLabel ? 'text-[11px] -ml-1.5 px-1.5 w-fit' : 'text-[12px] w-full justify-between h-7 px-1'} ${isMeterTrigger && meters.length === 0 ? 'text-[var(--color-error,#CE2C31)] font-medium' : 'text-[var(--color-neutral-11)]'}`}
                                               >
                                                 {showLabel && <span className="text-[10px] text-[var(--color-neutral-8)] uppercase tracking-wide">Meter:</span>}
                                                 {meters.length === 0 ? (
-                                                  <span className="truncate">{isMeterTrigger ? 'Add' : '—'}</span>
+                                                  <span className={`text-[12px] font-medium underline ${isMeterTrigger ? 'text-[var(--color-error,#CE2C31)]' : 'text-[var(--color-neutral-8)]'}`}>Add</span>
                                                 ) : (<>
                                                   <span className="truncate">{meters[0]}</span>
                                                   {meters.length > 1 && (
@@ -5002,13 +5021,13 @@ function CreatePMPageContent() {
                                                     </TooltipProvider>
                                                   )}
                                                 </>)}
-                                                {/* A span, not IconButton — this sits inside the popover
-                                                    trigger button and nested buttons are invalid. As a
-                                                    detail line it floats out of flow so the row keeps its
-                                                    height; as a column it sits at the end of the cell. */}
-                                                <span className={`shrink-0 inline-flex items-center justify-center w-[var(--control-height-sm)] h-[var(--control-height-sm)] rounded-[var(--radius-sm)] border border-[var(--border-default)] bg-[var(--surface-primary)] text-[var(--color-neutral-8)] opacity-0 group-hover/meter:opacity-100 transition-opacity ${showLabel ? 'absolute left-full top-1/2 -translate-y-1/2 ml-2' : 'ml-auto'}`}>
-                                                  {meters.length > 0 ? <Pencil size={11} /> : <Plus size={11} />}
-                                                </span>
+                                                {/* As a detail line it floats out of flow so the row keeps
+                                                    its height; as a column it sits at the end of the cell. */}
+                                                <CellEditHint
+                                                  mode={meters.length > 0 ? 'edit' : 'add'}
+                                                  hoverClass="group-hover/meter:opacity-100"
+                                                  posClass={showLabel ? 'absolute left-full top-1/2 -translate-y-1/2 ml-2' : 'ml-auto'}
+                                                />
                                               </button>
                                             </Popover.Trigger>
                                             <Popover.Portal>
@@ -5058,7 +5077,7 @@ function CreatePMPageContent() {
                                           {/* Primary technician — one avatar, picked inline */}
                                           <Popover.Root>
                                             <Popover.Trigger asChild>
-                                              <div className="group/primary w-[90px] shrink-0 flex items-center gap-1 h-7 cursor-pointer rounded-[var(--radius-md)] hover:bg-[var(--color-neutral-3)] transition-colors px-1">
+                                              <div className="group/primary w-[64px] shrink-0 flex items-center gap-1 h-7 cursor-pointer rounded-[var(--radius-md)] px-1">
                                                 {a.assignees[0] ? (
                                                   <TooltipProvider delayDuration={300}>
                                                     <Tooltip content={a.assignees[0]} side="top">
@@ -5066,11 +5085,9 @@ function CreatePMPageContent() {
                                                     </Tooltip>
                                                   </TooltipProvider>
                                                 ) : (
-                                                  <span className="text-[12px] font-medium whitespace-nowrap text-[var(--color-neutral-8)]">—</span>
+                                                  <EmptyAvatarSlot size={28} groupHoverClass="group-hover/primary:bg-[var(--color-neutral-3)] group-hover/primary:border-[var(--color-neutral-9)] group-hover/primary:text-[var(--color-neutral-9)]" />
                                                 )}
-                                                <IconButton label={a.assignees[0] ? 'Change primary technician' : 'Set primary technician'} variant="secondary" size="sm" className="opacity-0 group-hover/primary:opacity-100 transition-opacity shrink-0 pointer-events-none ml-auto">
-                                                  {a.assignees[0] ? <Pencil size={10} /> : <Plus size={11} />}
-                                                </IconButton>
+                                                {a.assignees[0] && <CellEditHint hoverClass="group-hover/primary:opacity-100" posClass="ml-auto" />}
                                               </div>
                                             </Popover.Trigger>
                                             <Popover.Portal>
@@ -5104,10 +5121,10 @@ function CreatePMPageContent() {
                                           {/* Additional technicians — inline edit */}
                                           <Popover.Root>
                                             <Popover.Trigger asChild>
-                                              <div className="group/user w-[132px] shrink-0 flex items-center justify-between h-7 cursor-pointer rounded-[var(--radius-md)] hover:bg-[var(--color-neutral-3)] transition-colors px-1">
+                                              <div className="group/user w-[116px] shrink-0 flex items-center justify-between h-7 cursor-pointer rounded-[var(--radius-md)] px-1">
                                                 {/* The primary has its own column; this one holds the rest. */}
                                                 {a.assignees.length <= 1 ? (
-                                                  <span className="text-[12px] font-medium whitespace-nowrap text-[var(--color-neutral-8)]">—</span>
+                                                  <EmptyAvatarSlot size={28} groupHoverClass="group-hover/user:bg-[var(--color-neutral-3)] group-hover/user:border-[var(--color-neutral-9)] group-hover/user:text-[var(--color-neutral-9)]" />
                                                 ) : (
                                                   a.assignees.slice(1, 4).map((name, idx) => (
                                                     <TooltipProvider key={name} delayDuration={300}>
@@ -5120,9 +5137,7 @@ function CreatePMPageContent() {
                                                   ))
                                                 )}
                                                 {a.assignees.length > 4 && <span className="text-[10px] text-[var(--color-neutral-8)] ml-0.5">+{a.assignees.length - 4}</span>}
-                                                <IconButton label={a.assignees.length > 1 ? 'Edit technicians' : 'Add technician'} variant="secondary" size="sm" className="opacity-0 group-hover/user:opacity-100 transition-opacity shrink-0 pointer-events-none">
-                                                  {a.assignees.length > 1 ? <Pencil size={10} /> : <Plus size={11} />}
-                                                </IconButton>
+                                                {a.assignees.length > 1 && <CellEditHint hoverClass="group-hover/user:opacity-100" />}
                                               </div>
                                             </Popover.Trigger>
                                             <Popover.Portal>
@@ -5155,7 +5170,7 @@ function CreatePMPageContent() {
                                           <Popover.Root>
                                             {/* Whole cell opens the team picker, like the technicians cell. */}
                                             <Popover.Trigger asChild>
-                                            <div className="group/team w-[124px] shrink-0 flex items-center justify-between h-7 px-1 cursor-pointer rounded-[var(--radius-md)] hover:bg-[var(--color-neutral-3)] transition-colors">
+                                            <div className="group/team w-[64px] shrink-0 flex items-center justify-between h-7 px-1 cursor-pointer rounded-[var(--radius-md)]">
                                               {a.team ? (
                                                 <TooltipProvider delayDuration={300}>
                                                   <Tooltip content={a.team} side="top">
@@ -5165,11 +5180,9 @@ function CreatePMPageContent() {
                                                   </Tooltip>
                                                 </TooltipProvider>
                                               ) : (
-                                                <span className="text-[12px] font-medium text-[var(--color-neutral-8)] whitespace-nowrap">—</span>
+                                                <EmptyAvatarSlot size={24} groupHoverClass="group-hover/team:bg-[var(--color-neutral-3)] group-hover/team:border-[var(--color-neutral-9)] group-hover/team:text-[var(--color-neutral-9)]" />
                                               )}
-                                              <IconButton label={a.team ? 'Edit team' : 'Assign team'} variant="secondary" size="sm" className="opacity-0 group-hover/team:opacity-100 transition-opacity shrink-0 pointer-events-none">
-                                                {a.team ? <Pencil size={10} /> : <Plus size={11} />}
-                                              </IconButton>
+                                              {a.team && <CellEditHint hoverClass="group-hover/team:opacity-100" />}
                                             </div>
                                             </Popover.Trigger>
                                             <Popover.Portal>
@@ -5195,9 +5208,9 @@ function CreatePMPageContent() {
                                               <button className="group/dates w-[150px] shrink-0 flex items-center justify-between gap-1 py-1 px-1.5 rounded-[var(--radius-md)] hover:bg-[var(--color-neutral-3)] transition-colors cursor-pointer outline-none text-[11px] text-[var(--color-neutral-8)]">
                                                 <span className="flex flex-col items-start min-w-0">
                                                   <span><span className="text-[10px] text-[var(--color-neutral-8)] uppercase tracking-wide">Start:</span> {a.startDate ? displayDate(a.startDate) : '—'}</span>
-                                                  <span><span className="text-[10px] text-[var(--color-neutral-8)] uppercase tracking-wide">End:</span> {a.endDate ? displayDate(a.endDate) : '—'}</span>
+                                                  <span><span className="text-[10px] text-[var(--color-neutral-8)] uppercase tracking-wide">End:</span> {a.endDate ? displayDate(a.endDate) : <span className="underline">Add</span>}</span>
                                                 </span>
-                                                <CellEditHint mode={a.startDate || a.endDate ? 'edit' : 'add'} revealClass="group-hover/dates:opacity-100" />
+                                                <CellEditHint hoverClass="group-hover/dates:opacity-100" />
                                               </button>
                                             </Popover.Trigger>
                                             <Popover.Portal>
