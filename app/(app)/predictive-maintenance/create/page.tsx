@@ -989,15 +989,33 @@ function CreateCalendarTriggerModal({
     && (form.period !== 'Week' || form.weekday)
     && (form.woCreationMode === 'relative' ? !!form.woRelativeN && !!form.woRelativePeriod : form.woCreationMode === 'on-the' ? !!form.woOnThePeriod : false))
 
+  /* A schedule with a kind on record shows just that kind, flat and chrome-free
+     — but editing one still lets the other kind be added back, as a normal
+     collapsed card the user can open if they decide to. A schedule with no
+     kind on record (made before this existed) gets the original free-form
+     modal: both cards, both fully toggleable. */
+  type SectionMode = 'hidden' | 'locked' | 'addable' | 'free'
+  const sectionMode = (mine: 'calendar' | 'meter'): SectionMode => {
+    if (!scheduleKind) return 'free'
+    if (scheduleKind === 'both' || scheduleKind === mine) return 'locked'
+    return isEditing ? 'addable' : 'hidden'
+  }
+  const calendarMode = sectionMode('calendar')
+  const meterMode = sectionMode('meter')
+  const calendarHasChrome = calendarMode === 'free' || calendarMode === 'addable'
+  const meterHasChrome = meterMode === 'free' || meterMode === 'addable'
+  const calendarTitle = calendarMode === 'addable' ? 'Add Calendar' : 'Calendar Based'
+  const meterTitle = meterMode === 'addable' ? 'Add Meter Schedule' : 'Add Meter-Based Trigger'
+
   return (
     <Modal open={open} onOpenChange={v => !v && handleClose()} maxWidth="720px">
       <ModalHeader title={isEditing ? 'Edit Schedule' : scheduleKind === 'calendar' ? 'Calendar Based Schedule' : scheduleKind === 'meter' ? 'Meter Based Schedule' : scheduleKind === 'both' ? 'Calendar & Meter Based Schedule' : 'New Schedule'} />
       <ModalBody className="flex flex-col gap-3 p-6">
 
         {/* Calendar Based card */}
-        {scheduleKind !== 'meter' && (
-        <div className={scheduleKind ? 'shrink-0' : 'shrink-0 rounded-[var(--radius-xl)] border border-[var(--border-default)] overflow-hidden transition-[border-color,box-shadow] duration-[var(--duration-fast)] hover:border-[var(--color-accent-7)] hover:shadow-[0_0_1px_3px_rgba(0,106,220,0.1)]'}>
-          {!scheduleKind && (
+        {calendarMode !== 'hidden' && (
+        <div className={calendarHasChrome ? 'shrink-0 rounded-[var(--radius-xl)] border border-[var(--border-default)] overflow-hidden transition-[border-color,box-shadow] duration-[var(--duration-fast)] hover:border-[var(--color-accent-7)] hover:shadow-[0_0_1px_3px_rgba(0,106,220,0.1)]' : 'shrink-0'}>
+          {calendarHasChrome && (
           <div onClick={toggleCalendarBased}
             className="flex items-center gap-3 px-4 py-3 bg-[var(--color-neutral-2)] rounded-t-[var(--radius-xl)] hover:bg-[var(--color-neutral-3)] transition-colors cursor-pointer select-none">
             <div className="flex items-center gap-3 flex-1 min-w-0 text-left">
@@ -1007,7 +1025,7 @@ function CreateCalendarTriggerModal({
                   : <Calendar size={15} className="text-[var(--color-neutral-9)]" />}
               </div>
               <div className="flex-1 min-w-0">
-                <span className="text-[14px] font-medium text-[var(--color-neutral-12)]">Calendar Based</span>
+                <span className="text-[14px] font-medium text-[var(--color-neutral-12)]">{calendarTitle}</span>
                 {(() => {
                   const parts: string[] = []
                   if (form.scheduleType) {
@@ -1286,10 +1304,10 @@ function CreateCalendarTriggerModal({
               setShowMeterTrigger(true)
               setTimeout(() => meterCardRef.current?.scrollIntoView({ behavior: 'smooth', block: 'nearest' }), 240)
             }
-            if (scheduleKind === 'calendar') return null
+            if (meterMode === 'hidden') return null
             return (
-              <div ref={meterCardRef} className={scheduleKind ? 'shrink-0' : 'shrink-0 rounded-[var(--radius-xl)] border border-[var(--border-default)] overflow-hidden transition-[border-color,box-shadow] duration-[var(--duration-fast)] hover:border-[var(--color-accent-7)] hover:shadow-[0_0_1px_3px_rgba(0,106,220,0.1)]'}>
-                {!scheduleKind && (
+              <div ref={meterCardRef} className={meterHasChrome ? 'shrink-0 rounded-[var(--radius-xl)] border border-[var(--border-default)] overflow-hidden transition-[border-color,box-shadow] duration-[var(--duration-fast)] hover:border-[var(--color-accent-7)] hover:shadow-[0_0_1px_3px_rgba(0,106,220,0.1)]' : 'shrink-0'}>
+                {meterHasChrome && (
                 <div className="flex items-center gap-4 px-4 py-3 bg-[var(--color-neutral-2)]">
                   <button type="button" onClick={() => { if (showMeterTrigger) setShowMeterTrigger(false); else openMeterTrigger() }}
                     className="flex items-center gap-4 flex-1 min-w-0 text-left cursor-pointer">
@@ -1299,7 +1317,7 @@ function CreateCalendarTriggerModal({
                         : <Gauge size={15} className="text-[var(--color-neutral-9)]" />}
                     </div>
                     <div className="flex-1 min-w-0">
-                      <span className="text-[14px] font-medium text-[var(--color-neutral-12)]">Add Meter-Based Trigger</span>
+                      <span className="text-[14px] font-medium text-[var(--color-neutral-12)]">{meterTitle}</span>
                       {(meterEdited && (meterComplete || meterPartial)) ? (
                         <p className="text-[11px] mt-0.5 leading-4 truncate">
                           {filledSummary && <span className="font-medium text-[var(--color-neutral-9)]">{filledSummary}</span>}
