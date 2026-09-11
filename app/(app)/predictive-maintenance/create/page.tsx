@@ -90,6 +90,11 @@ interface CalendarTrigger {
   meterUnit: string
   meterDueN: string
   meterDuePeriod: string
+  /** Which kind the New Schedule dropdown picked — carried through so editing
+   * later shows only that shape instead of guessing from which fields happen
+   * to be filled in. Undefined for schedules made before this existed, which
+   * fall back to the free-form modal with both cards. */
+  triggerKind?: 'calendar' | 'meter' | 'both'
 }
 
 /* ── Checklist types ── */
@@ -946,7 +951,7 @@ function CreateCalendarTriggerModal({
   })
 
   function handleSubmit() {
-    onSubmit({ ...form, id: initial?.id ?? crypto.randomUUID(), meterCondition, meterValue, meterUnit, meterDueN, meterDuePeriod })
+    onSubmit({ ...form, id: initial?.id ?? crypto.randomUUID(), meterCondition, meterValue, meterUnit, meterDueN, meterDuePeriod, triggerKind: scheduleKind ?? initial?.triggerKind })
     setForm(EMPTY_TRIGGER)
     onClose()
   }
@@ -3183,6 +3188,11 @@ interface TriggerAssignment {
 }
 
 function formatScheduleText(t: CalendarTrigger): string {
+  /* A meter-only trigger still carries the calendar form's seeded defaults
+     (every/period/atTime never get blanked out just because that section
+     was never shown) — without this guard those defaults leak into text
+     that implies a calendar schedule the user never configured. */
+  if (t.triggerKind === 'meter') return ''
   const parts: string[] = []
   if (t.every && t.period) parts.push(`Every ${t.every} ${t.period}${Number(t.every) > 1 ? 's' : ''}`)
   if (t.weekday) {
@@ -3198,6 +3208,7 @@ function formatScheduleText(t: CalendarTrigger): string {
   return parts.join(' · ') || 'Scheduled trigger'
 }
 function formatMeterText(t: CalendarTrigger): string | undefined {
+  if (t.triggerKind === 'calendar') return undefined
   if (!t.meterValue) return undefined
   return `When a reading ${t.meterCondition} ${t.meterValue} ${t.meterUnit || 'units'}`
 }
@@ -3416,10 +3427,15 @@ function PreviewScheduleCard({ trigger }: { trigger: PMTrigger }) {
     <div className="rounded-[var(--radius-xl)] border border-[var(--border-default)] overflow-hidden">
       <div className="flex items-center gap-2 px-4 h-[56px] bg-[#F9F9FB] border-b border-[var(--border-subtle)]">
         <Clock size={16} className="text-[var(--color-neutral-7)] shrink-0" />
-        <span className="text-[14px] font-medium text-[var(--color-neutral-12)]">{formatScheduleText(trigger.calendarTrigger)}</span>
-        {trigger.calendarTrigger.meterValue && (
+        {(() => {
+          const calText = formatScheduleText(trigger.calendarTrigger)
+          return calText && <span className="text-[14px] font-medium text-[var(--color-neutral-12)]">{calText}</span>
+        })()}
+        {formatScheduleText(trigger.calendarTrigger) && formatMeterText(trigger.calendarTrigger) && (
+          <span className="inline-flex items-center justify-center px-2 h-5 rounded-full bg-[var(--color-neutral-3)] text-[12px] font-medium text-[var(--color-neutral-11)] shrink-0">or</span>
+        )}
+        {formatMeterText(trigger.calendarTrigger) && (
           <>
-            <span className="inline-flex items-center justify-center px-2 h-5 rounded-full bg-[var(--color-neutral-3)] text-[12px] font-medium text-[var(--color-neutral-11)] shrink-0">or</span>
             <span className="text-[14px] font-medium text-[var(--color-neutral-12)] truncate">
               When a reading {trigger.calendarTrigger.meterCondition} {trigger.calendarTrigger.meterValue} {trigger.calendarTrigger.meterUnit}
             </span>
@@ -4610,12 +4626,17 @@ function CreatePMPageContent() {
                           {(() => {
                             const t = trigger.calendarTrigger
                             const parts: string[] = []
-                            if (t.every && t.period) parts.push(`Every ${t.every} ${t.period}${Number(t.every) > 1 ? 's' : ''}`)
-                            if (t.weekday) {
-                              const fullDay = FULL_WEEKDAYS[['Mon','Tue','Wed','Thu','Fri','Sat','Sun'].indexOf(t.weekday)]
-                              parts.push(`On ${fullDay ? fullDay + 's' : t.weekday + 's'}`)
+                            /* A meter-only trigger still carries the calendar form's
+                               seeded defaults, so this stays blank rather than show
+                               a schedule the user never configured. */
+                            if (t.triggerKind !== 'meter') {
+                              if (t.every && t.period) parts.push(`Every ${t.every} ${t.period}${Number(t.every) > 1 ? 's' : ''}`)
+                              if (t.weekday) {
+                                const fullDay = FULL_WEEKDAYS[['Mon','Tue','Wed','Thu','Fri','Sat','Sun'].indexOf(t.weekday)]
+                                parts.push(`On ${fullDay ? fullDay + 's' : t.weekday + 's'}`)
+                              }
+                              if (t.atTime) parts.push(`At ${t.atTime}`)
                             }
-                            if (t.atTime) parts.push(`At ${t.atTime}`)
                             const calText = parts.join(' · ')
                             const meterText = formatMeterText(t)
                             const fullText = calText && meterText
@@ -5457,7 +5478,10 @@ function CreatePMPageContent() {
         open={showCalendarModal}
         onClose={() => { setShowCalendarModal(false); setEditingTriggerId(null) }}
         isEditing={!!editingTriggerId}
-        scheduleKind={editingTriggerId ? null : scheduleKind}
+        /* Editing shows just the shape that schedule was made with — a
+           schedule saved before this existed has no kind on record, so it
+           still gets the free-form modal with both cards. */
+        scheduleKind={editingTriggerId ? (triggers.find(t => t.id === editingTriggerId)?.calendarTrigger?.triggerKind ?? null) : scheduleKind}
         initial={editingTriggerId ? triggers.find(t => t.id === editingTriggerId)?.calendarTrigger : undefined}
         onSubmit={t => {
           if (editingTriggerId) {
