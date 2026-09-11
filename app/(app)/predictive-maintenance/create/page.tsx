@@ -161,6 +161,30 @@ function EmptyAvatarSlot({ size = 28, groupHoverClass }: { size?: number; groupH
   )
 }
 
+const SCHEDULE_KIND_OPTIONS = [
+  { kind: 'calendar' as const, title: 'Calendar', desc: 'Based on a recurring date or schedule.' },
+  { kind: 'meter' as const, title: 'Meter reading', desc: 'Based on a meter reaching a specific reading.' },
+  { kind: 'both' as const, title: 'Calendar or meter reading', desc: 'Uses both and runs when either happens first.' },
+]
+
+/** The New Schedule dropdown's menu — picking a kind locks the modal to that
+ * one shape instead of leaving both cards to open and close. */
+function ScheduleKindMenu({ onPick }: { onPick: (kind: 'calendar' | 'meter' | 'both') => void }) {
+  return (
+    /* React bubbles a portaled item's click through the component tree, not the
+       DOM tree — without this it also reaches whatever onClick sits on the
+       trigger's row ancestor (StepRow's whole-row click-to-open). */
+    <DropdownMenuContent align="end" minWidth="260px" onClick={e => e.stopPropagation()}>
+      {SCHEDULE_KIND_OPTIONS.map(({ kind, title, desc }) => (
+        <DropdownMenuItem key={kind} className="flex-col items-start gap-0.5 py-2" onSelect={() => onPick(kind)}>
+          <span className="text-[13px] font-semibold text-[var(--color-neutral-12)]">{title}</span>
+          <span className="text-[12px] text-[var(--color-neutral-8)] leading-4">{desc}</span>
+        </DropdownMenuItem>
+      ))}
+    </DropdownMenuContent>
+  )
+}
+
 /** Neutral pill inside an assignment filter button — the count, or "All". */
 function FilterTag({ children }: { children: React.ReactNode }) {
   return (
@@ -823,13 +847,16 @@ const InlineSelect = React.forwardRef<HTMLButtonElement, { value: string; onChan
 })
 
 function CreateCalendarTriggerModal({
-  open, onClose, onSubmit, initial, isEditing,
+  open, onClose, onSubmit, initial, isEditing, scheduleKind,
 }: {
   open: boolean
   onClose: () => void
   onSubmit: (t: CalendarTrigger) => void
   initial?: CalendarTrigger
   isEditing?: boolean
+  /** Set only when the schedule was started from the New Schedule dropdown —
+   * locks the modal to that one kind (no cards to open/close, no chrome). */
+  scheduleKind?: 'calendar' | 'meter' | 'both' | null
 }) {
   /* Every time on a new schedule opens on the hour it is being created — the
      most likely time the user means, and still theirs to change. */
@@ -857,10 +884,13 @@ function CreateCalendarTriggerModal({
   }
 
   const [showInactivePeriods, setShowInactivePeriods] = useState(false)
-  const [showMeterTrigger, setShowMeterTrigger] = useState(!!(initial?.meterValue || initial?.meterCondition))
+  /* Arriving from the New Schedule dropdown already answers "which kind" —
+     the matching section(s) open with no card to click, and the other kind
+     never renders at all. */
+  const [showMeterTrigger, setShowMeterTrigger] = useState(scheduleKind ? scheduleKind !== 'calendar' : !!(initial?.meterValue || initial?.meterCondition))
   /* The calendar card is where a schedule starts, so it opens with the modal.
      Reset collapses it back to a plus. */
-  const [showCalendarBased, setShowCalendarBased] = useState(true)
+  const [showCalendarBased, setShowCalendarBased] = useState(scheduleKind ? scheduleKind !== 'meter' : true)
   /* 0fr→1fr animates the reveal, but leaving the row at 1fr can clip the card on
      short screens. Once the transition is over the row goes back to auto. */
   const [calendarSettled, setCalendarSettled] = useState(showCalendarBased)
@@ -886,9 +916,10 @@ function CreateCalendarTriggerModal({
   }, [inactivePeriods])
   /* Values the card seeds for itself do not count as content — the header keeps
      its subtitle until the user edits a meter field. */
-  const [meterEdited, setMeterEdited] = useState(!!(initial?.meterCondition || initial?.meterValue))
-  const [meterCondition, setMeterCondition] = useState(initial?.meterCondition ?? '')
-  const [meterValue, setMeterValue] = useState(initial?.meterValue ?? '')
+  const meterKindDefault = !!scheduleKind && scheduleKind !== 'calendar'
+  const [meterEdited, setMeterEdited] = useState(!!(initial?.meterCondition || initial?.meterValue) || meterKindDefault)
+  const [meterCondition, setMeterCondition] = useState(initial?.meterCondition ?? (meterKindDefault ? 'is above' : ''))
+  const [meterValue, setMeterValue] = useState(initial?.meterValue ?? (meterKindDefault ? '1' : ''))
   const [meterUnit, setMeterUnit] = useState(initial?.meterUnit ?? 'Units')
   const [everyTouched, setEveryTouched] = useState(false)
   const everyInputRef = useRef<HTMLInputElement>(null)
@@ -901,8 +932,8 @@ function CreateCalendarTriggerModal({
   const [meterConditionTouched, setMeterConditionTouched] = useState(false)
   const [meterValueTouched, setMeterValueTouched] = useState(false)
   const meterValueInputRef = useRef<HTMLInputElement>(null)
-  const [meterDueN, setMeterDueN] = useState(initial?.meterDueN ?? '')
-  const [meterDuePeriod, setMeterDuePeriod] = useState(initial?.meterDuePeriod ?? '')
+  const [meterDueN, setMeterDueN] = useState(initial?.meterDueN ?? (meterKindDefault ? '1' : ''))
+  const [meterDuePeriod, setMeterDuePeriod] = useState(initial?.meterDuePeriod ?? (meterKindDefault ? 'Day' : ''))
   const meterComplete = meterCondition !== '' && meterValue.trim() !== ''
 
   /* Dirty state is derived from the whole payload rather than tracked by a flag:
@@ -955,11 +986,13 @@ function CreateCalendarTriggerModal({
 
   return (
     <Modal open={open} onOpenChange={v => !v && handleClose()} maxWidth="720px">
-      <ModalHeader title={isEditing ? 'Edit Schedule' : 'New Schedule'} />
+      <ModalHeader title={isEditing ? 'Edit Schedule' : scheduleKind === 'calendar' ? 'Calendar Based Schedule' : scheduleKind === 'meter' ? 'Meter Based Schedule' : scheduleKind === 'both' ? 'Calendar & Meter Based Schedule' : 'New Schedule'} />
       <ModalBody className="flex flex-col gap-3 p-6">
 
         {/* Calendar Based card */}
-        <div className="shrink-0 rounded-[var(--radius-xl)] border border-[var(--border-default)] overflow-hidden transition-[border-color,box-shadow] duration-[var(--duration-fast)] hover:border-[var(--color-accent-7)] hover:shadow-[0_0_1px_3px_rgba(0,106,220,0.1)]">
+        {scheduleKind !== 'meter' && (
+        <div className={scheduleKind ? 'shrink-0' : 'shrink-0 rounded-[var(--radius-xl)] border border-[var(--border-default)] overflow-hidden transition-[border-color,box-shadow] duration-[var(--duration-fast)] hover:border-[var(--color-accent-7)] hover:shadow-[0_0_1px_3px_rgba(0,106,220,0.1)]'}>
+          {!scheduleKind && (
           <div onClick={toggleCalendarBased}
             className="flex items-center gap-3 px-4 py-3 bg-[var(--color-neutral-2)] rounded-t-[var(--radius-xl)] hover:bg-[var(--color-neutral-3)] transition-colors cursor-pointer select-none">
             <div className="flex items-center gap-3 flex-1 min-w-0 text-left">
@@ -1030,6 +1063,7 @@ function CreateCalendarTriggerModal({
               </div>
             )}
           </div>
+          )}
           <div style={{ display: 'grid', gridTemplateRows: showCalendarBased ? (calendarSettled ? 'auto' : '1fr') : '0fr', transition: 'grid-template-rows 220ms ease' }}>
             <div style={{ overflow: calendarSettled ? 'visible' : 'hidden' }}>
               <div className="p-4 flex flex-col gap-6">
@@ -1219,6 +1253,7 @@ function CreateCalendarTriggerModal({
             </div>
           </div>
         </div>
+        )}
 
         {/* Add Meter-Based Trigger */}
         <div className="flex flex-col gap-3">
@@ -1246,8 +1281,10 @@ function CreateCalendarTriggerModal({
               setShowMeterTrigger(true)
               setTimeout(() => meterCardRef.current?.scrollIntoView({ behavior: 'smooth', block: 'nearest' }), 240)
             }
+            if (scheduleKind === 'calendar') return null
             return (
-              <div ref={meterCardRef} className="shrink-0 rounded-[var(--radius-xl)] border border-[var(--border-default)] overflow-hidden transition-[border-color,box-shadow] duration-[var(--duration-fast)] hover:border-[var(--color-accent-7)] hover:shadow-[0_0_1px_3px_rgba(0,106,220,0.1)]">
+              <div ref={meterCardRef} className={scheduleKind ? 'shrink-0' : 'shrink-0 rounded-[var(--radius-xl)] border border-[var(--border-default)] overflow-hidden transition-[border-color,box-shadow] duration-[var(--duration-fast)] hover:border-[var(--color-accent-7)] hover:shadow-[0_0_1px_3px_rgba(0,106,220,0.1)]'}>
+                {!scheduleKind && (
                 <div className="flex items-center gap-4 px-4 py-3 bg-[var(--color-neutral-2)]">
                   <button type="button" onClick={() => { if (showMeterTrigger) setShowMeterTrigger(false); else openMeterTrigger() }}
                     className="flex items-center gap-4 flex-1 min-w-0 text-left cursor-pointer">
@@ -1289,6 +1326,7 @@ function CreateCalendarTriggerModal({
                     )}
                   </div>
                 </div>
+                )}
                 <div style={{ display: 'grid', gridTemplateRows: showMeterTrigger ? '1fr' : '0fr', transition: 'grid-template-rows 220ms ease' }}>
                   <div style={{ overflow: 'hidden' }}>
                   <div className="p-4 flex gap-4">
@@ -3627,6 +3665,16 @@ function CreatePMPageContent() {
   const [showCalendarModal, setShowCalendarModal] = useState(false)
   const [calendarModalKey, setCalendarModalKey] = useState(0)
   const [editingTriggerId, setEditingTriggerId] = useState<string | null>(null)
+  /** Which kind of schedule the New Schedule dropdown chose — locks the modal
+   * to that one shape. Only meaningful for a new schedule; editing an existing
+   * one always gets the full free-form modal regardless of this value. */
+  const [scheduleKind, setScheduleKind] = useState<'calendar' | 'meter' | 'both' | null>(null)
+  function openScheduleModalWithKind(kind: 'calendar' | 'meter' | 'both') {
+    setScheduleKind(kind)
+    setEditingTriggerId(null)
+    setCalendarModalKey(k => k + 1)
+    setShowCalendarModal(true)
+  }
   const [showAssignModal, setShowAssignModal] = useState<string | null>(null)
   const [editingAssignmentId, setEditingAssignmentId] = useState<{ triggerId: string; assignmentId: string } | null>(null)
   const [showFillMissingModal, setShowFillMissingModal] = useState<{ triggerId: string; type: 'meter' | 'tech' } | null>(null)
@@ -3896,6 +3944,7 @@ function CreatePMPageContent() {
      flagged so the missing piece is obvious. */
   function openScheduleModal() {
     if (!title.trim()) setTitleError(true)
+    setScheduleKind(null)
     setEditingTriggerId(null)
     setCalendarModalKey(k => k + 1)
     setShowCalendarModal(true)
@@ -4465,9 +4514,15 @@ function CreatePMPageContent() {
                     </span>
                   )}
                   {triggers.length > 0 && (
-                    <Button variant="secondary" size="sm" onClick={() => { setEditingTriggerId(null); setCalendarModalKey(k => k + 1); setShowCalendarModal(true) }}>
-                      New Schedule
-                    </Button>
+                    <DropdownMenu modal={false}>
+                      <DropdownMenuTrigger asChild>
+                        <Button variant="secondary" size="sm">
+                          New Schedule
+                          <ChevronDown size={13} />
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <ScheduleKindMenu onPick={openScheduleModalWithKind} />
+                    </DropdownMenu>
                   )}
                 </div>
               </div>
@@ -4485,10 +4540,15 @@ function CreatePMPageContent() {
                     description="Create a schedule to define when maintenance happens."
                     onRowClick={openScheduleModal}
                     action={
-                      <Button variant="primary" onClick={openScheduleModal}>
-                        <Plus size={16} />
-                        New Schedule
-                      </Button>
+                      <DropdownMenu modal={false}>
+                        <DropdownMenuTrigger asChild>
+                          <Button variant="primary" onClick={e => e.stopPropagation()}>
+                            New Schedule
+                            <ChevronDown size={14} />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <ScheduleKindMenu onPick={openScheduleModalWithKind} />
+                      </DropdownMenu>
                     }
                   />
                   <StepRow
@@ -5253,14 +5313,18 @@ function CreatePMPageContent() {
                     )
                   })}
                   {/* Adding another schedule is the obvious next move once one exists. */}
-                  <button
-                    type="button"
-                    onClick={() => { setEditingTriggerId(null); setCalendarModalKey(k => k + 1); setShowCalendarModal(true) }}
-                    className="w-full h-11 mt-2 flex items-center justify-center gap-1.5 rounded-[var(--radius-lg)] bg-[var(--color-accent-1)] text-[14px] font-medium text-[var(--color-accent-11)] hover:bg-[var(--color-accent-2)] transition-colors cursor-pointer"
-                  >
-                    <Plus size={16} />
-                    New Schedule
-                  </button>
+                  <DropdownMenu modal={false}>
+                    <DropdownMenuTrigger asChild>
+                      <button
+                        type="button"
+                        className="w-full h-11 mt-2 flex items-center justify-center gap-1.5 rounded-[var(--radius-lg)] bg-[var(--color-accent-1)] text-[14px] font-medium text-[var(--color-accent-11)] hover:bg-[var(--color-accent-2)] transition-colors cursor-pointer"
+                      >
+                        New Schedule
+                        <ChevronDown size={14} />
+                      </button>
+                    </DropdownMenuTrigger>
+                    <ScheduleKindMenu onPick={openScheduleModalWithKind} />
+                  </DropdownMenu>
                 </div>
               )}
 
@@ -5393,6 +5457,7 @@ function CreatePMPageContent() {
         open={showCalendarModal}
         onClose={() => { setShowCalendarModal(false); setEditingTriggerId(null) }}
         isEditing={!!editingTriggerId}
+        scheduleKind={editingTriggerId ? null : scheduleKind}
         initial={editingTriggerId ? triggers.find(t => t.id === editingTriggerId)?.calendarTrigger : undefined}
         onSubmit={t => {
           if (editingTriggerId) {
