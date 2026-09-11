@@ -951,7 +951,19 @@ function CreateCalendarTriggerModal({
   })
 
   function handleSubmit() {
-    onSubmit({ ...form, id: initial?.id ?? crypto.randomUUID(), meterCondition, meterValue, meterUnit, meterDueN, meterDuePeriod, triggerKind: scheduleKind ?? initial?.triggerKind })
+    const effectiveKind = scheduleKind ?? initial?.triggerKind
+    /* The calendar form always carries seeded defaults, even for a schedule
+       that only ever meant to be meter-based — without blanking them out
+       here, editing it back later would show the Calendar card as already
+       filled in instead of a genuinely empty offer to add one. */
+    const calendarFields = effectiveKind === 'meter' ? {
+      scheduleType: '', every: '', period: '', weekday: '',
+      monthMode: 'on-day' as const, monthDay: '1', monthOrdinal: 'first', monthWeekday: 'Day',
+      yearMode: 'on-day' as const, yearMonth: 'January', yearDay: '1', yearOrdinal: 'first', yearWeekday: 'Day',
+      atTime: '', woCreationMode: '' as const, woRelativeN: '', woRelativePeriod: '',
+      woOnThePeriod: '', woAtTime: '', woOnTheAtTime: '',
+    } : form
+    onSubmit({ ...form, ...calendarFields, id: initial?.id ?? crypto.randomUUID(), meterCondition, meterValue, meterUnit, meterDueN, meterDuePeriod, triggerKind: effectiveKind })
     setForm(EMPTY_TRIGGER)
     onClose()
   }
@@ -1007,13 +1019,8 @@ function CreateCalendarTriggerModal({
   const calendarTitle = calendarMode === 'addable' ? 'Add Calendar' : 'Calendar Based'
   const meterTitle = meterMode === 'addable' ? 'Add Meter Schedule' : 'Add Meter-Based Trigger'
 
-  return (
-    <Modal open={open} onOpenChange={v => !v && handleClose()} maxWidth="720px">
-      <ModalHeader title={isEditing ? 'Edit Schedule' : scheduleKind === 'calendar' ? 'Calendar Based Schedule' : scheduleKind === 'meter' ? 'Meter Based Schedule' : scheduleKind === 'both' ? 'Calendar & Meter Based Schedule' : 'New Schedule'} />
-      <ModalBody className="flex flex-col gap-3 p-6">
 
-        {/* Calendar Based card */}
-        {calendarMode !== 'hidden' && (
+  const calendarSection = calendarMode !== 'hidden' && (
         <div className={calendarHasChrome ? 'shrink-0 rounded-[var(--radius-xl)] border border-[var(--border-default)] overflow-hidden transition-[border-color,box-shadow] duration-[var(--duration-fast)] hover:border-[var(--color-accent-7)] hover:shadow-[0_0_1px_3px_rgba(0,106,220,0.1)]' : 'shrink-0'}>
           {calendarHasChrome && (
           <div onClick={toggleCalendarBased}
@@ -1276,11 +1283,9 @@ function CreateCalendarTriggerModal({
             </div>
           </div>
         </div>
-        )}
+  )
 
-        {/* Add Meter-Based Trigger */}
-        <div className="flex flex-col gap-3">
-          {(() => {
+  const meterSection = (() => {
             const meterHasData = meterCondition !== '' || meterValue.trim() !== '' || meterDueN.trim() !== ''
             const meterPartial = meterHasData && !meterComplete
             const missingParts = [
@@ -1377,7 +1382,28 @@ function CreateCalendarTriggerModal({
                 </div>
               </div>
             )
-          })()}
+  })()
+
+
+  return (
+    <Modal open={open} onOpenChange={v => !v && handleClose()} maxWidth="720px">
+      <ModalHeader title={isEditing ? 'Edit Schedule' : scheduleKind === 'calendar' ? 'Calendar Based Schedule' : scheduleKind === 'meter' ? 'Meter Based Schedule' : scheduleKind === 'both' ? 'Calendar & Meter Based Schedule' : 'New Schedule'} />
+      <ModalBody className="flex flex-col gap-3 p-6">
+
+
+        {/* Editing a locked schedule shows the addable kind after the one it
+           already has, not before. */}
+        {calendarMode === 'addable' ? (
+          <>
+            {meterSection}
+            {calendarSection}
+          </>
+        ) : (
+          <>
+            {calendarSection}
+            {meterSection}
+          </>
+        )}
 
           {/* Add Inactive Periods */}
           <div className={`shrink-0 rounded-[var(--radius-xl)] border border-[var(--border-default)] overflow-hidden transition-opacity transition-[border-color,box-shadow] duration-[var(--duration-fast)] hover:border-[var(--color-accent-7)] hover:shadow-[0_0_1px_3px_rgba(0,106,220,0.1)] ${(!form.scheduleType || !form.period) && !meterComplete ? 'opacity-40 pointer-events-none' : ''}`}>
@@ -1463,7 +1489,7 @@ function CreateCalendarTriggerModal({
               </div>
               </div>
             </div>
-          </div>
+
         </div>
 
       </ModalBody>
