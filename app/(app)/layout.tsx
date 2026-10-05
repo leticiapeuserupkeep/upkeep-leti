@@ -10,6 +10,12 @@ import { Button } from '@/app/components/ui/Button'
 import { IconButton } from '@/app/components/ui/IconButton'
 import { MeterConfigModal } from '@/app/components/edge/MeterConfigModal'
 import { DashboardProvider } from '@/app/lib/dashboard/dashboard-context'
+import { useSetupState } from '@/app/lib/onboarding/setup-store'
+import { WelcomeScreen } from '@/app/components/onboarding/nova/WelcomeScreen'
+import { TrialBadge } from '@/app/components/dashboard/TrialBadge'
+import { AppBootSkeleton } from '@/app/components/onboarding/AppBootSkeleton'
+
+const BOOT_SKELETON_MS = 1000
 import { runtimeSensors } from '@/app/lib/edge-data'
 import { sites } from '@/app/lib/mock-data'
 import type { Role } from '@/app/lib/models'
@@ -34,6 +40,10 @@ function getPageTitle(pathname: string): string {
   if (pathname.startsWith('/supernova/staging')) return 'SuperNova Staging'
   if (pathname.startsWith('/workflows')) return 'Workflows'
   if (pathname.startsWith('/aimates')) return 'Agents'
+  if (pathname.startsWith('/assets')) return 'Assets'
+  if (pathname.startsWith('/parts')) return 'Parts & Inventory'
+  if (pathname.startsWith('/onboarding')) return 'Welcome'
+  if (pathname.startsWith('/locations')) return 'Locations'
   return 'Dashboard'
 }
 
@@ -46,6 +56,19 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
 
   const pathname = usePathname()
   const isSupernovaStaging = pathname.startsWith('/supernova/staging')
+
+  // First-run boot: a beat of skeleton, then the shell assembles itself piece
+  // by piece ([data-stagger] in globals.css). Only when landing on Welcome.
+  const [boot, setBoot] = useState<'skeleton' | 'reveal' | 'done'>(() =>
+    pathname.startsWith('/onboarding') ? 'skeleton' : 'done',
+  )
+  useEffect(() => {
+    if (boot === 'done') return
+    // skeleton → reveal → done; "done" drops the stagger so later re-renders
+    // (e.g. a checklist row popping) don't replay the assembly.
+    const id = window.setTimeout(() => setBoot(boot === 'skeleton' ? 'reveal' : 'done'), boot === 'skeleton' ? BOOT_SKELETON_MS : 2200)
+    return () => window.clearTimeout(id)
+  }, [boot])
 
   const handleCollapseSidebar = useCallback(() => setSidebarCollapsed(true), [])
   const handleToggleSidebar = useCallback(() => setSidebarCollapsed((p) => !p), [])
@@ -81,6 +104,11 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   const isRuntimeDetail = /^\/edge\/runtime\/[^/]+/.test(pathname)
   const isRuntimeSection = isRuntimeList || isRuntimeDetail
   const isWorkOrders = pathname.startsWith('/work-orders')
+  const isWelcome = pathname.startsWith('/onboarding')
+  const [welcomeOpened, setWelcomeOpened] = useState(isWelcome)
+  if (isWelcome && !welcomeOpened) setWelcomeOpened(true)
+  const setup = useSetupState()
+  const isWorkOrdersEmptyOnboarding = isWorkOrders && setup.workOrderLanding
   const isFleetDetail = /^\/fleet\/vehicles\/[^/]+/.test(pathname)
   const isScheduler = pathname.startsWith('/scheduler')
   const isCommandCenter = pathname.startsWith('/command-center')
@@ -99,6 +127,9 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   }, [])
 
   function getActions() {
+    if (isWelcome) return <TrialBadge daysLeft={5} />
+    // Pages that own their header buttons portal them in here.
+    if (pathname.startsWith('/assets') || pathname.startsWith('/locations')) return <div id="page-header-actions" className="flex items-center gap-[var(--space-sm)]" />
     if (isEdgeSensors) {
       return (
         <Button variant="primary" size="sm" type="button" onClick={() => setShowAddRuntime(true)}>
@@ -143,6 +174,8 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
       )
     }
     if (isWorkOrders) {
+      // No work orders yet: the empty state carries the create actions.
+      if (isWorkOrdersEmptyOnboarding || setup.counts.workOrders === 0) return undefined
       return (
         <>
           <Button variant="primary" size="md">
@@ -182,8 +215,10 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
     )
   }
 
+  if (boot === 'skeleton') return <AppBootSkeleton />
+
   return (
-    <div className="flex min-h-screen bg-[var(--surface-canvas)]">
+    <div className="flex min-h-screen bg-[var(--surface-canvas)]" data-boot={boot}>
       <SideNav collapsed={sidebarCollapsed} />
 
       <div
@@ -202,7 +237,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
             onTimeRangeChange={setTimeRange}
             onToggleSidebar={() => setSidebarCollapsed((prev) => !prev)}
             sites={sites}
-            minimal={isEdge || isStudioSection || pathname.startsWith('/exports') || pathname.startsWith('/files') || isWorkOrders || pathname.startsWith('/scheduler') || isPMList}
+            minimal={isWelcome || pathname.startsWith('/locations') || pathname.startsWith('/assets') || pathname.startsWith('/parts') || isEdge || isStudioSection || pathname.startsWith('/exports') || pathname.startsWith('/files') || isWorkOrders || pathname.startsWith('/scheduler') || isPMList}
             backHref={isRuntimeDetail ? '/edge/runtime' : undefined}
             afterTitle={isEdgeSensors ? (
               <Button
@@ -215,7 +250,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
                 <FileDown size={14} />
                 Export Readings
               </Button>
-            ) : isWorkOrders ? (
+            ) : isWorkOrders && !isWorkOrdersEmptyOnboarding ? (
               <button className="inline-flex items-center gap-1.5 ml-2 px-2.5 py-1 rounded-[var(--radius-lg)] border border-[var(--border-default)] bg-[var(--surface-secondary)] text-[length:var(--font-size-sm)] font-medium text-[var(--color-neutral-9)] cursor-pointer hover:bg-[var(--color-neutral-3)] transition-colors duration-[var(--duration-fast)]">
                 <LayoutGrid size={14} className="text-[var(--color-neutral-7)]" />
                 Table
@@ -265,6 +300,13 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
                 isCommandCenter ? 'overflow-hidden' : ''
               }`}
             >
+              {/* Kept mounted once opened, hidden elsewhere — the chat keeps its
+                  state and scroll when the user visits other sections. */}
+              {welcomeOpened && (
+                <div className={isWelcome ? 'contents' : 'hidden'}>
+                  <WelcomeScreen />
+                </div>
+              )}
               {children}
             </div>
           </DashboardProvider>

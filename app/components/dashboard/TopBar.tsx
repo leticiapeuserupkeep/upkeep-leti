@@ -38,6 +38,8 @@ export function TopBar({
   return (
       <header className="sticky top-0 z-[var(--z-sticky)] flex items-center gap-[var(--space-sm)] h-[60px] px-[var(--space-md)] bg-[var(--surface-primary)] border-b border-[rgba(33,37,41,0.15)]">
         <button
+          data-stagger
+          style={{ '--base': '200ms', '--i': 0 } as React.CSSProperties}
           onClick={onToggleSidebar}
           className="flex items-center justify-center w-8 h-8 rounded-[var(--radius-lg)] hover:bg-[var(--color-neutral-3)] cursor-pointer transition-colors duration-[var(--duration-fast)]"
           aria-label="Toggle sidebar"
@@ -55,7 +57,7 @@ export function TopBar({
           </Link>
         )}
 
-        <h1 className="text-[length:var(--font-size-md)] font-semibold text-[var(--color-neutral-12)] whitespace-nowrap">
+        <h1 data-stagger style={{ '--base': '200ms', '--i': 1 } as React.CSSProperties} className="text-[length:var(--font-size-md)] font-semibold text-[var(--color-neutral-12)] whitespace-nowrap">
           {title}
         </h1>
 
@@ -113,7 +115,7 @@ export function TopBar({
           </div>
         )}
 
-        {actions && <div className="flex items-center gap-[var(--space-sm)]">{actions}</div>}
+        {actions && <div data-stagger style={{ '--base': '200ms', '--i': 3 } as React.CSSProperties} className="flex items-center gap-[var(--space-sm)]">{actions}</div>}
       </header>
   )
 }

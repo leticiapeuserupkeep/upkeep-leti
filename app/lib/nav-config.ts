@@ -58,7 +58,7 @@ export const navSections: NavSection[] = [
   {
     title: 'RESOURCES',
     items: [
-      { label: 'Assets', icon: Box },
+      { label: 'Assets', icon: Box, href: '/assets' },
       { label: 'Locations', icon: MapPin },
       { label: 'People & Teams', icon: Users },
       { label: 'Checklists', icon: ListChecks },

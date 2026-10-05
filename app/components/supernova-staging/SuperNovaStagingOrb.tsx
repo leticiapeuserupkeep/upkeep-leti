@@ -1,6 +1,8 @@
 'use client'
 
 const orbSizeClass = {
+  /** Inline with a line of text, e.g. a "thinking" indicator. */
+  xs: 'h-5 w-5',
   sm: 'h-8 w-8',
   lg: 'h-12 w-12',
   /** 10px larger than `lg` (staging empty states). */

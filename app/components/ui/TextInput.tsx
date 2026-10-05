@@ -9,10 +9,14 @@ interface TextInputProps extends InputHTMLAttributes<HTMLInputElement> {
   errorMessage?: string
   /** Draws attention to a field the flow is waiting on, without calling it wrong. */
   highlight?: boolean
+  /** 'lg' for a taller, more prominent field — e.g. the sole input on a screen. */
+  controlSize?: 'base' | 'lg'
 }
 
+const CONTROL_HEIGHT = { base: 'h-[var(--control-height-base)]', lg: 'h-[var(--control-height-lg)]' }
+
 export const TextInput = forwardRef<HTMLInputElement, TextInputProps>(
-  ({ label, suffix, error, errorMessage, highlight, className = '', id, ...props }, ref) => {
+  ({ label, suffix, error, errorMessage, highlight, controlSize = 'base', className = '', id, ...props }, ref) => {
     const inputId = id || label?.toLowerCase().replace(/\s+/g, '-')
     return (
       <div className="flex flex-col gap-[var(--space-xs)]">
@@ -25,7 +29,7 @@ export const TextInput = forwardRef<HTMLInputElement, TextInputProps>(
             {props.required && <span className="ml-0.5 text-[var(--color-error)]">*</span>}
           </label>
         )}
-        <div className={`flex items-center h-[var(--control-height-base)] rounded-[var(--radius-lg)] border overflow-hidden transition-colors duration-[var(--duration-fast)] ${error ? 'border-[var(--color-error)] focus-within:border-[var(--color-error)] shadow-[0_0_1px_3px_rgba(206,44,49,0.2)]' : highlight ? 'border-[var(--color-accent-7)] shadow-[0_0_1px_3px_rgba(0,106,220,0.1)]' : 'border-[var(--border-default)] hover:border-[var(--color-accent-7)] hover:shadow-[0_0_1px_3px_rgba(0,106,220,0.1)] focus-within:border-[var(--color-accent-7)] focus-within:shadow-[0_0_1px_3px_rgba(0,106,220,0.1)]'}`}>
+        <div className={`flex items-center ${CONTROL_HEIGHT[controlSize]} rounded-[var(--radius-lg)] border overflow-hidden transition-colors duration-[var(--duration-fast)] ${error ? 'border-[var(--color-error)] focus-within:border-[var(--color-error)] shadow-[0_0_1px_3px_rgba(206,44,49,0.2)]' : highlight ? 'border-[var(--color-accent-7)] shadow-[0_0_1px_3px_rgba(0,106,220,0.1)]' : 'border-[var(--border-default)] hover:border-[var(--color-accent-7)] hover:shadow-[0_0_1px_3px_rgba(0,106,220,0.1)] focus-within:border-[var(--color-accent-7)] focus-within:shadow-[0_0_1px_3px_rgba(0,106,220,0.1)]'}`}>
           <input
             ref={ref}
             id={inputId}
