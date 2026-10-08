@@ -1,7 +1,8 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { Package, Plus, Sparkles } from 'lucide-react'
+import { Package, Plus, Sparkles, Filter, Cog, Zap, Droplets } from 'lucide-react'
+import { TemplatePickerModal, type ModuleTemplate } from '@/app/components/onboarding/TemplatePickerModal'
 import { Button } from '@/app/components/ui/Button'
 import { ModuleEmptyState } from '@/app/components/onboarding/ModuleEmptyState'
 import { NovaSidePanel, OPEN_NOVA_PANEL_EVENT } from '@/app/components/onboarding/NovaSidePanel'
@@ -16,6 +17,13 @@ interface Part {
 
 /** Parts & Inventory. Starts empty for a new account, with Nova's
  * suggestions drawn from the issues it found during setup. */
+const TEMPLATES: ModuleTemplate[] = [
+  { name: 'Hydraulic filter', detail: 'Presses and hydraulic units', icon: Filter },
+  { name: 'Bearing kit', detail: 'Conveyors and motors', icon: Cog },
+  { name: 'Contactor / relay', detail: 'Electrical panels', icon: Zap },
+  { name: 'Lubricant, 5 gal', detail: 'General lubrication', icon: Droplets },
+]
+
 export default function PartsPage() {
   const [parts, setParts] = useState<Part[]>([])
   const [novaOpen, setNovaOpen] = useState(false)
@@ -37,6 +45,7 @@ export default function PartsPage() {
     window.setTimeout(() => setHighlighted(null), 2500)
   }
 
+  const [templateOpen, setTemplateOpen] = useState(false)
   const [novaRequest, setNovaRequest] = useState<{ text: string; id: number } | null>(null)
   function askNova(text: string) {
     setNovaOpen(true)
@@ -71,9 +80,17 @@ export default function PartsPage() {
           onCreate={() => add('New part', 'Add details', false)}
           prompt={suggestions[0] ? `Add ${suggestions[0].title} to my parts inventory` : 'Add a part to my inventory'}
           onAskNova={askNova}
+          onUseTemplate={() => setTemplateOpen(true)}
           suggestions={suggestions}
           creatingId={creatingId}
           onSuggest={createSuggestion}
+        />
+        <TemplatePickerModal
+          open={templateOpen}
+          onOpenChange={setTemplateOpen}
+          description="Common spares to keep in stock"
+          templates={TEMPLATES}
+          onPick={t => add(t.name, t.detail, false)}
         />
         {panel}
       </main>

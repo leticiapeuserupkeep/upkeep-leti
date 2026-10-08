@@ -1,7 +1,6 @@
 'use client'
 
-import { LayoutTemplate, type LucideIcon } from 'lucide-react'
-import { Button } from '@/app/components/ui/Button'
+import { ChevronRight, LayoutPanelLeft, Pointer, type LucideIcon } from 'lucide-react'
 import { NovaComposer } from '@/app/components/onboarding/nova/NovaComposer'
 import { IdeaCarousel } from '@/app/components/onboarding/nova/NovaIdeas'
 import type { ModuleSuggestion } from '@/app/lib/onboarding/nova-onboarding-data'
@@ -56,18 +55,19 @@ export function ModuleEmptyState({
         <div className="w-full max-w-[640px]">
           <NovaComposer initialValue={prompt} onSend={onAskNova} placeholder="Ask Nova to help you get started" sendLabel="Create with Nova" gradientBorder />
         </div>
-        <div className="-mt-4 flex items-center justify-center gap-3">
-          <Button variant="secondary" size="md" onClick={onCreate}>{createLabel}</Button>
-          {onUseTemplate && (
-            <Button variant="secondary" size="md" onClick={onUseTemplate}><LayoutTemplate size={14} /> Use template</Button>
-          )}
+        {/* Other ways in, as two option cards under the box. */}
+        <div className={`-mt-2 grid w-full max-w-[640px] gap-3 ${onUseTemplate ? 'grid-cols-2' : 'grid-cols-1'}`}>
+          <StartOption icon={Pointer} label={createLabel} onClick={onCreate} />
+          {onUseTemplate && <StartOption icon={LayoutPanelLeft} label="Create from template" onClick={onUseTemplate} />}
         </div>
       </div>
 
-      {/* Same rotating cards as the Welcome page's ideas. */}
+      {/* Same rotating cards as the Welcome page's ideas, under a divider. */}
+      {suggestions.length > 0 && <div className="h-px w-full max-w-[816px] bg-[var(--border-subtle)]" />}
       {suggestions.length > 0 && (
         <IdeaCarousel
           heading="Suggested by Nova"
+          muted
           className="max-w-[816px]"
           cards={suggestions.map(s => ({ id: s.id, title: s.title, description: s.reason, icon: Icon }))}
           busyId={creatingId}
@@ -75,5 +75,20 @@ export function ModuleEmptyState({
         />
       )}
     </div>
+  )
+}
+
+/** A way to start without Nova: icon, label, chevron — the whole card clicks. */
+function StartOption({ icon: Icon, label, onClick }: { icon: LucideIcon; label: string; onClick: () => void }) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className="group flex items-center gap-3 rounded-[var(--radius-xl)] border border-[var(--border-default)] bg-[var(--color-neutral-2)] px-[var(--space-md)] py-3.5 text-left transition-colors duration-[var(--duration-fast)] hover:border-[var(--color-neutral-6)] hover:bg-[var(--color-neutral-3)] cursor-pointer"
+    >
+      <Icon size={20} strokeWidth={1.5} className="shrink-0 text-[var(--color-neutral-12)]" />
+      <span className="flex-1 text-[length:var(--font-size-base)] font-semibold text-[var(--color-neutral-12)]">{label}</span>
+      <ChevronRight size={16} className="shrink-0 text-[var(--color-neutral-11)] transition-transform duration-[var(--duration-fast)] group-hover:translate-x-0.5" />
+    </button>
   )
 }

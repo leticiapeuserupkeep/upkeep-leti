@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { createPortal } from 'react-dom'
-import { MapPin, Plus, MoreHorizontal, SlidersHorizontal, Users, Tag } from 'lucide-react'
+import { MapPin, Plus, MoreHorizontal, SlidersHorizontal, Users, Tag, Factory, Warehouse, Building2, Wrench } from 'lucide-react'
 import { Button } from '@/app/components/ui/Button'
 import { IconButton } from '@/app/components/ui/IconButton'
 import { Checkbox } from '@/app/components/ui/Checkbox'
@@ -12,9 +12,17 @@ import { TextInput } from '@/app/components/ui/TextInput'
 import { Modal, ModalHeader, ModalBody, ModalFooter } from '@/app/components/ui/Modal'
 import { Table, TableToolbar, TableHeader, TableBody, TableHead, TableCell } from '@/app/components/ui/Table'
 import { ModuleEmptyState } from '@/app/components/onboarding/ModuleEmptyState'
+import { TemplatePickerModal, type ModuleTemplate } from '@/app/components/onboarding/TemplatePickerModal'
 import { NovaSidePanel, OPEN_NOVA_PANEL_EVENT } from '@/app/components/onboarding/NovaSidePanel'
 import { setupStore, useSetupState } from '@/app/lib/onboarding/setup-store'
 import { COMPANY_REPORT, MOCK_COMPANY, SUGGESTED_LOCATION_CARDS, itemFromPrompt, type ModuleSuggestion } from '@/app/lib/onboarding/nova-onboarding-data'
+
+const TEMPLATES: ModuleTemplate[] = [
+  { name: 'Manufacturing plant', detail: 'Production lines, assembly and paint', icon: Factory },
+  { name: 'Warehouse', detail: 'Storage, docks and material handling', icon: Warehouse },
+  { name: 'Office building', detail: 'HVAC, lighting and facilities', icon: Building2 },
+  { name: 'Maintenance shop', detail: 'Tools, spares and repair bays', icon: Wrench },
+]
 
 interface LocationRow {
   id: string
@@ -51,6 +59,7 @@ export default function LocationsPage() {
   const [highlighted, setHighlighted] = useState<string | null>(null)
   const [manualOpen, setManualOpen] = useState(false)
   const [draft, setDraft] = useState({ name: '', address: '' })
+  const [templateOpen, setTemplateOpen] = useState(false)
   const [novaOpen, setNovaOpen] = useState(false)
   const [novaRequest, setNovaRequest] = useState<{ text: string; id: number } | null>(null)
   // Name of the location Nova is creating — a skeleton row holds its place.
@@ -110,6 +119,16 @@ export default function LocationsPage() {
     </Modal>
   )
 
+  const templates = (
+    <TemplatePickerModal
+      open={templateOpen}
+      onOpenChange={setTemplateOpen}
+      description="Common sites for a heavy equipment manufacturer"
+      templates={TEMPLATES}
+      onPick={t => add(t.name, MOCK_COMPANY.location, t.detail)}
+    />
+  )
+
   const panel = (
     <NovaSidePanel
       open={novaOpen}
@@ -140,10 +159,12 @@ export default function LocationsPage() {
           onCreate={() => setManualOpen(true)}
           prompt={suggestions[0] ? `Add ${suggestions[0].title} as a location` : 'Add a new location'}
           onAskNova={askNova}
+          onUseTemplate={() => setTemplateOpen(true)}
           suggestions={suggestions}
           onSuggest={suggest}
         />
         {modal}
+        {templates}
         {panel}
       </main>
     )

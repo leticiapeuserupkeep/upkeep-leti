@@ -36,12 +36,14 @@ export function NovaIdeas({ ideas, onPick }: { ideas: NovaIdea[]; onPick: (idea:
 /** One idea at a time, rotating on its own (paused while hovered or
  * focused), with slider bars to jump between them. Shared by the Welcome
  * page and the modules' empty states. */
-export function IdeaCarousel({ heading, cards, onPick, busyId, className = '' }: {
+export function IdeaCarousel({ heading, cards, onPick, busyId, muted = false, className = '' }: {
   heading: string
   cards: IdeaCard[]
   onPick: (card: IdeaCard) => void
   /** A card Nova is creating right now — shows "Creating…". */
   busyId?: string | null
+  /** Flat outlined cards — for white pages, where a white card would disappear. */
+  muted?: boolean
   className?: string
 }) {
   const [index, setIndex] = useState(0)
@@ -77,11 +79,12 @@ export function IdeaCarousel({ heading, cards, onPick, busyId, className = '' }:
       <div className="relative -m-10 overflow-hidden p-10">
         {/* Keyed so each card plays its slide-in, from the side it came from;
             the previous one slides out the other way on top of it. */}
-        <IdeaRow key={card.id} card={card} busy={busyId === card.id} onPick={onPick} className={direction === 'next' ? 'nova-idea-in-next' : 'nova-idea-in-prev'} />
+        <IdeaRow key={card.id} card={card} busy={busyId === card.id} muted={muted} onPick={onPick} className={direction === 'next' ? 'nova-idea-in-next' : 'nova-idea-in-prev'} />
         {leaving && (
           <IdeaRow
             key={`out-${leaving.card.id}`}
             card={leaving.card}
+            muted={muted}
             onPick={onPick}
             className={`pointer-events-none absolute inset-10 ${leaving.direction === 'next' ? 'nova-idea-out-next' : 'nova-idea-out-prev'}`}
             onAnimationEnd={() => setLeaving(null)}
@@ -120,9 +123,10 @@ export function IdeaCarousel({ heading, cards, onPick, busyId, className = '' }:
   )
 }
 
-function IdeaRow({ card, busy = false, onPick, className, onAnimationEnd, 'aria-hidden': ariaHidden }: {
+function IdeaRow({ card, busy = false, muted = false, onPick, className, onAnimationEnd, 'aria-hidden': ariaHidden }: {
   card: IdeaCard
   busy?: boolean
+  muted?: boolean
   onPick: (card: IdeaCard) => void
   className: string
   onAnimationEnd?: () => void
@@ -137,7 +141,7 @@ function IdeaRow({ card, busy = false, onPick, className, onAnimationEnd, 'aria-
       disabled={busy}
       tabIndex={ariaHidden ? -1 : undefined}
       aria-label={ariaHidden ? undefined : `${card.title}: ${card.description}`}
-      className={`group flex w-full items-center gap-4 rounded-[20px] border border-transparent bg-[var(--surface-primary)] p-4 text-left shadow-[-10px_10px_30px_rgba(31,45,92,0.06)] transition-colors duration-[var(--duration-fast)] hover:border-[var(--color-accent-2)] cursor-pointer disabled:cursor-default ${className}`}
+      className={`group flex w-full items-center gap-4 rounded-[20px] border ${muted ? 'border-[var(--border-subtle)]' : 'border-transparent bg-[var(--surface-primary)] shadow-[-10px_10px_30px_rgba(31,45,92,0.06)]'} p-4 text-left transition-colors duration-[var(--duration-fast)] hover:border-[var(--color-accent-2)] cursor-pointer disabled:cursor-default ${className}`}
       onAnimationEnd={onAnimationEnd}
       aria-hidden={ariaHidden}
     >

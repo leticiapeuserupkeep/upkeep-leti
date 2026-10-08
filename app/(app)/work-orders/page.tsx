@@ -8,7 +8,8 @@ import {
   Check, Minus, MoreHorizontal, Download, Archive, Trash2,
   Flag, MapPin, Box, User, Loader, Info, FileText,
 } from 'lucide-react'
-import type { LucideIcon } from 'lucide-react'
+import { Droplets, ShieldCheck, Wrench, ClipboardList, type LucideIcon } from 'lucide-react'
+import { TemplatePickerModal, type ModuleTemplate } from '@/app/components/onboarding/TemplatePickerModal'
 import * as Dialog from '@radix-ui/react-dialog'
 import { Switch } from '@/app/components/ui'
 import Link from 'next/link'
@@ -470,6 +471,13 @@ function ExportModal({
 
 /* ── Page ── */
 
+const WO_TEMPLATES: ModuleTemplate[] = [
+  { name: 'Fix a leak', detail: 'Corrective · hydraulics or plumbing', icon: Droplets },
+  { name: 'Safety inspection', detail: 'Checklist with sign-off', icon: ShieldCheck },
+  { name: 'Equipment repair', detail: 'Diagnose, repair, test', icon: Wrench },
+  { name: 'Monthly PM', detail: 'Recurring preventive maintenance', icon: ClipboardList },
+]
+
 export default function WorkOrdersPage() {
   // Only what this user (or Nova, during setup) actually created.
   const [workOrders, setWorkOrders] = useState<WorkOrderItem[]>([])
@@ -535,6 +543,7 @@ export default function WorkOrdersPage() {
 
   // A suggestion card opens Nova, which creates it there — then it's in the list.
   const [novaRequest, setNovaRequest] = useState<{ text: string; id: number } | null>(null)
+  const [templateOpen, setTemplateOpen] = useState(false)
   const askNova = useCallback((text: string) => {
     setNovaOpen(true)
     setNovaRequest({ text, id: Date.now() })
@@ -598,8 +607,16 @@ export default function WorkOrdersPage() {
             onCreate={() => addWorkOrder('New work order', false)}
             prompt={suggestions[0] ? `Create a work order to ${suggestions[0].title.charAt(0).toLowerCase()}${suggestions[0].title.slice(1)}` : 'Create a work order'}
             onAskNova={askNova}
+            onUseTemplate={() => setTemplateOpen(true)}
             suggestions={suggestions}
             onSuggest={createSuggestion}
+          />
+          <TemplatePickerModal
+            open={templateOpen}
+            onOpenChange={setTemplateOpen}
+            description="Common jobs to start from"
+            templates={WO_TEMPLATES}
+            onPick={t => addWorkOrder(t.name, false)}
           />
         </main>
       ) : (

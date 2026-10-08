@@ -8,7 +8,7 @@ import { IconButton } from '@/app/components/ui/IconButton'
 import { Checkbox } from '@/app/components/ui/Checkbox'
 import { FilterChip } from '@/app/components/ui/FilterChip'
 import { Table, TableToolbar, TableHeader, TableBody, TableHead, TableCell } from '@/app/components/ui/Table'
-import { Modal, ModalHeader, ModalBody } from '@/app/components/ui/Modal'
+import { TemplatePickerModal, type ModuleTemplate } from '@/app/components/onboarding/TemplatePickerModal'
 import { CreateAssetModal } from '@/app/components/assets/CreateAssetModal'
 import { ModuleEmptyState } from '@/app/components/onboarding/ModuleEmptyState'
 import { NovaSidePanel, OPEN_NOVA_PANEL_EVENT } from '@/app/components/onboarding/NovaSidePanel'
@@ -16,11 +16,11 @@ import { setupStore, useSetupState } from '@/app/lib/onboarding/setup-store'
 import { MOCK_COMPANY, SUGGESTED_ASSET_CARDS, itemFromPrompt, starterAssetRows, type ModuleSuggestion, type StarterAssetRow } from '@/app/lib/onboarding/nova-onboarding-data'
 import type { Asset } from '@/app/lib/assets-data'
 
-const TEMPLATES: { name: string; category: string; icon: LucideIcon }[] = [
-  { name: 'Induction furnace', category: 'Foundry', icon: Flame },
-  { name: 'Industrial robot cell', category: 'Robotics', icon: Bot },
-  { name: 'CNC machining center', category: 'Machining', icon: Cog },
-  { name: 'Paint line oven', category: 'Paint', icon: PaintBucket },
+const TEMPLATES: ModuleTemplate[] = [
+  { name: 'Induction furnace', detail: 'Foundry', icon: Flame },
+  { name: 'Industrial robot cell', detail: 'Robotics', icon: Bot },
+  { name: 'CNC machining center', detail: 'Machining', icon: Cog },
+  { name: 'Paint line oven', detail: 'Paint', icon: PaintBucket },
 ]
 
 
@@ -102,25 +102,13 @@ function AssetsView() {
         onOpenChange={setManualOpen}
         onCreate={asset => add({ name: asset.name, category: asset.category, manufacturer: asset.manufacturer, model: asset.model, location: asset.location })}
       />
-      <Modal open={templateOpen} onOpenChange={setTemplateOpen} maxWidth="480px">
-        <ModalHeader title="Start from a template" description="Common equipment for a heavy equipment manufacturer" />
-        <ModalBody className="flex flex-col gap-2">
-          {TEMPLATES.map(({ name, category, icon: Icon }) => (
-            <button
-              key={name}
-              type="button"
-              onClick={() => { add({ name, category, location: MOCK_COMPANY.location }); setTemplateOpen(false) }}
-              className="flex items-center gap-3 rounded-[var(--radius-xl)] border border-[var(--border-default)] px-3 py-2.5 text-left transition-colors duration-[var(--duration-fast)] hover:border-[var(--color-accent-6)] hover:bg-[var(--color-accent-1)] cursor-pointer"
-            >
-              <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-[var(--radius-lg)] bg-[var(--color-neutral-2)] text-[var(--color-neutral-10)]"><Icon size={16} /></span>
-              <span className="flex flex-col">
-                <span className="text-[length:var(--font-size-base)] font-semibold text-[var(--color-neutral-12)]">{name}</span>
-                <span className="text-[length:var(--font-size-sm)] text-[var(--color-neutral-9)]">{category}</span>
-              </span>
-            </button>
-          ))}
-        </ModalBody>
-      </Modal>
+      <TemplatePickerModal
+        open={templateOpen}
+        onOpenChange={setTemplateOpen}
+        description="Common equipment for a heavy equipment manufacturer"
+        templates={TEMPLATES}
+        onPick={t => add({ name: t.name, category: t.detail, location: MOCK_COMPANY.location })}
+      />
     </>
   )
 
