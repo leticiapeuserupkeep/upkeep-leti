@@ -694,16 +694,22 @@ export function WelcomeScreen() {
                 />
                 <NovaRecommendations items={recommendations} onInstall={installRecommendation} onUpgrade={setUpgradeFor} />
               </SetupChecklistPanel>
-              {/* Ideas only before setup starts — after that the chat is the place to ask. */}
-              {!nova.started && (
-                <div className="mt-[var(--space-xl)]">
-                  <NovaIdeas
-                    ideas={NOVA_IDEAS}
-                    // Straight to Nova: the drawer opens with the idea already sent.
-                    onPick={idea => startWithNova(idea.prompt, { idea: true })}
-                  />
-                </div>
-              )}
+              {/* Ideas stay below the steps the whole time. */}
+              <div className="mt-[var(--space-xl)]">
+                <div className="mx-auto mb-[var(--space-xl)] h-px w-full max-w-[840px] bg-[var(--border-subtle)]" />
+                <NovaIdeas
+                  ideas={NOVA_IDEAS}
+                  onPick={idea => {
+                    // Before setup: start Nova with the idea already sent.
+                    if (!nova.started) return startWithNova(idea.prompt, { idea: true })
+                    // Mid-conversation: send it if Nova is free, otherwise
+                    // leave it in the box, ready to send.
+                    setChatOpen(true)
+                    if (nova.busy) composer.current?.prefill(idea.prompt)
+                    else nova.ask(idea.prompt)
+                  }}
+                />
+              </div>
             </div>
           )}
         </section>

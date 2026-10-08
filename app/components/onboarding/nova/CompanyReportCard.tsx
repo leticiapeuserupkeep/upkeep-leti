@@ -261,7 +261,7 @@ export function ActionPlanCard({ plan, generated, generating, skipped, gmailConn
                     </Button>
                   ) : (
                     reviewed.has(item.id)
-                      ? <Button variant="secondary" size="sm" disabled={counts[item.id] === 0} onClick={() => onGenerate(item, counts[item.id])}>Add</Button>
+                      ? <Button variant="primary" size="sm" disabled={counts[item.id] === 0} onClick={() => onGenerate(item, counts[item.id])}>Add</Button>
                       : <Button variant="secondary" size="sm" onClick={() => openRow(item.id)}>Review &amp; add</Button>
                   )}
                 </div>

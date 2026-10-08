@@ -51,6 +51,25 @@ export function SetupChecklistPanel({ title = 'Set up your account', subtitle = 
   /** Extra content under the checklist, e.g. Nova's recommendations. */
   children?: ReactNode
 }) {
+  // Accordion: at most one step open; nothing opens on its own.
+  const [openStep, setOpenStep] = useState<string | null>(null)
+
+  // Account just confirmed: hand focus to Locations, the next step.
+  const panelRef = useRef<HTMLElement>(null)
+  const wasAccountDone = useRef(accountDone)
+  useEffect(() => {
+    const justDone = accountDone && !wasAccountDone.current
+    wasAccountDone.current = accountDone
+    if (!justDone) return
+    const id = window.setTimeout(() => {
+      const next = panelRef.current?.querySelector<HTMLElement>('[data-step="locations"]')
+      if (!next) return
+      next.scrollIntoView({ behavior: 'smooth', block: 'nearest' })
+      next.querySelector<HTMLElement>('button')?.focus({ preventScroll: true })
+    }, 400)
+    return () => window.clearTimeout(id)
+  }, [accountDone])
+
   const done = (accountDone ? 1 : 0) + ITEMS.filter(i => counts[i.key] > 0).length
   const total = ITEMS.length + 1
   // No step is singled out as "next" — the user may be answering Nova in the
@@ -58,7 +77,7 @@ export function SetupChecklistPanel({ title = 'Set up your account', subtitle = 
   const next: string | undefined = undefined
 
   return (
-    <aside className={className ?? 'flex w-[300px] shrink-0 flex-col gap-[var(--space-md)] overflow-y-auto rounded-[var(--radius-3xl)] bg-[var(--surface-primary)] p-[var(--space-lg)]'}>
+    <aside ref={panelRef} className={className ?? 'flex w-[300px] shrink-0 flex-col gap-[var(--space-md)] overflow-y-auto rounded-[var(--radius-3xl)] bg-[var(--surface-primary)] p-[var(--space-lg)]'}>
       <div className="flex flex-col gap-0.5 px-1" data-stagger style={{ '--base': '450ms', '--i': 0 } as React.CSSProperties}>
         <div className="flex items-start justify-between gap-3">
           <div className="flex min-w-0 flex-col gap-0.5">
@@ -81,6 +100,8 @@ export function SetupChecklistPanel({ title = 'Set up your account', subtitle = 
 
       <div className="flex flex-col gap-4" data-stagger style={{ '--base': '450ms', '--i': 1 } as React.CSSProperties}>
         <AccountStep
+          expanded={openStep === 'account'}
+          onExpand={() => setOpenStep('account')}
           done={accountDone}
           active={next === 'account'}
           loading={accountLoading}
@@ -93,6 +114,10 @@ export function SetupChecklistPanel({ title = 'Set up your account', subtitle = 
         {ITEMS.map((item, i) => (
           <ListStep
             key={item.key}
+            step={item.key}
+            open={openStep === item.key}
+            // One step open at a time: opening this folds the previous one.
+            onToggle={() => setOpenStep(o => (o === item.key ? null : item.key))}
             label={item.label}
             description={item.description}
             icon={item.icon}
@@ -136,11 +161,12 @@ function StepStatus({ done, active, onGo, label }: { done: boolean; active: bool
 }
 
 /** Each step is its own card. */
-function StepRow({ children }: { active?: boolean; last?: boolean; children: ReactNode }) {
+function StepRow({ step, working = false, children }: { step?: string; active?: boolean; last?: boolean; working?: boolean; children: ReactNode }) {
   return (
-    // No border at rest; blue only while something inside has focus (e.g. filling
-    // in Account). Transparent rather than none so nothing shifts.
-    <div className="flex flex-col overflow-hidden rounded-[var(--radius-xl)] border border-transparent bg-[var(--surface-primary)] transition-colors duration-300 focus-within:border-[var(--color-accent-9)]">
+    // No border at rest; blue while something inside has focus (e.g. filling in
+    // Account) or while Nova is working on the step. Transparent rather than
+    // none so nothing shifts.
+    <div data-step={step} className={`flex flex-col overflow-hidden rounded-[var(--radius-xl)] border bg-[var(--surface-primary)] transition-colors duration-300 focus-within:border-[var(--color-accent-9)] ${working ? 'border-[var(--color-accent-9)]' : 'border-transparent'}`}>
       {children}
     </div>
   )
@@ -179,7 +205,10 @@ function FieldRow({ label, htmlFor, children }: { label: string; htmlFor: string
   )
 }
 
-function AccountStep({ done, active, loading, rows, details, roleOptions, industryOptions, onSave }: {
+function AccountStep({ expanded, onExpand, done, active, loading, rows, details, roleOptions, industryOptions, onSave }: {
+  /** Whether this is the panel's one open step. */
+  expanded: boolean
+  onExpand: () => void
   done: boolean
   active: boolean
   loading: boolean
@@ -196,7 +225,19 @@ function AccountStep({ done, active, loading, rows, details, roleOptions, indust
   // Unsaved edits survive the card folding away when focus leaves it; only
   // an untouched draft picks up what Nova has learned since.
   const dirty = useRef(false)
-  const open = () => { if (!dirty.current) setDraft(details); setEditing(true) }
+  // Once confirmed the card folds to its header — the summary is a click away.
+  const [summaryOpen, setSummaryOpen] = useState(false)
+  const [wasDone, setWasDone] = useState(done)
+  if (done !== wasDone) {
+    setWasDone(done)
+    if (done) setSummaryOpen(false)
+  }
+  const open = () => { if (!dirty.current) setDraft(details); setEditing(true); onExpand() }
+  // Another step opened: fold this one (unsaved edits are kept).
+  if (!expanded && (editing || summaryOpen)) {
+    setEditing(false)
+    setSummaryOpen(false)
+  }
   const close = (keep: boolean) => {
     if (!keep) { dirty.current = false; setDraft(details) }
     setEditing(false)
@@ -216,19 +257,27 @@ function AccountStep({ done, active, loading, rows, details, roleOptions, indust
   }
 
   return (
-    <StepRow active={editing}>
+    <StepRow step="account" active={editing} working={loading && !done}>
       <div ref={cardRef} onBlur={onBlur} className="contents">
-      <button type="button" onClick={() => (editing ? close(true) : open())} aria-expanded={editing} className="flex w-full items-center gap-3 px-[var(--space-md)] py-3 text-left cursor-pointer">
-        <StepHeading icon={Building2} label="Account" done={done} detail="Tell us about your company" />
+      <div className="flex items-center gap-3 px-[var(--space-md)] py-3">
+        {/* Done: the header shows/hides the summary. Not yet: it opens the form. */}
+        <button
+          type="button"
+          onClick={() => (editing ? close(true) : done ? (summaryOpen ? setSummaryOpen(false) : (setSummaryOpen(true), onExpand())) : open())}
+          aria-expanded={editing || (done && summaryOpen)}
+          className="flex min-w-0 flex-1 items-center gap-3 text-left cursor-pointer"
+        >
+          <StepHeading icon={Building2} label="Account" done={done} detail="Tell us about your company" />
+        </button>
         {done && !editing && (
-          <span className="inline-flex shrink-0 items-center gap-1 text-[length:var(--font-size-sm)] font-medium text-[var(--color-accent-9)]">
+          <button type="button" onClick={open} className="inline-flex shrink-0 items-center gap-1 text-[length:var(--font-size-sm)] font-medium text-[var(--color-accent-9)] transition-colors hover:text-[var(--color-accent-10)] cursor-pointer">
             <Pencil size={12} /> Edit
-          </span>
+          </button>
         )}
         {loading && !done
           ? <Loader2 size={18} className="shrink-0 animate-spin text-[var(--color-accent-9)]" aria-label="In progress" />
           : <StepStatus done={done} active={active} label="Confirm your account" />}
-      </button>
+      </div>
 
       {/* Form and summary fold open/closed smoothly instead of popping. */}
       <div inert={!editing} className={`grid transition-[grid-template-rows,opacity] duration-300 ease-[cubic-bezier(0.32,0.72,0,1)] ${editing ? 'grid-rows-[1fr] opacity-100' : 'grid-rows-[0fr] opacity-0'}`}>
@@ -258,7 +307,7 @@ function AccountStep({ done, active, loading, rows, details, roleOptions, indust
         </form>
         </div>
       </div>
-      <div className={`grid transition-[grid-template-rows,opacity] duration-300 ease-[cubic-bezier(0.32,0.72,0,1)] ${!editing && rows.length > 0 ? 'grid-rows-[1fr] opacity-100' : 'grid-rows-[0fr] opacity-0'}`}>
+      <div className={`grid transition-[grid-template-rows,opacity] duration-300 ease-[cubic-bezier(0.32,0.72,0,1)] ${!editing && rows.length > 0 && (!done || summaryOpen) ? 'grid-rows-[1fr] opacity-100' : 'grid-rows-[0fr] opacity-0'}`}>
         <div className="min-h-0 overflow-hidden">
         <dl className="flex flex-col border-t border-[var(--border-subtle)] py-1">
           {rows.map(row => (
@@ -278,7 +327,10 @@ function AccountStep({ done, active, loading, rows, details, roleOptions, indust
 /** A step that collects things (locations, assets…). Empty, the arrow or Add
  * starts it; filled, it shows how many and opens to list them. When its count
  * goes up the row pops and a "+N" floats off it. */
-function ListStep({ label, description, icon, active, last, value, added, loading, connectGmail, onAdd, onView }: {
+function ListStep({ step, open, onToggle, label, description, icon, active, last, value, added, loading, connectGmail, onAdd, onView }: {
+  step: string
+  open: boolean
+  onToggle: () => void
   label: string
   description: string
   icon: LucideIcon
@@ -294,7 +346,6 @@ function ListStep({ label, description, icon, active, last, value, added, loadin
 }) {
   const previous = useRef(value)
   const [gain, setGain] = useState(0)
-  const [open, setOpen] = useState(false)
   // Keeps the newest item in view while Nova adds them one by one.
   const listRef = useRef<HTMLUListElement>(null)
 
@@ -302,9 +353,8 @@ function ListStep({ label, description, icon, active, last, value, added, loadin
     const diff = value - previous.current
     previous.current = value
     if (diff <= 0) return
+    // Stays folded — the count tag says what landed; the user opens it.
     setGain(diff)
-    // Show what's landing as it lands.
-    setOpen(true)
     const id = window.setTimeout(() => setGain(0), 1100)
     return () => window.clearTimeout(id)
   }, [value])
@@ -318,21 +368,26 @@ function ListStep({ label, description, icon, active, last, value, added, loadin
   const celebrating = gain > 0
 
   return (
-    <StepRow last={last}>
+    <StepRow step={step} last={last} working={loading}>
       <div className="flex items-center gap-3 px-[var(--space-md)] py-3">
         <StepHeading
           icon={icon}
           label={label}
           done={filled}
-          detail={filled ? `${value} added` : connectGmail ? 'Connect Gmail so Nova can find the people on your team' : description}
+          detail={connectGmail && !filled ? 'Connect Gmail so Nova can find the people on your team' : description}
         />
         <span className="relative flex shrink-0 items-center gap-2">
           {loading ? (
             <Loader2 size={16} className="animate-spin text-[var(--color-accent-9)]" />
           ) : filled ? (
-            <button type="button" onClick={() => setOpen(o => !o)} aria-expanded={open} aria-label={`${open ? 'Hide' : 'Show'} ${label.toLowerCase()}`} className="text-[var(--color-neutral-8)] cursor-pointer">
+            <>
+            <span className="inline-flex h-6 items-center rounded-full bg-[var(--color-accent-1)] px-2 text-[length:var(--font-size-sm)] font-medium text-[var(--color-accent-9)]">
+              {value} added
+            </span>
+            <button type="button" onClick={onToggle} aria-expanded={open} aria-label={`${open ? 'Hide' : 'Show'} ${label.toLowerCase()}`} className="text-[var(--color-neutral-8)] cursor-pointer">
               <ChevronDown size={16} className={`transition-transform duration-[var(--duration-normal)] ${open ? 'rotate-180' : ''}`} />
             </button>
+            </>
           ) : connectGmail ? (
             <button type="button" onClick={connectGmail} className="inline-flex h-6 items-center gap-1.5 rounded-[var(--radius-sm)] border border-[var(--border-default)] bg-[var(--surface-primary)] px-2 text-[length:var(--font-size-sm)] font-medium text-[var(--color-neutral-11)] transition-colors hover:bg-[var(--color-neutral-2)] cursor-pointer">
               <Image src="/images/integrations/gmail.svg" alt="" width={12} height={12} /> Connect Gmail
@@ -355,7 +410,6 @@ function ListStep({ label, description, icon, active, last, value, added, loadin
 
       {filled && open && (
         <div className="flex flex-col border-t border-[var(--border-subtle)] nova-label-in">
-          <p className="px-[var(--space-md)] pt-2.5 text-[length:var(--font-size-base)] leading-5 text-[var(--color-neutral-9)]">{description}</p>
           <ul ref={listRef} className="flex max-h-[204px] flex-col overflow-y-auto py-1">
             {added.map(name => (
               <li key={name} className="shrink-0 truncate px-[var(--space-md)] py-1.5 text-[length:var(--font-size-sm)] leading-5 text-[var(--color-neutral-11)] nova-enter">{name}</li>
