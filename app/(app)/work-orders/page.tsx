@@ -19,7 +19,7 @@ import { IconButton } from '@/app/components/ui/IconButton'
 import { ModuleEmptyState } from '@/app/components/onboarding/ModuleEmptyState'
 import { NovaSidePanel, OPEN_NOVA_PANEL_EVENT } from '@/app/components/onboarding/NovaSidePanel'
 import { setupStore, useSetupState } from '@/app/lib/onboarding/setup-store'
-import { SUGGESTED_WORK_ORDER_CARDS, type ModuleSuggestion } from '@/app/lib/onboarding/nova-onboarding-data'
+import { SUGGESTED_WORK_ORDER_CARDS, itemFromPrompt, type ModuleSuggestion } from '@/app/lib/onboarding/nova-onboarding-data'
 
 /* ── Types ── */
 
@@ -535,10 +535,11 @@ export default function WorkOrdersPage() {
 
   // A suggestion card opens Nova, which creates it there — then it's in the list.
   const [novaRequest, setNovaRequest] = useState<{ text: string; id: number } | null>(null)
-  const createSuggestion = useCallback((s: ModuleSuggestion) => {
+  const askNova = useCallback((text: string) => {
     setNovaOpen(true)
-    setNovaRequest({ text: s.title, id: Date.now() })
+    setNovaRequest({ text, id: Date.now() })
   }, [])
+  const createSuggestion = useCallback((s: ModuleSuggestion) => askNova(s.title), [askNova])
 
   const toggleSelect = useCallback((id: string) => {
     setSelectedIds((prev) => {
@@ -595,7 +596,8 @@ export default function WorkOrdersPage() {
             description="Create one yourself, or ask Nova to help you get started."
             createLabel="Create Manually"
             onCreate={() => addWorkOrder('New work order', false)}
-            onCreateWithNova={() => setNovaOpen(true)}
+            prompt={suggestions[0] ? `Create a work order to ${suggestions[0].title.charAt(0).toLowerCase()}${suggestions[0].title.slice(1)}` : 'Create a work order'}
+            onAskNova={askNova}
             suggestions={suggestions}
             onSuggest={createSuggestion}
           />
@@ -836,7 +838,8 @@ export default function WorkOrdersPage() {
         intro="What needs to be done? Describe the job, or pick one of these."
         quickActions={suggestions.map(c => c.title)}
         placeholder="Describe the job you need to be done"
-        onCreate={text => {
+        onCreate={prompt => {
+          const text = itemFromPrompt(prompt, SUGGESTED_WORK_ORDER_CARDS)
           const suggested = SUGGESTED_WORK_ORDER_CARDS.find(c => c.title === text)
           setPendingTitle(null)
           addWorkOrder(text, true, suggested?.tone === 'error' ? 'High' : 'Medium')

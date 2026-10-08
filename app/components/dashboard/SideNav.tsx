@@ -26,6 +26,8 @@ interface NavItem {
   icon: LucideIcon
   href?: string
   dot?: boolean
+  /** Part of a paid plan — shown with a PRO badge. */
+  pro?: boolean
 }
 
 interface SideNavProps {
@@ -35,6 +37,8 @@ interface SideNavProps {
 interface NavSection {
   title: string
   defaultClosed?: boolean
+  /** The whole section is part of a paid plan. */
+  pro?: boolean
   items: NavItem[]
 }
 
@@ -53,7 +57,7 @@ const sections: NavSection[] = [
       { label: 'Work Orders', icon: Clipboard, href: '/work-orders' },
       { label: 'Preventive Maintenance', icon: Warehouse, href: '/predictive-maintenance' },
       { label: 'Scheduler', icon: CalendarClock, href: '/scheduler' },
-      { label: 'Requests', icon: Inbox },
+      { label: 'Requests', icon: Inbox, pro: true },
     ],
   },
   {
@@ -69,6 +73,7 @@ const sections: NavSection[] = [
   },
   {
     title: 'DATA & ANALYTICS',
+    pro: true,
     defaultClosed: true,
     items: [
       { label: 'Analytics', icon: BarChart3 },
@@ -77,6 +82,7 @@ const sections: NavSection[] = [
   },
   {
     title: 'FLEET MAINTENANCE',
+    pro: true,
     defaultClosed: true,
     items: [
       { label: 'Vehicles', icon: Car, href: '/fleet/vehicles' },
@@ -132,6 +138,15 @@ function CollapsedIcon({ item, active, label }: { item: NavItem; active: boolean
   return inner
 }
 
+/** Marks features that come with a paid plan. */
+function ProBadge() {
+  return (
+    <span className="inline-flex h-[18px] shrink-0 items-center rounded-full bg-[var(--color-purple-light)] px-1.5 text-[10px] font-semibold uppercase tracking-[0.04em] text-[var(--color-purple)]">
+      Pro
+    </span>
+  )
+}
+
 function NavRow({ item, active, collapsed }: { item: NavItem; active: boolean; collapsed: boolean }) {
   if (collapsed) return <CollapsedIcon item={item} active={active} label={item.label} />
   const classes = `flex items-center gap-2 w-full px-2 h-8 rounded-[var(--radius-sm)] transition-colors duration-[var(--duration-fast)] ease-[var(--ease-default)] cursor-pointer ${
@@ -143,6 +158,7 @@ function NavRow({ item, active, collapsed }: { item: NavItem; active: boolean; c
     <>
       <item.icon size={16} className="shrink-0" />
       <span className="flex-1 text-left text-[length:var(--font-size-base)] leading-5 truncate">{item.label}</span>
+      {item.pro && <ProBadge />}
       {item.dot && <span className="w-1.5 h-1.5 rounded-full bg-[var(--color-accent-9)] shrink-0" />}
     </>
   )
@@ -244,9 +260,11 @@ export function SideNav({ collapsed }: SideNavProps) {
                     style={{ '--i': 2 + i } as React.CSSProperties}
                   >
                     <Collapsible.Trigger suppressHydrationWarning className="group flex h-7 w-full cursor-pointer items-center gap-2 rounded-[var(--radius-sm)] px-2 pb-1 pt-2">
-                      <span className="flex-1 text-left text-[length:var(--font-size-sm)] font-medium uppercase tracking-[0.02em] text-[var(--color-neutral-8)]">
+                      <span className="flex flex-1 items-center gap-1.5 text-left text-[length:var(--font-size-sm)] font-medium uppercase tracking-[0.02em] text-[var(--color-neutral-8)]">
                         {section.title}
                       </span>
+                      {/* Right-aligned, next to the chevron — same column as item badges. */}
+                      {section.pro && <ProBadge />}
                       <ChevronUp
                         size={14}
                         className="text-[var(--color-neutral-8)] transition-transform duration-[var(--duration-slow)] ease-[var(--ease-default)] group-data-[state=closed]:rotate-180"

@@ -1,10 +1,12 @@
 'use client'
 
-import { forwardRef, useState, useImperativeHandle, useRef, type KeyboardEvent } from 'react'
-import { Plus, Mic, ArrowUp } from 'lucide-react'
+import { forwardRef, useEffect, useState, useImperativeHandle, useRef, type KeyboardEvent } from 'react'
+import { Plus, Mic, ArrowUp, ArrowRight } from 'lucide-react'
 
 export interface NovaComposerHandle {
   prefill: (text: string) => void
+  /** Focus the box with the cursor after any text. */
+  focus: () => void
 }
 
 /** "Ask Nova anything" — always available, so the user is never forced to
@@ -15,15 +17,46 @@ export const NovaComposer = forwardRef<NovaComposerHandle, {
   /** Nova is answering — Send becomes Stop. */
   working?: boolean
   onStop?: () => void
+  placeholder?: string
+  /** Turns the round send button into a labeled one, e.g. "Start setup". */
+  sendLabel?: string
+  /** An animated pink → blue gradient border with a soft glow, for a hero prompt box. */
+  gradientBorder?: boolean
+  /** Text it starts with — focused, cursor at the end, ready to send. */
+  initialValue?: string
 }>(
-  function NovaComposer({ onSend, disabled, working = false, onStop }, ref) {
-    const [value, setValue] = useState('')
+  function NovaComposer({ onSend, disabled, working = false, onStop, placeholder = 'Ask Nova anything', sendLabel, gradientBorder = false, initialValue = '' }, ref) {
+    const [value, setValue] = useState(initialValue)
     const inputRef = useRef<HTMLTextAreaElement>(null)
 
+    // A box that starts with text is the one to type in: focus it, cursor last.
+    useEffect(() => {
+      if (!initialValue) return
+      const id = window.setTimeout(() => {
+        const input = inputRef.current
+        if (!input || input.offsetParent === null) return
+        input.focus()
+        input.setSelectionRange(input.value.length, input.value.length)
+      }, 600)
+      return () => window.clearTimeout(id)
+    }, [initialValue])
+
     useImperativeHandle(ref, () => ({
+      focus() {
+        const input = inputRef.current
+        if (!input) return
+        input.focus()
+        input.setSelectionRange(input.value.length, input.value.length)
+      },
       prefill(text) {
         setValue(text)
-        requestAnimationFrame(() => inputRef.current?.focus())
+        requestAnimationFrame(() => {
+          const input = inputRef.current
+          if (!input) return
+          // Focused, with the cursor after the text, ready to send or edit.
+          input.focus()
+          input.setSelectionRange(text.length, text.length)
+        })
       },
     }))
 
@@ -42,7 +75,12 @@ export const NovaComposer = forwardRef<NovaComposerHandle, {
     }
 
     return (
-      <div className="w-full rounded-[var(--radius-2xl)] border border-[var(--color-accent-7)] bg-[var(--surface-primary)] shadow-[var(--shadow-sm)] transition-shadow duration-[var(--duration-fast)] focus-within:shadow-[var(--shadow-brand-glow)]">
+      <div className={gradientBorder ? 'nova-glow w-full rounded-[var(--radius-2xl)]' : 'contents'}>
+      <div className={`w-full bg-[var(--surface-primary)] transition-shadow duration-[var(--duration-fast)] ${
+        gradientBorder
+          ? 'rounded-[calc(var(--radius-2xl)-1px)]'
+          : 'rounded-[var(--radius-2xl)] border border-[var(--color-accent-7)] shadow-[var(--shadow-sm)] focus-within:shadow-[var(--shadow-brand-glow)]'
+      }`}>
         <label htmlFor="nova-onboarding-composer" className="sr-only">Ask Nova anything</label>
         <textarea
           id="nova-onboarding-composer"
@@ -51,7 +89,7 @@ export const NovaComposer = forwardRef<NovaComposerHandle, {
           value={value}
           onChange={e => setValue(e.target.value)}
           onKeyDown={handleKeyDown}
-          placeholder="Ask Nova anything"
+          placeholder={placeholder}
           className="block w-full resize-none bg-transparent px-[var(--space-md)] pt-[var(--space-md)] text-[length:var(--font-size-md)] leading-6 text-[var(--color-neutral-12)] placeholder:text-[var(--color-neutral-8)] outline-none"
         />
         <div className="flex items-center justify-between px-[var(--space-md)] pb-3">
@@ -71,6 +109,15 @@ export const NovaComposer = forwardRef<NovaComposerHandle, {
               >
                 <span className="h-3 w-3 rounded-[2px] bg-current" />
               </button>
+            ) : sendLabel ? (
+              <button
+                type="button"
+                onClick={send}
+                disabled={!value.trim() || disabled}
+                className="inline-flex h-9 items-center gap-1.5 rounded-full bg-[var(--color-accent-9)] px-4 text-[length:var(--font-size-base)] font-medium text-white transition-colors duration-[var(--duration-fast)] hover:bg-[var(--color-accent-10)] disabled:bg-[var(--color-neutral-3)] disabled:text-[var(--color-neutral-7)] cursor-pointer disabled:cursor-default"
+              >
+                {sendLabel} <ArrowRight size={15} strokeWidth={2.25} />
+              </button>
             ) : (
               <button
                 type="button"
@@ -84,6 +131,7 @@ export const NovaComposer = forwardRef<NovaComposerHandle, {
             )}
           </div>
         </div>
+      </div>
       </div>
     )
   },

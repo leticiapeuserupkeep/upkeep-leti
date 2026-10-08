@@ -13,7 +13,7 @@ import { CreateAssetModal } from '@/app/components/assets/CreateAssetModal'
 import { ModuleEmptyState } from '@/app/components/onboarding/ModuleEmptyState'
 import { NovaSidePanel, OPEN_NOVA_PANEL_EVENT } from '@/app/components/onboarding/NovaSidePanel'
 import { setupStore, useSetupState } from '@/app/lib/onboarding/setup-store'
-import { MOCK_COMPANY, SUGGESTED_ASSET_CARDS, starterAssetRows, type ModuleSuggestion, type StarterAssetRow } from '@/app/lib/onboarding/nova-onboarding-data'
+import { MOCK_COMPANY, SUGGESTED_ASSET_CARDS, itemFromPrompt, starterAssetRows, type ModuleSuggestion, type StarterAssetRow } from '@/app/lib/onboarding/nova-onboarding-data'
 import type { Asset } from '@/app/lib/assets-data'
 
 const TEMPLATES: { name: string; category: string; icon: LucideIcon }[] = [
@@ -60,6 +60,12 @@ function AssetsView() {
   function createFromText(text: string) {
     const [name, place] = text.split(' — ')
     add({ name: name.trim(), category: 'Equipment', location: place?.trim() ?? MOCK_COMPANY.location, byNova: true })
+  }
+
+  const [novaRequest, setNovaRequest] = useState<{ text: string; id: number } | null>(null)
+  function askNova(text: string) {
+    setNovaOpen(true)
+    setNovaRequest({ text, id: Date.now() })
   }
 
   function createSuggestion(s: ModuleSuggestion) {
@@ -125,7 +131,8 @@ function AssetsView() {
       intro="Which equipment should I add? Describe it, or pick one of these."
       quickActions={suggestions.map(c => c.title)}
       placeholder="Describe the equipment — name, where it is, make or model"
-      onCreate={text => { createFromText(text); return text.split(' — ')[0] }}
+      request={novaRequest}
+      onCreate={prompt => { const text = itemFromPrompt(prompt, SUGGESTED_ASSET_CARDS); createFromText(text); return text.split(' — ')[0] }}
     />
   )
 
@@ -138,7 +145,9 @@ function AssetsView() {
           description="Create one yourself, or ask Nova to help you get started."
           createLabel="Create Manually"
           onCreate={() => setManualOpen(true)}
-          onCreateWithNova={() => setNovaOpen(true)}
+          prompt={suggestions[0] ? `Add ${suggestions[0].title} to my assets` : 'Add a piece of equipment'}
+          onAskNova={askNova}
+          onUseTemplate={() => setTemplateOpen(true)}
           suggestions={suggestions}
           creatingId={creatingId}
           onSuggest={createSuggestion}

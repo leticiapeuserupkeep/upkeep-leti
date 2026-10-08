@@ -203,6 +203,45 @@
   animation: nova-panel-up 0.35s cubic-bezier(0.32, 0.72, 0, 1) both;
 }
 
+/* Hero prompt box: a pink → blue gradient border with a soft glow of the same colors
+   around it (5px, slightly blurred) that slowly flows. */
+@keyframes nova-gradient-shift {
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+
+.nova-glow {
+  position: relative;
+  isolation: isolate;
+  /* The 1px border: this gradient showing around the white box inside. */
+  padding: 1px;
+  background: linear-gradient(45deg, #FF8BEE, #5D65FF, #FF8BEE);
+  background-size: 300% 300%;
+  animation: nova-gradient-shift 6s ease-in-out infinite;
+}
+
+.nova-glow::before {
+  content: '';
+  position: absolute;
+  inset: -5px;
+  z-index: -1;
+  border-radius: calc(var(--radius-2xl) + 5px);
+  background: linear-gradient(45deg, #FF8BEE, #5D65FF, #FF8BEE);
+  background-size: 300% 300%;
+  opacity: 0;
+  filter: blur(3px);
+  transition: opacity 300ms ease-out;
+  animation: nova-gradient-shift 6s ease-in-out infinite;
+}
+
+/* The glow only shows while the box is focused. */
+.nova-glow:focus-within::before { opacity: 0.2; }
+
+@media (prefers-reduced-motion: reduce) {
+  .nova-glow, .nova-glow::before { animation: none; }
+}
+
 /* Nova "thinking" text: an accent highlight sweeps across the words. */
 .nova-shimmer {
   background: linear-gradient(
@@ -1029,3 +1068,37 @@
   0%, 100% { opacity: 0.7; transform: scale(1) rotate(0deg); }
   50% { opacity: 1; transform: scale(1.2) rotate(8deg); }
 }
+
+/* Rotating Nova ideas: the new one slides in as the old one slides out the
+   other side — a soft push, with a little blur at the edges of the motion. */
+@keyframes nova-idea-in-next {
+  from { opacity: 0; transform: translateX(48px); filter: blur(4px); }
+  to { opacity: 1; transform: translateX(0); filter: blur(0); }
+}
+@keyframes nova-idea-in-prev {
+  from { opacity: 0; transform: translateX(-48px); filter: blur(4px); }
+  to { opacity: 1; transform: translateX(0); filter: blur(0); }
+}
+@keyframes nova-idea-out-next {
+  from { opacity: 1; transform: translateX(0); filter: blur(0); }
+  to { opacity: 0; transform: translateX(-48px); filter: blur(4px); }
+}
+@keyframes nova-idea-out-prev {
+  from { opacity: 1; transform: translateX(0); filter: blur(0); }
+  to { opacity: 0; transform: translateX(48px); filter: blur(4px); }
+}
+.nova-idea-in-next { animation: nova-idea-in-next 0.6s cubic-bezier(0.32, 0.72, 0, 1) both; }
+.nova-idea-in-prev { animation: nova-idea-in-prev 0.6s cubic-bezier(0.32, 0.72, 0, 1) both; }
+.nova-idea-out-next { animation: nova-idea-out-next 0.45s cubic-bezier(0.32, 0.72, 0, 1) both; }
+.nova-idea-out-prev { animation: nova-idea-out-prev 0.45s cubic-bezier(0.32, 0.72, 0, 1) both; }
+@media (prefers-reduced-motion: reduce) {
+  .nova-idea-in-next, .nova-idea-in-prev { animation: none; }
+  .nova-idea-out-next, .nova-idea-out-prev { animation: none; display: none; }
+}
+
+/* The active slider bar fills over the time each idea stays up. */
+@keyframes nova-idea-progress {
+  from { width: 0%; }
+  to { width: 100%; }
+}
+.nova-idea-progress { animation: nova-idea-progress linear both; }

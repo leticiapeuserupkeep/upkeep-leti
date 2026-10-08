@@ -2,8 +2,10 @@
 
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { useRouter, usePathname } from 'next/navigation'
-import { ThumbsDown, ThumbsUp, Download, GraduationCap, Users, Check } from 'lucide-react'
-import { NovaText, NovaThinking, NovaThought, NovaIntroTyper, UserBubble } from '@/app/components/onboarding/nova/NovaPrimitives'
+import { IconButton } from '@/app/components/ui/IconButton'
+import { OPEN_NOVA_PANEL_EVENT } from '@/app/components/onboarding/NovaSidePanel'
+import { ThumbsDown, ThumbsUp, Download, GraduationCap, Users, Check, X, Sparkles, ShieldCheck, Briefcase, Wrench, Inbox, Factory, Building2, Truck, UtensilsCrossed, Ellipsis, type LucideIcon } from 'lucide-react'
+import { NovaText, NovaThinking, NovaThought, UserBubble } from '@/app/components/onboarding/nova/NovaPrimitives'
 import { CompanyContextCard } from '@/app/components/onboarding/nova/CompanyContextCard'
 import { ConnectSourcesCard } from '@/app/components/onboarding/nova/ConnectSourcesCard'
 import { AnalysisSequence } from '@/app/components/onboarding/nova/AnalysisSequence'
@@ -19,14 +21,14 @@ import { NovaRecommendations } from '@/app/components/onboarding/nova/NovaRecomm
 import { recommend, offerFor, SAFETY_OFFER, SEATS_OFFER, type Recommendation } from '@/app/lib/onboarding/upkeep-recommendations'
 import { CreatedForYou } from '@/app/components/onboarding/nova/CreatedForYou'
 import { NovaArtifactCard, NovaArtifactPanel } from '@/app/components/onboarding/nova/NovaArtifact'
-import { ConnectedApps } from '@/app/components/onboarding/nova/ConnectedApps'
 import { CHOICE, PRIMARY_CHOICE } from '@/app/components/onboarding/nova/choiceStyles'
 import { ProductFamilyCard, SetupCompleteCard, type SetupStep } from '@/app/components/onboarding/nova/NovaRecommendationCards'
+import { NovaIdeas } from '@/app/components/onboarding/nova/NovaIdeas'
 import { SetupChecklistPanel } from '@/app/components/onboarding/nova/SetupChecklistPanel'
 import { NovaComposer, type NovaComposerHandle } from '@/app/components/onboarding/nova/NovaComposer'
-import { useNovaOnboarding, INTRO_GREETING, type NovaMessage } from '@/app/components/onboarding/nova/useNovaOnboarding'
+import { useNovaOnboarding, PROFILE_OPTIONS, type NovaMessage } from '@/app/components/onboarding/nova/useNovaOnboarding'
 import { setupStore, useSetupState } from '@/app/lib/onboarding/setup-store'
-import { buildReport, plantHealth, affectedAssets, sourceName, suggestedPeople, ACTION_PLAN, MAINTENANCE_PLAN, REPORT_DOC, TRIAL_SEATS } from '@/app/lib/onboarding/nova-onboarding-data'
+import { buildReport, plantHealth, affectedAssets, sourceName, suggestedPeople, ACTION_PLAN, MAINTENANCE_PLAN, NOVA_IDEAS, REPORT_DOC, TRIAL_SEATS, SUGGESTED_PEOPLE, onboardingLocationNames, starterAssetRows } from '@/app/lib/onboarding/nova-onboarding-data'
 
 // Confirm-company choice buttons, sized to the Figma spec.
 /** Primary choice button next to CHOICE — the action Nova recommends. */
@@ -46,6 +48,19 @@ const REPORT_SUMMARY = [
 /** The Welcome conversation. The app layout keeps it mounted once opened, so
  * leaving for Work Orders, Assets… and coming back finds the chat exactly as
  * it was — mid-flow, or finished with its success card in context. */
+/** Icons for Nova's quick-reply options (role, industry). */
+const CHOICE_ICONS: Record<string, LucideIcon> = {
+  Admin: ShieldCheck,
+  Manager: Briefcase,
+  Technician: Wrench,
+  Requester: Inbox,
+  Manufacturing: Factory,
+  Facilities: Building2,
+  Fleet: Truck,
+  'Food & Beverage': UtensilsCrossed,
+  Other: Ellipsis,
+}
+
 export function WelcomeScreen() {
   const router = useRouter()
   const setup = useSetupState()
@@ -67,8 +82,23 @@ export function WelcomeScreen() {
   const turnRef = useRef<HTMLDivElement>(null)
   const tailRef = useRef<HTMLDivElement>(null)
   const [tailHeight, setTailHeight] = useState(0)
-  const intro = nova.messages.find(m => m.kind === 'nova' && m.intro) as Extract<NovaMessage, { kind: 'nova' }> | undefined
-  const conversation = nova.messages.filter(m => m !== intro)
+  const conversation = nova.messages
+  // The Nova drawer on the right; closable, reopened from "Ask Nova".
+  const [chatOpen, setChatOpen] = useState(false)
+  // The welcome prompt box: sending it starts Nova and opens the drawer.
+  const welcomeComposer = useRef<NovaComposerHandle>(null)
+  // Coming back to Welcome before starting puts the cursor back in the box.
+  const welcomePath = usePathname()
+  useEffect(() => {
+    if (!welcomePath.startsWith('/onboarding') || nova.started) return
+    const id = window.setTimeout(() => welcomeComposer.current?.focus(), 400)
+    return () => window.clearTimeout(id)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [welcomePath])
+  const startWithNova = (text: string, opts?: { idea?: boolean }) => {
+    setChatOpen(true)
+    nova.start(text, opts)
+  }
   // Split at the user's latest message: everything from there on is "the turn".
   const lastUserIndex = conversation.map(m => m.kind).lastIndexOf('user')
   const turnKey = lastUserIndex === -1 ? null : conversation[lastUserIndex].id
@@ -257,6 +287,30 @@ export function WelcomeScreen() {
     }))
   }, [turnKey])
 
+  // What each setup row lists when opened.
+  const checklistItems = {
+    locations: onboardingLocationNames(setup.counts.locations),
+    assets: starterAssetRows(setup.counts.assets).map(a => a.name),
+    team: SUGGESTED_PEOPLE.slice(0, setup.counts.team).map(p => `${p.name} · ${p.role}`),
+    workOrders: setup.created.filter(c => c.kind === 'work-order').map(c => c.title),
+  }
+  const CHECKLIST_PATHS = { locations: '/locations', assets: '/assets', workOrders: '/work-orders' } as const
+
+  function viewChecklistItem(key: keyof typeof setup.counts) {
+    if (key === 'team') composer.current?.prefill('Show me my team')
+    else router.push(CHECKLIST_PATHS[key])
+  }
+
+  // Add: go to the page with Nova's panel open, ready to create one.
+  function addChecklistItem(key: keyof typeof setup.counts) {
+    if (key === 'team') {
+      composer.current?.prefill('Help me invite my team')
+      return
+    }
+    router.push(CHECKLIST_PATHS[key])
+    window.setTimeout(() => window.dispatchEvent(new CustomEvent(OPEN_NOVA_PANEL_EVENT)), 700)
+  }
+
   function openChecklistItem(key: keyof typeof setup.counts) {
     if (key === 'workOrders') {
       setupStore.update({ workOrderLanding: true })
@@ -295,6 +349,27 @@ export function WelcomeScreen() {
             onSave={nova.saveCompany}
             onCancel={nova.cancelEditingCompany}
           />
+        )
+      case 'choice':
+        // Quick-reply chips; once answered, the reply bubble says it all.
+        return nova.profile[m.key] ? null : (
+          <div className="flex flex-col gap-2 nova-enter">
+            {m.options.map((option, i) => {
+              const Icon = CHOICE_ICONS[option] ?? Ellipsis
+              return (
+                <button
+                  key={option}
+                  type="button"
+                  onClick={() => nova.answerChoice(m.key, option)}
+                  className="flex h-10 w-full items-center gap-2.5 rounded-[var(--radius-lg)] border border-[var(--border-default)] bg-[var(--surface-primary)] px-3 text-left text-[length:var(--font-size-base)] font-medium text-[var(--color-neutral-12)] shadow-[0_1px_2px_rgba(0,0,0,0.05)] transition-colors duration-[var(--duration-fast)] hover:border-[var(--color-accent-6)] hover:bg-[var(--color-accent-1)] cursor-pointer nova-enter"
+                  style={{ animationDelay: `${i * 60}ms` }}
+                >
+                  <Icon size={16} className="shrink-0 text-[var(--color-neutral-9)]" />
+                  {option}
+                </button>
+              )
+            })}
+          </div>
         )
       case 'confirm-company':
         return (
@@ -351,7 +426,7 @@ export function WelcomeScreen() {
             onSkip={nova.skipPlan}
             gmailConnected={nova.connected.includes('gmail')}
             onConnectGmail={nova.connectGmail}
-            seatLimit={seatLimit}
+            seatLimit={Infinity}
             onUpgradeSeats={() => setUpgradeFor(SEATS_OFFER)}
             onGenerate={(item, count) => nova.generatePlan([item], { [item.id]: count })}
             onGenerateAll={counts => nova.generatePlan(ACTION_PLAN, counts)}
@@ -502,30 +577,157 @@ export function WelcomeScreen() {
   }
 
   return (
-    <div className="relative isolate flex h-[calc(100vh-60px)] gap-[var(--space-lg)] overflow-clip bg-[var(--surface-primary)] p-[var(--space-lg)] pl-[var(--space-3xl)]">
-      {/* Soft blue → pink oval glow behind the conversation (Figma "Ellipse 3"). */}
-      <div aria-hidden className="pointer-events-none absolute inset-0 -z-10 overflow-clip">
-        <div
-          className="absolute h-[1002.64px] w-[695.32px] rotate-[-7.42deg] blur-[115px]"
-          style={{
-            left: 'calc(524 / 1160 * 100%)',
-            top: 41,
-            background: 'linear-gradient(180deg, rgba(165, 201, 255, 0.13) 0%, rgba(250, 148, 255, 0.13) 100%)',
-          }}
-        />
-      </div>
-      <div className="flex min-w-0 flex-1 flex-col">
+    <div className="relative isolate flex h-[calc(100vh-60px)] overflow-clip bg-[var(--surface-primary)]">
+      {/* Left: the setup steps — the page itself, like other sections. An open
+          report takes their place; the steps slide back in when it closes.
+          The glow sits outside the scroller, so the steps scroll over it. */}
+      <div className="relative isolate flex min-w-0 flex-1">
+        {/* Soft blue → pink oval glow behind the steps (Figma "Ellipse 3"). */}
+        <div aria-hidden className="pointer-events-none absolute inset-0 -z-10 overflow-clip">
+          <div
+            className="absolute h-[1002.64px] w-[695.32px] rotate-[-7.42deg] blur-[115px]"
+            style={{
+              left: 'calc(300 / 1160 * 100%)',
+              top: 41,
+              background: 'linear-gradient(180deg, rgba(165, 201, 255, 0.13) 0%, rgba(250, 148, 255, 0.13) 100%)',
+            }}
+          />
+        </div>
 
-        <div ref={scrollRef} className="relative min-h-0 flex-1 overflow-y-auto [scrollbar-gutter:stable]">
-          <div ref={contentRef} className="flex min-h-full flex-col gap-[var(--space-md)] pb-[var(--space-lg)] pr-[var(--space-sm)]">
-            {/* The welcome and Nova's opening line sit centered in the empty
-                chat; as the conversation grows the spacers collapse and they
-                scroll away with it. */}
-            <div className="flex-1" aria-hidden />
-            <header data-glide className="flex flex-col items-center gap-2 text-center nova-enter">
-              <h1 className="text-[length:var(--font-size-3xl)] font-bold leading-tight tracking-[-0.02em] text-[var(--color-neutral-12)]">Welcome {setup.userName} 👋</h1>
-              {intro && <NovaIntroTyper first={INTRO_GREETING} second={intro.text} emphasis="Nova" />}
-            </header>
+        <section className="relative flex min-w-0 flex-1 flex-col overflow-y-auto">
+          {openReport ? (
+            <div className="flex min-h-0 flex-1 p-[var(--space-lg)]">
+              <NovaArtifactPanel
+                key={openReport}
+                fill
+                title={REPORT_TITLES[openReport]}
+                onClose={closeReport}
+                className={reportLeaving ? 'nova-panel-out' : undefined}
+              >
+                {openReport === 'setup' ? <CompanyReportCard bare /> : <MaintenanceOverviewCard sources={overviewSources} bare />}
+              </NovaArtifactPanel>
+            </div>
+          ) : (
+            <div className={`flex w-full flex-col gap-[var(--space-lg)] p-10 ${stepsReturning ? 'nova-panel-in' : ''}`}>
+              {/* Welcome, and the quickest way in: ask Nova to set things up. */}
+              <div className={`mx-auto flex w-full max-w-[840px] flex-col nova-enter transition-[gap,padding] duration-500 ${nova.started ? 'gap-0 pt-0 pb-0' : 'gap-[var(--space-md)] pt-[60px] pb-[60px]'}`}>
+                <div className="flex flex-col gap-1">
+                  <div className="flex items-center justify-between gap-3">
+                    <h1 className="text-[length:var(--font-size-3xl)] font-bold leading-tight tracking-[-0.02em] text-[var(--color-neutral-12)]">Welcome {setup.userName} 👋</h1>
+                    {/* Brings Nova back once its drawer has been closed. */}
+                    {nova.started && !chatOpen && (
+                      <button
+                        type="button"
+                        onClick={() => setChatOpen(true)}
+                        className="group shrink-0 rounded-[var(--radius-lg)] p-px cursor-pointer nova-label-in"
+                        style={{ background: 'linear-gradient(45deg, #E93D82, #8E4EC6 45%, var(--color-accent-9))' }}
+                      >
+                        <span className="inline-flex h-[30px] items-center gap-1.5 rounded-[calc(var(--radius-lg)-1px)] bg-[var(--surface-primary)] px-3 text-[length:var(--font-size-base)] font-medium text-[var(--color-neutral-12)] transition-colors group-hover:bg-[var(--color-accent-1)]">
+                          <Sparkles size={14} className="text-[var(--color-accent-9)]" /> Set Up with Nova
+                        </span>
+                      </button>
+                    )}
+                  </div>
+                  {/* The intro only makes sense next to the prompt box — both fold away once Nova starts. */}
+                  <div className={`grid transition-[grid-template-rows,opacity] duration-500 ease-[cubic-bezier(0.32,0.72,0,1)] ${nova.started ? 'grid-rows-[0fr] opacity-0' : 'grid-rows-[1fr] opacity-100'}`}>
+                    <p className="min-h-0 overflow-hidden text-[length:var(--font-size-md)] text-[var(--color-neutral-10)]">
+                      Let Nova help you set up your UpKeep account.
+                      <br />
+                      Answer a few questions and Nova will guide you through the rest.
+                    </p>
+                  </div>
+                </div>
+                {/* Once started, the box folds away as Nova's drawer slides in —
+                    the conversation visibly moves over there. */}
+                <div
+                  inert={nova.started}
+                  className={`grid transition-[grid-template-rows,opacity,translate] duration-500 ease-[cubic-bezier(0.32,0.72,0,1)] ${
+                    nova.started ? 'grid-rows-[0fr] -translate-y-2 opacity-0' : 'grid-rows-[1fr] opacity-100'
+                  }`}
+                >
+                  {/* Extra breathing room (inside the fold, so it collapses with it). */}
+                  <div className={`-mx-3 min-h-0 overflow-hidden px-3 transition-[padding] duration-500 ${nova.started ? 'pb-0 pt-0' : 'pb-6 pt-[60px]'}`}>
+                    <NovaComposer ref={welcomeComposer} initialValue="Hey Nova, help me set up my UpKeep account" onSend={startWithNova} placeholder="Ask Nova to set up your account" sendLabel="Start setup" gradientBorder />
+                  </div>
+                </div>
+              </div>
+              <SetupChecklistPanel
+                title="Setup progress"
+                subtitle=""
+                className="mx-auto flex w-full max-w-[840px] flex-col gap-[var(--space-md)]"
+                accountDone={setup.companyConfirmed}
+                accountRows={[
+                  ...(nova.profile.role ? [{ label: 'Role', value: nova.profile.role }] : []),
+                  ...(nova.profile.industry ? [{ label: 'Industry', value: nova.profile.industry }] : []),
+                  ...(setup.companyConfirmed ? [
+                    { label: 'Company', value: nova.company.name },
+                    { label: 'Company size', value: nova.company.size },
+                    { label: 'Main location', value: nova.company.location },
+                  ] : []),
+                ]}
+                accountLoading={Boolean(nova.profile.role) && !setup.companyConfirmed}
+                accountDetails={{
+                  role: nova.profile.role ?? '',
+                  industry: nova.profile.industry ?? '',
+                  companyName: nova.company.name,
+                  companySize: nova.company.size,
+                }}
+                roleOptions={PROFILE_OPTIONS.role}
+                industryOptions={PROFILE_OPTIONS.industry}
+                onSaveAccount={nova.saveAccount}
+                gmailConnected={nova.connected.includes('gmail')}
+                onConnectGmail={() => { setChatOpen(true); nova.connectGmail() }}
+                counts={setup.counts}
+                items={checklistItems}
+                pending={setup.pending}
+                onAdd={addChecklistItem}
+                onView={viewChecklistItem}
+              >
+                <CreatedForYou
+                  // Reports and docs Nova made — work orders and PMs live in their own lists.
+                  items={[
+                    ...(overviewShown ? [{ id: 'overview', title: REPORT_TITLES.overview, kind: 'report' as const, detail: overviewSources.map(sourceName).join(', ') }] : []),
+                    ...setup.created.filter(item => item.kind === 'google-doc' || item.kind === 'report'),
+                  ]}
+                  creating={setup.creating && !nova.mplanAdding.length}
+                  onOpenReport={() => setOpenReport('overview')}
+                />
+                <NovaRecommendations items={recommendations} onInstall={installRecommendation} onUpgrade={setUpgradeFor} />
+              </SetupChecklistPanel>
+              {/* Ideas only before setup starts — after that the chat is the place to ask. */}
+              {!nova.started && (
+                <div className="mt-[var(--space-xl)]">
+                  <NovaIdeas
+                    ideas={NOVA_IDEAS}
+                    // Straight to Nova: the drawer opens with the idea already sent.
+                    onPick={idea => startWithNova(idea.prompt, { idea: true })}
+                  />
+                </div>
+              )}
+            </div>
+          )}
+        </section>
+      </div>
+
+      {/* Right: Nova, in a drawer like the rest of the product. */}
+      {/* Closing slides the drawer away but keeps it mounted, so the
+          conversation carries on and comes back as it was. */}
+      <aside
+        aria-label="Nova"
+        inert={!chatOpen}
+        className={`flex shrink-0 flex-col overflow-hidden bg-[var(--surface-primary)] transition-[width,max-width,border-color] duration-500 ease-[cubic-bezier(0.32,0.72,0,1)] ${
+          chatOpen ? 'w-[460px] max-w-[45vw] border-l border-[var(--border-default)]' : 'w-0 max-w-0 border-l border-transparent'
+        }`}
+      >
+        <div className="flex h-12 w-[460px] max-w-[45vw] shrink-0 items-center justify-end border-b border-[var(--border-subtle)] px-[var(--space-sm)]">
+          <IconButton label="Close" variant="ghost" size="md" className="text-[var(--color-neutral-9)] hover:bg-[var(--color-neutral-3)] hover:text-[var(--color-neutral-12)]" onClick={() => setChatOpen(false)}>
+            <X size={16} />
+          </IconButton>
+        </div>
+
+        <div ref={scrollRef} className="relative min-h-0 w-[460px] max-w-[45vw] flex-1 overflow-y-auto px-[var(--space-lg)] [scrollbar-gutter:stable]">
+          <div ref={contentRef} className="flex min-h-full flex-col gap-[var(--space-md)] py-[var(--space-lg)]">
+            {/* Messages settle at the bottom while the chat is short. */}
             <div className="flex-1" aria-hidden />
             {/* One flat list, so earlier messages never remount (and replay their
                 entrance) when the user sends a new one. */}
@@ -538,43 +740,15 @@ export function WelcomeScreen() {
           </div>
         </div>
 
-        <div className="relative">
+        <div className="relative w-[460px] max-w-[45vw] px-[var(--space-md)] pb-[var(--space-md)]">
           {/* Approvals float just above the input, over the end of the chat. */}
-          <div className="absolute inset-x-0 bottom-full z-10 mb-2">
+          <div className="absolute inset-x-[var(--space-md)] bottom-full z-10 mb-2">
             <GoogleConsentPrompt open={nova.googleConsentOpen} scope={nova.consentScope} onAnswer={nova.answerGoogleConsent} />
           </div>
           <NovaComposer ref={composer} onSend={nova.ask} disabled={nova.busy} working={nova.working} onStop={nova.stop} />
         </div>
-      </div>
+      </aside>
 
-      {/* An open report takes the setup panel's place so the screen stays
-          light; the steps slide back in when it closes. */}
-      {openReport ? (
-        <NovaArtifactPanel
-          key={openReport}
-          title={REPORT_TITLES[openReport]}
-          onClose={closeReport}
-          className={reportLeaving ? 'nova-panel-out' : undefined}
-        >
-          {openReport === 'setup' ? <CompanyReportCard bare /> : <MaintenanceOverviewCard sources={overviewSources} bare />}
-        </NovaArtifactPanel>
-      ) : (
-        <div className={`flex shrink-0 ${stepsReturning ? 'nova-panel-in' : ''}`}>
-          <SetupChecklistPanel accountDone={setup.companyConfirmed} counts={setup.counts} pending={setup.pending} onOpen={openChecklistItem}>
-            <ConnectedApps connected={nova.connected} />
-            <CreatedForYou
-              // Reports and docs Nova made — work orders and PMs live in their own lists.
-              items={[
-                ...(overviewShown ? [{ id: 'overview', title: REPORT_TITLES.overview, kind: 'report' as const, detail: overviewSources.map(sourceName).join(', ') }] : []),
-                ...setup.created.filter(item => item.kind === 'google-doc' || item.kind === 'report'),
-              ]}
-              creating={setup.creating && !nova.mplanAdding.length}
-              onOpenReport={() => setOpenReport('overview')}
-            />
-            <NovaRecommendations items={recommendations} onInstall={installRecommendation} onUpgrade={setUpgradeFor} />
-          </SetupChecklistPanel>
-        </div>
-      )}
 
       <NovaReportModal
         open={nova.reportOpen}

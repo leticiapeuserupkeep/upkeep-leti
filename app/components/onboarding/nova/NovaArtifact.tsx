@@ -40,10 +40,12 @@ export function NovaArtifactCard({ title, subtitle, open, onToggle }: {
 }
 
 /** The opened document, in a closable pane to the right of the chat. */
-export function NovaArtifactPanel({ title, onClose, actions, className = '', children }: {
+export function NovaArtifactPanel({ title, onClose, actions, fill = false, className = '', children }: {
   title: string
   onClose: () => void
   className?: string
+  /** Take all the space it's given instead of a side column's width. */
+  fill?: boolean
   /** Extra controls in the header, before close. */
   actions?: ReactNode
   children: ReactNode
@@ -51,7 +53,7 @@ export function NovaArtifactPanel({ title, onClose, actions, className = '', chi
   return (
     <aside
       aria-label={title}
-      className={`flex min-h-0 w-[min(680px,50%)] shrink-0 flex-col overflow-hidden rounded-[var(--radius-2xl)] border border-[var(--border-default)] bg-[var(--surface-primary)] shadow-[var(--shadow-sm)] nova-panel-in ${className}`}
+      className={`flex min-h-0 ${fill ? 'w-full' : 'w-[min(680px,50%)]'} shrink-0 flex-col overflow-hidden rounded-[var(--radius-2xl)] border border-[var(--border-default)] bg-[var(--surface-primary)] shadow-[var(--shadow-sm)] nova-panel-in ${className}`}
     >
       <div className="flex h-12 shrink-0 items-center gap-2 border-b border-[var(--border-subtle)] pl-[var(--space-lg)] pr-[var(--space-sm)]">
         <span className="min-w-0 flex-1 truncate text-[length:var(--font-size-base)] font-semibold text-[var(--color-neutral-12)]">{title}</span>

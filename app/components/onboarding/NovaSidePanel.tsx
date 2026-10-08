@@ -40,6 +40,14 @@ export function NovaSidePanel({ open, onClose, intro, quickActions, placeholder,
   const nextId = useRef(0)
   const inputRef = useRef<HTMLTextAreaElement>(null)
 
+  // Push the page over while open (the app layout reads this variable).
+  useEffect(() => {
+    const root = document.documentElement
+    if (visible) root.style.setProperty('--nova-panel-w', 'min(400px, 92vw)')
+    else root.style.removeProperty('--nova-panel-w')
+    return () => { root.style.removeProperty('--nova-panel-w') }
+  }, [visible])
+
   useEffect(() => {
     const frame = requestAnimationFrame(() => setVisible(open))
     if (open) {

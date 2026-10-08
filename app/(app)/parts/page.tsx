@@ -5,7 +5,7 @@ import { Package, Plus, Sparkles } from 'lucide-react'
 import { Button } from '@/app/components/ui/Button'
 import { ModuleEmptyState } from '@/app/components/onboarding/ModuleEmptyState'
 import { NovaSidePanel, OPEN_NOVA_PANEL_EVENT } from '@/app/components/onboarding/NovaSidePanel'
-import { SUGGESTED_PART_CARDS, type ModuleSuggestion } from '@/app/lib/onboarding/nova-onboarding-data'
+import { SUGGESTED_PART_CARDS, itemFromPrompt, type ModuleSuggestion } from '@/app/lib/onboarding/nova-onboarding-data'
 
 interface Part {
   id: string
@@ -37,6 +37,12 @@ export default function PartsPage() {
     window.setTimeout(() => setHighlighted(null), 2500)
   }
 
+  const [novaRequest, setNovaRequest] = useState<{ text: string; id: number } | null>(null)
+  function askNova(text: string) {
+    setNovaOpen(true)
+    setNovaRequest({ text, id: Date.now() })
+  }
+
   function createSuggestion(s: ModuleSuggestion) {
     setCreatingId(s.id)
     window.setTimeout(() => { setCreatingId(null); add(s.title, s.reason, true) }, 1200)
@@ -49,7 +55,8 @@ export default function PartsPage() {
       intro="Which part should I add? Describe it, or pick one of these."
       quickActions={suggestions.map(c => c.title)}
       placeholder="Describe the part — name, quantity, where it's stored"
-      onCreate={text => { add(text, 'Created with Nova', true); return text }}
+      request={novaRequest}
+      onCreate={prompt => { const text = itemFromPrompt(prompt, SUGGESTED_PART_CARDS); add(text, 'Created with Nova', true); return text }}
     />
   )
 
@@ -62,7 +69,8 @@ export default function PartsPage() {
           description="Create one yourself, or ask Nova to help you get started."
           createLabel="Create Manually"
           onCreate={() => add('New part', 'Add details', false)}
-          onCreateWithNova={() => setNovaOpen(true)}
+          prompt={suggestions[0] ? `Add ${suggestions[0].title} to my parts inventory` : 'Add a part to my inventory'}
+          onAskNova={askNova}
           suggestions={suggestions}
           creatingId={creatingId}
           onSuggest={createSuggestion}

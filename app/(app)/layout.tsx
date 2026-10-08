@@ -222,6 +222,9 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
       <SideNav collapsed={sidebarCollapsed} />
 
       <div
+        // Nova's side panel sets --nova-panel-w while open, so the page makes
+        // room for it instead of sitting underneath.
+        style={{ marginRight: 'var(--nova-panel-w, 0px)', transition: 'margin-right 300ms cubic-bezier(0.32, 0.72, 0, 1)' }}
         className={`flex flex-col flex-1 min-w-0 min-h-0 ${
           isCommandCenter || isPMCreate ? 'h-screen overflow-hidden' : 'min-h-screen'
         }`}

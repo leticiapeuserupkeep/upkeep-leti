@@ -28,13 +28,15 @@ interface ConnectSourcesCardProps {
   onSkip?: () => void
   /** The conversation moves on by itself once something connects. */
   hideContinue?: boolean
+  /** Just the apps — no Continue / Skip (e.g. inside the setup guide). */
+  hideActions?: boolean
   /** Once something is connected, offer only Continue. */
   hideSkipWhenConnected?: boolean
 }
 
 /** Optional context sources, framed as "more context → better analysis".
  * Connecting never blocks the user from moving on. */
-export function ConnectSourcesCard({ connected, onConnect, onContinue, locked, only, reasons, hideReasons, continueLabel, skipLabel, onSkip, hideContinue, hideSkipWhenConnected }: ConnectSourcesCardProps) {
+export function ConnectSourcesCard({ connected, onConnect, onContinue, locked, only, reasons, hideReasons, continueLabel, skipLabel, onSkip, hideContinue, hideSkipWhenConnected, hideActions }: ConnectSourcesCardProps) {
   // `only` also sets the order the apps are shown in.
   const sources = only
     ? only.map(id => CONNECTABLE_SOURCES.find(s => s.id === id)).filter((s): s is ConnectableSource => Boolean(s))
@@ -57,14 +59,14 @@ export function ConnectSourcesCard({ connected, onConnect, onContinue, locked, o
 
   return (
     <div className="flex w-full max-w-[680px] flex-col gap-[var(--space-md)] nova-enter">
-      <div className="grid grid-cols-2 gap-[var(--space-sm)]">
+      <div className="flex flex-col gap-[var(--space-sm)]">
         {sources.map((source, i) => {
           const isConnected = connected.includes(source.id)
           const isAuthorizing = authorizing === source.id
           return (
             <div
               key={source.id}
-              className={`flex items-center gap-2 rounded-[var(--radius-xl)] border p-[var(--space-md)] transition-colors duration-[var(--duration-normal)] nova-enter ${
+              className={`flex items-center gap-2 rounded-[var(--radius-xl)] border p-3 transition-colors duration-[var(--duration-normal)] nova-enter ${
                 isConnected ? 'border-[var(--color-success-border)] bg-[var(--color-success-light)]' : 'border-[var(--border-default)] bg-[var(--surface-primary)]'
               }`}
               style={{ animationDelay: `${i * 80}ms` }}
@@ -99,7 +101,7 @@ export function ConnectSourcesCard({ connected, onConnect, onContinue, locked, o
         })}
       </div>
 
-      {!locked && (
+      {!locked && !hideActions && (
         <div className="flex items-center gap-2">
           {relevantConnected.length > 0 && !hideContinue && (
             <button type="button" className={CHOICE.replace('flex-1 ', '')} onClick={onContinue} disabled={authorizing !== null}>

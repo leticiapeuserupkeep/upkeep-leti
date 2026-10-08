@@ -197,6 +197,13 @@ export const STARTER_ASSETS = [
   { name: 'Induction furnaces', count: 1 },
 ]
 
+/** Locations Nova added during onboarding, by name: the main location
+ * first, then the US plants from the setup plan. */
+export function onboardingLocationNames(n: number): string[] {
+  if (n <= 0) return []
+  return [MOCK_COMPANY.location, ...COMPANY_REPORT.usPlants.slice(0, n - 1).map(p => p.name)]
+}
+
 /** The starter assets as individual records, for the Assets list —
  * the first `n` of them, in a stable order. */
 const STARTER_ASSET_CODES: Record<string, { name: string; code: string; category: string }> = {
@@ -520,3 +527,47 @@ export const SUGGESTED_PART_CARDS: ModuleSuggestion[] = [
   { id: 'part-belt', title: 'Conveyor drive belt', reason: 'Likely cause of Conveyor #3 stoppages', tag: 'Recurring', tone: 'warning' },
   { id: 'part-batteries', title: 'Forklift batteries (×2)', reason: 'Replacements for the failing units', tag: 'Needs attention', tone: 'accent' },
 ]
+
+/** "Jump straight in" ideas on the Welcome page — the Nova moments that land
+ * best with new users. Each card hands its prompt to Nova as-is. */
+export interface NovaIdea {
+  id: string
+  icon: 'report' | 'app' | 'pm'
+  title: string
+  description: string
+  prompt: string
+}
+
+// Picked from Mixpanel (90 days to Oct 2026): recurring performance reports
+// are the top scheduled task, Nova Apps get the most engagement per user, and
+// PM checklists from a plain description work with zero history.
+export const NOVA_IDEAS: NovaIdea[] = [
+  {
+    id: 'weekly-report',
+    icon: 'report',
+    title: 'Get a weekly performance report',
+    description: 'Nova sends you a summary of your team’s work every Monday.',
+    prompt: 'Create a weekly maintenance performance report I get every Monday at 8am: work orders completed vs. opened, overdue items, PM compliance and top assets by downtime. Show me a preview first.',
+  },
+  {
+    id: 'dashboard-app',
+    icon: 'app',
+    title: 'Build your maintenance dashboard',
+    description: 'Describe what you want to track and Nova builds a live app.',
+    prompt: 'Build me an app that shows open work orders by priority and location, overdue PMs and technician workload. Ask me a couple of questions first to tailor it.',
+  },
+  {
+    id: 'pm-checklist',
+    icon: 'pm',
+    title: 'Turn a task into a PM checklist',
+    description: 'Describe a routine inspection and Nova builds the checklist and schedule.',
+    prompt: 'Create a monthly preventive maintenance plan with a checklist for inspecting a hydraulic press: check fluid level, inspect hoses and seals for leaks, record pressure readings, and require a signature.',
+  },
+]
+
+/** A prompt sent from an empty state usually names one of Nova's suggestions —
+ * create that item, not one titled with the whole sentence. */
+export function itemFromPrompt(text: string, cards: ModuleSuggestion[]): string {
+  const hit = cards.find(c => text.toLowerCase().includes(c.title.toLowerCase()))
+  return hit ? hit.title : text
+}

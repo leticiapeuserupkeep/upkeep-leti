@@ -14,6 +14,13 @@ import {
 
 /** One entry in the conversation. Nova's rich replies (cards) are messages
  * too, so the whole experience reads top-to-bottom like a chat. */
+/** Profile questions Nova asks before looking up the company. */
+export type ProfileQuestion = 'role' | 'industry'
+export const PROFILE_OPTIONS: Record<ProfileQuestion, string[]> = {
+  role: ['Admin', 'Manager', 'Technician', 'Requester'],
+  industry: ['Manufacturing', 'Facilities', 'Fleet', 'Food & Beverage', 'Other'],
+}
+
 export type NovaMessage =
   | { id: number; kind: 'nova'; text: string; heading?: boolean; /** Opening line, shown centered under the welcome. */ intro?: boolean; /** A done-it line, with a check. */ check?: boolean }
   | { id: number; kind: 'user'; text: string }
@@ -34,6 +41,7 @@ export type NovaMessage =
   | { id: number; kind: 'doc-link' }
   | { id: number; kind: 'integrations'; offered: SourceId[] }
   | { id: number; kind: 'product-family' }
+  | { id: number; kind: 'choice'; key: ProfileQuestion; options: string[] }
   | { id: number; kind: 'setup-complete' }
   | { id: number; kind: 'maintenance-overview' }
   | { id: number; kind: 'mplan-choice' }
@@ -112,6 +120,8 @@ export function useNovaOnboarding() {
   // Stop: Nova skips ahead to the next thing that needs the user.
   const fastForward = useRef(false)
   const pendingWaits = useRef(new Set<() => void>())
+  // The user's answers to the profile questions.
+  const [profile, setProfile] = useState<Partial<Record<ProfileQuestion, string>>>({})
   // How many steps are waiting on the user — Nova isn't "working" then.
   const [awaiting, setAwaiting] = useState(0)
   const waitForUser = useCallback((key: string) => {
@@ -214,6 +224,8 @@ export function useNovaOnboarding() {
     safetyAnsweredRef.current = false
     waiters.current.clear()
     setAwaiting(0)
+    setProfile({})
+    setStarted(false)
     fastForward.current = false
     seatsOverflow.current = 0
     buildPlanAnswer.current = null
@@ -235,23 +247,31 @@ export function useNovaOnboarding() {
       connectedApps: [],
     }))
     run(async ({ wait, say, think }) => {
-      // Lets the shell finish assembling before Nova starts talking.
-      await wait(1300)
-      // Rendered by the page as NovaIntroTyper — "I'm Nova", erased,
-      // then this line.
-      push({ kind: 'nova', text: INTRO_LINE, intro: true })
-      await wait(introDuration(INTRO_GREETING, INTRO_LINE) + BEAT_MS)
+      // Nova waits for the user's first prompt (from the welcome box).
+      await waitForUser('start')
+      await wait(900)
+      // Started from an idea card: Nova takes it on, then needs the basics first.
+      await say(fromIdea.current
+        ? 'Great idea — I’ll set that up for you. First, a few quick questions so it fits your team.'
+        : 'Absolutely! I’ll guide you through a few quick questions to personalize UpKeep for your team. You can also complete any step from the setup guide.')
+      // A couple of quick questions first, one at a time.
+      await say('First, what best describes your role?')
+      push({ kind: 'choice', key: 'role', options: PROFILE_OPTIONS.role })
+      await waitForUser('choice:role')
+      await say('Which industry is your company in?')
+      push({ kind: 'choice', key: 'industry', options: PROFILE_OPTIONS.industry })
+      await waitForUser('choice:industry')
       // Public research, shown step by step so it's clear where the company
       // details come from.
       push({ kind: 'research', steps: QUICK_LOOKUP, stepMs: QUICK_STEP_MS, label: 'Collecting data' })
       await wait(researchDuration(QUICK_LOOKUP, QUICK_STEP_MS))
-      await say('I found your company. Does this look right?')
+      await say(`I have this info about ${companyRef.current.name}. Does this look right?`)
       push({ kind: 'company' })
       await wait(500)
       push({ kind: 'confirm-company' })
     })
     return () => { generation.current++ }
-  }, [run, push])
+  }, [run, push, waitForUser])
 
   const confirmCompany = useCallback((userLine: string) => {
     remove('confirm-company')
@@ -280,6 +300,35 @@ export function useNovaOnboarding() {
       await continueAfterReport({ wait, say, think }, connectedRef.current.includes('gmail'))
     })
   }, [push, remove, run])
+
+  /** Account details filled in by hand from the setup guide. */
+  const saveAccount = useCallback((d: { role: string; industry: string; companyName: string; companySize: string }) => {
+    setProfile({ role: d.role, industry: d.industry })
+    setCompany(prev => ({ ...prev, name: d.companyName, size: d.companySize }))
+    setupStore.update(prev => ({
+      companyConfirmed: true,
+      counts: { ...prev.counts, locations: Math.max(prev.counts.locations, 1) },
+    }))
+  }, [])
+
+  /** The user's first prompt — starts the conversation. */
+  const [started, setStarted] = useState(false)
+  const fromIdea = useRef(false)
+  const start = useCallback((text: string, opts?: { idea?: boolean }) => {
+    if (!waiters.current.has('start')) return
+    fromIdea.current = Boolean(opts?.idea)
+    setStarted(true)
+    push({ kind: 'user', text })
+    release('start')
+  }, [push, release])
+
+  /** Answer to a profile question — shown as the user's reply. */
+  const answerChoice = useCallback((key: ProfileQuestion, value: string) => {
+    if (!waiters.current.has(`choice:${key}`)) return
+    setProfile(prev => ({ ...prev, [key]: value }))
+    push({ kind: 'user', text: value })
+    release(`choice:${key}`)
+  }, [push, release])
 
   const startEditingCompany = useCallback(() => {
     remove('confirm-company')
@@ -609,18 +658,23 @@ export function useNovaOnboarding() {
           gmailCount = suggestedPeople(['gmail']).length
         }
         setupStore.setPending(key, true)
-        await wait(1400)
-        setupStore.setPending(key, false)
+        await wait(700)
         const count = gmailCount ?? counts?.[key] ?? item.count
+        const current = setupStore.get().counts[key]
+        let target: number
         if (key === 'team') {
-          // Only as many as the plan's seats; the rest wait on an upgrade.
-          const room = Math.max(0, TRIAL_SEATS - setupStore.get().counts.team)
-          const added = Math.min(room, count)
-          seatsOverflow.current = count - added
-          setupStore.update(prev => ({ counts: { ...prev.counts, team: prev.counts.team + added } }))
+          // Everyone found is added — the trial doesn't cap the team.
+          seatsOverflow.current = 0
+          target = current + count
         } else {
-          setupStore.update(prev => ({ counts: { ...prev.counts, [key]: Math.max(prev.counts[key], count) } }))
+          target = Math.max(current, count)
         }
+        // One at a time, so it reads as work being done rather than a dump.
+        for (let n = current + 1; n <= target; n++) {
+          setupStore.update(prev => ({ counts: { ...prev.counts, [key]: n } }))
+          await wait(260)
+        }
+        setupStore.setPending(key, false)
         setGenerating(prev => prev.filter(id => id !== key))
         setGenerated(prev => {
           const next = [...prev, key]
@@ -814,7 +868,7 @@ export function useNovaOnboarding() {
   }, [push, run])
 
   return {
-    messages, busy, working: busy && awaiting === 0, stop, company, companyConfirmed, pmScheduled, generated, generating, planSkipped, integrationsLocked, mplanAdded, mplanAdding, mplanSkipped, safetyAnswered, teamLocked, addedPeople, addingPeople, googleConsentOpen, consentScope, roles, answeredOffers, editingCompany, connected, sourcesLocked,
+    messages, profile, answerChoice, saveAccount, started, start, busy, working: busy && awaiting === 0, stop, company, companyConfirmed, pmScheduled, generated, generating, planSkipped, integrationsLocked, mplanAdded, mplanAdding, mplanSkipped, safetyAnswered, teamLocked, addedPeople, addingPeople, googleConsentOpen, consentScope, roles, answeredOffers, editingCompany, connected, sourcesLocked,
     emailed, reportOpen, paywallOpen, usedActions,
     confirmCompany, startEditingCompany, saveCompany, cancelEditingCompany,
     connectSource, continueFromSources,

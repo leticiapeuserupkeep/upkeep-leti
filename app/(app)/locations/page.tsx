@@ -14,7 +14,7 @@ import { Table, TableToolbar, TableHeader, TableBody, TableHead, TableCell } fro
 import { ModuleEmptyState } from '@/app/components/onboarding/ModuleEmptyState'
 import { NovaSidePanel, OPEN_NOVA_PANEL_EVENT } from '@/app/components/onboarding/NovaSidePanel'
 import { setupStore, useSetupState } from '@/app/lib/onboarding/setup-store'
-import { COMPANY_REPORT, MOCK_COMPANY, SUGGESTED_LOCATION_CARDS, type ModuleSuggestion } from '@/app/lib/onboarding/nova-onboarding-data'
+import { COMPANY_REPORT, MOCK_COMPANY, SUGGESTED_LOCATION_CARDS, itemFromPrompt, type ModuleSuggestion } from '@/app/lib/onboarding/nova-onboarding-data'
 
 interface LocationRow {
   id: string
@@ -77,8 +77,12 @@ export default function LocationsPage() {
   }
 
   function suggest(s: ModuleSuggestion) {
+    askNova(s.title)
+  }
+
+  function askNova(text: string) {
     setNovaOpen(true)
-    setNovaRequest({ text: s.title, id: Date.now() })
+    setNovaRequest({ text, id: Date.now() })
   }
 
   const modal = (
@@ -115,7 +119,8 @@ export default function LocationsPage() {
       placeholder="Describe the site, building or area"
       request={novaRequest}
       onCreating={setPendingName}
-      onCreate={text => {
+      onCreate={prompt => {
+        const text = itemFromPrompt(prompt, SUGGESTED_LOCATION_CARDS)
         const suggested = SUGGESTED_LOCATION_CARDS.find(c => c.title === text)
         setPendingName(null)
         add(text, MOCK_COMPANY.location, suggested?.reason ?? 'Created with Nova')
@@ -133,7 +138,8 @@ export default function LocationsPage() {
           description="Create one yourself, or ask Nova to help you get started."
           createLabel="Create Manually"
           onCreate={() => setManualOpen(true)}
-          onCreateWithNova={() => setNovaOpen(true)}
+          prompt={suggestions[0] ? `Add ${suggestions[0].title} as a location` : 'Add a new location'}
+          onAskNova={askNova}
           suggestions={suggestions}
           onSuggest={suggest}
         />
