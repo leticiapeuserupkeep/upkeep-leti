@@ -3,7 +3,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { useRouter, usePathname } from 'next/navigation'
 import { IconButton } from '@/app/components/ui/IconButton'
-import { OPEN_NOVA_PANEL_EVENT } from '@/app/components/onboarding/NovaSidePanel'
 import { ThumbsDown, ThumbsUp, Download, GraduationCap, Users, Check, X, Sparkles, ShieldCheck, Briefcase, Wrench, Inbox, Factory, Building2, Truck, UtensilsCrossed, Ellipsis, type LucideIcon } from 'lucide-react'
 import { NovaText, NovaThinking, NovaThought, UserBubble } from '@/app/components/onboarding/nova/NovaPrimitives'
 import { CompanyContextCard } from '@/app/components/onboarding/nova/CompanyContextCard'
@@ -301,14 +300,14 @@ export function WelcomeScreen() {
     else router.push(CHECKLIST_PATHS[key])
   }
 
-  // Add: go to the page with Nova's panel open, ready to create one.
+  // Add: go to the page — its empty state already has Nova's message box,
+  // so the side panel stays closed.
   function addChecklistItem(key: keyof typeof setup.counts) {
     if (key === 'team') {
       composer.current?.prefill('Help me invite my team')
       return
     }
     router.push(CHECKLIST_PATHS[key])
-    window.setTimeout(() => window.dispatchEvent(new CustomEvent(OPEN_NOVA_PANEL_EVENT)), 700)
   }
 
   function openChecklistItem(key: keyof typeof setup.counts) {
