@@ -587,7 +587,7 @@ export default function WorkOrdersPage() {
 
   return (
     <div className="flex flex-col flex-1 w-full relative">
-      {toolbarPortal && createPortal(
+      {toolbarPortal && !isEmpty && createPortal(
         <TableToolbar
           itemCountLabel={`${filtered.length} of ${workOrders.length} items`}
           sortLabel="Sort: Work Order Title"
@@ -601,7 +601,8 @@ export default function WorkOrdersPage() {
         <main className="flex-1 overflow-y-auto">
           <ModuleEmptyState
             icon={FileText}
-            title="No Work Orders created yet"
+            title="No work orders created yet"
+            headerLabel="Create Work Order"
             description="Create one yourself, or ask Nova to help you get started."
             createLabel="Create Manually"
             onCreate={() => addWorkOrder('New work order', false)}

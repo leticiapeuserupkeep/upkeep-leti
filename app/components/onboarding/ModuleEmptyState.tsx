@@ -1,6 +1,10 @@
 'use client'
 
-import { ChevronRight, LayoutPanelLeft, Pointer, type LucideIcon } from 'lucide-react'
+import { useEffect, useState } from 'react'
+import { createPortal } from 'react-dom'
+
+import { ChevronRight, LayoutPanelLeft, Plus, Pointer, type LucideIcon } from 'lucide-react'
+import { Button } from '@/app/components/ui/Button'
 import { NovaComposer } from '@/app/components/onboarding/nova/NovaComposer'
 import { IdeaCarousel } from '@/app/components/onboarding/nova/NovaIdeas'
 import type { ModuleSuggestion } from '@/app/lib/onboarding/nova-onboarding-data'
@@ -11,6 +15,8 @@ interface ModuleEmptyStateProps {
   title: string
   description: string
   createLabel: string
+  /** The page header's primary action, e.g. "Create Location" — same as Create manually. */
+  headerLabel: string
   onCreate: () => void
   /** What the message box starts with — sent to Nova as-is. */
   prompt: string
@@ -27,10 +33,21 @@ interface ModuleEmptyStateProps {
  * (a prompt is ready to send), create it yourself or from a template, or start
  * from what Nova already found needs doing. */
 export function ModuleEmptyState({
-  icon: Icon, title, description, createLabel, onCreate, prompt, onAskNova, onUseTemplate, suggestions, creatingId, onSuggest,
+  icon: Icon, title, description, createLabel, headerLabel, onCreate, prompt, onAskNova, onUseTemplate, suggestions, creatingId, onSuggest,
 }: ModuleEmptyStateProps) {
+  // The header's actions slot exists only after mount.
+  const [actionsSlot, setActionsSlot] = useState<HTMLElement | null>(null)
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setActionsSlot(document.getElementById('page-header-actions'))
+  }, [])
+
   return (
     <div className="flex min-h-full flex-col items-center justify-center gap-10 bg-[var(--surface-primary)] px-[var(--space-lg)] py-[var(--space-3xl)]">
+      {actionsSlot && createPortal(
+        <Button variant="primary" size="md" onClick={onCreate}><Plus size={14} /> {headerLabel}</Button>,
+        actionsSlot,
+      )}
       {/* Header — sizes and colors follow the Figma empty-state spec. */}
       <div className="flex w-full max-w-[816px] flex-col items-center gap-8 py-6 nova-enter">
         <div className="flex w-full flex-col items-center gap-3 text-center">
@@ -43,7 +60,7 @@ export function ModuleEmptyState({
                 <span className="h-2 w-[78px] rounded-[4px] bg-[#F0F0F3]" />
                 <span className="h-2 w-[92px] rounded-[4px] bg-[#F0F0F3]" />
               </div>
-              <span className="absolute left-[121px] top-[53px] flex h-14 w-14 items-center justify-center rounded-[28px] border border-[#E0E1E6] bg-[#F0F0F3] text-[#60646C]">
+              <span className="absolute left-[121px] top-[53px] flex h-14 w-14 items-center justify-center rounded-[28px] bg-[#F0F0F3] text-[#60646C]">
                 <Icon size={24} strokeWidth={1.4} />
               </span>
             </div>
@@ -62,13 +79,12 @@ export function ModuleEmptyState({
         </div>
       </div>
 
-      {/* Same rotating cards as the Welcome page's ideas, under a divider. */}
-      {suggestions.length > 0 && <div className="h-px w-full max-w-[816px] bg-[var(--border-subtle)]" />}
+      {/* Same rotating cards as the Welcome page's ideas. */}
       {suggestions.length > 0 && (
         <IdeaCarousel
-          heading="Suggested by Nova"
+          eyebrow="Suggested by Nova"
           muted
-          className="max-w-[816px]"
+          className="max-w-[816px] pt-[60px]"
           cards={suggestions.map(s => ({ id: s.id, title: s.title, description: s.reason, icon: Icon }))}
           busyId={creatingId}
           onPick={card => { const s = suggestions.find(x => x.id === card.id); if (s) onSuggest(s) }}
@@ -84,7 +100,7 @@ function StartOption({ icon: Icon, label, onClick }: { icon: LucideIcon; label: 
     <button
       type="button"
       onClick={onClick}
-      className="group flex items-center gap-3 rounded-[var(--radius-xl)] border border-[var(--border-default)] bg-[var(--color-neutral-2)] px-[var(--space-md)] py-3.5 text-left transition-colors duration-[var(--duration-fast)] hover:border-[var(--color-neutral-6)] hover:bg-[var(--color-neutral-3)] cursor-pointer"
+      className="group flex items-center gap-3 rounded-[var(--radius-xl)] bg-[var(--color-neutral-2)] px-[var(--space-md)] py-3.5 text-left transition-colors duration-[var(--duration-fast)] hover:bg-[var(--color-neutral-3)] cursor-pointer"
     >
       <Icon size={20} strokeWidth={1.5} className="shrink-0 text-[var(--color-neutral-12)]" />
       <span className="flex-1 text-[length:var(--font-size-base)] font-semibold text-[var(--color-neutral-12)]">{label}</span>

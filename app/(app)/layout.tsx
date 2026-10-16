@@ -109,6 +109,8 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   if (isWelcome && !welcomeOpened) setWelcomeOpened(true)
   const setup = useSetupState()
   const isWorkOrdersEmptyOnboarding = isWorkOrders && setup.workOrderLanding
+  // Empty list: no view switcher or table toolbar, just the empty state.
+  const isWorkOrdersEmpty = isWorkOrdersEmptyOnboarding || (isWorkOrders && setup.counts.workOrders === 0)
   const isFleetDetail = /^\/fleet\/vehicles\/[^/]+/.test(pathname)
   const isScheduler = pathname.startsWith('/scheduler')
   const isCommandCenter = pathname.startsWith('/command-center')
@@ -174,8 +176,8 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
       )
     }
     if (isWorkOrders) {
-      // No work orders yet: the empty state carries the create actions.
-      if (isWorkOrdersEmptyOnboarding || setup.counts.workOrders === 0) return undefined
+      // No work orders yet: the empty state portals its own Create button here.
+      if (isWorkOrdersEmpty) return <div id="page-header-actions" className="flex items-center gap-[var(--space-sm)]" />
       return (
         <>
           <Button variant="primary" size="md">
@@ -253,7 +255,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
                 <FileDown size={14} />
                 Export Readings
               </Button>
-            ) : isWorkOrders && !isWorkOrdersEmptyOnboarding ? (
+            ) : isWorkOrders && !isWorkOrdersEmpty ? (
               <button className="inline-flex items-center gap-1.5 ml-2 px-2.5 py-1 rounded-[var(--radius-lg)] border border-[var(--border-default)] bg-[var(--surface-secondary)] text-[length:var(--font-size-sm)] font-medium text-[var(--color-neutral-9)] cursor-pointer hover:bg-[var(--color-neutral-3)] transition-colors duration-[var(--duration-fast)]">
                 <LayoutGrid size={14} className="text-[var(--color-neutral-7)]" />
                 Table

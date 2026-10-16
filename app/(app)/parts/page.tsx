@@ -74,7 +74,8 @@ export default function PartsPage() {
       <main className="flex-1 overflow-y-auto">
         <ModuleEmptyState
           icon={Package}
-          title="No Parts created yet"
+          title="No parts created yet"
+          headerLabel="Create Part"
           description="Create one yourself, or ask Nova to help you get started."
           createLabel="Create Manually"
           onCreate={() => add('New part', 'Add details', false)}

@@ -129,7 +129,8 @@ function AssetsView() {
       <main className="flex-1 overflow-y-auto">
         <ModuleEmptyState
           icon={Box}
-          title="No Assets created yet"
+          title="No assets created yet"
+          headerLabel="Create Asset"
           description="Create one yourself, or ask Nova to help you get started."
           createLabel="Create Manually"
           onCreate={() => setManualOpen(true)}

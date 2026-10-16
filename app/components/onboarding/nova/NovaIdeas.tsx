@@ -36,8 +36,11 @@ export function NovaIdeas({ ideas, onPick }: { ideas: NovaIdea[]; onPick: (idea:
 /** One idea at a time, rotating on its own (paused while hovered or
  * focused), with slider bars to jump between them. Shared by the Welcome
  * page and the modules' empty states. */
-export function IdeaCarousel({ heading, cards, onPick, busyId, muted = false, className = '' }: {
-  heading: string
+export function IdeaCarousel({ heading, eyebrow, cards, onPick, busyId, muted = false, className = '' }: {
+  /** Section title above the carousel. */
+  heading?: string
+  /** Small label inside each card, above its title (e.g. "Suggested by Nova"). */
+  eyebrow?: string
   cards: IdeaCard[]
   onPick: (card: IdeaCard) => void
   /** A card Nova is creating right now — shows "Creating…". */
@@ -73,17 +76,18 @@ export function IdeaCarousel({ heading, cards, onPick, busyId, muted = false, cl
       onFocus={() => setPaused(true)}
       onBlur={() => setPaused(false)}
     >
-      <h2 className="text-[length:var(--font-size-md)] font-semibold text-[var(--color-neutral-12)]">{heading}</h2>
+      {heading && <h2 className="text-[length:var(--font-size-md)] font-semibold text-[var(--color-neutral-12)]">{heading}</h2>}
 
       {/* Clips the slide, with room around it so the card's shadow isn't cut. */}
       <div className="relative -m-10 overflow-hidden p-10">
         {/* Keyed so each card plays its slide-in, from the side it came from;
             the previous one slides out the other way on top of it. */}
-        <IdeaRow key={card.id} card={card} busy={busyId === card.id} muted={muted} onPick={onPick} className={direction === 'next' ? 'nova-idea-in-next' : 'nova-idea-in-prev'} />
+        <IdeaRow key={card.id} card={card} eyebrow={eyebrow} busy={busyId === card.id} muted={muted} onPick={onPick} className={direction === 'next' ? 'nova-idea-in-next' : 'nova-idea-in-prev'} />
         {leaving && (
           <IdeaRow
             key={`out-${leaving.card.id}`}
             card={leaving.card}
+            eyebrow={eyebrow}
             muted={muted}
             onPick={onPick}
             className={`pointer-events-none absolute inset-10 ${leaving.direction === 'next' ? 'nova-idea-out-next' : 'nova-idea-out-prev'}`}
@@ -95,7 +99,7 @@ export function IdeaCarousel({ heading, cards, onPick, busyId, muted = false, cl
 
       {/* Slider bars: the current one fills up until the next card, click any to jump. */}
       {cards.length > 1 && (
-        <div className="flex items-center justify-center gap-1.5" role="tablist" aria-label={heading}>
+        <div className="flex items-center justify-center gap-1.5" role="tablist" aria-label={heading ?? eyebrow}>
           {cards.map((c, i) => (
             <button
               key={c.id}
@@ -123,8 +127,9 @@ export function IdeaCarousel({ heading, cards, onPick, busyId, muted = false, cl
   )
 }
 
-function IdeaRow({ card, busy = false, muted = false, onPick, className, onAnimationEnd, 'aria-hidden': ariaHidden }: {
+function IdeaRow({ card, eyebrow, busy = false, muted = false, onPick, className, onAnimationEnd, 'aria-hidden': ariaHidden }: {
   card: IdeaCard
+  eyebrow?: string
   busy?: boolean
   muted?: boolean
   onPick: (card: IdeaCard) => void
@@ -147,10 +152,15 @@ function IdeaRow({ card, busy = false, muted = false, onPick, className, onAnima
     >
       <IdeaIcon icon={card.icon} />
       <span className="flex min-w-0 flex-1 flex-col">
+        {eyebrow && <span className="mb-0.5 text-[12px] font-medium leading-4 text-[var(--color-accent-5)]">{eyebrow}</span>}
         <span className="truncate text-[length:var(--font-size-base)] font-semibold text-[var(--color-neutral-12)]">{card.title}</span>
         <span className="truncate text-[length:var(--font-size-base)] leading-5 text-[var(--color-neutral-9)]">{busy ? 'Creating…' : card.description}</span>
       </span>
-      <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-[100px] bg-[var(--color-accent-9)] text-white transition-colors duration-[var(--duration-fast)] group-hover:bg-[var(--color-accent-10)]">
+      <span className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-[100px] transition-colors duration-[var(--duration-fast)] ${
+        muted
+          ? 'border border-[var(--color-accent-9)] bg-[var(--surface-primary)] text-[var(--color-accent-9)] group-hover:bg-[var(--color-accent-1)]'
+          : 'bg-[var(--color-accent-9)] text-white group-hover:bg-[var(--color-accent-10)]'
+      }`}>
         {busy
           ? <Loader2 size={16} className="animate-spin" />
           : <ArrowRight size={16} className="transition-transform duration-[var(--duration-fast)] group-hover:translate-x-0.5" />}

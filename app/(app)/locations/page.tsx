@@ -153,7 +153,8 @@ export default function LocationsPage() {
       <main className="flex-1 overflow-y-auto">
         <ModuleEmptyState
           icon={MapPin}
-          title="No Locations created yet"
+          title="No locations created yet"
+          headerLabel="Create Location"
           description="Create one yourself, or ask Nova to help you get started."
           createLabel="Create Manually"
           onCreate={() => setManualOpen(true)}
