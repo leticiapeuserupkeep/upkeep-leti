@@ -237,6 +237,39 @@
 
 /* The glow only shows while the box is focused. */
 .nova-glow:focus-within::before { opacity: 0.2; }
+/* Always glowing — for a card that's the page's current step. */
+.nova-glow.nova-glow-on::before { opacity: 0.2; }
+
+/* Nova's border and glow only while something inside has focus — for cards
+   that are calm at rest (setup steps). The 1px padding is the border. */
+.nova-focus-glow {
+  position: relative;
+  isolation: isolate;
+  padding: 1px;
+  border-radius: var(--radius-xl);
+  background-size: 300% 300%;
+}
+.nova-focus-glow::before {
+  content: '';
+  position: absolute;
+  inset: -5px;
+  z-index: -1;
+  border-radius: calc(var(--radius-xl) + 5px);
+  background: linear-gradient(45deg, #FF8BEE, #5D65FF, #FF8BEE);
+  background-size: 300% 300%;
+  opacity: 0;
+  filter: blur(3px);
+  transition: opacity 300ms ease-out;
+  animation: nova-gradient-shift 6s ease-in-out infinite;
+}
+.nova-focus-glow:focus-within {
+  background-image: linear-gradient(45deg, #FF8BEE, #5D65FF, #FF8BEE);
+  animation: nova-gradient-shift 6s ease-in-out infinite;
+}
+.nova-focus-glow:focus-within::before { opacity: 0.2; }
+@media (prefers-reduced-motion: reduce) {
+  .nova-focus-glow, .nova-focus-glow::before { animation: none; }
+}
 
 @media (prefers-reduced-motion: reduce) {
   .nova-glow, .nova-glow::before { animation: none; }

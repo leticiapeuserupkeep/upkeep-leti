@@ -1,6 +1,8 @@
 'use client'
 
+import { COMPANY_SIZES } from '@/app/lib/onboarding/nova-onboarding-data'
 import { useEffect, useRef, useState, type ReactNode } from 'react'
+import { createPortal } from 'react-dom'
 import Image from 'next/image'
 import { Building2, MapPin, Box, Users, FileText, Check, Plus, ChevronDown, ArrowRight, Loader2, Pencil, type LucideIcon } from 'lucide-react'
 import type { SetupCounts } from '@/app/lib/onboarding/setup-store'
@@ -21,7 +23,7 @@ const ITEMS: { key: Key; label: string; description: string; icon: LucideIcon }[
 /** The setup guide: one row per step, each clearly done or not, with the
  * next one highlighted. Counts update as Nova adds things, and filled steps
  * open to show what was added. */
-export function SetupChecklistPanel({ title = 'Set up your account', subtitle = 'Complete these steps here, or answer Nova’s questions as you go.', className, headerAction, accountDone, accountRows, accountLoading = false, accountDetails, roleOptions, industryOptions, onSaveAccount, gmailConnected, onConnectGmail, counts, items, pending = [], onAdd, onView, children }: {
+export function SetupChecklistPanel({ headerTargetId, onAccountIncomplete, accountLocked = false, title = 'Set up your account', subtitle = 'Complete these steps here, or answer Nova’s questions as you go.', className, headerAction, accountDone, accountRows, accountLoading = false, accountDetails, accountSubmitLabel = 'Save', accountOpenByDefault = false, industryOptions, onSaveAccount, gmailConnected, onConnectGmail, counts, items, pending = [], onAdd, onView, children }: {
   title?: string
   subtitle?: string
   /** Replaces the default container styles. */
@@ -30,15 +32,24 @@ export function SetupChecklistPanel({ title = 'Set up your account', subtitle = 
   headerAction?: ReactNode
   /** Checks off once the user confirms what Nova found about the company. */
   accountDone: boolean
+  /** Nova is finishing the account in chat: show the summary, not the form. */
+  accountLocked?: boolean
+  /** "Confirm & continue" pressed with fields missing. */
+  onAccountIncomplete?: (draft: AccountDetails, missing: (keyof AccountDetails)[]) => void
+  /** Render the title and progress bar into this element instead of on top. */
+  headerTargetId?: string
   /** What's known so far — role, industry, company — added as the user answers. */
   accountRows: { label: string; value: string }[]
   /** The user has started answering but the account isn't confirmed yet. */
   accountLoading?: boolean
   /** Pre-fills the account form. */
   accountDetails: AccountDetails
-  roleOptions: string[]
   industryOptions: string[]
   onSaveAccount: (details: AccountDetails) => void
+  /** The Account form's submit button ("Start setup" before Nova has begun). */
+  accountSubmitLabel?: string
+  /** Show the Account form open on arrival. */
+  accountOpenByDefault?: boolean
   gmailConnected: boolean
   onConnectGmail: () => void
   counts: SetupCounts
@@ -52,7 +63,7 @@ export function SetupChecklistPanel({ title = 'Set up your account', subtitle = 
   children?: ReactNode
 }) {
   // Accordion: at most one step open; nothing opens on its own.
-  const [openStep, setOpenStep] = useState<string | null>(null)
+  const [openStep, setOpenStep] = useState<string | null>(accountOpenByDefault ? 'account' : null)
 
   // Account just confirmed: hand focus to Locations, the next step.
   const panelRef = useRef<HTMLElement>(null)
@@ -71,67 +82,89 @@ export function SetupChecklistPanel({ title = 'Set up your account', subtitle = 
   }, [accountDone])
 
   const done = (accountDone ? 1 : 0) + ITEMS.filter(i => counts[i.key] > 0).length
+  // While the account is being filled in, the bar moves with it (each field is
+  // a share of that first step); the count only ticks once it's set up.
+  const [accountFill, setAccountFill] = useState(0)
+  const barDone = done + (accountDone ? 0 : accountFill)
   const total = ITEMS.length + 1
   // No step is singled out as "next" — the user may be answering Nova in the
   // chat or working here, so each step just shows done or not.
   const next: string | undefined = undefined
 
+  // The title and bar can live elsewhere on the page (e.g. above the welcome).
+  const [headerTarget, setHeaderTarget] = useState<HTMLElement | null>(null)
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    if (headerTargetId) setHeaderTarget(document.getElementById(headerTargetId))
+  }, [headerTargetId])
+  const header = (
+    <div className="flex flex-col gap-0.5 px-1" data-stagger style={{ '--base': '450ms', '--i': 0 } as React.CSSProperties}>
+      <div className="flex items-start justify-between gap-3">
+        <div className="flex min-w-0 flex-col gap-0.5">
+          <span className="text-[length:var(--font-size-md)] font-semibold text-[var(--color-neutral-12)]">{title}</span>
+          {subtitle && <span className="text-[length:var(--font-size-sm)] text-[var(--color-neutral-9)]">{subtitle}</span>}
+        </div>
+        {headerAction}
+      </div>
+      {/* Setup progress — fills smoothly as each step lands. */}
+      <div className="mt-2 flex items-center gap-2">
+        <span className="h-1.5 flex-1 overflow-hidden rounded-full bg-[var(--color-neutral-3)]" role="progressbar" aria-valuemin={0} aria-valuemax={total} aria-valuenow={done} aria-label="Setup progress">
+          <span
+            className="block h-full rounded-full bg-[var(--color-accent-9)] transition-[width] duration-700 ease-[cubic-bezier(0.22,1,0.36,1)]"
+            style={{ width: `${(barDone / total) * 100}%` }}
+          />
+        </span>
+        <span className="text-[length:var(--font-size-xs)] font-medium tabular-nums text-[var(--color-neutral-9)]">{done}/{total}</span>
+      </div>
+    </div>
+  )
+
   return (
     <aside ref={panelRef} className={className ?? 'flex w-[300px] shrink-0 flex-col gap-[var(--space-md)] overflow-y-auto rounded-[var(--radius-3xl)] bg-[var(--surface-primary)] p-[var(--space-lg)]'}>
-      <div className="flex flex-col gap-0.5 px-1" data-stagger style={{ '--base': '450ms', '--i': 0 } as React.CSSProperties}>
-        <div className="flex items-start justify-between gap-3">
-          <div className="flex min-w-0 flex-col gap-0.5">
-            <span className="text-[length:var(--font-size-md)] font-semibold text-[var(--color-neutral-12)]">{title}</span>
-            {subtitle && <span className="text-[length:var(--font-size-sm)] text-[var(--color-neutral-9)]">{subtitle}</span>}
-          </div>
-          {headerAction}
-        </div>
-        {/* Setup progress — fills smoothly as each step lands. */}
-        <div className="mt-2 flex items-center gap-2">
-          <span className="h-1.5 flex-1 overflow-hidden rounded-full bg-[var(--color-neutral-3)]" role="progressbar" aria-valuemin={0} aria-valuemax={total} aria-valuenow={done} aria-label="Setup progress">
-            <span
-              className="block h-full rounded-full bg-[var(--color-accent-9)] transition-[width] duration-700 ease-[cubic-bezier(0.22,1,0.36,1)]"
-              style={{ width: `${(done / total) * 100}%` }}
-            />
-          </span>
-          <span className="text-[length:var(--font-size-xs)] font-medium tabular-nums text-[var(--color-neutral-9)]">{done}/{total}</span>
-        </div>
-      </div>
+      {!headerTargetId && header}
+      {headerTarget && createPortal(header, headerTarget)}
 
       <div className="flex flex-col gap-4" data-stagger style={{ '--base': '450ms', '--i': 1 } as React.CSSProperties}>
         <AccountStep
           expanded={openStep === 'account'}
           onExpand={() => setOpenStep('account')}
+          onFillChange={setAccountFill}
+          onIncomplete={onAccountIncomplete}
+          locked={accountLocked}
           done={accountDone}
           active={next === 'account'}
           loading={accountLoading}
           rows={accountRows}
           details={accountDetails}
-          roleOptions={roleOptions}
           industryOptions={industryOptions}
           onSave={onSaveAccount}
+          submitLabel={accountSubmitLabel}
+          openByDefault={accountOpenByDefault}
         />
-        {ITEMS.map((item, i) => (
-          <ListStep
-            key={item.key}
-            step={item.key}
-            open={openStep === item.key}
-            // One step open at a time: opening this folds the previous one.
-            onToggle={() => setOpenStep(o => (o === item.key ? null : item.key))}
-            label={item.label}
-            description={item.description}
-            icon={item.icon}
-            active={next === item.key}
-            last={i === ITEMS.length - 1}
-            value={counts[item.key]}
-            added={items[item.key]}
-            loading={pending.includes(item.key)}
-            // The team comes from Gmail — connect it first, from this step.
-            connectGmail={item.key === 'team' && !gmailConnected ? onConnectGmail : undefined}
-            onAdd={() => onAdd(item.key)}
-            onView={() => onView(item.key)}
-          />
-        ))}
+        {/* The other steps wait, faded, until the account is set up. */}
+        <div inert={!accountDone} className={`flex flex-col gap-4 transition-opacity duration-500 ${accountDone ? 'opacity-100' : 'opacity-60'}`}>
+          {ITEMS.map((item, i) => (
+            <ListStep
+              key={item.key}
+              step={item.key}
+              open={openStep === item.key}
+              // One step open at a time: opening this folds the previous one.
+              onToggle={() => setOpenStep(o => (o === item.key ? null : item.key))}
+              label={item.label}
+              description={item.description}
+              icon={item.icon}
+              active={next === item.key}
+              last={i === ITEMS.length - 1}
+              value={counts[item.key]}
+              added={items[item.key]}
+              loading={pending.includes(item.key)}
+              // The team comes from Gmail — connect it first, from this step.
+              connectGmail={item.key === 'team' && !gmailConnected ? onConnectGmail : undefined}
+              onAdd={() => onAdd(item.key)}
+              onView={() => onView(item.key)}
+            />
+          ))}
+        </div>
       </div>
 
       {children}
@@ -161,14 +194,46 @@ function StepStatus({ done, active, onGo, label }: { done: boolean; active: bool
 }
 
 /** Each step is its own card. */
-function StepRow({ step, working = false, children }: { step?: string; active?: boolean; last?: boolean; working?: boolean; children: ReactNode }) {
+function StepRow({ step, working = false, glow = false, children }: { step?: string; active?: boolean; last?: boolean; working?: boolean; glow?: boolean; children: ReactNode }) {
+  // The first step before setup starts: Nova's prompt-box look — animated
+  // pink→blue border and its moving glow.
+  if (glow) {
+    return (
+      <div data-step={step} className="nova-glow nova-glow-on rounded-[var(--radius-xl)]">
+        <div className="flex flex-col overflow-hidden rounded-[calc(var(--radius-xl)-1px)] bg-[var(--surface-primary)]">{children}</div>
+      </div>
+    )
+  }
   return (
-    // No border at rest; blue while something inside has focus (e.g. filling in
-    // Account) or while Nova is working on the step. Transparent rather than
-    // none so nothing shifts.
-    <div data-step={step} className={`flex flex-col overflow-hidden rounded-[var(--radius-xl)] border bg-[var(--surface-primary)] transition-colors duration-300 focus-within:border-[var(--color-accent-9)] ${working ? 'border-[var(--color-accent-9)]' : 'border-transparent'}`}>
-      {children}
+    // No border at rest; a light blue edge and lift on hover. While something
+    // inside has focus it gets Nova's animated border and glow; while Nova is
+    // working on it, a blue border.
+    <div
+      data-step={step}
+      className={`nova-focus-glow transition-[background-color,box-shadow] duration-300 hover:shadow-[0_6px_20px_-8px_rgba(31,45,92,0.18)] ${
+        working ? 'bg-[var(--color-accent-9)]' : 'hover:bg-[var(--color-accent-3)]'
+      }`}
+    >
+      <div className="flex flex-col overflow-hidden rounded-[calc(var(--radius-xl)-1px)] bg-[var(--surface-primary)]">{children}</div>
     </div>
+  )
+}
+
+/** How much of a form is filled in — fills as each field is answered. */
+function FillRing({ percent }: { percent: number }) {
+  const r = 10.5
+  const c = 2 * Math.PI * r
+  return (
+    <span className="flex h-6 w-6 shrink-0 items-center justify-center" role="img" aria-label={`${percent}% filled in`}>
+      <svg width="24" height="24" viewBox="0 0 24 24" className="-rotate-90">
+        <circle cx="12" cy="12" r={r} fill="none" stroke="var(--color-neutral-5)" strokeWidth="1.5" />
+        <circle
+          cx="12" cy="12" r={r} fill="none" stroke="var(--color-accent-9)" strokeWidth="2" strokeLinecap="round"
+          strokeDasharray={c} strokeDashoffset={c * (1 - percent / 100)}
+          className="transition-[stroke-dashoffset] duration-500 ease-out"
+        />
+      </svg>
+    </span>
   )
 }
 
@@ -205,32 +270,51 @@ function FieldRow({ label, htmlFor, children }: { label: string; htmlFor: string
   )
 }
 
-function AccountStep({ expanded, onExpand, done, active, loading, rows, details, roleOptions, industryOptions, onSave }: {
+function AccountStep({ expanded, onExpand, onFillChange, onIncomplete, locked = false, done, active, loading, rows, details, industryOptions, onSave, submitLabel = 'Save', openByDefault = false }: {
   /** Whether this is the panel's one open step. */
   expanded: boolean
   onExpand: () => void
+  /** Share of the form filled in, 0–1. */
+  onFillChange?: (fill: number) => void
+  locked?: boolean
+  /** Submitted with fields missing (they're marked in red too). */
+  onIncomplete?: (draft: AccountDetails, missing: (keyof AccountDetails)[]) => void
   done: boolean
   active: boolean
   loading: boolean
   rows: { label: string; value: string }[]
   /** What's known so far — pre-fills the form. */
   details: AccountDetails
-  roleOptions: string[]
   industryOptions: string[]
   onSave: (details: AccountDetails) => void
+  submitLabel?: string
+  openByDefault?: boolean
 }) {
   // Clicking the card opens the fields to fill in (or edit) by hand.
-  const [editing, setEditing] = useState(false)
+  const [editing, setEditing] = useState(openByDefault && !done)
   const [draft, setDraft] = useState(details)
   // Unsaved edits survive the card folding away when focus leaves it; only
   // an untouched draft picks up what Nova has learned since.
   const dirty = useRef(false)
+  // Shown after a submit with fields missing; each fix clears its own red.
+  const [showErrors, setShowErrors] = useState(false)
+  const missing = (['companyName', 'companySize', 'industry'] as const).filter(k => !draft[k].trim())
+  const fill = (3 - missing.length) / 3
+  useEffect(() => { onFillChange?.(fill) }, [fill, onFillChange])
   // Once confirmed the card folds to its header — the summary is a click away.
   const [summaryOpen, setSummaryOpen] = useState(false)
   const [wasDone, setWasDone] = useState(done)
   if (done !== wasDone) {
     setWasDone(done)
-    if (done) setSummaryOpen(false)
+    if (done) { setSummaryOpen(false); setEditing(false) }
+  }
+  // Nova took over (e.g. asking for the industry): leave edit mode.
+  if (locked && editing) setEditing(false)
+  // An answer given to Nova (e.g. the industry) fills the empty field here too.
+  const [seenIndustry, setSeenIndustry] = useState(details.industry)
+  if (details.industry !== seenIndustry) {
+    setSeenIndustry(details.industry)
+    if (details.industry && !draft.industry) setDraft(d => ({ ...d, industry: details.industry }))
   }
   const open = () => { if (!dirty.current) setDraft(details); setEditing(true); onExpand() }
   // Another step opened: fold this one (unsaved edits are kept).
@@ -257,7 +341,7 @@ function AccountStep({ expanded, onExpand, done, active, loading, rows, details,
   }
 
   return (
-    <StepRow step="account" active={editing} working={loading && !done}>
+    <StepRow step="account" active={editing} working={loading && !done} glow={!done && editing}>
       <div ref={cardRef} onBlur={onBlur} className="contents">
       <div className="flex items-center gap-3 px-[var(--space-md)] py-3">
         {/* Done: the header shows/hides the summary. Not yet: it opens the form. */}
@@ -267,7 +351,7 @@ function AccountStep({ expanded, onExpand, done, active, loading, rows, details,
           aria-expanded={editing || (done && summaryOpen)}
           className="flex min-w-0 flex-1 items-center gap-3 text-left cursor-pointer"
         >
-          <StepHeading icon={Building2} label="Account" done={done} detail="Tell us about your company" />
+          <StepHeading icon={Building2} label="Your company details" done={done} detail={done ? 'Tell us about your company' : 'Does everything look right?'} />
         </button>
         {done && !editing && (
           <button type="button" onClick={open} className="inline-flex shrink-0 items-center gap-1 text-[length:var(--font-size-sm)] font-medium text-[var(--color-accent-9)] transition-colors hover:text-[var(--color-accent-10)] cursor-pointer">
@@ -276,33 +360,49 @@ function AccountStep({ expanded, onExpand, done, active, loading, rows, details,
         )}
         {loading && !done
           ? <Loader2 size={18} className="shrink-0 animate-spin text-[var(--color-accent-9)]" aria-label="In progress" />
-          : <StepStatus done={done} active={active} label="Confirm your account" />}
+          : done
+            ? <StepStatus done={done} active={active} label="Confirm your account" />
+            : <FillRing percent={Math.round(((3 - missing.length) / 3) * 100)} />}
       </div>
 
       {/* Form and summary fold open/closed smoothly instead of popping. */}
       <div inert={!editing} className={`grid transition-[grid-template-rows,opacity] duration-300 ease-[cubic-bezier(0.32,0.72,0,1)] ${editing ? 'grid-rows-[1fr] opacity-100' : 'grid-rows-[0fr] opacity-0'}`}>
         <div className="min-h-0 overflow-hidden">
         <form
-          onSubmit={e => { e.preventDefault(); onSave(draft); dirty.current = false; setEditing(false) }}
+          onSubmit={e => {
+            e.preventDefault()
+            // Missing fields turn red instead of the button being disabled.
+            if (missing.length) { setShowErrors(true); onIncomplete?.(draft, missing); return }
+            setShowErrors(false)
+            onSave(draft); dirty.current = false; setEditing(false)
+          }}
           className="flex flex-col gap-3 border-t border-[var(--border-subtle)] px-[var(--space-md)] py-3"
         >
           <div className="flex flex-col gap-2.5">
             <FieldRow label="Company name" htmlFor="account-company-name">
-              <TextInput id="account-company-name" value={draft.companyName} onChange={e => set('companyName')(e.target.value)} />
+              <TextInput id="account-company-name" value={draft.companyName} onChange={e => set('companyName')(e.target.value)} error={showErrors && missing.includes('companyName')} />
             </FieldRow>
             <FieldRow label="Company size" htmlFor="account-company-size">
-              <TextInput id="account-company-size" value={draft.companySize} onChange={e => set('companySize')(e.target.value)} />
-            </FieldRow>
-            <FieldRow label="Your role" htmlFor="account-role">
-              <SearchableSelect value={draft.role} onChange={set('role')} options={roleOptions} />
+              <SearchableSelect value={draft.companySize} onChange={set('companySize')} options={COMPANY_SIZES} error={showErrors && missing.includes('companySize')} />
             </FieldRow>
             <FieldRow label="Industry" htmlFor="account-industry">
-              <SearchableSelect value={draft.industry} onChange={set('industry')} options={industryOptions} />
+              <SearchableSelect value={draft.industry} onChange={set('industry')} options={industryOptions} error={showErrors && missing.includes('industry')} />
             </FieldRow>
           </div>
           <div className="flex justify-end gap-2">
-            <Button type="button" variant="secondary" size="md" onClick={() => close(false)}>Cancel</Button>
-            <Button type="submit" variant="primary" size="md" disabled={!draft.role || !draft.industry || !draft.companyName.trim()}>Save</Button>
+            {/* First time through there's nothing to cancel back to — just Start setup. */}
+            {done && <Button type="button" variant="secondary" size="md" onClick={() => close(false)}>Cancel</Button>}
+            {/* First time it's the page's main action: big and blue, always
+                clickable — it points out what's missing. */}
+            <Button
+              type="submit"
+              variant="primary"
+              size={done ? 'md' : 'lg'}
+              className={done ? '' : 'px-5'}
+            >
+              {submitLabel}
+              {!done && <ArrowRight size={16} />}
+            </Button>
           </div>
         </form>
         </div>
@@ -313,7 +413,7 @@ function AccountStep({ expanded, onExpand, done, active, loading, rows, details,
           {rows.map(row => (
             <div key={row.label} className="flex items-center justify-between gap-3 px-[var(--space-md)] py-1.5 nova-enter">
               <dt className="text-[length:var(--font-size-sm)] text-[var(--color-neutral-9)]">{row.label}</dt>
-              <dd className="truncate text-[length:var(--font-size-sm)] font-medium text-[var(--color-neutral-12)]">{row.value}</dd>
+              <dd className={`truncate text-[length:var(--font-size-sm)] font-medium ${row.value === '—' ? 'text-[var(--color-neutral-7)]' : 'text-[var(--color-neutral-12)]'}`}>{row.value}</dd>
             </div>
           ))}
         </dl>

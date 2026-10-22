@@ -125,6 +125,7 @@ export function useSetupState(): SetupState {
  * at least one item. */
 export function setupProgress(s: SetupState): number {
   if (s.setupComplete) return 100
+  // Same steps as the setup guide: account, locations, assets, team, work orders.
   const done = (s.companyConfirmed ? 1 : 0) + (Object.values(s.counts) as number[]).filter(n => n > 0).length
   return Math.round((done / 5) * 100)
 }

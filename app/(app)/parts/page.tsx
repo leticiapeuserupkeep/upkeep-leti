@@ -1,6 +1,11 @@
 'use client'
 
 import { useEffect, useState } from 'react'
+import { createPortal } from 'react-dom'
+import { LayoutGrid, ChevronDown, Boxes, ClipboardCheck } from 'lucide-react'
+import { TableToolbar } from '@/app/components/ui/Table'
+import { InventoryTable, INVENTORY } from '@/app/components/parts/InventoryTable'
+import { planById } from '@/app/lib/billing/plans'
 import { Package, Plus, Sparkles, Filter, Cog, Zap, Droplets } from 'lucide-react'
 import { TemplatePickerModal, type ModuleTemplate } from '@/app/components/onboarding/TemplatePickerModal'
 import { Button } from '@/app/components/ui/Button'
@@ -24,7 +29,95 @@ const TEMPLATES: ModuleTemplate[] = [
   { name: 'Lubricant, 5 gal', detail: 'General lubrication', icon: Droplets },
 ]
 
-export default function PartsPage() {
+type InventoryTab = 'inventory' | 'parts' | 'sets' | 'cycle-counts'
+
+const TABS: { id: InventoryTab; label: string; pro?: boolean }[] = [
+  { id: 'inventory', label: 'Inventory' },
+  // Parts & inventory management with costing is a Premium feature.
+  { id: 'parts', label: 'Parts', pro: true },
+  { id: 'sets', label: 'Sets' },
+  { id: 'cycle-counts', label: 'Cycle Counts' },
+]
+
+/** Inventory: stock on hand, with tabs for the parts catalog, sets and cycle
+ * counts. Tabs and actions live in the page header. */
+export default function InventoryPage() {
+  const [tab, setTab] = useState<InventoryTab>('inventory')
+  const [search, setSearch] = useState('')
+  const [slots, setSlots] = useState<{ afterTitle: HTMLElement | null; actions: HTMLElement | null; toolbar: HTMLElement | null }>({ afterTitle: null, actions: null, toolbar: null })
+
+  // The layout's slots exist only after mount.
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setSlots({
+      afterTitle: document.getElementById('page-after-title'),
+      actions: document.getElementById('page-header-actions'),
+      toolbar: document.getElementById('page-toolbar-portal'),
+    })
+  }, [])
+
+  const rows = search ? INVENTORY.filter(r => r.name.toLowerCase().includes(search.toLowerCase())) : INVENTORY
+
+  return (
+    <>
+      {slots.afterTitle && createPortal(
+        <div className="flex items-center self-stretch">
+          <nav className="ml-4 flex items-center self-stretch border-l border-[var(--border-subtle)] pl-3" aria-label="Inventory sections">
+            {TABS.map(t => (
+              <button
+                key={t.id}
+                type="button"
+                onClick={() => setTab(t.id)}
+                aria-current={tab === t.id ? 'page' : undefined}
+                className={`inline-flex h-full items-center gap-1.5 border-b-2 px-3 text-[length:var(--font-size-base)] font-medium transition-colors cursor-pointer ${
+                  tab === t.id ? 'border-[var(--color-accent-9)] text-[var(--color-neutral-12)]' : 'border-transparent text-[var(--color-neutral-9)] hover:text-[var(--color-neutral-12)]'
+                }`}
+              >
+                {t.label}
+                {t.pro && (
+                  <span title={`Free during your trial — included in ${planById('premium').name}`} className="inline-flex h-[18px] items-center rounded-full bg-[var(--color-purple-light)] px-1.5 text-[10px] font-semibold uppercase tracking-[0.04em] text-[var(--color-purple)]">
+                    Pro
+                  </span>
+                )}
+              </button>
+            ))}
+          </nav>
+          {tab === 'inventory' && (
+            <button type="button" className="ml-3 inline-flex items-center gap-1.5 border-l border-[var(--border-subtle)] pl-4 text-[length:var(--font-size-base)] font-medium text-[var(--color-neutral-11)] cursor-pointer">
+              <LayoutGrid size={15} className="text-[var(--color-neutral-9)]" /> Table <ChevronDown size={14} className="text-[var(--color-neutral-8)]" />
+            </button>
+          )}
+        </div>,
+        slots.afterTitle,
+      )}
+      {tab === 'inventory' && slots.actions && createPortal(
+        <Button variant="primary" size="md"><Plus size={14} /> Create Part</Button>,
+        slots.actions,
+      )}
+      {tab === 'inventory' && slots.toolbar && createPortal(
+        <TableToolbar itemCountLabel={`${rows.length} Results Returned`} sortLabel="Sort: Date Created" searchValue={search} onSearchChange={setSearch} />,
+        slots.toolbar,
+      )}
+
+      {tab === 'inventory' ? (
+        <main className="flex-1 overflow-y-auto"><InventoryTable rows={rows} /></main>
+      ) : tab === 'parts' ? (
+        <PartsTab />
+      ) : (
+        <main className="flex flex-1 flex-col items-center justify-center gap-2 py-[var(--space-3xl)] text-center">
+          <span className="flex h-12 w-12 items-center justify-center rounded-full bg-[var(--color-neutral-3)] text-[var(--color-neutral-9)]">
+            {tab === 'sets' ? <Boxes size={20} /> : <ClipboardCheck size={20} />}
+          </span>
+          <p className="text-[length:var(--font-size-md)] font-semibold text-[var(--color-neutral-12)]">{tab === 'sets' ? 'No sets yet' : 'No cycle counts yet'}</p>
+          <p className="text-[length:var(--font-size-base)] text-[var(--color-neutral-9)]">{tab === 'sets' ? 'Group parts that are used together, like a PM kit.' : 'Schedule counts to keep stock levels accurate.'}</p>
+        </main>
+      )}
+    </>
+  )
+}
+
+/** The Parts tab: the catalog Nova helps fill (a Premium feature). */
+function PartsTab() {
   const [parts, setParts] = useState<Part[]>([])
   const [novaOpen, setNovaOpen] = useState(false)
   const [creatingId, setCreatingId] = useState<string | null>(null)

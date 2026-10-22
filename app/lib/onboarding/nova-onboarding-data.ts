@@ -17,10 +17,10 @@ export interface CompanyProfile {
 export const MOCK_COMPANY: CompanyProfile = {
   name: 'Deere & Company',
   logo: '/images/companies/deere.svg',
-  size: '73,100 employees',
+  size: '50–100 employees',
   industry: 'Heavy equipment',
   location: 'Moline, IL',
-  moreLocations: 32,
+  moreLocations: 2,
 }
 
 /* ── Where a piece of information came from ── */
@@ -145,22 +145,11 @@ export const COMPANY_REPORT = {
     { country: 'Other', plants: 4, note: 'Argentina, Finland, France, Netherlands' },
   ],
   workforce: { total: 73100, production: 32500, us: 27000, usProduction: 11600 },
+  // A smaller example account: three sites besides the main one.
   usPlants: [
-    { name: 'Waterloo, IA', makes: 'Tractors 7R/8R/9R, drivetrain, foundry', note: 'Largest · 4 operations' },
-    { name: 'Waterloo, IA (Power Systems)', makes: 'Engines' },
-    { name: 'Dubuque, IA', makes: 'Construction & forestry', note: '2,800 employees' },
     { name: 'East Moline, IL (Harvester Works)', makes: 'Combines', note: '+225 rehired Sep 2026' },
-    { name: 'Moline, IL (Seeding & Cylinder)', makes: 'Planters & cylinders', note: '+150 rehired Sep 2026' },
-    { name: 'Davenport, IA', makes: 'Motor graders, loaders, forestry' },
-    { name: 'Ankeny, IA (Des Moines Works)', makes: 'Sprayers, cotton pickers' },
-    { name: 'Ottumwa, IA', makes: 'Hay & forage' },
-    { name: 'Coffeyville, KS', makes: 'Transmissions' },
-    { name: 'Thibodaux, LA', makes: 'Cane harvesters' },
-    { name: 'Valley City, ND', makes: 'Seeding' },
-    { name: 'Grovetown, GA', makes: 'Small tractors' },
-    { name: 'Fuquay-Varina, NC', makes: 'Golf & mowing' },
-    { name: 'Greeneville, TN', makes: 'Lawn care' },
-    { name: 'Horicon, WI', makes: 'Lawn care' },
+    { name: 'Waterloo, IA', makes: 'Tractors, drivetrain', note: 'Largest site' },
+    { name: 'Davenport, IA', makes: 'Motor graders, loaders' },
   ] as UsPlant[],
   hierarchy: ['Deere', 'Division', 'Plant', 'Operation', 'Line / area', 'Asset'],
   pilot: {
@@ -185,16 +174,10 @@ export interface PlanItem {
   count: number
 }
 
-/** Starter asset list for the pilot, by equipment type (sums to 12). */
+/** Starter asset list for the pilot, by equipment type (sums to 2). */
 export const STARTER_ASSETS = [
-  { name: 'Robot cells', count: 3 },
-  { name: 'Conveyors', count: 2 },
-  { name: 'CNC machining centers', count: 2 },
-  { name: 'Overhead cranes', count: 1 },
-  { name: 'Test stands', count: 1 },
-  { name: 'Paint line equipment', count: 1 },
+  { name: 'Conveyors', count: 1 },
   { name: 'Air compressors', count: 1 },
-  { name: 'Induction furnaces', count: 1 },
 ]
 
 /** Locations Nova added during onboarding, by name: the main location
@@ -254,9 +237,9 @@ export function starterAssetRows(n: number): StarterAssetRow[] {
 }
 
 export const ACTION_PLAN: PlanItem[] = [
-  { id: 'locations', label: '15 locations', detail: 'US locations that may be relevant to your account.', count: 15 },
-  { id: 'assets', label: '12 assets', detail: 'Equipment associated with your main location.', count: 12 },
-  { id: 'team', label: '23 team members', detail: 'People who may be part of your maintenance team.', count: 23 },
+  { id: 'locations', label: '3 locations', detail: 'Sites that may be relevant to your account.', count: 3 },
+  { id: 'assets', label: '2 assets', detail: 'Equipment associated with your main location.', count: 2 },
+  { id: 'team', label: '5 team members', detail: 'People who may be part of your maintenance team.', count: 5 },
 ]
 
 /* ── Analysis sequence ── */
@@ -571,3 +554,14 @@ export function itemFromPrompt(text: string, cards: ModuleSuggestion[]): string 
   const hit = cards.find(c => text.toLowerCase().includes(c.title.toLowerCase()))
   return hit ? hit.title : text
 }
+
+/** Company size ranges for the Account step. */
+export const COMPANY_SIZES = [
+  '1–50 employees',
+  '50–100 employees',
+  '100–250 employees',
+  '250–500 employees',
+  '500–1,000 employees',
+  '1,000–5,000 employees',
+  '5,000+ employees',
+]

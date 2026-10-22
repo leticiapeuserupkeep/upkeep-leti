@@ -19,6 +19,8 @@ import {
   Package, ScrollText, Building2,
   Bell, Check, ChevronUp, LayoutGrid, CircleHelp, MessagesSquare, CreditCard, Settings,
 } from 'lucide-react'
+import { planById, type PlanId } from '@/app/lib/billing/plans'
+import { openPlans } from '@/app/lib/billing/trial-usage'
 import type { LucideIcon } from 'lucide-react'
 
 interface NavItem {
@@ -26,8 +28,9 @@ interface NavItem {
   icon: LucideIcon
   href?: string
   dot?: boolean
-  /** Part of a paid plan — shown with a PRO badge. */
-  pro?: boolean
+  /** Paid feature, open during the trial — shown with a PRO badge. */
+  plan?: PlanId
+  onClick?: () => void
 }
 
 interface SideNavProps {
@@ -38,7 +41,7 @@ interface NavSection {
   title: string
   defaultClosed?: boolean
   /** The whole section is part of a paid plan. */
-  pro?: boolean
+  plan?: PlanId
   items: NavItem[]
 }
 
@@ -55,9 +58,9 @@ const sections: NavSection[] = [
     title: 'CORE',
     items: [
       { label: 'Work Orders', icon: Clipboard, href: '/work-orders' },
-      { label: 'Preventive Maintenance', icon: Warehouse, href: '/predictive-maintenance' },
+      { label: 'Preventive Maintenance', icon: Warehouse, href: '/predictive-maintenance', plan: 'premium' },
       { label: 'Scheduler', icon: CalendarClock, href: '/scheduler' },
-      { label: 'Requests', icon: Inbox, pro: true },
+      { label: 'Requests', icon: Inbox, plan: 'professional' },
     ],
   },
   {
@@ -66,14 +69,14 @@ const sections: NavSection[] = [
       { label: 'Assets', icon: Box, href: '/assets' },
       { label: 'Locations', icon: MapPin, href: '/locations' },
       { label: 'People & Teams', icon: Users },
-      { label: 'Checklists', icon: ListChecks },
+      { label: 'Checklists', icon: ListChecks, plan: 'premium' },
       { label: 'Files', icon: Files, href: '/exports' },
       { label: 'Import & Export', icon: FileDown },
     ],
   },
   {
     title: 'DATA & ANALYTICS',
-    pro: true,
+    plan: 'premium',
     defaultClosed: true,
     items: [
       { label: 'Analytics', icon: BarChart3 },
@@ -82,7 +85,7 @@ const sections: NavSection[] = [
   },
   {
     title: 'FLEET MAINTENANCE',
-    pro: true,
+    plan: 'professional',
     defaultClosed: true,
     items: [
       { label: 'Vehicles', icon: Car, href: '/fleet/vehicles' },
@@ -93,6 +96,7 @@ const sections: NavSection[] = [
   },
   {
     title: 'PROCUREMENT',
+    plan: 'premium',
     defaultClosed: true,
     items: [
       { label: 'Parts & Inventory', icon: Package, href: '/parts' },
@@ -105,7 +109,7 @@ const sections: NavSection[] = [
 const footerIcons: NavItem[] = [
   { label: 'Help Center', icon: CircleHelp },
   { label: 'Contact', icon: MessagesSquare },
-  { label: 'Billing', icon: CreditCard, href: '/billing' },
+  { label: 'Billing', icon: CreditCard, onClick: openPlans },
   { label: 'Settings', icon: Settings },
 ]
 
@@ -138,10 +142,11 @@ function CollapsedIcon({ item, active, label }: { item: NavItem; active: boolean
   return inner
 }
 
-/** Marks features that come with a paid plan. */
-function ProBadge() {
+/** Marks paid features that are open during the trial; the tooltip says which
+ * plan keeps them. */
+function ProBadge({ plan }: { plan: PlanId }) {
   return (
-    <span className="inline-flex h-[18px] shrink-0 items-center rounded-full bg-[var(--color-purple-light)] px-1.5 text-[10px] font-semibold uppercase tracking-[0.04em] text-[var(--color-purple)]">
+    <span title={`Free during your trial — included in ${planById(plan).name}`} className="inline-flex h-[18px] shrink-0 items-center rounded-full bg-[var(--color-purple-light)] px-1.5 text-[10px] font-semibold uppercase tracking-[0.04em] text-[var(--color-purple)]">
       Pro
     </span>
   )
@@ -158,7 +163,7 @@ function NavRow({ item, active, collapsed }: { item: NavItem; active: boolean; c
     <>
       <item.icon size={16} className="shrink-0" />
       <span className="flex-1 text-left text-[length:var(--font-size-base)] leading-5 truncate">{item.label}</span>
-      {item.pro && <ProBadge />}
+      {item.plan && <ProBadge plan={item.plan} />}
       {item.dot && <span className="w-1.5 h-1.5 rounded-full bg-[var(--color-accent-9)] shrink-0" />}
     </>
   )
@@ -264,7 +269,7 @@ export function SideNav({ collapsed }: SideNavProps) {
                         {section.title}
                       </span>
                       {/* Right-aligned, next to the chevron — same column as item badges. */}
-                      {section.pro && <ProBadge />}
+                      {section.plan && <ProBadge plan={section.plan} />}
                       <ChevronUp
                         size={14}
                         className="text-[var(--color-neutral-8)] transition-transform duration-[var(--duration-slow)] ease-[var(--ease-default)] group-data-[state=closed]:rotate-180"
@@ -303,13 +308,13 @@ export function SideNav({ collapsed }: SideNavProps) {
           </Tooltip>
           {!collapsed && (
             <div className="flex items-center gap-1">
-              {footerIcons.map(({ icon: Icon, label, href }) => {
+              {footerIcons.map(({ icon: Icon, label, href, onClick }) => {
                 const cls = 'flex h-8 w-8 items-center justify-center rounded-[var(--radius-lg)] text-[var(--color-neutral-8)] transition-colors duration-[var(--duration-fast)] hover:bg-[var(--color-neutral-4)] hover:text-[var(--color-neutral-11)] cursor-pointer'
                 return (
                   <Tooltip key={label} content={label} side="top" sideOffset={6}>
                     {href
                       ? <Link href={href} aria-label={label} className={cls}><Icon size={16} /></Link>
-                      : <button type="button" aria-label={label} className={cls}><Icon size={16} /></button>}
+                      : <button type="button" aria-label={label} onClick={onClick} className={cls}><Icon size={16} /></button>}
                   </Tooltip>
                 )
               })}

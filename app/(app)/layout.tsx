@@ -12,6 +12,10 @@ import { MeterConfigModal } from '@/app/components/edge/MeterConfigModal'
 import { DashboardProvider } from '@/app/lib/dashboard/dashboard-context'
 import { useSetupState } from '@/app/lib/onboarding/setup-store'
 import { WelcomeScreen } from '@/app/components/onboarding/nova/WelcomeScreen'
+import { PlansModal } from '@/app/components/billing/PlansModal'
+import { PlanTag } from '@/app/components/billing/PlanTag'
+import { OPEN_PLANS_EVENT, openPlans } from '@/app/lib/billing/trial-usage'
+import type { PlanId } from '@/app/lib/billing/plans'
 import { TrialBadge } from '@/app/components/dashboard/TrialBadge'
 import { AppBootSkeleton } from '@/app/components/onboarding/AppBootSkeleton'
 
@@ -41,7 +45,7 @@ function getPageTitle(pathname: string): string {
   if (pathname.startsWith('/workflows')) return 'Workflows'
   if (pathname.startsWith('/aimates')) return 'Agents'
   if (pathname.startsWith('/assets')) return 'Assets'
-  if (pathname.startsWith('/parts')) return 'Parts & Inventory'
+  if (pathname.startsWith('/parts')) return 'Inventory'
   if (pathname.startsWith('/onboarding')) return 'Welcome'
   if (pathname.startsWith('/locations')) return 'Locations'
   return 'Dashboard'
@@ -113,6 +117,18 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   const isWorkOrdersEmpty = isWorkOrdersEmptyOnboarding || (isWorkOrders && setup.counts.workOrders === 0)
   const isFleetDetail = /^\/fleet\/vehicles\/[^/]+/.test(pathname)
   const isScheduler = pathname.startsWith('/scheduler')
+  // Paid sections open during the trial: the header says which plan keeps them.
+  // (Inventory marks its Parts tab instead.)
+  const sectionPlan: PlanId | null = pathname.startsWith('/predictive-maintenance')
+    ? 'premium'
+    : pathname.startsWith('/fleet') ? 'professional' : null
+  // The pricing page, as a modal — from the trial badge, Billing or a plan tag.
+  const [plansOpen, setPlansOpen] = useState(false)
+  useEffect(() => {
+    const open = () => setPlansOpen(true)
+    window.addEventListener(OPEN_PLANS_EVENT, open)
+    return () => window.removeEventListener(OPEN_PLANS_EVENT, open)
+  }, [])
   const isCommandCenter = pathname.startsWith('/command-center')
   const isEdgeSensors = pathname === '/edge/sensors'
 
@@ -129,9 +145,9 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   }, [])
 
   function getActions() {
-    if (isWelcome) return <TrialBadge daysLeft={5} />
+    if (isWelcome) return <TrialBadge daysLeft={5} onUpgrade={openPlans} />
     // Pages that own their header buttons portal them in here.
-    if (pathname.startsWith('/assets') || pathname.startsWith('/locations')) return <div id="page-header-actions" className="flex items-center gap-[var(--space-sm)]" />
+    if (pathname.startsWith('/assets') || pathname.startsWith('/locations') || pathname.startsWith('/parts')) return <div id="page-header-actions" className="flex items-center gap-[var(--space-sm)]" />
     if (isEdgeSensors) {
       return (
         <Button variant="primary" size="sm" type="button" onClick={() => setShowAddRuntime(true)}>
@@ -222,6 +238,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   return (
     <div className="flex min-h-screen bg-[var(--surface-canvas)]" data-boot={boot}>
       <SideNav collapsed={sidebarCollapsed} />
+      <PlansModal open={plansOpen} onOpenChange={setPlansOpen} />
 
       <div
         // Nova's side panel sets --nova-panel-w while open, so the page makes
@@ -285,6 +302,10 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
                   )
                 })}
               </div>
+            ) : pathname.startsWith('/parts') ? (
+              <div id="page-after-title" className="flex items-center self-stretch" />
+            ) : sectionPlan ? (
+              <PlanTag plan={sectionPlan} />
             ) : undefined}
             actions={isScheduler ? (
               <div id="scheduler-header-actions" className="flex items-center gap-[var(--space-sm)]" />

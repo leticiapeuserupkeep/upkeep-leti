@@ -273,29 +273,21 @@ export function useNovaOnboarding() {
     return () => { generation.current++ }
   }, [run, push, waitForUser])
 
-  const confirmCompany = useCallback((userLine: string) => {
+  const confirmCompany = useCallback((userLine?: string) => {
     remove('confirm-company')
-    push({ kind: 'user', text: userLine })
+    if (userLine) push({ kind: 'user', text: userLine })
     run(async ({ wait, say, think }) => {
       // A beat of "setting up" that leaves no "Thought for…" behind.
       const settingUp = push({ kind: 'thinking', labels: ['Setting up your workspace…'] })
       await wait(1000)
       setMessages(prev => prev.filter(m => m.id !== settingUp))
-      // One thing at a time: the Account step checks off, half a second
-      // later the location lands as Nova mentions it.
+      // The Account step checks off; locations come from the action plan.
       setupStore.update({ companyConfirmed: true })
-      await wait(500)
-      setupStore.update(prev => ({ counts: { ...prev.counts, locations: Math.max(prev.counts.locations, 1) } }))
       setCompanyConfirmed(true)
-      {
-        const text = `Added 1 Location: ${companyRef.current.location}`
-        push({ kind: 'nova', text, check: true })
-        await wait(typingDuration(text) + BEAT_MS)
-      }
-      await wait(300)
+      await wait(500)
       // No company report here — straight to what can set up the account.
       await think(['Looking for locations…', 'Matching equipment to your main location…', 'Finding people on your maintenance team…'], 2400)
-      await say('I found some information to help set up your account.')
+      await say('I’ve created a setup plan based on what you shared and what I learned about your company. Let’s get started!')
       push({ kind: 'action-plan' })
       await continueAfterReport({ wait, say, think }, connectedRef.current.includes('gmail'))
     })
@@ -305,10 +297,7 @@ export function useNovaOnboarding() {
   const saveAccount = useCallback((d: { role: string; industry: string; companyName: string; companySize: string }) => {
     setProfile({ role: d.role, industry: d.industry })
     setCompany(prev => ({ ...prev, name: d.companyName, size: d.companySize }))
-    setupStore.update(prev => ({
-      companyConfirmed: true,
-      counts: { ...prev.counts, locations: Math.max(prev.counts.locations, 1) },
-    }))
+    setupStore.update({ companyConfirmed: true })
   }, [])
 
   /** The user's first prompt — starts the conversation. */
@@ -321,6 +310,41 @@ export function useNovaOnboarding() {
     push({ kind: 'user', text })
     release('start')
   }, [push, release])
+
+  /** Started from the filled-in Account step: Nova already has the answers,
+   * so it skips the questions and goes straight to setting up the account. */
+  const startFromAccount = useCallback((d: { role: string; industry: string; companyName: string; companySize: string }) => {
+    if (!waiters.current.has('start')) return
+    // Drop the scripted intro (role and industry questions).
+    generation.current++
+    setStarted(true)
+    setProfile({ role: d.role, industry: d.industry })
+    setCompany(prev => ({ ...prev, name: d.companyName, size: d.companySize }))
+    release('start')
+    confirmCompany('Confirm & continue')
+  }, [release, confirmCompany])
+
+  /** "Confirm & continue" with the industry still empty: Nova opens and asks
+   * for it first, then carries on with the setup. */
+  const askMissingIndustry = useCallback((d: { companyName: string; companySize: string }) => {
+    if (!waiters.current.has('start')) return
+    generation.current++
+    setStarted(true)
+    setCompany(prev => ({ ...prev, name: d.companyName || prev.name, size: d.companySize || prev.size }))
+    push({ kind: 'user', text: 'Confirm & continue' })
+    release('start')
+    run(async ({ wait, say }) => {
+      await wait(700)
+      // Nova introduces itself, then asks for the one thing still missing.
+      await say(`Hey ${setupStore.get().userName}! I’m Nova!`)
+      await say('I’ll help you get everything set up and make your day-to-day work in UpKeep easier.')
+      await say(`First, let’s get to know ${d.companyName || companyRef.current.name} a little better.`)
+      await say('What industry is your company in?')
+      push({ kind: 'choice', key: 'industry', options: PROFILE_OPTIONS.industry })
+      await waitForUser('choice:industry')
+      confirmCompany()
+    })
+  }, [push, release, run, waitForUser, confirmCompany])
 
   /** Answer to a profile question — shown as the user's reply. */
   const answerChoice = useCallback((key: ProfileQuestion, value: string) => {
@@ -870,7 +894,7 @@ export function useNovaOnboarding() {
   return {
     messages, profile, answerChoice, saveAccount, started, start, busy, working: busy && awaiting === 0, stop, company, companyConfirmed, pmScheduled, generated, generating, planSkipped, integrationsLocked, mplanAdded, mplanAdding, mplanSkipped, safetyAnswered, teamLocked, addedPeople, addingPeople, googleConsentOpen, consentScope, roles, answeredOffers, editingCompany, connected, sourcesLocked,
     emailed, reportOpen, paywallOpen, usedActions,
-    confirmCompany, startEditingCompany, saveCompany, cancelEditingCompany,
+    confirmCompany, startFromAccount, askMissingIndustry, startEditingCompany, saveCompany, cancelEditingCompany,
     connectSource, continueFromSources,
     openReport, closeReport, emailReport,
     runAction, addPmPlan, addAssets,

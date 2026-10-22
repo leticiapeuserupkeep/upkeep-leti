@@ -84,16 +84,6 @@ export function WelcomeScreen() {
   const conversation = nova.messages
   // The Nova drawer on the right; closable, reopened from "Ask Nova".
   const [chatOpen, setChatOpen] = useState(false)
-  // The welcome prompt box: sending it starts Nova and opens the drawer.
-  const welcomeComposer = useRef<NovaComposerHandle>(null)
-  // Coming back to Welcome before starting puts the cursor back in the box.
-  const welcomePath = usePathname()
-  useEffect(() => {
-    if (!welcomePath.startsWith('/onboarding') || nova.started) return
-    const id = window.setTimeout(() => welcomeComposer.current?.focus(), 400)
-    return () => window.clearTimeout(id)
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [welcomePath])
   const startWithNova = (text: string, opts?: { idea?: boolean }) => {
     setChatOpen(true)
     nova.start(text, opts)
@@ -608,8 +598,10 @@ export function WelcomeScreen() {
             </div>
           ) : (
             <div className={`flex w-full flex-col gap-[var(--space-lg)] p-10 ${stepsReturning ? 'nova-panel-in' : ''}`}>
+              {/* Setup progress sits above everything, the welcome included. */}
+              <div id="setup-progress-header" className="mx-auto w-full max-w-[840px]" />
               {/* Welcome, and the quickest way in: ask Nova to set things up. */}
-              <div className={`mx-auto flex w-full max-w-[840px] flex-col nova-enter transition-[gap,padding] duration-500 ${nova.started ? 'gap-0 pt-0 pb-0' : 'gap-[var(--space-md)] pt-[60px] pb-[60px]'}`}>
+              <div className={`mx-auto flex w-full max-w-[840px] flex-col nova-enter transition-[gap,padding] duration-500 ${nova.started ? 'gap-0 pt-0 pb-0' : 'gap-[var(--space-md)] pt-10 pb-10'}`}>
                 <div className="flex flex-col gap-1">
                   <div className="flex items-center justify-between gap-3">
                     <h1 className="text-[length:var(--font-size-3xl)] font-bold leading-tight tracking-[-0.02em] text-[var(--color-neutral-12)]">Welcome {setup.userName} 👋</h1>
@@ -630,50 +622,50 @@ export function WelcomeScreen() {
                   {/* The intro only makes sense next to the prompt box — both fold away once Nova starts. */}
                   <div className={`grid transition-[grid-template-rows,opacity] duration-500 ease-[cubic-bezier(0.32,0.72,0,1)] ${nova.started ? 'grid-rows-[0fr] opacity-0' : 'grid-rows-[1fr] opacity-100'}`}>
                     <p className="min-h-0 overflow-hidden text-[length:var(--font-size-md)] text-[var(--color-neutral-10)]">
-                      Let Nova help you set up your UpKeep account.
-                      <br />
-                      Answer a few questions and Nova will guide you through the rest.
+                      Let’s get your workspace ready. We’ve filled in a few details about your company. Take a look and make sure everything is correct.
                     </p>
-                  </div>
-                </div>
-                {/* Once started, the box folds away as Nova's drawer slides in —
-                    the conversation visibly moves over there. */}
-                <div
-                  inert={nova.started}
-                  className={`grid transition-[grid-template-rows,opacity,translate] duration-500 ease-[cubic-bezier(0.32,0.72,0,1)] ${
-                    nova.started ? 'grid-rows-[0fr] -translate-y-2 opacity-0' : 'grid-rows-[1fr] opacity-100'
-                  }`}
-                >
-                  {/* Extra breathing room (inside the fold, so it collapses with it). */}
-                  <div className={`-mx-3 min-h-0 overflow-hidden px-3 transition-[padding] duration-500 ${nova.started ? 'pb-0 pt-0' : 'pb-6 pt-[60px]'}`}>
-                    <NovaComposer ref={welcomeComposer} initialValue="Hey Nova, help me set up my UpKeep account" onSend={startWithNova} placeholder="Ask Nova to set up your account" sendLabel="Start setup" gradientBorder />
                   </div>
                 </div>
               </div>
               <SetupChecklistPanel
                 title="Setup progress"
+                headerTargetId="setup-progress-header"
                 subtitle=""
                 className="mx-auto flex w-full max-w-[840px] flex-col gap-[var(--space-md)]"
                 accountDone={setup.companyConfirmed}
-                accountRows={[
-                  ...(nova.profile.role ? [{ label: 'Role', value: nova.profile.role }] : []),
-                  ...(nova.profile.industry ? [{ label: 'Industry', value: nova.profile.industry }] : []),
-                  ...(setup.companyConfirmed ? [
-                    { label: 'Company', value: nova.company.name },
-                    { label: 'Company size', value: nova.company.size },
-                    { label: 'Main location', value: nova.company.location },
-                  ] : []),
-                ]}
+                // Once Nova has started, the card shows what it knows ("—" for
+                // what's still missing) instead of the form.
+                accountRows={nova.started || setup.companyConfirmed ? [
+                  { label: 'Company', value: nova.company.name },
+                  { label: 'Company size', value: nova.company.size },
+                  { label: 'Industry', value: nova.profile.industry ?? '—' },
+                ] : []}
+                accountLocked={nova.started && !setup.companyConfirmed}
                 accountLoading={Boolean(nova.profile.role) && !setup.companyConfirmed}
+                // Pre-filled from what we know; the person who signs up is usually
+                // the admin. Industry is theirs to pick.
                 accountDetails={{
-                  role: nova.profile.role ?? '',
+                  role: nova.profile.role ?? 'Admin',
                   industry: nova.profile.industry ?? '',
                   companyName: nova.company.name,
                   companySize: nova.company.size,
                 }}
-                roleOptions={PROFILE_OPTIONS.role}
                 industryOptions={PROFILE_OPTIONS.industry}
-                onSaveAccount={nova.saveAccount}
+                // Before Nova starts, the Account form is the way in: it opens the
+                // drawer and Nova picks up from the account, skipping its questions.
+                accountOpenByDefault
+                // Missing the industry: Nova opens and asks for it (the field turns red).
+                onAccountIncomplete={(d, missing) => {
+                  if (nova.started || !missing.includes('industry')) return
+                  setChatOpen(true)
+                  nova.askMissingIndustry(d)
+                }}
+                accountSubmitLabel={nova.started ? 'Save' : 'Confirm & continue'}
+                onSaveAccount={d => {
+                  if (nova.started) return nova.saveAccount(d)
+                  setChatOpen(true)
+                  nova.startFromAccount(d)
+                }}
                 gmailConnected={nova.connected.includes('gmail')}
                 onConnectGmail={() => { setChatOpen(true); nova.connectGmail() }}
                 counts={setup.counts}
@@ -693,8 +685,10 @@ export function WelcomeScreen() {
                 />
                 <NovaRecommendations items={recommendations} onInstall={installRecommendation} onUpgrade={setUpgradeFor} />
               </SetupChecklistPanel>
-              {/* Ideas stay below the steps the whole time. */}
-              <div className="mt-[var(--space-xl)]">
+              {/* Ideas appear once there's something to work with: a location,
+                  plus an asset or a connected source. */}
+              {setup.counts.locations > 0 && (setup.counts.assets > 0 || nova.connected.length > 0) && (
+              <div className="mt-[var(--space-xl)] nova-enter">
                 <div className="mx-auto mb-[var(--space-xl)] h-px w-full max-w-[840px] bg-[var(--border-subtle)]" />
                 <NovaIdeas
                   ideas={NOVA_IDEAS}
@@ -709,6 +703,7 @@ export function WelcomeScreen() {
                   }}
                 />
               </div>
+              )}
             </div>
           )}
         </section>

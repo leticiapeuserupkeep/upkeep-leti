@@ -1,5 +1,6 @@
 'use client'
 
+import { trialUsageStore } from '@/app/lib/billing/trial-usage'
 import React, { useState, useRef, useEffect, useCallback, Suspense } from 'react'
 import * as Popover from '@radix-ui/react-popover'
 import Link from 'next/link'
@@ -4055,6 +4056,8 @@ function CreatePMPageContent() {
   function handleCreatePM() {
     if (createDisabled) return
     persistPM('Active')
+    // Counts toward the plan recommendation — PMs are a Premium feature.
+    if (!isEditing) trialUsageStore.add('pm')
     const scheduleCount = triggers.length
     const assignmentCount = triggers.reduce((n, t) => n + t.assignments.length, 0)
     try {
