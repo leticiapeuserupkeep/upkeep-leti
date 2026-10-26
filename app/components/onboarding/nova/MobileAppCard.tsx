@@ -73,7 +73,7 @@ export function MobileAppModal({ open, onOpenChange }: { open: boolean; onOpenCh
       <div className="flex items-center gap-6 p-[var(--space-xl)]">
         <div className="flex min-w-0 flex-1 flex-col gap-2">
           <span className="text-[length:var(--font-size-xl)] font-semibold text-[var(--color-neutral-12)]">Get the UpKeep App</span>
-          <span className="text-[length:var(--font-size-md)] text-[var(--color-neutral-11)]">Your maintenance assistant, now on your phone.</span>
+          <span className="text-[length:var(--font-size-md)] text-[var(--color-neutral-11)]">Your AI assistant, on the go.</span>
           <span className="text-[length:var(--font-size-base)] text-[var(--color-neutral-9)]">Talk to Nova and get help with maintenance, wherever you are.</span>
           <span className="mt-2 text-[length:var(--font-size-sm)] font-medium text-[var(--color-accent-9)]">Scan with your phone’s camera to download</span>
         </div>
@@ -100,7 +100,7 @@ export function MobileAppPromo() {
           className="flex min-w-0 flex-1 flex-col text-left transition-opacity duration-[var(--duration-fast)] hover:opacity-90 cursor-pointer"
         >
           <span className="truncate text-[length:var(--font-size-base)] font-semibold text-white">Get the UpKeep App</span>
-          <span className="truncate text-[length:var(--font-size-sm)] text-white/70">Your maintenance assistant, now on your phone</span>
+          <span className="truncate text-[length:var(--font-size-sm)] text-white/70">Your AI assistant, on the go.</span>
         </button>
         <button
           type="button"

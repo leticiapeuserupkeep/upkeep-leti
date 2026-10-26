@@ -174,6 +174,14 @@ export function WelcomeScreen() {
   // The setup checklist's real progress: account plus each step with something in it.
   const setupPercent = Math.round((((setup.companyConfirmed ? 1 : 0) + Object.values(setup.counts).filter(n => n > 0).length) / 5) * 100)
 
+  // Nova's ideas show once the user reaches the team step (in the chat or from
+  // the panel) — and stay from then on.
+  const reachedTeam = setup.counts.team > 0 || setup.setupComplete || nova.connected.includes('gmail') ||
+    nova.planStepsDone.includes('team') || (nova.googleConsentOpen && nova.consentScope === 'gmail') ||
+    nova.messages.some(m => m.kind === 'plan-step' && m.stepId === 'team')
+  const [ideasUnlocked, setIdeasUnlocked] = useState(false)
+  if (reachedTeam && !ideasUnlocked) setIdeasUnlocked(true)
+
   // The setup step Nova is walking through right now, if any.
   const lastPlanStep = [...nova.messages].reverse().find(m => m.kind === 'plan-step')
   const activePlanStep = nova.googleConsentOpen && nova.consentScope === 'gmail' && !nova.planStepsDone.includes('team')
@@ -772,9 +780,9 @@ export function WelcomeScreen() {
                 />
                 <NovaRecommendations items={recommendations} onInstall={installRecommendation} onUpgrade={setUpgradeFor} />
               </SetupChecklistPanel>
-              {/* Ideas appear as soon as the account is set up. */}
-              {setup.companyConfirmed && (
-              <div className="mt-[var(--space-xl)] nova-enter">
+              {/* Ideas appear once the user gets to the team step. */}
+              {ideasUnlocked && (
+              <div className="mt-[var(--space-xl)] nova-section-in">
                 <div className="mx-auto mb-[var(--space-xl)] h-px w-full max-w-[840px] bg-[var(--border-subtle)]" />
                 <NovaIdeas
                   ideas={NOVA_IDEAS}
