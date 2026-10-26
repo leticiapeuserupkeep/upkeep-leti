@@ -176,8 +176,7 @@ function NavRow({ item, active, collapsed }: { item: NavItem; active: boolean; c
 
 export function SideNav({ collapsed }: SideNavProps) {
   const pathname = usePathname()
-  const setup = useSetupState()
-  const setupPercent = setupProgress(setup)
+  const setupPercent = setupProgress(useSetupState())
   const [appOpen, setAppOpen] = useState(false)
 
   return (
@@ -297,30 +296,28 @@ export function SideNav({ collapsed }: SideNavProps) {
           </ScrollArea.Scrollbar>
         </ScrollArea.Root>
 
-        {/* Once the account is set up: Nova on the phone, floating over the
-            bottom of the nav, just above the footer. */}
-        {setup.companyConfirmed && (
-          <div className="relative h-0">
-            <div className={`absolute bottom-full z-10 mb-[var(--space-sm)] ${collapsed ? 'left-1/2 -translate-x-1/2' : 'inset-x-[var(--space-sm)]'}`}>
-              <button
-                type="button"
-                onClick={() => setAppOpen(true)}
-                aria-label="Get the UpKeep App"
-                className={`flex items-center gap-3 rounded-[var(--radius-xl)] bg-[var(--color-accent-12)] text-left text-white shadow-[var(--shadow-lg)] transition-[filter] duration-[var(--duration-fast)] hover:brightness-110 cursor-pointer nova-panel-up ${
-                  collapsed ? 'h-9 w-9 justify-center' : 'w-full px-3 py-2.5'
-                }`}
-              >
-                <Smartphone size={18} className="shrink-0 text-white/80" />
-                {!collapsed && (
-                  <span className="flex min-w-0 flex-col">
-                    <span className="truncate text-[length:var(--font-size-base)] font-semibold">Get the UpKeep App</span>
-                    <span className="text-[length:var(--font-size-sm)] leading-4 text-white/70">Your maintenance assistant, now on your phone</span>
-                  </span>
-                )}
-              </button>
-            </div>
+        {/* Nova on the phone, always there: floating over the bottom of the
+            nav, just above the footer. */}
+        <div className="relative h-0">
+          <div className={`absolute bottom-full z-10 mb-[var(--space-sm)] ${collapsed ? 'left-1/2 -translate-x-1/2' : 'inset-x-[var(--space-sm)]'}`}>
+            <button
+              type="button"
+              onClick={() => setAppOpen(true)}
+              aria-label="Get the UpKeep App"
+              className={`flex items-center gap-3 rounded-[var(--radius-xl)] bg-[var(--color-accent-12)] text-left text-white shadow-[var(--shadow-lg)] transition-[filter] duration-[var(--duration-fast)] hover:brightness-110 cursor-pointer nova-panel-up ${
+                collapsed ? 'h-9 w-9 justify-center' : 'w-full px-3 py-2.5'
+              }`}
+            >
+              <Smartphone size={18} className="shrink-0 text-white/80" />
+              {!collapsed && (
+                <span className="flex min-w-0 flex-col">
+                  <span className="truncate text-[length:var(--font-size-base)] font-semibold">Get the UpKeep App</span>
+                  <span className="text-[length:var(--font-size-sm)] leading-4 text-white/70">Your maintenance assistant, now on your phone</span>
+                </span>
+              )}
+            </button>
           </div>
-        )}
+        </div>
         <MobileAppModal open={appOpen} onOpenChange={setAppOpen} />
 
         <Separator.Root className="h-px bg-[var(--border-default)]" />
