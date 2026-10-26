@@ -1,9 +1,11 @@
 'use client'
 
-import { AlertTriangle, Repeat, Flag, CalendarClock, FileText, Check, Loader2 } from 'lucide-react'
+import { useState } from 'react'
+import { AlertTriangle, Repeat, Flag, CalendarClock, FileText, Check, Loader2, ArrowRight } from 'lucide-react'
 import { Button } from '@/app/components/ui/Button'
 import { DonutChart } from '@/app/components/ui/DonutChart'
 import { AppLogo } from './NovaPrimitives'
+import { useComposerAction } from './composerAction'
 import { MAINTENANCE_OVERVIEW, type MaintenancePlanItem, type SourceId } from '@/app/lib/onboarding/nova-onboarding-data'
 
 const TONE = {
@@ -125,34 +127,76 @@ function Bars({ items, max }: { items: { label: string; value: number }[]; max: 
   )
 }
 
-/** The plan built from the findings — recommendations until approved. */
-export function MaintenancePlanCard({ items, added, adding, skipped, onAdd, onAddAll, onSkip }: {
+/** The first look at what Nova found — a few numbers, and the full report
+ * beside the chat whenever the user wants it. */
+export function OverviewTeaserCard({ open, onToggle }: {
+  /** The report is showing beside the chat. */
+  open: boolean
+  onToggle: () => void
+}) {
+  const stat = (label: string) => MAINTENANCE_OVERVIEW.metrics.find(m => m.label === label)?.value ?? 0
+  const stats = [
+    { value: stat('Maintenance-related issues found'), label: 'Issues identified' },
+    { value: stat('Need attention'), label: 'Need attention', highlight: true },
+    { value: stat('Recurring'), label: 'Recurring issues' },
+  ]
+  return (
+    <div className="flex w-full max-w-[720px] flex-col gap-4 rounded-[var(--radius-2xl)] border border-[var(--border-default)] bg-[var(--surface-primary)] p-[var(--space-lg)] shadow-[var(--shadow-xs)] nova-enter">
+      <div className="flex items-center justify-between gap-3">
+        <Heading>Your first maintenance overview</Heading>
+        <Button variant="secondary" size="sm" className="shrink-0" onClick={onToggle}>
+          {open ? 'Hide report' : <>View report <ArrowRight size={12} /></>}
+        </Button>
+      </div>
+      <div className="grid grid-cols-3 gap-2">
+        {stats.map((s, i) => (
+          <div
+            key={s.label}
+            className={`flex flex-col gap-0.5 rounded-[var(--radius-lg)] px-3 py-2.5 nova-enter ${s.highlight ? 'bg-[var(--color-error-light)]' : 'bg-[var(--color-neutral-2)]'}`}
+            style={{ animationDelay: `${i * 90}ms` }}
+          >
+            <span className={`text-[length:var(--font-size-xl)] font-semibold tabular-nums ${s.highlight ? 'text-[var(--color-error)]' : 'text-[var(--color-neutral-12)]'}`}>{s.value}</span>
+            <span className="text-[length:var(--font-size-sm)] leading-4 text-[var(--color-neutral-10)]">{s.label}</span>
+          </div>
+        ))}
+      </div>
+    </div>
+  )
+}
+
+/** Actions from the findings — all picked to start; nothing is created until
+ * the user says so. */
+export function MaintenancePlanCard({ items, added, adding, skipped, onCreate, onSkip }: {
   items: MaintenancePlanItem[]
   added: string[]
   adding: string[]
   skipped: boolean
-  onAdd: (item: MaintenancePlanItem) => void
-  onAddAll: () => void
+  onCreate: (items: MaintenancePlanItem[]) => void
   onSkip: () => void
 }) {
-  const allQueued = items.every(i => added.includes(i.id) || adding.includes(i.id))
+  const [selected, setSelected] = useState(() => new Set(items.map(i => i.id)))
+  const answered = skipped || added.length > 0 || adding.length > 0
+  const picked = items.filter(i => selected.has(i.id))
+  useComposerAction(answered ? null : picked.length > 0 ? { label: 'Create selected', run: () => onCreate(picked) } : { label: 'Not now', run: onSkip })
+  const toggle = (id: string) => setSelected(prev => {
+    const next = new Set(prev)
+    if (next.has(id)) next.delete(id)
+    else next.add(id)
+    return next
+  })
   return (
-    <div className="flex w-full max-w-[720px] flex-col gap-3 rounded-[var(--radius-2xl)] border border-[var(--border-default)] bg-[var(--surface-primary)] p-[var(--space-lg)] shadow-[var(--shadow-xs)] nova-enter">
-      <Heading>Action plan</Heading>
-      <div className="flex flex-col gap-2">
-        {items.map((item, i) => {
+    <div className="flex w-full max-w-[720px] flex-col gap-3 nova-enter">
+      <ul className="flex flex-col divide-y divide-[var(--border-subtle)] overflow-hidden rounded-[var(--radius-lg)] border border-[var(--border-subtle)]">
+        {items.map(item => {
           const done = added.includes(item.id)
           const busy = adding.includes(item.id)
           const Icon = item.kind === 'pm' ? CalendarClock : FileText
           return (
-            <div key={item.id} className="flex items-center gap-3 rounded-[var(--radius-lg)] border border-[var(--border-default)] px-3 py-2.5 nova-enter" style={{ animationDelay: `${i * 90}ms` }}>
-              <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-[var(--radius-lg)] bg-[var(--color-accent-1)] text-[var(--color-accent-9)]"><Icon size={16} /></span>
-              <span className="flex min-w-0 flex-1 flex-col">
-                <span className="text-[length:var(--font-size-xs)] font-medium uppercase tracking-[0.04em] text-[var(--color-neutral-8)]">
-                  {item.kind === 'pm' ? 'Preventive maintenance' : 'Work order'}
-                </span>
-                <span className="text-[length:var(--font-size-base)] font-medium text-[var(--color-neutral-12)]">{item.title}</span>
-                <span className="truncate text-[length:var(--font-size-sm)] text-[var(--color-neutral-9)]">{[item.detail, item.meta].filter(Boolean).join(' · ')}</span>
+            <li key={item.id} className="flex items-center gap-3 px-3 py-2">
+              <Icon size={14} className="shrink-0 text-[var(--color-neutral-8)]" />
+              <span className="flex min-w-0 flex-1 flex-col text-[length:var(--font-size-sm)]">
+                <span className="truncate font-medium text-[var(--color-neutral-12)]">{item.title}</span>
+                <span className="truncate text-[var(--color-neutral-8)]">{item.kind === 'pm' ? 'Create PM' : 'Create Work Order'} · {item.detail}</span>
               </span>
               {done ? (
                 <span className="inline-flex items-center gap-1 text-[length:var(--font-size-sm)] font-medium text-[var(--color-success)]">
@@ -163,16 +207,30 @@ export function MaintenancePlanCard({ items, added, adding, skipped, onAdd, onAd
                   <Loader2 size={14} className="animate-spin" /> Creating…
                 </span>
               ) : (
-                <Button variant="secondary" size="sm" onClick={() => onAdd(item)}>{item.kind === 'pm' ? 'Create PM' : 'Create Work Order'}</Button>
+                <button
+                  type="button"
+                  role="checkbox"
+                  aria-checked={selected.has(item.id)}
+                  aria-label={item.title}
+                  disabled={answered}
+                  onClick={() => toggle(item.id)}
+                  className={`flex h-[18px] w-[18px] shrink-0 items-center justify-center rounded-[5px] border transition-colors duration-[var(--duration-fast)] cursor-pointer disabled:cursor-default disabled:opacity-60 ${
+                    selected.has(item.id) ? 'border-[var(--color-accent-9)] bg-[var(--color-accent-9)] text-white' : 'border-[var(--color-neutral-7)] bg-[var(--surface-primary)]'
+                  }`}
+                >
+                  {selected.has(item.id) && <Check size={12} strokeWidth={3} />}
+                </button>
               )}
-            </div>
+            </li>
           )
         })}
-      </div>
-      {!allQueued && (
+      </ul>
+      {!answered && (
         <div className="flex items-center justify-end gap-2">
-          {!skipped && <Button variant="secondary" size="md" onClick={onSkip}>Skip for now</Button>}
-          <Button variant="primary" size="md" onClick={onAddAll}>Add all</Button>
+          <Button variant="secondary" size="md" onClick={onSkip}>Not now</Button>
+          <Button variant="primary" size="md" disabled={selected.size === 0} onClick={() => onCreate(picked)}>
+            Create selected
+          </Button>
         </div>
       )}
     </div>

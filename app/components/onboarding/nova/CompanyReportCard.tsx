@@ -2,9 +2,10 @@
 
 import { useState } from 'react'
 import Image from 'next/image'
-import { Check, ChevronRight, Loader2, MapPin, Box } from 'lucide-react'
+import { Check, ChevronRight, Loader2, MapPin, Box, Plus, ClipboardList } from 'lucide-react'
 import { Button } from '@/app/components/ui/Button'
-import { COMPANY_REPORT, STARTER_ASSETS, SUGGESTED_PEOPLE, type PlanItem } from '@/app/lib/onboarding/nova-onboarding-data'
+import { useComposerAction } from '@/app/components/onboarding/nova/composerAction'
+import { COMPANY_REPORT, STARTER_ASSETS, SUGGESTED_PEOPLE, type PlanItem, type PlanStepId, type TypicalItem } from '@/app/lib/onboarding/nova-onboarding-data'
 
 const PLANTS_PREVIEW = 5
 
@@ -151,7 +152,7 @@ function CheckRow({ checked, onToggle, disabled, error = false, children }: { ch
         disabled={disabled}
         onClick={onToggle}
         className={`flex h-[18px] w-[18px] shrink-0 items-center justify-center rounded-[5px] border transition-colors duration-[var(--duration-fast)] cursor-pointer disabled:cursor-default disabled:opacity-60 ${
-          checked ? 'border-[var(--color-accent-4)] bg-[var(--color-accent-2)] text-[var(--color-accent-9)]' : error ? 'border-[var(--color-error)] bg-[var(--surface-primary)]' : 'border-[var(--color-neutral-7)] bg-[var(--surface-primary)]'
+          checked ? 'border-[var(--color-accent-9)] bg-[var(--color-accent-9)] text-white' : error ? 'border-[var(--color-error)] bg-[var(--surface-primary)]' : 'border-[var(--color-neutral-7)] bg-[var(--surface-primary)]'
         }`}
       >
         {checked && <Check size={12} strokeWidth={3} />}
@@ -327,6 +328,117 @@ export function ActionPlanCard({ plan, generated, generating, skipped, gmailConn
           </div>
         )}
       </Section>
+    </div>
+  )
+}
+
+const STEP_NOUN: Record<PlanStepId, [string, string]> = {
+  locations: ['Location', 'Locations'],
+  assets: ['Asset', 'Assets'],
+  team: ['Team member', 'Team members'],
+  workOrders: ['Work order', 'Work orders'],
+}
+
+/** One step of the setup plan, as its own chat message: the suggestions with
+ * checkboxes (all on), then Skip for now / Add. Locations and assets are
+ * typical ones for the industry; the team comes from Gmail (connected first). */
+export function PlanStepCard({ step, items, done, onAdd, onSkip }: {
+  step: PlanStepId
+  /** Suggestions for locations, assets or work orders. */
+  items: TypicalItem[]
+  /** Answered — the card locks. */
+  done: boolean
+  onAdd: (names: string[]) => void
+  onSkip: () => void
+}) {
+  // A small team for the example account: the first five found in Gmail.
+  const people = SUGGESTED_PEOPLE.filter(p => p.app === 'gmail').slice(0, 5)
+  // Anything the user adds themselves with "Other".
+  const [custom, setCustom] = useState<{ key: string; name: string; detail: string }[]>([])
+  const rows = step === 'team'
+    ? people.map(p => ({ key: p.id, name: p.name, detail: `${p.role} · ${p.plant}` }))
+    : [...items.map(i => ({ key: i.name, name: i.name, detail: i.detail })), ...custom]
+  const [otherOpen, setOtherOpen] = useState(false)
+  const [otherName, setOtherName] = useState('')
+  const [otherDetail, setOtherDetail] = useState('')
+  const addOther = () => {
+    const name = otherName.trim()
+    if (!name) return
+    const key = `custom-${name}-${custom.length}`
+    setCustom(prev => [...prev, { key, name, detail: otherDetail.trim() }])
+    setSelected(prev => new Set(prev).add(key))
+    setOtherName(''); setOtherDetail(''); setOtherOpen(false)
+  }
+  // A first work order is one job, so only the first is picked to start.
+  const [selected, setSelected] = useState(() => new Set((step === 'workOrders' ? rows.slice(0, 1) : rows).map(r => r.key)))
+  const toggle = (key: string) => setSelected(prev => {
+    const next = new Set(prev)
+    if (next.has(key)) next.delete(key)
+    else next.add(key)
+    return next
+  })
+  const picked = rows.filter(r => selected.has(r.key)).map(r => r.name)
+  const primaryLabel = `${step === 'workOrders' ? 'Create' : 'Add'} ${selected.size} ${STEP_NOUN[step][selected.size === 1 ? 0 : 1]}`
+  // The chat box offers the same answer: Enter adds what's picked, or skips.
+  useComposerAction(done ? null : selected.size > 0 ? { label: primaryLabel, run: () => onAdd(picked) } : { label: 'Skip for now', run: onSkip })
+  const Icon = step === 'locations' ? MapPin : step === 'assets' ? Box : step === 'workOrders' ? ClipboardList : null
+
+  return (
+    // No outer card: the options sit right in the conversation.
+    <div className="flex w-full max-w-[720px] flex-col gap-3 nova-enter">
+        <ul className="flex flex-col divide-y divide-[var(--border-subtle)] overflow-hidden rounded-[var(--radius-lg)] border border-[var(--border-subtle)]">
+          {rows.map(r => (
+            <CheckRow key={r.key} checked={selected.has(r.key)} disabled={done} onToggle={() => toggle(r.key)}>
+              {Icon && <Icon size={14} className="shrink-0 text-[var(--color-neutral-8)]" />}
+              <span className="flex min-w-0 flex-col">
+                <span className="truncate font-medium text-[var(--color-neutral-12)]">{r.name}</span>
+                {r.detail && <span className="truncate text-[var(--color-neutral-8)]">{r.detail}</span>}
+              </span>
+            </CheckRow>
+          ))}
+          {/* Other: something not in the suggestions — name plus a bit of detail. */}
+          {step !== 'team' && !done && (otherOpen ? (
+            <li className="flex flex-col gap-2 px-3 py-2.5 nova-label-in">
+              <input
+                autoFocus
+                value={otherName}
+                onChange={e => setOtherName(e.target.value)}
+                onKeyDown={e => { if (e.key === 'Enter') addOther() }}
+                placeholder={step === 'assets' ? 'Asset name, e.g. Boiler #2' : step === 'workOrders' ? 'What needs doing, e.g. Repair dock door' : 'Location name, e.g. North building'}
+                className="h-8 rounded-[var(--radius-md)] border border-[var(--border-default)] px-2.5 text-[length:var(--font-size-sm)] text-[var(--color-neutral-12)] outline-none placeholder:text-[var(--color-neutral-7)] focus:border-[var(--color-accent-7)]"
+              />
+              <input
+                value={otherDetail}
+                onChange={e => setOtherDetail(e.target.value)}
+                onKeyDown={e => { if (e.key === 'Enter') addOther() }}
+                placeholder={step === 'assets' ? 'Extra info (optional): make, model, where it is…' : step === 'workOrders' ? 'Extra info (optional): where, which asset, how urgent…' : 'Extra info (optional): address, what happens there…'}
+                className="h-8 rounded-[var(--radius-md)] border border-[var(--border-default)] px-2.5 text-[length:var(--font-size-sm)] text-[var(--color-neutral-12)] outline-none placeholder:text-[var(--color-neutral-7)] focus:border-[var(--color-accent-7)]"
+              />
+              <div className="flex justify-end gap-2">
+                <Button variant="secondary" size="sm" onClick={() => { setOtherOpen(false); setOtherName(''); setOtherDetail('') }}>Cancel</Button>
+                <Button variant="primary" size="sm" disabled={!otherName.trim()} onClick={addOther}>Add to list</Button>
+              </div>
+            </li>
+          ) : (
+            <li>
+              <button
+                type="button"
+                onClick={() => setOtherOpen(true)}
+                className="flex w-full items-center gap-2 px-3 py-2 text-left text-[length:var(--font-size-sm)] font-medium text-[var(--color-accent-9)] transition-colors hover:bg-[var(--color-accent-1)] cursor-pointer"
+              >
+                <Plus size={13} /> Other
+              </button>
+            </li>
+          ))}
+        </ul>
+      {!done && (
+        <div className="flex items-center justify-end gap-2">
+          <Button variant="secondary" size="md" onClick={onSkip}>Skip for now</Button>
+          <Button variant="primary" size="md" disabled={selected.size === 0} onClick={() => onAdd(picked)}>
+              {primaryLabel}
+            </Button>
+        </div>
+      )}
     </div>
   )
 }

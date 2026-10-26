@@ -59,12 +59,17 @@ function SetupChecklist({ steps, review = false }: { steps: SetupStep[]; review?
   )
 }
 
-function CompleteBar() {
+/** How much of the setup is done — green once it's all there. */
+function CompleteBar({ percent }: { percent: number }) {
+  const complete = percent >= 100
+  const color = complete ? 'var(--color-success)' : 'var(--color-accent-9)'
   return (
     <div className="flex flex-col gap-1.5">
-      <span className="text-[length:var(--font-size-xs)] font-semibold uppercase tracking-[0.06em] text-[var(--color-success)]">100% setup complete</span>
+      <span className="text-[length:var(--font-size-xs)] font-semibold uppercase tracking-[0.06em]" style={{ color }}>
+        {complete ? '100% setup complete' : `${percent}% set up`}
+      </span>
       <span className="h-1.5 w-full overflow-hidden rounded-full bg-[var(--color-neutral-3)]">
-        <span className="block h-full w-full origin-left rounded-full bg-[var(--color-success)]" style={{ animation: 'nova-bar-grow 1s cubic-bezier(0.22, 1, 0.36, 1) both' }} />
+        <span className="block h-full origin-left rounded-full" style={{ width: `${percent}%`, background: color, animation: 'nova-bar-grow 1s cubic-bezier(0.22, 1, 0.36, 1) both' }} />
       </span>
     </div>
   )
@@ -77,11 +82,13 @@ export const SetupCompleteCard = forwardRef<HTMLDivElement, {
   /** The fuller list shown while reviewing. */
   reviewSteps: SetupStep[]
   onGo: () => void
-}>(function SetupCompleteCard({ steps, reviewSteps, onGo }, ref) {
+  /** Share of the setup steps done, 0–100. */
+  percent?: number
+}>(function SetupCompleteCard({ steps, reviewSteps, onGo, percent = 100 }, ref) {
   const [review, setReview] = useState(false)
   return (
     <div ref={ref} className={`${CARD} border-[var(--border-default)] scroll-mt-4`}>
-      <CompleteBar />
+      <CompleteBar percent={percent} />
       {review ? <SetupChecklist key="review" steps={reviewSteps} review /> : <SetupChecklist key="done" steps={steps} />}
       <div className="flex items-center justify-end gap-2">
         <Button variant="secondary" size="md" onClick={() => setReview(r => !r)}>{review ? 'Done reviewing' : 'Review setup'}</Button>

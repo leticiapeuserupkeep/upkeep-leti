@@ -23,7 +23,7 @@ const ITEMS: { key: Key; label: string; description: string; icon: LucideIcon }[
 /** The setup guide: one row per step, each clearly done or not, with the
  * next one highlighted. Counts update as Nova adds things, and filled steps
  * open to show what was added. */
-export function SetupChecklistPanel({ headerTargetId, onAccountIncomplete, accountLocked = false, title = 'Set up your account', subtitle = 'Complete these steps here, or answer Nova’s questions as you go.', className, headerAction, accountDone, accountRows, accountLoading = false, accountDetails, accountSubmitLabel = 'Save', accountOpenByDefault = false, industryOptions, onSaveAccount, gmailConnected, onConnectGmail, counts, items, pending = [], onAdd, onView, children }: {
+export function SetupChecklistPanel({ headerTargetId, onAccountIncomplete, accountLocked = false, title = 'Set up your account', subtitle = 'Complete these steps here, or answer Nova’s questions as you go.', className, headerAction, accountDone, accountRows, accountLoading = false, accountDetails, accountSubmitLabel = 'Save', accountOpenByDefault = false, industryOptions, onSaveAccount, gmailConnected, onConnectGmail, counts, items, pending = [], onAdd, onView, children, activeStep }: {
   title?: string
   subtitle?: string
   /** Replaces the default container styles. */
@@ -61,25 +61,31 @@ export function SetupChecklistPanel({ headerTargetId, onAccountIncomplete, accou
   onView: (key: Key) => void
   /** Extra content under the checklist, e.g. Nova's recommendations. */
   children?: ReactNode
+  /** The step Nova is walking the user through — focus follows it. */
+  activeStep?: Key
 }) {
   // Accordion: at most one step open; nothing opens on its own.
   const [openStep, setOpenStep] = useState<string | null>(accountOpenByDefault ? 'account' : null)
 
-  // Account just confirmed: hand focus to Locations, the next step.
+  // Focus follows the step Nova is on (Locations → Assets → Team), and lets go
+  // once Nova moves past them — unless the user is typing somewhere else.
   const panelRef = useRef<HTMLElement>(null)
-  const wasAccountDone = useRef(accountDone)
   useEffect(() => {
-    const justDone = accountDone && !wasAccountDone.current
-    wasAccountDone.current = accountDone
-    if (!justDone) return
     const id = window.setTimeout(() => {
-      const next = panelRef.current?.querySelector<HTMLElement>('[data-step="locations"]')
-      if (!next) return
+      const panel = panelRef.current
+      const current = document.activeElement
+      const ours = !current || current === document.body || Boolean(panel?.contains(current))
+      if (!panel || !ours) return
+      const next = activeStep ? panel.querySelector<HTMLElement>(`[data-step="${activeStep}"]`) : null
+      if (!next) {
+        if (current instanceof HTMLElement && panel.contains(current)) current.blur()
+        return
+      }
       next.scrollIntoView({ behavior: 'smooth', block: 'nearest' })
       next.querySelector<HTMLElement>('button')?.focus({ preventScroll: true })
     }, 400)
     return () => window.clearTimeout(id)
-  }, [accountDone])
+  }, [activeStep])
 
   const done = (accountDone ? 1 : 0) + ITEMS.filter(i => counts[i.key] > 0).length
   // While the account is being filled in, the bar moves with it (each field is
@@ -300,7 +306,8 @@ function AccountStep({ expanded, onExpand, onFillChange, onIncomplete, locked = 
   const [showErrors, setShowErrors] = useState(false)
   const missing = (['companyName', 'companySize', 'industry'] as const).filter(k => !draft[k].trim())
   const fill = (3 - missing.length) / 3
-  useEffect(() => { onFillChange?.(fill) }, [fill, onFillChange])
+  // Only while the form is open does it count toward the bar.
+  useEffect(() => { onFillChange?.(editing ? fill : 0) }, [fill, editing, onFillChange])
   // Once confirmed the card folds to its header — the summary is a click away.
   const [summaryOpen, setSummaryOpen] = useState(false)
   const [wasDone, setWasDone] = useState(done)
@@ -351,7 +358,7 @@ function AccountStep({ expanded, onExpand, onFillChange, onIncomplete, locked = 
           aria-expanded={editing || (done && summaryOpen)}
           className="flex min-w-0 flex-1 items-center gap-3 text-left cursor-pointer"
         >
-          <StepHeading icon={Building2} label="Your company details" done={done} detail={done ? 'Tell us about your company' : 'Does everything look right?'} />
+          <StepHeading icon={Building2} label="Your company details" done={done} detail={!done && editing ? 'Does everything look right?' : 'Tell us about your company'} />
         </button>
         {done && !editing && (
           <button type="button" onClick={open} className="inline-flex shrink-0 items-center gap-1 text-[length:var(--font-size-sm)] font-medium text-[var(--color-accent-9)] transition-colors hover:text-[var(--color-accent-10)] cursor-pointer">
@@ -360,9 +367,9 @@ function AccountStep({ expanded, onExpand, onFillChange, onIncomplete, locked = 
         )}
         {loading && !done
           ? <Loader2 size={18} className="shrink-0 animate-spin text-[var(--color-accent-9)]" aria-label="In progress" />
-          : done
+          : done || !editing
             ? <StepStatus done={done} active={active} label="Confirm your account" />
-            : <FillRing percent={Math.round(((3 - missing.length) / 3) * 100)} />}
+            : <FillRing percent={Math.round(fill * 100)} />}
       </div>
 
       {/* Form and summary fold open/closed smoothly instead of popping. */}

@@ -3,13 +3,13 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { typingDuration, introDuration } from './NovaPrimitives'
 import { ANALYSIS_STEP_MS } from './AnalysisSequence'
-import { researchDuration } from './NovaResearch'
 import type { FocusAction, ReportDestination } from './NovaInsightCards'
 import { setupStore } from '@/app/lib/onboarding/setup-store'
 import {
   MOCK_COMPANY, analysisSteps, sourceName, affectedAssets,
-  QUICK_LOOKUP, MAINTENANCE_PLAN, suggestedPeople, REPORT_DOC, TRIAL_SEATS, ACTION_PLAN,
-  type CompanyProfile, type SourceId, type PlanItem, type ResearchStep, type SuggestedPerson, type UpkeepRole, type MaintenancePlanItem,
+  MAINTENANCE_PLAN, suggestedPeople, REPORT_DOC, TRIAL_SEATS, ACTION_PLAN,
+  INTEGRATION_CATALOG,
+  type CompanyProfile, type SourceId, type PlanItem, type PlanStepId, type ResearchStep, type SuggestedPerson, type UpkeepRole, type MaintenancePlanItem,
 } from '@/app/lib/onboarding/nova-onboarding-data'
 
 /** One entry in the conversation. Nova's rich replies (cards) are messages
@@ -34,6 +34,8 @@ export type NovaMessage =
   | { id: number; kind: 'research'; steps: ResearchStep[]; stepMs?: number; label?: string }
   | { id: number; kind: 'company-report' }
   | { id: number; kind: 'action-plan' }
+  /** One step of the setup plan, shown on its own (locations, assets, team). */
+  | { id: number; kind: 'plan-step'; stepId: PlanStepId }
   /** "Want me to build your plan?" — Build / Not now. */
   | { id: number; kind: 'build-plan-choice' }
   | { id: number; kind: 'team-sources' }
@@ -44,6 +46,8 @@ export type NovaMessage =
   | { id: number; kind: 'choice'; key: ProfileQuestion; options: string[] }
   | { id: number; kind: 'setup-complete' }
   | { id: number; kind: 'maintenance-overview' }
+  /** A few numbers from the analysis, with View report. */
+  | { id: number; kind: 'overview-teaser' }
   | { id: number; kind: 'mplan-choice' }
   | { id: number; kind: 'maintenance-plan' }
   /** Nova suggesting a product or app in the chat, before it can ever show in the panel. */
@@ -55,6 +59,8 @@ export type NovaMessage =
   | { id: number; kind: 'assets' }
   | { id: number; kind: 'app-offer' }
   | { id: number; kind: 'next-steps' }
+  /** Closing tags: what to do next in UpKeep. */
+  | { id: number; kind: 'next-ideas' }
 
 type NewMessage = NovaMessage extends infer M ? (M extends NovaMessage ? Omit<M, 'id'> : never) : never
 
@@ -63,14 +69,23 @@ class Cancelled extends Error {}
 /** Tools Nova suggests connecting to find maintenance signals. */
 const INTEGRATIONS: SourceId[] = ['teams', 'slack', 'gmail']
 
-/** The first lookup is a quick confirmation of sign-up data. */
-const QUICK_STEP_MS = 450
 
 export const INTRO_GREETING = 'I’m Nova'
 export const INTRO_LINE = 'I’ll help you get your account set up.'
 
 /** Emulated pause between Nova's lines, so replies land like a person's. */
 const BEAT_MS = 450
+
+/** What the user asked about, in a few words for Nova's reply
+ * ("I'll help you get started with …"). */
+function topicOf(ask: string): string {
+  const t = ask.toLowerCase()
+  if (/location|site|plant/.test(t)) return 'organizing maintenance'
+  if (/equipment|asset|breakdown/.test(t)) return 'tracking equipment'
+  if (/team|people|together/.test(t)) return 'connecting your team'
+  if (/report|summar|dashboard/.test(t)) return 'maintenance reports'
+  return 'your maintenance work'
+}
 
 export function useNovaOnboarding() {
   const [messages, setMessages] = useState<NovaMessage[]>([])
@@ -85,6 +100,8 @@ export function useNovaOnboarding() {
   const [mplanAdded, setMplanAdded] = useState<string[]>([])
   const [mplanAdding, setMplanAdding] = useState<string[]>([])
   const [mplanSkipped, setMplanSkipped] = useState(false)
+  // The mobile app promo above the message box.
+  const [appPromo, setAppPromo] = useState(false)
   const [safetyAnswered, setSafetyAnswered] = useState(false)
   const [teamLocked, setTeamLocked] = useState(false)
   const [googleConsentOpen, setGoogleConsentOpen] = useState(false)
@@ -110,6 +127,8 @@ export function useNovaOnboarding() {
   const focusShown = useRef(false)
   const nextStepsShown = useRef(false)
   const connectedRef = useRef<SourceId[]>([])
+  // Apps connected from the full list (SAP, Outlook…) — context for Nova too.
+  const otherConnectedRef = useRef<string[]>([])
   connectedRef.current = connected
   const companyRef = useRef(company)
   companyRef.current = company
@@ -122,6 +141,8 @@ export function useNovaOnboarding() {
   const pendingWaits = useRef(new Set<() => void>())
   // The user's answers to the profile questions.
   const [profile, setProfile] = useState<Partial<Record<ProfileQuestion, string>>>({})
+  const profileRef = useRef(profile)
+  profileRef.current = profile
   // How many steps are waiting on the user — Nova isn't "working" then.
   const [awaiting, setAwaiting] = useState(0)
   const waitForUser = useCallback((key: string) => {
@@ -189,6 +210,9 @@ export function useNovaOnboarding() {
     script({ wait, say, think })
       .catch(e => { if (!(e instanceof Cancelled)) throw e })
       .finally(() => {
+        // Runs from before a reset no longer count (one may never finish,
+        // e.g. still waiting on the first prompt).
+        if (gen !== generation.current) return
         activeRuns.current--
         if (activeRuns.current === 0) setBusy(false)
       })
@@ -209,6 +233,7 @@ export function useNovaOnboarding() {
     setMplanAdded([])
     setMplanAdding([])
     setMplanSkipped(false)
+    setAppPromo(false)
     setSafetyAnswered(false)
     setTeamLocked(false)
     setGoogleConsentOpen(false)
@@ -217,6 +242,9 @@ export function useNovaOnboarding() {
     setAddedPeople([])
     setAddingPeople([])
     setConnected([])
+    setPlanStepsDone([])
+    planAddedRef.current = {}
+    otherConnectedRef.current = []
     setSourcesLocked(false)
     setEmailed(false)
     setUsedActions([])
@@ -224,6 +252,8 @@ export function useNovaOnboarding() {
     safetyAnsweredRef.current = false
     waiters.current.clear()
     setAwaiting(0)
+    activeRuns.current = 0
+    setBusy(false)
     setProfile({})
     setStarted(false)
     fastForward.current = false
@@ -242,6 +272,7 @@ export function useNovaOnboarding() {
       created: [],
       creating: false,
       counts: { ...prev.counts, locations: 0, assets: 0, team: 0, workOrders: 0 },
+      addedNames: { locations: [], assets: [] },
       workOrderLanding: false,
       setupComplete: false,
       connectedApps: [],
@@ -250,25 +281,15 @@ export function useNovaOnboarding() {
       // Nova waits for the user's first prompt (from the welcome box).
       await waitForUser('start')
       await wait(900)
-      // Started from an idea card: Nova takes it on, then needs the basics first.
-      await say(fromIdea.current
-        ? 'Great idea — I’ll set that up for you. First, a few quick questions so it fits your team.'
-        : 'Absolutely! I’ll guide you through a few quick questions to personalize UpKeep for your team. You can also complete any step from the setup guide.')
-      // A couple of quick questions first, one at a time.
-      await say('First, what best describes your role?')
-      push({ kind: 'choice', key: 'role', options: PROFILE_OPTIONS.role })
-      await waitForUser('choice:role')
-      await say('Which industry is your company in?')
+      // Whatever they asked, Nova takes it on — then needs the basics first.
+      // Echo what they asked for, so the answer clearly follows the question.
+      await say(`Absolutely! I’ll help you get started with ${topicOf(firstAsk.current)}! First, let’s learn a little about your business so I can make the right recommendations.`)
+      await say('What industry is your company in?')
       push({ kind: 'choice', key: 'industry', options: PROFILE_OPTIONS.industry })
       await waitForUser('choice:industry')
-      // Public research, shown step by step so it's clear where the company
-      // details come from.
-      push({ kind: 'research', steps: QUICK_LOOKUP, stepMs: QUICK_STEP_MS, label: 'Collecting data' })
-      await wait(researchDuration(QUICK_LOOKUP, QUICK_STEP_MS))
-      await say(`I have this info about ${companyRef.current.name}. Does this look right?`)
-      push({ kind: 'company' })
-      await wait(500)
-      push({ kind: 'confirm-company' })
+      // That's all the account needs: it's done, and Nova moves straight on
+      // to the plan (locations first) — no company card to confirm.
+      confirmCompany()
     })
     return () => { generation.current++ }
   }, [run, push, waitForUser])
@@ -287,9 +308,42 @@ export function useNovaOnboarding() {
       await wait(500)
       // No company report here — straight to what can set up the account.
       await think(['Looking for locations…', 'Matching equipment to your main location…', 'Finding people on your maintenance team…'], 2400)
-      await say('I’ve created a setup plan based on what you shared and what I learned about your company. Let’s get started!')
-      push({ kind: 'action-plan' })
-      await continueAfterReport({ wait, say, think }, connectedRef.current.includes('gmail'))
+      // One step at a time, each its own message. Nova only knows the
+      // industry, so it suggests typical kinds of locations and assets —
+      // never presented as the company's real sites or equipment.
+      const industry = profileRef.current.industry
+      const who = industry && industry !== 'Other' ? `${industry} teams` : 'Teams'
+      await say(`${who} often organize maintenance around locations like these. Would you like to start with any of them?`)
+      push({ kind: 'plan-step', stepId: 'locations' })
+      await waitForUser('plan-step:locations')
+      await wait(400)
+      if (planAddedRef.current.locations) {
+        await say('Great! Now let’s add the equipment your team maintains. Based on your industry, here are a few common assets to get you started.')
+      } else {
+        // Skipped locations: move on without dwelling on it.
+        await say('Let’s move on to your equipment!')
+        await say('Based on your industry, I’ve suggested a few common assets to help you get started. You can always add more later.')
+      }
+      push({ kind: 'plan-step', stepId: 'assets' })
+      await waitForUser('plan-step:assets')
+      await wait(400)
+      await say('Last, let’s bring in your team. Connect Gmail and I’ll find the people you work with on maintenance.')
+      // Gmail's consent card (why, what's safe, Connect / Not now) floats by
+      // the message box; the people only show once it's connected.
+      if (!connectedRef.current.includes('gmail')) {
+        setConsentScope('gmail')
+        setGoogleConsentOpen(true)
+        const allowed = await new Promise<boolean>(resolve => { gmailAnswer.current = resolve })
+        if (!allowed) {
+          push({ kind: 'user', text: 'Not now' })
+          setPlanStepsDone(prev => [...prev, 'team'])
+        }
+      }
+      if (connectedRef.current.includes('gmail')) {
+        push({ kind: 'plan-step', stepId: 'team' })
+        await waitForUser('plan-step:team')
+      }
+      await continueAfterReport({ wait, say, think }, connectedRef.current.includes('gmail'), true)
     })
   }, [push, remove, run])
 
@@ -303,9 +357,12 @@ export function useNovaOnboarding() {
   /** The user's first prompt — starts the conversation. */
   const [started, setStarted] = useState(false)
   const fromIdea = useRef(false)
+  /** The user's first message — Nova's reply picks up its topic. */
+  const firstAsk = useRef('')
   const start = useCallback((text: string, opts?: { idea?: boolean }) => {
     if (!waiters.current.has('start')) return
     fromIdea.current = Boolean(opts?.idea)
+    firstAsk.current = text
     setStarted(true)
     push({ kind: 'user', text })
     release('start')
@@ -317,6 +374,7 @@ export function useNovaOnboarding() {
     if (!waiters.current.has('start')) return
     // Drop the scripted intro (role and industry questions).
     generation.current++
+    activeRuns.current = 0
     setStarted(true)
     setProfile({ role: d.role, industry: d.industry })
     setCompany(prev => ({ ...prev, name: d.companyName, size: d.companySize }))
@@ -329,6 +387,7 @@ export function useNovaOnboarding() {
   const askMissingIndustry = useCallback((d: { companyName: string; companySize: string }) => {
     if (!waiters.current.has('start')) return
     generation.current++
+    activeRuns.current = 0
     setStarted(true)
     setCompany(prev => ({ ...prev, name: d.companyName || prev.name, size: d.companySize || prev.size }))
     push({ kind: 'user', text: 'Confirm & continue' })
@@ -491,13 +550,36 @@ export function useNovaOnboarding() {
     })
   }, [answeredOffers, push, run, release])
 
+  /** The closing lines match what the user actually did with the steps Nova
+   * walked through: locations, assets, team, and the last one (tools or a
+   * first work order) — all of them, some, or none. */
+  const finish = useCallback(async ({ say, wait }: Helpers, lastStepDone: boolean) => {
+    const { counts } = setupStore.get()
+    const done = [counts.locations > 0, counts.assets > 0, counts.team > 0, lastStepDone].filter(Boolean).length
+    await wait(700)
+    setupStore.update({ setupComplete: true, connectedApps: [...connectedRef.current] })
+    if (done === 4) {
+      await say('You’re all set! 🎉', true)
+      await say('Your workspace is ready. Let’s get started!')
+    } else if (done > 0) {
+      await say('You’re off to a great start!', true)
+      await say('You can finish setting things up anytime.')
+    } else {
+      await say('Let’s see what we can do together! ✨', true)
+      await say('I can help you automate maintenance, create apps for your team, and make everyday work easier.')
+    }
+    await wait(900)
+    await say(done === 0 ? 'Here are a few things we can start with:' : 'What would you like to do next?')
+    push({ kind: 'next-ideas' })
+  }, [push])
+
   /** After the report is kept somewhere: where to start, then the team. With
    * Google connected Nova already sees Gmail, so it goes straight to people. */
   /** After the setup suggestions (already shown): seats, then work tools,
    * then the maintenance overview built from them. */
-  const continueAfterReport = useCallback(async (h: Helpers, _hasGmail?: boolean) => {
+  const continueAfterReport = useCallback(async (h: Helpers, _hasGmail?: boolean, planDone = false) => {
     const { say, think, wait } = h
-    await waitForUser('plan')
+    if (!planDone) await waitForUser('plan')
 
     // More people than the trial's seats → offer the upgrade before moving on.
     if (seatsOverflow.current > 0) {
@@ -508,47 +590,67 @@ export function useNovaOnboarding() {
       await waitForUser('offer:seats')
     }
 
+    // Said "Not now" to Gmail: respect it — no more connecting, straight to
+    // a first work order, then done.
+    if (planDone && !connectedRef.current.includes('gmail')) {
+      await wait(600)
+      await say('Sounds good! You can connect your apps and invite your team anytime.')
+      await say('Now, let’s create your first work order so you can start tracking maintenance in UpKeep.')
+      push({ kind: 'plan-step', stepId: 'workOrders' })
+      await waitForUser('plan-step:workOrders')
+      setIntegrationsLocked(true)
+      await finish(h, setupStore.get().counts.workOrders > 0)
+      return
+    }
+
     // ── Connect tools → find value → offer a plan ──
     // Only offer what isn't connected yet (e.g. Gmail from the plan).
     const offered = INTEGRATIONS.filter(id => !connectedRef.current.includes(id))
     if (offered.length > 0) {
       await wait(600)
-      await say('Connect your work tools so I can give you better insights.')
+      await say('Great! Now let’s connect the other tools your team uses so I can provide more relevant assistance.')
       push({ kind: 'integrations', offered })
       // The user connects as many as they want, then continues (or skips).
       await waitForUser('integrations')
     }
     setIntegrationsLocked(true)
 
-    if (!INTEGRATIONS.some(id => connectedRef.current.includes(id))) {
+    if (!INTEGRATIONS.some(id => connectedRef.current.includes(id)) && otherConnectedRef.current.length === 0) {
       await say('No problem — connect them any time and I’ll look for maintenance signals.')
     } else {
-      // The analysis shows while it runs, then gives way to the one line that matters.
-      const analyzing = push({ kind: 'thinking', labels: ['Scanning maintenance activity…', 'Matching issues to your assets…', 'Finding recurring problems…', 'Identifying what needs attention…'] })
-      await wait(4800)
+      // 1 · Nova says what it will look at — only the apps it was given.
+      const sources = [
+        ...connectedRef.current.filter(id => INTEGRATIONS.includes(id)).map(sourceName),
+        ...INTEGRATION_CATALOG.filter(a => otherConnectedRef.current.includes(a.id)).map(a => a.name),
+      ]
+      const sourceList = sources.length > 1 ? `${sources.slice(0, -1).join(', ')} and ${sources[sources.length - 1]}` : sources[0]
+      await say('Great! Your work apps are connected.')
+      await say('I’ll take a look at recent conversations to see if there’s anything maintenance-related that needs your attention.')
+      const analyzing = push({ kind: 'thinking', labels: [`Reviewing recent activity in ${sourceList}…`, 'Finding maintenance-related conversations…', 'Identifying recurring issues…', 'Preparing your maintenance overview…'] })
+      await wait(3600)
       setMessages(prev => prev.filter(m => m.id !== analyzing))
-      await say('I found a few things that need your attention this week.')
-      push({ kind: 'maintenance-overview' })
-      // The plan follows straight from the findings — nothing is created until approved.
-      await wait(1600)
+
+      // 2 · What it found, before any report — the user decides to open it.
+      await say('I found something worth looking at! ✨', true)
+      await say('After reviewing recent activity from your connected apps, I identified 12 maintenance-related issues, including 3 that may need your attention.')
+      await say('I’ve put together a quick overview so you can see what’s happening.')
+      // The card opens the full report; Nova doesn't wait on it.
+      push({ kind: 'overview-teaser' })
+
+      // 3 · Straight to what the user can do with the findings.
+      await wait(800)
+      await say('Want to take action on these findings?', true)
+      await say('I can help you create work orders for the urgent issues and set up preventive maintenance for recurring problems.')
       push({ kind: 'maintenance-plan' })
       await waitForUser('mplan')
 
-      // ── What Nova learned → the one UpKeep product that fits it ──
-      await wait(900)
-      await say('There’s more to UpKeep than Maintenance. I think Safety could be useful for your team.')
-      push({ kind: 'product-family' })
-      await waitForUser('safety')
+      // ── Then the mobile app, as a promo above the message box ──
+      setAppPromo(true)
     }
 
     // ── Done — the recommendations never hold this back ──
-    await wait(700)
-    setupStore.update({ setupComplete: true, connectedApps: [...connectedRef.current] })
-    await say('You’re all set 🎉', true)
-    await say('Your UpKeep account is 100% set up and ready to go.')
-    push({ kind: 'setup-complete' })
-    await wait(900)
-    await say('I’ll be here whenever you need me.')
+    // The last step counts if they connected more tools or acted on the findings.
+    await finish(h, connectedRef.current.some(id => id !== 'gmail') || otherConnectedRef.current.length > 0 || setupStore.get().counts.workOrders > 0)
   }, [push, waitForUser, release])
 
   /** Secondary report actions (the "…" menu). They run alongside the
@@ -725,6 +827,10 @@ export function useNovaOnboarding() {
     release('build-plan')
   }, [push, run, release])
 
+  const connectOther = useCallback((id: string) => {
+    if (!otherConnectedRef.current.includes(id)) otherConnectedRef.current = [...otherConnectedRef.current, id]
+  }, [])
+
   const continueIntegrations = useCallback(() => {
     push({ kind: 'user', text: 'Continue' })
     release('integrations')
@@ -758,22 +864,60 @@ export function useNovaOnboarding() {
           setupStore.update(prev => ({ counts: { ...prev.counts, workOrders: prev.counts.workOrders + 1 } }))
         }
         setMplanAdding(prev => prev.filter(id => id !== item.id))
-        setMplanAdded(prev => {
-          const next = [...prev, item.id]
-          if (MAINTENANCE_PLAN.every(p => next.includes(p.id))) window.setTimeout(() => release('mplan'), 700)
-          return next
-        })
+        setMplanAdded(prev => [...prev, item.id])
         await wait(300)
       }
+      // Everything picked is created: the conversation moves on.
+      await wait(400)
+      release('mplan')
     })
   }, [mplanAdded, mplanAdding, run, release])
 
   const skipMaintenancePlan = useCallback(() => {
     if (mplanSkipped) return
     setMplanSkipped(true)
-    push({ kind: 'user', text: 'Skip for now' })
+    push({ kind: 'user', text: 'Not now' })
     release('mplan')
   }, [mplanSkipped, push, release])
+
+  /** Plan steps answered (added or skipped) — their cards lock. */
+  const [planStepsDone, setPlanStepsDone] = useState<PlanStepId[]>([])
+  const planAddedRef = useRef<Partial<Record<PlanStepId, number>>>({})
+  const LABEL: Record<PlanStepId, [string, string]> = { locations: ['location', 'locations'], assets: ['asset', 'assets'], team: ['team member', 'team members'], workOrders: ['work order', 'work orders'] }
+
+  const skipPlanStep = useCallback((step: PlanStepId) => {
+    setPlanStepsDone(prev => [...prev, step])
+    push({ kind: 'user', text: 'Skip for now' })
+    release(`plan-step:${step}`)
+  }, [push, release])
+
+  /** Add what was checked in a plan step, one at a time, then confirm briefly. */
+  const addPlanStep = useCallback((step: PlanStepId, names: string[]) => {
+    const [one, many] = LABEL[step]
+    setPlanStepsDone(prev => [...prev, step])
+    push({ kind: 'user', text: `Add ${names.length} ${names.length === 1 ? one : many}` })
+    run(async ({ wait }) => {
+      setupStore.setPending(step, true)
+      await wait(600)
+      const start = setupStore.get().counts[step]
+      for (let k = 0; k < names.length; k++) {
+        setupStore.update(prev => ({
+          counts: { ...prev.counts, [step]: start + k + 1 },
+          ...(step === 'locations' || step === 'assets' ? { addedNames: { ...prev.addedNames, [step]: [...prev.addedNames[step], names[k]] } } : {}),
+        }))
+        await wait(260)
+      }
+      setupStore.setPending(step, false)
+      planAddedRef.current[step] = names.length
+      const text = step === 'team'
+        ? 'Your team invitations are on their way!'
+        : step === 'workOrders' ? `${names.length === 1 ? 'Your first work order is' : `${names.length} work orders are`} ready!`
+        : `${names.length} ${names.length === 1 ? one : many} added`
+      push({ kind: 'nova', text, check: true })
+      await wait(typingDuration(text) + BEAT_MS)
+      release(`plan-step:${step}`)
+    })
+  }, [push, run, release])
 
   const skipPlan = useCallback(() => {
     if (planSkipped) return
@@ -892,8 +1036,10 @@ export function useNovaOnboarding() {
   }, [push, run])
 
   return {
-    messages, profile, answerChoice, saveAccount, started, start, busy, working: busy && awaiting === 0, stop, company, companyConfirmed, pmScheduled, generated, generating, planSkipped, integrationsLocked, mplanAdded, mplanAdding, mplanSkipped, safetyAnswered, teamLocked, addedPeople, addingPeople, googleConsentOpen, consentScope, roles, answeredOffers, editingCompany, connected, sourcesLocked,
+    connectOther,
+    messages, profile, answerChoice, saveAccount, started, start, busy, working: busy && awaiting === 0, stop, company, companyConfirmed, pmScheduled, generated, generating, planSkipped, integrationsLocked, mplanAdded, mplanAdding, mplanSkipped, appPromo, safetyAnswered, teamLocked, addedPeople, addingPeople, googleConsentOpen, consentScope, roles, answeredOffers, editingCompany, connected, sourcesLocked,
     emailed, reportOpen, paywallOpen, usedActions,
+    planStepsDone, addPlanStep, skipPlanStep,
     confirmCompany, startFromAccount, askMissingIndustry, startEditingCompany, saveCompany, cancelEditingCompany,
     connectSource, continueFromSources,
     openReport, closeReport, emailReport,

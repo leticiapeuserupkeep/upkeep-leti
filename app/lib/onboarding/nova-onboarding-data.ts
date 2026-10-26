@@ -82,6 +82,38 @@ export function sourceName(id: SourceId) {
   return CONNECTABLE_SOURCES.find(s => s.id === id)?.name ?? id
 }
 
+/** Every app Nova can connect to — browsed from "Other" in the tools ask.
+ * The first four are the core sources; the rest connect as context only. */
+export interface CatalogApp {
+  id: string
+  name: string
+  logo: string
+  category: 'Communication' | 'Documents' | 'Business systems' | 'Operations'
+}
+
+export const INTEGRATION_CATALOG: CatalogApp[] = [
+  { id: 'gmail', name: 'Gmail', logo: '/images/integrations/gmail.svg', category: 'Communication' },
+  { id: 'outlook', name: 'Outlook', logo: '/images/integrations/outlook.svg', category: 'Communication' },
+  { id: 'slack', name: 'Slack', logo: '/images/integrations/slack.svg', category: 'Communication' },
+  { id: 'teams', name: 'Microsoft Teams', logo: '/images/integrations/teams.svg', category: 'Communication' },
+  { id: 'google-calendar', name: 'Google Calendar', logo: '/images/integrations/google-calendar.svg', category: 'Communication' },
+  { id: 'drive', name: 'Google Drive', logo: '/images/integrations/google-drive.svg', category: 'Documents' },
+  { id: 'google-docs', name: 'Google Docs', logo: '/images/integrations/google-docs.svg', category: 'Documents' },
+  { id: 'google-sheets', name: 'Google Sheets', logo: '/images/integrations/google-sheets.svg', category: 'Documents' },
+  { id: 'dropbox', name: 'Dropbox', logo: '/images/integrations/dropbox.svg', category: 'Documents' },
+  { id: 'confluence', name: 'Confluence', logo: '/images/integrations/confluence.svg', category: 'Documents' },
+  { id: 'sap', name: 'SAP', logo: '/images/integrations/sap.svg', category: 'Business systems' },
+  { id: 'oracle', name: 'Oracle', logo: '/images/integrations/oracle.svg', category: 'Business systems' },
+  { id: 'salesforce', name: 'Salesforce', logo: '/images/integrations/salesforce.svg', category: 'Business systems' },
+  { id: 'quickbooks', name: 'QuickBooks', logo: '/images/integrations/quickbooks.svg', category: 'Business systems' },
+  { id: 'monday', name: 'monday.com', logo: '/images/integrations/monday.svg', category: 'Operations' },
+  { id: 'ignition', name: 'Ignition SCADA', logo: '/images/integrations/ignition.svg', category: 'Operations' },
+]
+
+export function isSourceId(id: string): id is SourceId {
+  return CONNECTABLE_SOURCES.some(s => s.id === id)
+}
+
 /** Why Nova is asking for each app — shown next to its Connect button. */
 export const SOURCE_REASON: Record<SourceId, string> = {
   gmail: 'to see the status of your vendor repairs and requests',
@@ -235,6 +267,9 @@ export function starterAssetRows(n: number): StarterAssetRow[] {
   }
   return rows.slice(0, n)
 }
+
+/** A step Nova walks through in the chat — the plan's three, plus a first work order. */
+export type PlanStepId = PlanItem['id'] | 'workOrders'
 
 export const ACTION_PLAN: PlanItem[] = [
   { id: 'locations', label: '3 locations', detail: 'Sites that may be relevant to your account.', count: 3 },
@@ -565,3 +600,86 @@ export const COMPANY_SIZES = [
   '1,000–5,000 employees',
   '5,000+ employees',
 ]
+
+/** What the Welcome message box cycles through as its placeholder — what
+ * Nova helps with day to day. */
+export const DAILY_PROMPTS = [
+  'Keep maintenance organized across your locations.',
+  'Track equipment and prevent unexpected breakdowns.',
+  'Keep your team connected and working together.',
+  'Create, assign, and track maintenance work in one place.',
+]
+
+/** What Nova suggests when all it knows is the industry: typical kinds of
+ * locations and assets — presented as examples, never as the company's real
+ * sites or equipment. */
+export interface TypicalItem { name: string; detail: string }
+
+const TYPICAL: Record<string, { locations: TypicalItem[]; assets: TypicalItem[] }> = {
+  Manufacturing: {
+    locations: [
+      { name: 'Main plant', detail: 'Production lines and assembly' },
+      { name: 'Warehouse', detail: 'Storage, receiving and shipping' },
+      { name: 'Maintenance shop', detail: 'Tools, spares and repairs' },
+    ],
+    assets: [
+      { name: 'Air compressor', detail: 'Utilities' },
+      { name: 'Conveyor', detail: 'Material handling' },
+    ],
+  },
+  Facilities: {
+    locations: [
+      { name: 'Main building', detail: 'Offices and common areas' },
+      { name: 'Mechanical room', detail: 'HVAC, boilers and electrical' },
+      { name: 'Parking garage', detail: 'Lighting, gates and drainage' },
+    ],
+    assets: [
+      { name: 'Rooftop HVAC unit', detail: 'Heating and cooling' },
+      { name: 'Elevator', detail: 'Vertical transport' },
+    ],
+  },
+  Fleet: {
+    locations: [
+      { name: 'Main yard', detail: 'Parking and dispatch' },
+      { name: 'Service garage', detail: 'Repairs and inspections' },
+      { name: 'Fuel station', detail: 'Fueling and fluids' },
+    ],
+    assets: [
+      { name: 'Delivery truck', detail: 'Vehicle' },
+      { name: 'Forklift', detail: 'Material handling' },
+    ],
+  },
+  'Food & Beverage': {
+    locations: [
+      { name: 'Processing plant', detail: 'Production and packaging' },
+      { name: 'Cold storage', detail: 'Refrigeration and freezers' },
+      { name: 'Loading dock', detail: 'Receiving and shipping' },
+    ],
+    assets: [
+      { name: 'Walk-in freezer', detail: 'Refrigeration' },
+      { name: 'Packaging line', detail: 'Production' },
+    ],
+  },
+}
+const TYPICAL_OTHER = {
+  locations: [
+    { name: 'Main site', detail: 'Where most of the work happens' },
+    { name: 'Warehouse', detail: 'Storage and shipping' },
+    { name: 'Office', detail: 'Offices and common areas' },
+  ],
+  assets: [
+    { name: 'HVAC unit', detail: 'Heating and cooling' },
+    { name: 'Generator', detail: 'Backup power' },
+  ],
+}
+
+/** Common first jobs — one reactive, one preventive, one inspection. */
+const FIRST_WORK_ORDERS: TypicalItem[] = [
+  { name: 'Fix a leak or breakdown', detail: 'Reactive repair' },
+  { name: 'Replace air filters', detail: 'Preventive task' },
+  { name: 'Monthly safety walk-through', detail: 'Inspection' },
+]
+
+export function typicalFor(industry?: string) {
+  return { ...((industry && TYPICAL[industry]) || TYPICAL_OTHER), workOrders: FIRST_WORK_ORDERS }
+}

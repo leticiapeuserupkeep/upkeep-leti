@@ -1,5 +1,6 @@
 'use client'
 
+import { useState } from 'react'
 import Link from 'next/link'
 import Image from 'next/image'
 import { usePathname } from 'next/navigation'
@@ -9,6 +10,7 @@ import * as Separator from '@radix-ui/react-separator'
 import { Tooltip, TooltipProvider } from '@/app/components/ui'
 import { ProgressRing } from '@/app/components/ui/ProgressRing'
 import { useSetupState, setupProgress } from '@/app/lib/onboarding/setup-store'
+import { MobileAppModal } from '@/app/components/onboarding/nova/MobileAppCard'
 import * as Collapsible from '@radix-ui/react-collapsible'
 import {
   MessageCircle, Workflow, AppWindow,
@@ -17,7 +19,7 @@ import {
   BarChart3, Gauge,
   Car, ClipboardCheck, FileClock, AlertTriangle,
   Package, ScrollText, Building2,
-  Bell, Check, ChevronUp, LayoutGrid, CircleHelp, MessagesSquare, CreditCard, Settings,
+  Bell, Check, ChevronUp, Smartphone, LayoutGrid, CircleHelp, MessagesSquare, CreditCard, Settings,
 } from 'lucide-react'
 import { planById, type PlanId } from '@/app/lib/billing/plans'
 import { openPlans } from '@/app/lib/billing/trial-usage'
@@ -174,7 +176,9 @@ function NavRow({ item, active, collapsed }: { item: NavItem; active: boolean; c
 
 export function SideNav({ collapsed }: SideNavProps) {
   const pathname = usePathname()
-  const setupPercent = setupProgress(useSetupState())
+  const setup = useSetupState()
+  const setupPercent = setupProgress(setup)
+  const [appOpen, setAppOpen] = useState(false)
 
   return (
     <TooltipProvider delayDuration={300}>
@@ -292,6 +296,32 @@ export function SideNav({ collapsed }: SideNavProps) {
             <ScrollArea.Thumb className="relative flex-1 rounded-full bg-[var(--color-neutral-5)]" />
           </ScrollArea.Scrollbar>
         </ScrollArea.Root>
+
+        {/* Once the account is set up: Nova on the phone, floating over the
+            bottom of the nav, just above the footer. */}
+        {setup.companyConfirmed && (
+          <div className="relative h-0">
+            <div className={`absolute bottom-full z-10 mb-[var(--space-sm)] ${collapsed ? 'left-1/2 -translate-x-1/2' : 'inset-x-[var(--space-sm)]'}`}>
+              <button
+                type="button"
+                onClick={() => setAppOpen(true)}
+                aria-label="Get the UpKeep App"
+                className={`flex items-center gap-3 rounded-[var(--radius-xl)] bg-[var(--color-accent-12)] text-left text-white shadow-[var(--shadow-lg)] transition-[filter] duration-[var(--duration-fast)] hover:brightness-110 cursor-pointer nova-panel-up ${
+                  collapsed ? 'h-9 w-9 justify-center' : 'w-full px-3 py-2.5'
+                }`}
+              >
+                <Smartphone size={18} className="shrink-0 text-white/80" />
+                {!collapsed && (
+                  <span className="flex min-w-0 flex-col">
+                    <span className="truncate text-[length:var(--font-size-base)] font-semibold">Get the UpKeep App</span>
+                    <span className="text-[length:var(--font-size-sm)] leading-4 text-white/70">Your maintenance assistant, now on your phone</span>
+                  </span>
+                )}
+              </button>
+            </div>
+          </div>
+        )}
+        <MobileAppModal open={appOpen} onOpenChange={setAppOpen} />
 
         <Separator.Root className="h-px bg-[var(--border-default)]" />
 

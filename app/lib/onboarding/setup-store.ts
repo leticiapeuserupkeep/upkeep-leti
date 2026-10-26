@@ -35,6 +35,8 @@ export interface SetupState {
   connectedApps: string[]
   /** The onboarding reached its end. Setup stays reachable, marked complete. */
   setupComplete: boolean
+  /** Names of what was added from Nova's suggestions, shown in the setup list. */
+  addedNames: { locations: string[]; assets: string[] }
 }
 
 export interface CreatedItem {
@@ -53,6 +55,7 @@ function initialState(): SetupState {
     userName: 'Leti',
     companyConfirmed: false,
     counts: { locations: 0, assets: 0, team: 0, workOrders: 0 },
+    addedNames: { locations: [], assets: [] },
     workOrderLanding: false,
     installedApps: [],
     declinedOffers: [],
@@ -122,9 +125,8 @@ export function useSetupState(): SetupState {
 }
 
 /** Account counts once the company is confirmed; the rest once they have
- * at least one item. */
+ * at least one item. Finishing the chat doesn't count — only what's set up. */
 export function setupProgress(s: SetupState): number {
-  if (s.setupComplete) return 100
   // Same steps as the setup guide: account, locations, assets, team, work orders.
   const done = (s.companyConfirmed ? 1 : 0) + (Object.values(s.counts) as number[]).filter(n => n > 0).length
   return Math.round((done / 5) * 100)
