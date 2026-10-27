@@ -5,45 +5,26 @@ import Image from 'next/image'
 import { Building2, Database, Plug, Sparkles, ChevronRight, Check } from 'lucide-react'
 import { SOURCE_LABEL, sourceName, CONNECTABLE_SOURCES, type InsightSource, type SourceId } from '@/app/lib/onboarding/nova-onboarding-data'
 
-/** Characters revealed per tick — fast enough not to feel slow, slow enough
- * to read as Nova "writing" rather than text popping in. */
-const CHARS_PER_TICK = 1
-export const TYPE_TICK_MS = 24
-
-export function typingDuration(text: string) {
-  return Math.ceil(text.length / CHARS_PER_TICK) * TYPE_TICK_MS
+/** How long Nova pauses after a line before the next one: longer lines get a
+ * little more time to be read, capped so the chat never drags. */
+export function readingPause(text: string) {
+  return Math.min(900, 200 + text.length * 5)
 }
 
-/** Nova's text, revealed progressively. */
+/** Nova's text: the whole line at once, fading in from just below (like
+ * Claude's replies) — no typing. The fade lives on the message wrapper. */
 export function NovaText({ text, variant = 'body', emphasis, className: extra = '' }: {
   text: string
   variant?: 'body' | 'heading'
-  /** A word to render bold once it has been typed out, e.g. "Nova". */
+  /** A word to render bold, e.g. "Nova". */
   emphasis?: string
   className?: string
 }) {
-  const [shown, setShown] = useState(0)
-
-  useEffect(() => {
-    setShown(0)
-    const id = window.setInterval(() => {
-      setShown(n => {
-        if (n >= text.length) {
-          window.clearInterval(id)
-          return n
-        }
-        return n + CHARS_PER_TICK
-      })
-    }, TYPE_TICK_MS)
-    return () => window.clearInterval(id)
-  }, [text])
-
   const className = variant === 'heading'
     ? 'text-[length:var(--font-size-base)] font-semibold leading-[22px] text-[var(--color-neutral-12)]'
     : 'text-[length:var(--font-size-base)] leading-[22px] text-[var(--color-neutral-11)]'
 
-  const visible = text.slice(0, shown)
-  const parts = emphasis ? visible.split(emphasis) : [visible]
+  const parts = emphasis ? text.split(emphasis) : [text]
 
   return (
     <p className={`${className} ${extra}`}>
@@ -53,7 +34,6 @@ export function NovaText({ text, variant = 'body', emphasis, className: extra = 
           {part}
         </span>
       ))}
-      {shown < text.length && <span className="ml-0.5 inline-block h-4 w-[2px] translate-y-0.5 bg-[var(--color-accent-9)] animate-[blink_0.9s_steps(1)_infinite]" />}
     </p>
   )
 }

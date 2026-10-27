@@ -312,7 +312,7 @@ export function SideNav({ collapsed }: SideNavProps) {
               {!collapsed && (
                 <span className="flex min-w-0 flex-col">
                   <span className="truncate text-[length:var(--font-size-base)] font-semibold">Get the UpKeep App</span>
-                  <span className="text-[length:var(--font-size-sm)] leading-4 text-white/70">Your AI assistant, on the go.</span>
+                  <span className="text-[length:var(--font-size-sm)] leading-4 text-white/70">Your maintenance assistant, on the go.</span>
                 </span>
               )}
             </button>

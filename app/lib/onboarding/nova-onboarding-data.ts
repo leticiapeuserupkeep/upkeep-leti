@@ -36,7 +36,11 @@ export const SOURCE_LABEL: Record<InsightSource, string> = {
 
 /* ── Connectable apps ── */
 
-export type SourceId = 'gmail' | 'slack' | 'teams' | 'drive'
+export type SourceId = 'gmail' | 'outlook' | 'slack' | 'teams' | 'drive'
+
+/** Email Nova can read to find the team — either one counts. */
+export const EMAIL_SOURCES: SourceId[] = ['gmail', 'outlook']
+export const hasEmail = (ids: SourceId[]) => ids.some(id => EMAIL_SOURCES.includes(id))
 
 export interface ConnectableSource {
   id: SourceId
@@ -68,6 +72,13 @@ export const CONNECTABLE_SOURCES: ConnectableSource[] = [
     logo: '/images/integrations/teams.svg',
     description: 'Understand operational conversations and recurring issues across your team.',
     access: ['Messages in teams and channels you choose', 'Channel names and timestamps'],
+  },
+  {
+    id: 'outlook',
+    name: 'Outlook',
+    logo: '/images/integrations/outlook.svg',
+    description: 'Understand maintenance conversations, recurring issues, requests, and vendor communication.',
+    access: ['Email subjects and bodies that mention equipment or maintenance', 'Vendor and service-provider threads'],
   },
   {
     id: 'drive',
@@ -117,6 +128,7 @@ export function isSourceId(id: string): id is SourceId {
 /** Why Nova is asking for each app — shown next to its Connect button. */
 export const SOURCE_REASON: Record<SourceId, string> = {
   gmail: 'to see the status of your vendor repairs and requests',
+  outlook: 'to see the status of your vendor repairs and requests',
   slack: 'to spot the equipment your team keeps flagging',
   teams: 'to spot the equipment your team keeps flagging',
   drive: 'to read your PM procedures and when equipment was last serviced',
@@ -452,7 +464,9 @@ export const SUGGESTED_PEOPLE: SuggestedPerson[] = [
 ]
 
 export function suggestedPeople(connected: SourceId[]) {
-  return SUGGESTED_PEOPLE.filter(p => connected.includes(p.app))
+  // The example people come from email; Outlook finds the same ones as Gmail.
+  const apps = hasEmail(connected) ? [...connected, 'gmail'] : connected
+  return SUGGESTED_PEOPLE.filter(p => apps.includes(p.app))
 }
 
 /** The report doc Nova creates in the user's Google Drive. */

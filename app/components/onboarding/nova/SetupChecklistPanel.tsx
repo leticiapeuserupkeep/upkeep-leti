@@ -481,7 +481,7 @@ function ListStep({ step, open, onToggle, label, description, icon, active, last
           icon={icon}
           label={label}
           done={filled}
-          detail={connectGmail && !filled ? 'Connect Gmail so Nova can find the people on your team' : description}
+          detail={connectGmail && !filled ? 'Connect Gmail or Outlook so Nova can find the people on your team' : description}
         />
         <span className="relative flex shrink-0 items-center gap-2">
           {loading ? (
@@ -497,7 +497,7 @@ function ListStep({ step, open, onToggle, label, description, icon, active, last
             </>
           ) : connectGmail ? (
             <button type="button" onClick={connectGmail} className="inline-flex h-6 items-center gap-1.5 rounded-[var(--radius-sm)] border border-[var(--border-default)] bg-[var(--surface-primary)] px-2 text-[length:var(--font-size-sm)] font-medium text-[var(--color-neutral-11)] transition-colors hover:bg-[var(--color-neutral-2)] cursor-pointer">
-              <Image src="/images/integrations/gmail.svg" alt="" width={12} height={12} /> Connect Gmail
+              <Image src="/images/integrations/gmail.svg" alt="" width={12} height={12} /><Image src="/images/integrations/outlook.svg" alt="" width={12} height={12} /> Connect email
             </button>
           ) : !active ? (
             <button type="button" onClick={onAdd} className="inline-flex h-6 items-center gap-1 rounded-[var(--radius-sm)] border border-[var(--border-default)] bg-[var(--surface-primary)] px-2 text-[length:var(--font-size-sm)] font-medium text-[var(--color-neutral-11)] transition-colors hover:bg-[var(--color-neutral-2)] cursor-pointer">

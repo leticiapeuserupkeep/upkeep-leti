@@ -1,14 +1,14 @@
 'use client'
 
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { typingDuration, introDuration } from './NovaPrimitives'
+import { readingPause, introDuration } from './NovaPrimitives'
 import { ANALYSIS_STEP_MS } from './AnalysisSequence'
 import type { FocusAction, ReportDestination } from './NovaInsightCards'
 import { setupStore } from '@/app/lib/onboarding/setup-store'
 import {
   MOCK_COMPANY, analysisSteps, sourceName, affectedAssets,
   MAINTENANCE_PLAN, suggestedPeople, REPORT_DOC, TRIAL_SEATS, ACTION_PLAN,
-  INTEGRATION_CATALOG,
+  INTEGRATION_CATALOG, EMAIL_SOURCES, hasEmail,
   type CompanyProfile, type SourceId, type PlanItem, type PlanStepId, type ResearchStep, type SuggestedPerson, type UpkeepRole, type MaintenancePlanItem,
 } from '@/app/lib/onboarding/nova-onboarding-data'
 
@@ -197,7 +197,7 @@ export function useNovaOnboarding() {
     })
     const say = async (text: string, heading?: boolean) => {
       push({ kind: 'nova', text, heading })
-      await wait(typingDuration(text) + BEAT_MS)
+      await wait(readingPause(text) + BEAT_MS)
     }
     const think = async (labels: string[], ms: number) => {
       const id = push({ kind: 'thinking', labels })
@@ -327,10 +327,10 @@ export function useNovaOnboarding() {
       push({ kind: 'plan-step', stepId: 'assets' })
       await waitForUser('plan-step:assets')
       await wait(400)
-      await say('Last, let’s bring in your team. Connect Gmail and I’ll find the people you work with on maintenance.')
+      await say('Last, let’s bring in your team. Connect Gmail or Outlook and I’ll find the people you work with on maintenance.')
       // Gmail's consent card (why, what's safe, Connect / Not now) floats by
       // the message box; the people only show once it's connected.
-      if (!connectedRef.current.includes('gmail')) {
+      if (!hasEmail(connectedRef.current)) {
         setConsentScope('gmail')
         setGoogleConsentOpen(true)
         const allowed = await new Promise<boolean>(resolve => { gmailAnswer.current = resolve })
@@ -339,11 +339,11 @@ export function useNovaOnboarding() {
           setPlanStepsDone(prev => [...prev, 'team'])
         }
       }
-      if (connectedRef.current.includes('gmail')) {
+      if (hasEmail(connectedRef.current)) {
         push({ kind: 'plan-step', stepId: 'team' })
         await waitForUser('plan-step:team')
       }
-      await continueAfterReport({ wait, say, think }, connectedRef.current.includes('gmail'), true)
+      await continueAfterReport({ wait, say, think }, hasEmail(connectedRef.current), true)
     })
   }, [push, remove, run])
 
@@ -592,7 +592,7 @@ export function useNovaOnboarding() {
 
     // Said "Not now" to Gmail: respect it — no more connecting, straight to
     // a first work order, then done.
-    if (planDone && !connectedRef.current.includes('gmail')) {
+    if (planDone && !hasEmail(connectedRef.current)) {
       await wait(600)
       await say('Sounds good! You can connect your apps and invite your team anytime.')
       await say('Now, let’s create your first work order so you can start tracking maintenance in UpKeep.')
@@ -650,7 +650,7 @@ export function useNovaOnboarding() {
 
     // ── Done — the recommendations never hold this back ──
     // The last step counts if they connected more tools or acted on the findings.
-    await finish(h, connectedRef.current.some(id => id !== 'gmail') || otherConnectedRef.current.length > 0 || setupStore.get().counts.workOrders > 0)
+    await finish(h, connectedRef.current.some(id => !EMAIL_SOURCES.includes(id)) || otherConnectedRef.current.length > 0 || setupStore.get().counts.workOrders > 0)
   }, [push, waitForUser, release])
 
   /** Secondary report actions (the "…" menu). They run alongside the
@@ -685,13 +685,13 @@ export function useNovaOnboarding() {
   }, [push, run])
 
   /** Answer to Google's consent: create the doc, or keep going without it. */
-  const answerGoogleConsent = useCallback((allowed: boolean) => {
+  const answerGoogleConsent = useCallback((allowed: boolean, provider: 'gmail' | 'outlook' = 'gmail') => {
     setGoogleConsentOpen(false)
     if (consentScope === 'gmail') {
       // In place, from the action plan — no chat message needed.
       if (allowed) {
-        connectedRef.current = connectedRef.current.includes('gmail') ? connectedRef.current : [...connectedRef.current, 'gmail']
-        setConnected(prev => (prev.includes('gmail') ? prev : [...prev, 'gmail']))
+        connectedRef.current = connectedRef.current.includes(provider) ? connectedRef.current : [...connectedRef.current, provider]
+        setConnected(prev => (prev.includes(provider) ? prev : [...prev, provider]))
       }
       gmailAnswer.current?.(allowed)
       gmailAnswer.current = null
@@ -771,7 +771,7 @@ export function useNovaOnboarding() {
       for (const item of pending) {
         const key = item.id
         let gmailCount: number | null = null
-        if (key === 'team' && !connectedRef.current.includes('gmail')) {
+        if (key === 'team' && !hasEmail(connectedRef.current)) {
           // Team members come from Gmail — ask for it before adding anyone.
           setConsentScope('gmail')
           setGoogleConsentOpen(true)
@@ -914,7 +914,7 @@ export function useNovaOnboarding() {
         : step === 'workOrders' ? `${names.length === 1 ? 'Your first work order is' : `${names.length} work orders are`} ready!`
         : `${names.length} ${names.length === 1 ? one : many} added`
       push({ kind: 'nova', text, check: true })
-      await wait(typingDuration(text) + BEAT_MS)
+      await wait(readingPause(text) + BEAT_MS)
       release(`plan-step:${step}`)
     })
   }, [push, run, release])

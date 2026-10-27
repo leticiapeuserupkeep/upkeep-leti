@@ -29,7 +29,7 @@ import { NovaComposer, type NovaComposerHandle } from '@/app/components/onboardi
 import { ComposerActionContext, type ComposerAction } from '@/app/components/onboarding/nova/composerAction'
 import { useNovaOnboarding, PROFILE_OPTIONS, type NovaMessage } from '@/app/components/onboarding/nova/useNovaOnboarding'
 import { setupStore, useSetupState } from '@/app/lib/onboarding/setup-store'
-import { buildReport, plantHealth, affectedAssets, sourceName, suggestedPeople, ACTION_PLAN, MAINTENANCE_PLAN, NOVA_IDEAS, DAILY_PROMPTS, typicalFor, REPORT_DOC, TRIAL_SEATS, SUGGESTED_PEOPLE, onboardingLocationNames, starterAssetRows } from '@/app/lib/onboarding/nova-onboarding-data'
+import { buildReport, plantHealth, affectedAssets, sourceName, suggestedPeople, ACTION_PLAN, MAINTENANCE_PLAN, NOVA_IDEAS, DAILY_PROMPTS, typicalFor, hasEmail, REPORT_DOC, TRIAL_SEATS, SUGGESTED_PEOPLE, onboardingLocationNames, starterAssetRows } from '@/app/lib/onboarding/nova-onboarding-data'
 
 /** The last thing Nova asked that's waiting on the user, if any. */
 function pendingAsk(messages: NovaMessage[]) {
@@ -82,7 +82,7 @@ export function WelcomeScreen() {
 
   // Seats: the trial's, or more once the user has upgraded for them.
   const seatLimit = setup.installedApps.includes('seats') ? 50 : TRIAL_SEATS
-  const teamPeople = suggestedPeople(nova.connected.filter(id => id === 'teams' || id === 'gmail'))
+  const teamPeople = suggestedPeople(nova.connected.filter(id => id === 'teams' || id === 'gmail' || id === 'outlook'))
   // The user's latest message, and a spacer after the last message that gives
   // it a full screen of room so it can sit at the top while Nova answers.
   const turnRef = useRef<HTMLDivElement>(null)
@@ -162,7 +162,7 @@ export function WelcomeScreen() {
   // A card waiting on the user (or Gmail's consent) gives the empty box its action.
   const [cardAction, setCardAction] = useState<ComposerAction | null>(null)
   const composerAction: ComposerAction | null = nova.googleConsentOpen && nova.consentScope === 'gmail'
-    ? { label: 'Connect Gmail', run: () => nova.answerGoogleConsent(true) }
+    ? { label: 'Connect Gmail', run: () => nova.answerGoogleConsent(true, 'gmail') }
     : nova.working ? null : cardAction
 
   function sendToNova(text: string) {
@@ -176,7 +176,7 @@ export function WelcomeScreen() {
 
   // Nova's ideas show once the user reaches the team step (in the chat or from
   // the panel) — and stay from then on.
-  const reachedTeam = setup.counts.team > 0 || setup.setupComplete || nova.connected.includes('gmail') ||
+  const reachedTeam = setup.counts.team > 0 || setup.setupComplete || hasEmail(nova.connected) ||
     nova.planStepsDone.includes('team') || (nova.googleConsentOpen && nova.consentScope === 'gmail') ||
     nova.messages.some(m => m.kind === 'plan-step' && m.stepId === 'team')
   const [ideasUnlocked, setIdeasUnlocked] = useState(false)
@@ -187,7 +187,7 @@ export function WelcomeScreen() {
   const activePlanStep = nova.googleConsentOpen && nova.consentScope === 'gmail' && !nova.planStepsDone.includes('team')
     ? 'team'
     : lastPlanStep?.kind === 'plan-step' && !nova.planStepsDone.includes(lastPlanStep.stepId) ? lastPlanStep.stepId : undefined
-  const overviewSources = nova.connected.filter(id => id === 'teams' || id === 'slack' || id === 'gmail')
+  const overviewSources = nova.connected.filter(id => id === 'teams' || id === 'slack' || id === 'gmail' || id === 'outlook')
   const REPORT_TITLES: Record<OpenReport, string> = {
     setup: `${nova.company.name} — Setup report`,
     overview: 'This week’s maintenance overview',
@@ -379,13 +379,13 @@ export function WelcomeScreen() {
     switch (m.kind) {
       case 'nova':
         return m.check ? (
-          <div className="flex max-w-[680px] items-center gap-2 nova-enter">
+          <div className="flex max-w-[680px] items-center gap-2">
             <span className="flex h-[18px] w-[18px] shrink-0 items-center justify-center rounded-full bg-[var(--color-accent-9)] text-white" style={{ animation: 'checkPop 0.45s var(--ease-default)' }}>
               <Check size={11} strokeWidth={3} />
             </span>
             <NovaText text={m.text} variant={m.heading ? 'heading' : 'body'} />
           </div>
-        ) : <div className="max-w-[680px] nova-enter"><NovaText text={m.text} variant={m.heading ? 'heading' : 'body'} /></div>
+        ) : <div className="max-w-[680px]"><NovaText text={m.text} variant={m.heading ? 'heading' : 'body'} /></div>
       case 'user':
         return <UserBubble>{m.text}</UserBubble>
       case 'thinking':
@@ -475,7 +475,7 @@ export function WelcomeScreen() {
             generating={nova.generating}
             skipped={nova.planSkipped}
             onSkip={nova.skipPlan}
-            gmailConnected={nova.connected.includes('gmail')}
+            gmailConnected={hasEmail(nova.connected)}
             onConnectGmail={nova.connectGmail}
             seatLimit={Infinity}
             onUpgradeSeats={() => setUpgradeFor(SEATS_OFFER)}
@@ -760,7 +760,7 @@ export function WelcomeScreen() {
                 }}
                 industryOptions={PROFILE_OPTIONS.industry}
                 onSaveAccount={nova.saveAccount}
-                gmailConnected={nova.connected.includes('gmail')}
+                gmailConnected={hasEmail(nova.connected)}
                 onConnectGmail={() => { setChatOpen(true); nova.connectGmail() }}
                 counts={setup.counts}
                 items={checklistItems}
@@ -827,7 +827,7 @@ export function WelcomeScreen() {
             {/* One flat list, so earlier messages never remount (and replay their
                 entrance) when the user sends a new one. */}
             {conversation.map((m, i) => (
-              <div key={m.id} ref={i === lastUserIndex ? turnRef : undefined} data-glide={i < lastUserIndex || lastUserIndex === -1 ? '' : undefined} className="flex flex-col nova-enter">
+              <div key={m.id} ref={i === lastUserIndex ? turnRef : undefined} data-glide={i < lastUserIndex || lastUserIndex === -1 ? '' : undefined} className={`flex flex-col ${m.kind === 'nova' ? 'nova-text-in' : 'nova-enter'}`}>
                 {renderMessage(m)}
               </div>
             ))}

@@ -179,6 +179,15 @@
   animation: nova-message-in 0.9s cubic-bezier(0.22, 1, 0.36, 1) both;
 }
 
+/* Nova's lines: the whole text fades in from 5px below, like Claude's replies. */
+@keyframes nova-text-in {
+  from { opacity: 0; transform: translateY(5px); }
+  to { opacity: 1; transform: none; }
+}
+.nova-text-in {
+  animation: nova-text-in 0.4s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
 /* A section that appears on the page (not in the chat): a slow, soft fade
    with a slight rise, after a short pause. */
 @keyframes nova-section-in {
