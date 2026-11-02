@@ -383,6 +383,19 @@ function AccountStep({ expanded, onExpand, onFillChange, onIncomplete, locked = 
           ? <FillRing percent={Math.round(progress * 100)} />
           : loading && !done
           ? <Loader2 size={18} className="shrink-0 animate-spin text-[var(--color-accent-9)]" aria-label="In progress" />
+          : done && compact && !editing
+            // V2: like the other steps — a chevron shows/hides the details.
+            ? (
+              <button
+                type="button"
+                onClick={() => (summaryOpen ? setSummaryOpen(false) : (setSummaryOpen(true), onExpand()))}
+                aria-expanded={summaryOpen}
+                aria-label={`${summaryOpen ? 'Hide' : 'Show'} company details`}
+                className="text-[var(--color-neutral-8)] cursor-pointer"
+              >
+                <ChevronDown size={16} className={`transition-transform duration-[var(--duration-normal)] ${summaryOpen ? 'rotate-180' : ''}`} />
+              </button>
+            )
           : done || !editing
             ? <StepStatus done={done} active={active} label="Confirm your account" />
             : <FillRing percent={Math.round(fill * 100)} />}
