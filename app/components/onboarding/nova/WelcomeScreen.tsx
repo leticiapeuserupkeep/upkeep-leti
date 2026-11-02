@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { useRouter, usePathname } from 'next/navigation'
 import { IconButton } from '@/app/components/ui/IconButton'
-import { ArrowRight, CircleCheck, ThumbsDown, ThumbsUp, Download, GraduationCap, Users, Check, X, Sparkles, ShieldCheck, Briefcase, Wrench, Inbox, Factory, Building2, Truck, UtensilsCrossed, Ellipsis, type LucideIcon } from 'lucide-react'
+import { ArrowRight, CircleCheck, Loader2, ThumbsDown, ThumbsUp, Download, GraduationCap, Users, Check, X, Sparkles, ShieldCheck, Briefcase, Wrench, Inbox, Factory, Building2, Truck, UtensilsCrossed, Ellipsis, type LucideIcon } from 'lucide-react'
 import { NovaText, NovaThinking, NovaThought, UserBubble } from '@/app/components/onboarding/nova/NovaPrimitives'
 import { CompanyContextCard } from '@/app/components/onboarding/nova/CompanyContextCard'
 import { ConnectSourcesCard } from '@/app/components/onboarding/nova/ConnectSourcesCard'
@@ -70,27 +70,25 @@ const CHOICE_ICONS: Record<string, LucideIcon> = {
   Other: Ellipsis,
 }
 
-/** Onboarding V2's first actions — problems to solve once the workspace is
- * set up, as pills under the message box. */
+/** Onboarding V2, Nova's first message: it introduces itself, sets the
+ * workspace up from what was confirmed, then recommends where to start —
+ * one industry-relevant pick, plus other options with less weight. */
+const READY_OPENING = ['I’ll get your workspace ready using the information you just confirmed.']
+const READY_BUILDING = 'I’m setting things up for you…'
+const READY_DONE = 'Your workspace is ready! ✨'
+const READY_NEXT = [
+  'I’ve added your locations, assets, and invited your team. Now let’s put UpKeep to work!',
+  'Here’s where I’d recommend starting:',
+]
+const READY_RECOMMENDATION = {
+  title: 'Start with preventive maintenance',
+  description: 'Set up recurring maintenance for your equipment to help prevent unexpected failures.',
+  prompt: 'Help me create a preventive maintenance plan',
+}
 const READY_ACTIONS = [
-  { label: 'Plan preventive maintenance', prompt: 'Help me create a preventive maintenance plan' },
   { label: 'Create a safety checklist', prompt: 'Create a daily safety inspection checklist' },
   { label: 'Track equipment downtime', prompt: 'Build an app to track equipment downtime' },
   { label: 'Prioritize maintenance work', prompt: 'Help me prioritize maintenance work' },
-]
-
-/** Nova's first message in V2: what it set up, then what could come next. */
-const READY_OPENING = [
-  'I’ll help you get UpKeep ready for your team and make managing maintenance easier.',
-  'Let’s start by setting up your workspace with the information you just confirmed.',
-]
-const READY_BUILDING = 'I’m getting everything ready for you…'
-/** Once it's all in: Nova's wrap-up, a heading then its lines. */
-const READY_DONE = 'Your workspace is ready!'
-const READY_NEXT = [
-  'I’ve set up your locations, assets, and team invitations. Now let’s put UpKeep to work!',
-  'Based on what I learned about your company, I’d recommend starting with preventive maintenance to help prevent unexpected equipment failures.',
-  'Want me to help you get started?',
 ]
 
 export type OnboardingVersion = 'v1' | 'v2'
@@ -128,7 +126,14 @@ export function WelcomeScreen({ version = 'v1' }: { version?: OnboardingVersion 
     builtAssets > 0 && builtLocations > 0 && 'Assets linked to locations',
     builtTeam > 0 && `${plural(builtTeam, 'team invitation', 'team invitations')} sent`,
   ].filter((line): line is string => Boolean(line))
-  const novaGreeting = `Hi ${setup.userName}! I’m Nova, your AI maintenance assistant. 👋`
+  // The step Nova is on right now, as a line in progress.
+  const buildingLine = !confirmed || !build.building ? null : {
+    locations: `Creating ${plural(confirmed.locations.length, 'location', 'locations')}…`,
+    assets: `Adding ${plural(confirmed.assets.length, 'asset', 'assets')}…`,
+    team: `Sending ${plural(confirmed.members.length, 'team invitation', 'team invitations')}…`,
+    workOrders: null,
+  }[build.building]
+  const novaGreeting = `Hi ${setup.userName}! I’m Nova, your AI maintenance assistant.`
   const composer = useRef<NovaComposerHandle>(null)
   const scrollRef = useRef<HTMLDivElement>(null)
   const contentRef = useRef<HTMLDivElement>(null)
@@ -161,7 +166,7 @@ export function WelcomeScreen({ version = 'v1' }: { version?: OnboardingVersion 
   }, [welcomePath, discovery])
   const startWithNova = (text: string, opts?: { idea?: boolean }) => {
     setChatOpen(true)
-    if (ready) nova.startReady(text, { lines: [novaGreeting, ...READY_OPENING, READY_BUILDING], done: readySummary, next: build.done ? [READY_DONE, ...READY_NEXT] : undefined })
+    if (ready) nova.startReady(text, { lines: [novaGreeting, ...READY_OPENING, READY_BUILDING], done: readySummary, next: build.done ? [READY_DONE, READY_NEXT[0]] : undefined })
     else nova.start(text, opts)
   }
   // Split at the user's latest message: everything from there on is "the turn".
@@ -763,7 +768,7 @@ export function WelcomeScreen({ version = 'v1' }: { version?: OnboardingVersion 
               <div className={`mx-auto flex w-full max-w-[840px] flex-col nova-enter transition-[gap,padding] duration-500 ${ready ? 'min-w-0 flex-1 px-10 pb-10' : ''} ${nova.started ? 'gap-0 pt-0 pb-0' : 'gap-[var(--space-md)] pt-[60px] pb-[60px]'}`}>
                 <div className="flex flex-col gap-1">
                   <div className="flex items-center justify-between gap-3">
-                    <h1 className="text-[length:var(--font-size-3xl)] font-bold leading-tight tracking-[-0.02em] text-[var(--color-neutral-12)]">{ready ? 'You’re all set to get started!' : `Welcome ${setup.userName} 👋`}</h1>
+                    <h1 className="text-[length:var(--font-size-3xl)] font-bold leading-tight tracking-[-0.02em] text-[var(--color-neutral-12)]">{ready ? `Welcome to UpKeep, ${setup.userName}! 👋` : `Welcome ${setup.userName} 👋`}</h1>
                     {/* Brings Nova back once its drawer has been closed. */}
                     {nova.started && !chatOpen && (
                       <button
@@ -804,10 +809,11 @@ export function WelcomeScreen({ version = 'v1' }: { version?: OnboardingVersion 
                         {/* Nova's first message: what the setup did, line by
                             line as each step lands. It opens the conversation too. */}
                         <div className="flex flex-col gap-2" aria-live="polite">
+                          {/* Nova introduces itself first, then the setup — not all at once. */}
                           <NovaText text={novaGreeting} className="nova-text-in" />
-                          {READY_OPENING.map(line => <NovaText key={line} text={line} className="nova-text-in" />)}
-                          <NovaText text={READY_BUILDING} variant="heading" className="nova-text-in mt-2" />
-                          {readySummary.length > 0 && (
+                          {READY_OPENING.map((line, i) => <NovaText key={line} text={line} className="nova-text-in" style={{ animationDelay: `${(i + 1) * 300}ms` }} />)}
+                          <NovaText text={READY_BUILDING} variant="heading" className="nova-text-in mt-2" style={{ animationDelay: '600ms' }} />
+                          {(readySummary.length > 0 || buildingLine) && (
                             <ul className="nova-text-in flex flex-col gap-2.5 rounded-[var(--radius-xl)] border border-[var(--border-default)] bg-[var(--surface-primary)] px-[var(--space-md)] py-3">
                               {readySummary.map(line => (
                                 <li key={line} className="nova-text-in flex items-center gap-2">
@@ -815,19 +821,40 @@ export function WelcomeScreen({ version = 'v1' }: { version?: OnboardingVersion 
                                   <NovaText text={line} />
                                 </li>
                               ))}
+                              {buildingLine && (
+                                <li key={buildingLine} className="nova-text-in flex items-center gap-2">
+                                  <Loader2 size={16} className="shrink-0 animate-spin text-[var(--color-neutral-8)]" />
+                                  <NovaText text={buildingLine} />
+                                </li>
+                              )}
                             </ul>
                           )}
-                          {/* Once it's all in: ways to start working, one click each. */}
+                          {/* Once it's all in: one recommendation first, then the rest. */}
                           {build.done && (
                             <>
                               <NovaText text={READY_DONE} variant="heading" className="nova-text-in mt-2" />
-                              {READY_NEXT.map(line => <NovaText key={line} text={line} className="nova-text-in" />)}
-                              <div className="nova-text-in flex flex-col items-start gap-2">
-                                {READY_ACTIONS.map(action => (
-                                  <button key={action.label} type="button" onClick={() => startWithNova(action.prompt)} className={CHOICE.replace(' flex-1', '')}>
-                                    {action.label} <ArrowRight size={14} className="shrink-0" />
-                                  </button>
-                                ))}
+                              {READY_NEXT.map((line, i) => <NovaText key={line} text={line} className="nova-text-in" style={{ animationDelay: `${(i + 1) * 300}ms` }} />)}
+                              <button
+                                type="button"
+                                onClick={() => startWithNova(READY_RECOMMENDATION.prompt)}
+                                className="nova-text-in group flex w-full items-center gap-3 rounded-[var(--radius-xl)] border border-[var(--border-default)] bg-[var(--surface-primary)] px-[var(--space-md)] py-3 text-left shadow-[var(--shadow-sm)] transition-colors duration-[var(--duration-fast)] hover:border-[var(--color-accent-7)] hover:bg-[var(--color-accent-1)] cursor-pointer"
+                                style={{ animationDelay: '900ms' }}
+                              >
+                                <span className="flex min-w-0 flex-1 flex-col gap-0.5">
+                                  <span className="text-[length:var(--font-size-base)] font-semibold text-[var(--color-neutral-12)]">{READY_RECOMMENDATION.title}</span>
+                                  <span className="text-[length:var(--font-size-sm)] text-[var(--color-neutral-9)]">{READY_RECOMMENDATION.description}</span>
+                                </span>
+                                <ArrowRight size={16} className="shrink-0 text-[var(--color-accent-9)] transition-transform duration-[var(--duration-fast)] group-hover:translate-x-0.5" />
+                              </button>
+                              <div className="nova-text-in mt-1 flex flex-col gap-2" style={{ animationDelay: '1100ms' }}>
+                                <span className="text-[length:var(--font-size-sm)] text-[var(--color-neutral-9)]">Or explore something else</span>
+                                <div className="flex flex-wrap gap-2">
+                                  {READY_ACTIONS.map(action => (
+                                    <button key={action.label} type="button" onClick={() => startWithNova(action.prompt)} className={CHOICE.replace(' flex-1', '')}>
+                                      {action.label} <ArrowRight size={14} className="shrink-0" />
+                                    </button>
+                                  ))}
+                                </div>
                               </div>
                             </>
                           )}
@@ -845,7 +872,7 @@ export function WelcomeScreen({ version = 'v1' }: { version?: OnboardingVersion 
               </div>
               <SetupChecklistPanel
                 title={ready ? 'Make UpKeep yours' : 'Setup progress'}
-                subtitle={ready ? 'Add your information to get more relevant results from Nova.' : 'Follow these steps, or ask Nova to help you along the way.'}
+                subtitle={ready ? 'Review what Nova added and complete your setup anytime.' : 'Follow these steps, or ask Nova to help you along the way.'}
                 className={ready
                   // Edge to edge on the right: top, bottom and side.
                   ? 'flex w-[360px] shrink-0 flex-col gap-[var(--space-md)] border-l border-[var(--border-default)] bg-[var(--surface-primary)] p-[var(--space-lg)]'

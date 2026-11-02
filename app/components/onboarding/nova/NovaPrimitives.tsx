@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState, type ReactNode } from 'react'
+import { useEffect, useState, type CSSProperties, type ReactNode } from 'react'
 import Image from 'next/image'
 import { Building2, Database, Plug, Sparkles, ChevronRight, Check } from 'lucide-react'
 import { SOURCE_LABEL, sourceName, CONNECTABLE_SOURCES, type InsightSource, type SourceId } from '@/app/lib/onboarding/nova-onboarding-data'
@@ -13,8 +13,10 @@ export function readingPause(text: string) {
 
 /** Nova's text: the whole line at once, fading in from just below (like
  * Claude's replies) — no typing. The fade lives on the message wrapper. */
-export function NovaText({ text, variant = 'body', emphasis, className: extra = '' }: {
+export function NovaText({ text, variant = 'body', emphasis, className: extra = '', style }: {
   text: string
+  /** e.g. an animation delay, to stagger lines in. */
+  style?: CSSProperties
   variant?: 'body' | 'heading'
   /** A word to render bold, e.g. "Nova". */
   emphasis?: string
@@ -27,7 +29,7 @@ export function NovaText({ text, variant = 'body', emphasis, className: extra = 
   const parts = emphasis ? text.split(emphasis) : [text]
 
   return (
-    <p className={`${className} ${extra}`}>
+    <p className={`${className} ${extra}`} style={style}>
       {parts.map((part, i) => (
         <span key={i}>
           {i > 0 && <strong className="font-semibold text-[var(--color-neutral-12)]">{emphasis}</strong>}

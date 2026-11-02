@@ -513,7 +513,7 @@ function ListStep({ step, open, onToggle, label, description, icon, active, last
           ) : filled ? (
             <>
             <span className="inline-flex h-6 items-center rounded-full bg-[var(--color-accent-1)] px-2 text-[length:var(--font-size-sm)] font-medium tabular-nums text-[var(--color-accent-9)] nova-text-in">
-              {value} added
+              {value} {compact && step === 'team' ? 'invited' : 'added'}
             </span>
             <button type="button" onClick={onToggle} aria-expanded={open} aria-label={`${open ? 'Hide' : 'Show'} ${label.toLowerCase()}`} className="text-[var(--color-neutral-8)] cursor-pointer">
               <ChevronDown size={16} className={`transition-transform duration-[var(--duration-normal)] ${open ? 'rotate-180' : ''}`} />
