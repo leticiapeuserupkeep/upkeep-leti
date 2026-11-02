@@ -165,10 +165,21 @@ export function WelcomeScreen({ version = 'v1' }: { version?: OnboardingVersion 
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [welcomePath, discovery])
   const startWithNova = (text: string, opts?: { idea?: boolean }) => {
+    // V2: the conversation carries on right here, under Nova's first message.
+    if (ready) {
+      if (nova.started) nova.ask(text)
+      else nova.startReady(text)
+      return
+    }
     setChatOpen(true)
-    if (ready) nova.startReady(text, { lines: [novaGreeting, ...READY_OPENING, READY_BUILDING], done: readySummary, next: build.done ? [READY_DONE, READY_NEXT[0]] : undefined })
-    else nova.start(text, opts)
+    nova.start(text, opts)
   }
+  // V1 folds the welcome away as the drawer opens; V2 keeps it as the chat.
+  const folded = nova.started && !ready
+  const inlineEnd = useRef<HTMLDivElement>(null)
+  useEffect(() => {
+    if (ready && nova.started) inlineEnd.current?.scrollIntoView({ behavior: 'smooth', block: 'end' })
+  }, [ready, nova.started, conversation.length])
   // Split at the user's latest message: everything from there on is "the turn".
   const lastUserIndex = conversation.map(m => m.kind).lastIndexOf('user')
   const turnKey = lastUserIndex === -1 ? null : conversation[lastUserIndex].id
@@ -765,12 +776,12 @@ export function WelcomeScreen({ version = 'v1' }: { version?: OnboardingVersion 
             // message box leads.
             <div className={`flex w-full ${ready ? 'flex-1 flex-row' : 'flex-col gap-[var(--space-lg)] p-10'} ${stepsReturning ? 'nova-panel-in' : ''}`}>
               {/* Welcome, and the quickest way in: ask Nova to set things up. */}
-              <div className={`mx-auto flex w-full max-w-[840px] flex-col nova-enter transition-[gap,padding] duration-500 ${ready ? 'min-w-0 flex-1 px-10 pb-10' : ''} ${nova.started ? 'gap-0 pt-0 pb-0' : 'gap-[var(--space-md)] pt-[60px] pb-[60px]'}`}>
+              <div className={`mx-auto flex w-full max-w-[840px] flex-col nova-enter transition-[gap,padding] duration-500 ${ready ? 'min-w-0 flex-1 px-10' : ''} ${folded ? 'gap-0 pt-0 pb-0' : ready ? 'gap-[var(--space-md)] pt-[60px]' : 'gap-[var(--space-md)] pt-[60px] pb-[60px]'}`}>
                 <div className="flex flex-col gap-1">
                   <div className="flex items-center justify-between gap-3">
                     <h1 className="text-[length:var(--font-size-3xl)] font-bold leading-tight tracking-[-0.02em] text-[var(--color-neutral-12)]">{ready ? `Welcome to UpKeep, ${setup.userName}! 👋` : `Welcome ${setup.userName} 👋`}</h1>
                     {/* Brings Nova back once its drawer has been closed. */}
-                    {nova.started && !chatOpen && (
+                    {nova.started && !chatOpen && !ready && (
                       <button
                         type="button"
                         onClick={() => setChatOpen(true)}
@@ -796,13 +807,13 @@ export function WelcomeScreen({ version = 'v1' }: { version?: OnboardingVersion 
                 {/* Once started, the box folds away as Nova's drawer slides in —
                     the conversation visibly moves over there. */}
                 <div
-                  inert={nova.started}
+                  inert={folded}
                   className={`grid transition-[grid-template-rows,opacity,translate] duration-500 ease-[cubic-bezier(0.32,0.72,0,1)] ${ready ? 'flex-1' : ''} ${
-                    nova.started ? 'grid-rows-[0fr] -translate-y-2 opacity-0' : 'grid-rows-[1fr] opacity-100'
+                    folded ? 'grid-rows-[0fr] -translate-y-2 opacity-0' : 'grid-rows-[1fr] opacity-100'
                   }`}
                 >
                   {/* Extra breathing room (inside the fold, so it collapses with it). */}
-                  <div className={`-mx-3 min-h-0 overflow-hidden px-3 transition-[padding] duration-500 ${ready ? 'flex flex-col' : ''} ${nova.started ? 'pb-0 pt-0' : ready ? 'pb-0 pt-8' : 'pb-6 pt-[60px]'}`}>
+                  <div className={`-mx-3 min-h-0 px-3 transition-[padding] duration-500 ${ready ? 'flex flex-col' : 'overflow-hidden'} ${folded ? 'pb-0 pt-0' : ready ? 'pb-0 pt-8' : 'pb-6 pt-[60px]'}`}>
                     {/* Placeholder cycles through what Nova helps with — setup first. */}
                     {ready ? (
                       <>
@@ -859,9 +870,24 @@ export function WelcomeScreen({ version = 'v1' }: { version?: OnboardingVersion 
                             </>
                           )}
                         </div>
+                        {/* What the user asks next, and Nova's replies, follow right here. */}
+                        {nova.started && (
+                          <div className="mt-[var(--space-lg)] flex flex-col gap-[var(--space-md)]">
+                            {conversation.map(m => (
+                              <div key={m.id} className={`flex flex-col ${m.kind === 'nova' ? 'nova-text-in' : 'nova-enter'}`}>
+                                {renderMessage(m)}
+                              </div>
+                            ))}
+                            <div ref={inlineEnd} aria-hidden className="scroll-mb-[150px]" />
+                          </div>
+                        )}
                         {/* The message box sits at the bottom, like a chat. */}
-                        <div className="mt-auto pt-6">
-                          <NovaComposer ref={welcomeComposer} onSend={startWithNova} placeholder="Describe a problem you want to solve…" working={!build.done} onStop={build.stop} gradientBorder />
+                        <div className="sticky bottom-0 mt-auto bg-gradient-to-t from-[var(--surface-primary)] from-70% to-transparent pb-8 pt-6">
+                          {nova.started ? (
+                            <NovaComposer ref={welcomeComposer} onSend={sendToNova} placeholder="Reply or ask Nova something…" emptyAction={composerAction} disabled={nova.busy && !typedAnswer && !composerAction} working={nova.working} onStop={nova.stop} gradientBorder />
+                          ) : (
+                            <NovaComposer ref={welcomeComposer} onSend={startWithNova} placeholder="Describe a problem you want to solve…" working={!build.done} onStop={build.stop} gradientBorder />
+                          )}
                         </div>
                       </>
                     ) : (
