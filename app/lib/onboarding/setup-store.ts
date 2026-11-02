@@ -37,6 +37,8 @@ export interface SetupState {
   setupComplete: boolean
   /** Names of what was added from Nova's suggestions, shown in the setup list. */
   addedNames: { locations: string[]; assets: string[] }
+  /** Where "Setup your account" leads: the onboarding version last opened. */
+  welcomeHref: string
 }
 
 export interface CreatedItem {
@@ -64,6 +66,7 @@ function initialState(): SetupState {
     creating: false,
     connectedApps: [],
     setupComplete: false,
+    welcomeHref: '/onboarding',
   }
 }
 

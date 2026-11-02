@@ -87,6 +87,17 @@ function topicOf(ask: string): string {
   return 'your maintenance work'
 }
 
+/** Onboarding V2: the workspace is already set up, so Nova answers the
+ * request itself — first steps for each of the suggested prompts. */
+function readyReply(ask: string): string {
+  const t = ask.toLowerCase()
+  if (/preventive|breakdown|pm plan/.test(t)) return 'Let’s build your preventive maintenance plan. I’ll start with the equipment you confirmed and suggest weekly and monthly checks for each — the ones that tend to fail first go at the top. Want me to draft it?'
+  if (/safety|inspection/.test(t)) return 'Here’s a daily safety inspection to start from: machine guards and e-stops, lockout points, fire extinguishers, walkways and PPE. I’ll turn it into a checklist your technicians can fill in from their phones. Should I create it?'
+  if (/downtime/.test(t)) return 'I’ll build an app to log downtime: the asset, when it stopped and restarted, the reason and who fixed it — with a weekly view of the worst offenders. Want to see a preview first?'
+  if (/request|prioriti/.test(t)) return 'Let’s set up your request queue: anyone can send a request, and I’ll suggest a priority from how critical the asset is and the safety risk. Want me to set up the priority rules?'
+  return 'On it. I’ll use what we set up in your workspace to get started — tell me a little more about what you need, or pick one of the suggestions.'
+}
+
 export function useNovaOnboarding() {
   const [messages, setMessages] = useState<NovaMessage[]>([])
   const [company, setCompany] = useState<CompanyProfile>(MOCK_COMPANY)
@@ -367,6 +378,31 @@ export function useNovaOnboarding() {
     push({ kind: 'user', text })
     release('start')
   }, [push, release])
+
+  /** Onboarding V2: setup already happened from what Nova found, so the
+   * first prompt gets an answer — no setup questions. */
+  const readyMode = useRef(false)
+  /** V2: the conversation opens with Nova's note on what it set up
+   * (`opening.lines`, then `done` as checked lines, then `next`), then the user's message. */
+  const startReady = useCallback((text: string, opening?: { lines: string[]; done: string[]; next?: string[] }) => {
+    if (!waiters.current.has('start')) return
+    // Drop the scripted intro.
+    generation.current++
+    activeRuns.current = 0
+    readyMode.current = true
+    setStarted(true)
+    release('start')
+    if (opening) {
+      opening.lines.forEach(line => push({ kind: 'nova', text: line }))
+      opening.done.forEach(line => push({ kind: 'nova', text: line, check: true }))
+      opening.next?.forEach(line => push({ kind: 'nova', text: line }))
+    }
+    push({ kind: 'user', text })
+    run(async ({ say, think }) => {
+      await think(['Looking at your workspace…'], 1400)
+      await say(readyReply(text))
+    })
+  }, [push, release, run])
 
   /** Started from the filled-in Account step: Nova already has the answers,
    * so it skips the questions and goes straight to setting up the account. */
@@ -1029,6 +1065,10 @@ export function useNovaOnboarding() {
     const sources = connectedRef.current
     run(async ({ say, think }) => {
       await think(['Thinking…'], 1600)
+      if (readyMode.current) {
+        await say(readyReply(text))
+        return
+      }
       await say(sources.length > 0
         ? `Good question. From ${sources.map(sourceName).join(' and ')}, the same few assets keep coming up — Induction Furnace #2 and Robot Cell 4 first. I’d start the Moline pilot by tracking those.`
         : 'Good question. For a pilot at Moline + East Moline I’d start with the critical line equipment — robots, CNCs and paint systems. Connect a source and I can tell you which ones are actually failing.')
@@ -1040,7 +1080,7 @@ export function useNovaOnboarding() {
     messages, profile, answerChoice, saveAccount, started, start, busy, working: busy && awaiting === 0, stop, company, companyConfirmed, pmScheduled, generated, generating, planSkipped, integrationsLocked, mplanAdded, mplanAdding, mplanSkipped, appPromo, safetyAnswered, teamLocked, addedPeople, addingPeople, googleConsentOpen, consentScope, roles, answeredOffers, editingCompany, connected, sourcesLocked,
     emailed, reportOpen, paywallOpen, usedActions,
     planStepsDone, addPlanStep, skipPlanStep,
-    confirmCompany, startFromAccount, askMissingIndustry, startEditingCompany, saveCompany, cancelEditingCompany,
+    confirmCompany, startFromAccount, startReady, askMissingIndustry, startEditingCompany, saveCompany, cancelEditingCompany,
     connectSource, continueFromSources,
     openReport, closeReport, emailReport,
     runAction, addPmPlan, addAssets,

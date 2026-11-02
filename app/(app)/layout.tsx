@@ -11,7 +11,7 @@ import { IconButton } from '@/app/components/ui/IconButton'
 import { MeterConfigModal } from '@/app/components/edge/MeterConfigModal'
 import { DashboardProvider } from '@/app/lib/dashboard/dashboard-context'
 import { useSetupState } from '@/app/lib/onboarding/setup-store'
-import { WelcomeScreen } from '@/app/components/onboarding/nova/WelcomeScreen'
+import { WelcomeScreen, type OnboardingVersion } from '@/app/components/onboarding/nova/WelcomeScreen'
 import { PlansModal } from '@/app/components/billing/PlansModal'
 import { PlanTag } from '@/app/components/billing/PlanTag'
 import { OPEN_PLANS_EVENT, openPlans } from '@/app/lib/billing/trial-usage'
@@ -61,10 +61,15 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname()
   const isSupernovaStaging = pathname.startsWith('/supernova/staging')
 
+  // Which onboarding the page is, if any ("/onboarding-v2" also starts with "/onboarding").
+  const onboardingVersion: OnboardingVersion | null =
+    pathname.startsWith('/onboarding-v2') ? 'v2' : pathname.startsWith('/onboarding') ? 'v1' : null
+
   // First-run boot: a beat of skeleton, then the shell assembles itself piece
-  // by piece ([data-stagger] in globals.css). Only when landing on Welcome.
+  // by piece ([data-stagger] in globals.css). Only when landing on Welcome —
+  // V2 opens on Nova's full-screen discovery instead.
   const [boot, setBoot] = useState<'skeleton' | 'reveal' | 'done'>(() =>
-    pathname.startsWith('/onboarding') ? 'skeleton' : 'done',
+    onboardingVersion === 'v1' ? 'skeleton' : 'done',
   )
   useEffect(() => {
     if (boot === 'done') return
@@ -108,9 +113,11 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   const isRuntimeDetail = /^\/edge\/runtime\/[^/]+/.test(pathname)
   const isRuntimeSection = isRuntimeList || isRuntimeDetail
   const isWorkOrders = pathname.startsWith('/work-orders')
-  const isWelcome = pathname.startsWith('/onboarding')
-  const [welcomeOpened, setWelcomeOpened] = useState(isWelcome)
-  if (isWelcome && !welcomeOpened) setWelcomeOpened(true)
+  const isWelcome = onboardingVersion !== null
+  // The onboarding last opened stays mounted; opening the other version
+  // starts that one fresh.
+  const [welcomeOpened, setWelcomeOpened] = useState<OnboardingVersion | null>(onboardingVersion)
+  if (onboardingVersion && onboardingVersion !== welcomeOpened) setWelcomeOpened(onboardingVersion)
   const setup = useSetupState()
   const isWorkOrdersEmptyOnboarding = isWorkOrders && setup.workOrderLanding
   // Empty list: no view switcher or table toolbar, just the empty state.
@@ -330,7 +337,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
                   state and scroll when the user visits other sections. */}
               {welcomeOpened && (
                 <div className={isWelcome ? 'contents' : 'hidden'}>
-                  <WelcomeScreen />
+                  <WelcomeScreen key={welcomeOpened} version={welcomeOpened} />
                 </div>
               )}
               {children}

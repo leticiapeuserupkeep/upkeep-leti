@@ -1157,3 +1157,86 @@
   to { width: 100%; }
 }
 .nova-idea-progress { animation: nova-idea-progress linear both; }
+
+/* ── Onboarding V2: Nova's discovery ── */
+
+/* Each step's icon, no background, floating gently the whole time. Moving
+   to the next step, the old icon's lines travel off as the new one's draw
+   in, so one icon flows into the next instead of popping. */
+.nova-icon-float { animation: nova-icon-float 3.6s ease-in-out infinite; }
+@keyframes nova-icon-float {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-6px); }
+}
+.nova-icon-draw > *, .nova-icon-undraw > * { stroke-dasharray: 80; }
+.nova-icon-draw > * { animation: nova-stroke-draw 1.3s cubic-bezier(0.65, 0, 0.35, 1) both; }
+.nova-icon-undraw > * { animation: nova-stroke-undraw 1s cubic-bezier(0.65, 0, 0.35, 1) both; }
+.nova-icon-draw > :nth-child(2), .nova-icon-undraw > :nth-child(2) { animation-delay: 70ms; }
+.nova-icon-draw > :nth-child(3), .nova-icon-undraw > :nth-child(3) { animation-delay: 140ms; }
+.nova-icon-draw > :nth-child(4), .nova-icon-undraw > :nth-child(4) { animation-delay: 210ms; }
+.nova-icon-draw > :nth-child(n + 5), .nova-icon-undraw > :nth-child(n + 5) { animation-delay: 280ms; }
+@keyframes nova-stroke-draw {
+  from { stroke-dashoffset: 80; opacity: 0; }
+  20% { opacity: 1; }
+  to { stroke-dashoffset: 0; opacity: 1; }
+}
+@keyframes nova-stroke-undraw {
+  from { stroke-dashoffset: 0; opacity: 1; }
+  80% { opacity: 0.8; }
+  to { stroke-dashoffset: -80; opacity: 0; }
+}
+/* The step's message: the old line drifts out as the new one settles in. */
+.nova-soft-out { animation: nova-soft-out 0.6s ease both; }
+.nova-soft-in { animation: nova-soft-in 0.8s cubic-bezier(0.22, 1, 0.36, 1) 0.2s both; }
+@keyframes nova-soft-out {
+  to { opacity: 0; transform: translateY(-4px); filter: blur(2px); }
+}
+@keyframes nova-soft-in {
+  from { opacity: 0; transform: translateY(4px); filter: blur(2px); }
+  to { opacity: 1; transform: none; filter: blur(0); }
+}
+
+/* Loading → results, and results → the workspace. */
+@keyframes nova-discovery-out {
+  to { opacity: 0; transform: scale(0.97); }
+}
+.nova-discovery-out { animation: nova-discovery-out 0.32s cubic-bezier(0.4, 0, 1, 1) both; }
+@keyframes nova-overlay-out {
+  to { opacity: 0; transform: scale(1.02); }
+}
+.nova-overlay-out { animation: nova-overlay-out 0.5s cubic-bezier(0.4, 0, 0.2, 1) both; }
+
+@media (prefers-reduced-motion: reduce) {
+  .nova-icon-float { animation: none; }
+  .nova-icon-draw > * { animation: nova-text-in 0.4s ease-out both; stroke-dasharray: none; }
+  .nova-icon-undraw > * { animation: nova-soft-out 0.3s ease both; stroke-dasharray: none; }
+  .nova-soft-in, .nova-soft-out { animation-duration: 0.01ms; animation-delay: 0s; }
+  .nova-discovery-out, .nova-overlay-out { animation-duration: 0.01ms; }
+}
+
+/* Onboarding V2 discovery backdrop: the dark wave image, larger than the
+   screen, drifting very slowly (a gentle zoom and a little side to side). */
+.nova-discovery-backdrop {
+  position: absolute;
+  inset: -8%;
+  background: url('/images/onboarding/nova-discovery-bg-blue.jpg') center / cover no-repeat;
+  /* Two loops at different speeds so it never repeats exactly: a soft
+     floating drift, and a slow breathing zoom. */
+  animation:
+    nova-backdrop-float 16s ease-in-out infinite,
+    nova-backdrop-breathe 11s ease-in-out infinite alternate;
+  will-change: translate, scale;
+}
+@keyframes nova-backdrop-float {
+  0%, 100% { translate: 0 0; rotate: 0deg; }
+  25% { translate: 2.5% -1.5%; rotate: 0.4deg; }
+  50% { translate: 0.5% 1.8%; rotate: -0.2deg; }
+  75% { translate: -2.5% -0.5%; rotate: -0.4deg; }
+}
+@keyframes nova-backdrop-breathe {
+  from { scale: 1.06; }
+  to { scale: 1.14; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .nova-discovery-backdrop { animation: none; scale: 1.06; }
+}

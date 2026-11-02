@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { useRouter, usePathname } from 'next/navigation'
 import { IconButton } from '@/app/components/ui/IconButton'
-import { ThumbsDown, ThumbsUp, Download, GraduationCap, Users, Check, X, Sparkles, ShieldCheck, Briefcase, Wrench, Inbox, Factory, Building2, Truck, UtensilsCrossed, Ellipsis, type LucideIcon } from 'lucide-react'
+import { ArrowRight, CircleCheck, ThumbsDown, ThumbsUp, Download, GraduationCap, Users, Check, X, Sparkles, ShieldCheck, Briefcase, Wrench, Inbox, Factory, Building2, Truck, UtensilsCrossed, Ellipsis, type LucideIcon } from 'lucide-react'
 import { NovaText, NovaThinking, NovaThought, UserBubble } from '@/app/components/onboarding/nova/NovaPrimitives'
 import { CompanyContextCard } from '@/app/components/onboarding/nova/CompanyContextCard'
 import { ConnectSourcesCard } from '@/app/components/onboarding/nova/ConnectSourcesCard'
@@ -26,6 +26,9 @@ import { NovaIdeas } from '@/app/components/onboarding/nova/NovaIdeas'
 import { SetupChecklistPanel } from '@/app/components/onboarding/nova/SetupChecklistPanel'
 import { MobileAppPromo } from '@/app/components/onboarding/nova/MobileAppCard'
 import { NovaComposer, type NovaComposerHandle } from '@/app/components/onboarding/nova/NovaComposer'
+import { NovaDiscovery } from '@/app/components/onboarding/nova/discovery/NovaDiscovery'
+import { useWorkspaceBuild } from '@/app/components/onboarding/nova/discovery/useWorkspaceBuild'
+import type { ConfirmedDiscovery } from '@/app/lib/onboarding/discovery'
 import { ComposerActionContext, type ComposerAction } from '@/app/components/onboarding/nova/composerAction'
 import { useNovaOnboarding, PROFILE_OPTIONS, type NovaMessage } from '@/app/components/onboarding/nova/useNovaOnboarding'
 import { setupStore, useSetupState } from '@/app/lib/onboarding/setup-store'
@@ -67,10 +70,65 @@ const CHOICE_ICONS: Record<string, LucideIcon> = {
   Other: Ellipsis,
 }
 
-export function WelcomeScreen() {
+/** Onboarding V2's first actions — problems to solve once the workspace is
+ * set up, as pills under the message box. */
+const READY_ACTIONS = [
+  { label: 'Plan preventive maintenance', prompt: 'Help me create a preventive maintenance plan' },
+  { label: 'Create a safety checklist', prompt: 'Create a daily safety inspection checklist' },
+  { label: 'Track equipment downtime', prompt: 'Build an app to track equipment downtime' },
+  { label: 'Prioritize maintenance work', prompt: 'Help me prioritize maintenance work' },
+]
+
+/** Nova's first message in V2: what it set up, then what could come next. */
+const READY_OPENING = [
+  'I’ll help you get UpKeep ready for your team and make managing maintenance easier.',
+  'Let’s start by setting up your workspace with the information you just confirmed.',
+]
+const READY_BUILDING = 'I’m getting everything ready for you…'
+/** Once it's all in: Nova's wrap-up, a heading then its lines. */
+const READY_DONE = 'Your workspace is ready!'
+const READY_NEXT = [
+  'I’ve set up your locations, assets, and team invitations. Now let’s put UpKeep to work!',
+  'Based on what I learned about your company, I’d recommend starting with preventive maintenance to help prevent unexpected equipment failures.',
+  'Want me to help you get started?',
+]
+
+export type OnboardingVersion = 'v1' | 'v2'
+export const ONBOARDING_PATHS: Record<OnboardingVersion, string> = { v1: '/onboarding', v2: '/onboarding-v2' }
+
+/** V1: Nova sets the account up in conversation. V2: Nova first researches
+ * the company (full screen), the user confirms what it found, and the setup
+ * checklist fills itself in from that. */
+export function WelcomeScreen({ version = 'v1' }: { version?: OnboardingVersion }) {
   const router = useRouter()
   const setup = useSetupState()
   const nova = useNovaOnboarding()
+  // The sidebar's "Setup your account" leads back to this version.
+  useEffect(() => { setupStore.update({ welcomeHref: ONBOARDING_PATHS[version] }) }, [version])
+
+  // V2: discovery runs first; confirming it sets the workspace up, skipping
+  // it lands on the regular (V1) welcome.
+  const [discovery, setDiscovery] = useState<'running' | 'skipped' | ConfirmedDiscovery>(version === 'v2' ? 'running' : 'skipped')
+  const confirmed = typeof discovery === 'object' ? discovery : null
+  const ready = confirmed !== null
+  const build = useWorkspaceBuild(confirmed, company => nova.saveAccount({ role: 'Admin', industry: company.industry, companyName: company.name, companySize: company.size }))
+  // A step counts once it has finished filling (or the build was stopped),
+  // with what actually got added.
+  const built = (key: 'locations' | 'assets' | 'team', total: number) => {
+    const n = setup.counts[key]
+    return n > 0 && build.building !== key && (n === total || build.done) ? n : 0
+  }
+  const plural = (n: number, one: string, many: string) => `${n} ${n === 1 ? one : many}`
+  const builtLocations = confirmed ? built('locations', confirmed.locations.length) : 0
+  const builtAssets = confirmed ? built('assets', confirmed.assets.length) : 0
+  const builtTeam = confirmed ? built('team', confirmed.members.length) : 0
+  const readySummary = [
+    builtLocations > 0 && `${plural(builtLocations, 'location', 'locations')} created`,
+    builtAssets > 0 && `${plural(builtAssets, 'asset', 'assets')} added`,
+    builtAssets > 0 && builtLocations > 0 && 'Assets linked to locations',
+    builtTeam > 0 && `${plural(builtTeam, 'team invitation', 'team invitations')} sent`,
+  ].filter((line): line is string => Boolean(line))
+  const novaGreeting = `Hi ${setup.userName}! I’m Nova, your AI maintenance assistant. 👋`
   const composer = useRef<NovaComposerHandle>(null)
   const scrollRef = useRef<HTMLDivElement>(null)
   const contentRef = useRef<HTMLDivElement>(null)
@@ -96,14 +154,15 @@ export function WelcomeScreen() {
   // Coming back to Welcome before starting puts the cursor back in the box.
   const welcomePath = usePathname()
   useEffect(() => {
-    if (!welcomePath.startsWith('/onboarding') || nova.started) return
-    const id = window.setTimeout(() => welcomeComposer.current?.focus(), 400)
+    if (!welcomePath.startsWith('/onboarding') || nova.started || discovery === 'running') return
+    const id = window.setTimeout(() => welcomeComposer.current?.focus(), discovery === 'skipped' && version === 'v1' ? 400 : 700)
     return () => window.clearTimeout(id)
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [welcomePath])
+  }, [welcomePath, discovery])
   const startWithNova = (text: string, opts?: { idea?: boolean }) => {
     setChatOpen(true)
-    nova.start(text, opts)
+    if (ready) nova.startReady(text, { lines: [novaGreeting, ...READY_OPENING, READY_BUILDING], done: readySummary, next: build.done ? [READY_DONE, ...READY_NEXT] : undefined })
+    else nova.start(text, opts)
   }
   // Split at the user's latest message: everything from there on is "the turn".
   const lastUserIndex = conversation.map(m => m.kind).lastIndexOf('user')
@@ -663,6 +722,9 @@ export function WelcomeScreen() {
   }
 
   return (
+    <>
+    {/* V2's discovery covers the whole app — outside the page's stacking context. */}
+    {discovery === 'running' && <NovaDiscovery onFinish={c => setDiscovery(c ?? 'skipped')} />}
     <div className="relative isolate flex h-[calc(100vh-60px)] overflow-clip bg-[var(--surface-primary)]">
       {/* Left: the setup steps — the page itself, like other sections. An open
           report takes their place; the steps slide back in when it closes.
@@ -694,12 +756,14 @@ export function WelcomeScreen() {
               </NovaArtifactPanel>
             </div>
           ) : (
-            <div className={`flex w-full flex-col gap-[var(--space-lg)] p-10 ${stepsReturning ? 'nova-panel-in' : ''}`}>
+            // V2: the setup progress steps aside into a column on the right — the
+            // message box leads.
+            <div className={`flex w-full ${ready ? 'flex-1 flex-row' : 'flex-col gap-[var(--space-lg)] p-10'} ${stepsReturning ? 'nova-panel-in' : ''}`}>
               {/* Welcome, and the quickest way in: ask Nova to set things up. */}
-              <div className={`mx-auto flex w-full max-w-[840px] flex-col nova-enter transition-[gap,padding] duration-500 ${nova.started ? 'gap-0 pt-0 pb-0' : 'gap-[var(--space-md)] pt-[60px] pb-[60px]'}`}>
+              <div className={`mx-auto flex w-full max-w-[840px] flex-col nova-enter transition-[gap,padding] duration-500 ${ready ? 'min-w-0 flex-1 px-10 pb-10' : ''} ${nova.started ? 'gap-0 pt-0 pb-0' : 'gap-[var(--space-md)] pt-[60px] pb-[60px]'}`}>
                 <div className="flex flex-col gap-1">
                   <div className="flex items-center justify-between gap-3">
-                    <h1 className="text-[length:var(--font-size-3xl)] font-bold leading-tight tracking-[-0.02em] text-[var(--color-neutral-12)]">Welcome {setup.userName} 👋</h1>
+                    <h1 className="text-[length:var(--font-size-3xl)] font-bold leading-tight tracking-[-0.02em] text-[var(--color-neutral-12)]">{ready ? 'You’re all set to get started!' : `Welcome ${setup.userName} 👋`}</h1>
                     {/* Brings Nova back once its drawer has been closed. */}
                     {nova.started && !chatOpen && (
                       <button
@@ -709,40 +773,86 @@ export function WelcomeScreen() {
                         style={{ background: 'linear-gradient(45deg, #E93D82, #8E4EC6 45%, var(--color-accent-9))' }}
                       >
                         <span className="inline-flex h-[30px] items-center gap-1.5 rounded-[calc(var(--radius-lg)-1px)] bg-[var(--surface-primary)] px-3 text-[length:var(--font-size-base)] font-medium text-[var(--color-neutral-12)] transition-colors group-hover:bg-[var(--color-accent-1)]">
-                          <Sparkles size={14} className="text-[var(--color-accent-9)]" /> Set Up with Nova
+                          <Sparkles size={14} className="text-[var(--color-accent-9)]" /> {ready ? 'Ask Nova' : 'Set Up with Nova'}
                         </span>
                       </button>
                     )}
                   </div>
                   {/* The intro only makes sense next to the prompt box — both fold away once Nova starts. */}
-                  <div className={`grid transition-[grid-template-rows,opacity] duration-500 ease-[cubic-bezier(0.32,0.72,0,1)] ${nova.started ? 'grid-rows-[0fr] opacity-0' : 'grid-rows-[1fr] opacity-100'}`}>
-                    <p className="min-h-0 overflow-hidden text-[length:var(--font-size-md)] text-[var(--color-neutral-10)]">
-                      Nova will help you set up your workspace and get started with your day-to-day work.
-                    </p>
-                  </div>
+                  {/* V2's intro is Nova's first message in the conversation instead. */}
+                  {!ready && (
+                    <div className={`grid transition-[grid-template-rows,opacity] duration-500 ease-[cubic-bezier(0.32,0.72,0,1)] ${nova.started ? 'grid-rows-[0fr] opacity-0' : 'grid-rows-[1fr] opacity-100'}`}>
+                      <p className="min-h-0 overflow-hidden text-[length:var(--font-size-md)] text-[var(--color-neutral-10)]">
+                        Nova will help you set up your workspace and get started with your day-to-day work.
+                      </p>
+                    </div>
+                  )}
                 </div>
                 {/* Once started, the box folds away as Nova's drawer slides in —
                     the conversation visibly moves over there. */}
                 <div
                   inert={nova.started}
-                  className={`grid transition-[grid-template-rows,opacity,translate] duration-500 ease-[cubic-bezier(0.32,0.72,0,1)] ${
+                  className={`grid transition-[grid-template-rows,opacity,translate] duration-500 ease-[cubic-bezier(0.32,0.72,0,1)] ${ready ? 'flex-1' : ''} ${
                     nova.started ? 'grid-rows-[0fr] -translate-y-2 opacity-0' : 'grid-rows-[1fr] opacity-100'
                   }`}
                 >
                   {/* Extra breathing room (inside the fold, so it collapses with it). */}
-                  <div className={`-mx-3 min-h-0 overflow-hidden px-3 transition-[padding] duration-500 ${nova.started ? 'pb-0 pt-0' : 'pb-6 pt-[60px]'}`}>
+                  <div className={`-mx-3 min-h-0 overflow-hidden px-3 transition-[padding] duration-500 ${ready ? 'flex flex-col' : ''} ${nova.started ? 'pb-0 pt-0' : ready ? 'pb-0 pt-8' : 'pb-6 pt-[60px]'}`}>
                     {/* Placeholder cycles through what Nova helps with — setup first. */}
-                    <NovaComposer ref={welcomeComposer} placeholderExamples={DAILY_PROMPTS} onSend={startWithNova} placeholder="Ask Nova to set up your account" sendLabel="Start now" gradientBorder />
+                    {ready ? (
+                      <>
+                        {/* Nova's first message: what the setup did, line by
+                            line as each step lands. It opens the conversation too. */}
+                        <div className="flex flex-col gap-2" aria-live="polite">
+                          <NovaText text={novaGreeting} className="nova-text-in" />
+                          {READY_OPENING.map(line => <NovaText key={line} text={line} className="nova-text-in" />)}
+                          <NovaText text={READY_BUILDING} variant="heading" className="nova-text-in mt-2" />
+                          {readySummary.length > 0 && (
+                            <ul className="nova-text-in flex flex-col gap-2.5 rounded-[var(--radius-xl)] border border-[var(--border-default)] bg-[var(--surface-primary)] px-[var(--space-md)] py-3">
+                              {readySummary.map(line => (
+                                <li key={line} className="nova-text-in flex items-center gap-2">
+                                  <CircleCheck size={16} className="shrink-0 text-[var(--color-success)]" />
+                                  <NovaText text={line} />
+                                </li>
+                              ))}
+                            </ul>
+                          )}
+                          {/* Once it's all in: ways to start working, one click each. */}
+                          {build.done && (
+                            <>
+                              <NovaText text={READY_DONE} variant="heading" className="nova-text-in mt-2" />
+                              {READY_NEXT.map(line => <NovaText key={line} text={line} className="nova-text-in" />)}
+                              <div className="nova-text-in flex flex-col items-start gap-2">
+                                {READY_ACTIONS.map(action => (
+                                  <button key={action.label} type="button" onClick={() => startWithNova(action.prompt)} className={CHOICE.replace(' flex-1', '')}>
+                                    {action.label} <ArrowRight size={14} className="shrink-0" />
+                                  </button>
+                                ))}
+                              </div>
+                            </>
+                          )}
+                        </div>
+                        {/* The message box sits at the bottom, like a chat. */}
+                        <div className="mt-auto pt-6">
+                          <NovaComposer ref={welcomeComposer} onSend={startWithNova} placeholder="Describe a problem you want to solve…" working={!build.done} onStop={build.stop} gradientBorder />
+                        </div>
+                      </>
+                    ) : (
+                      <NovaComposer ref={welcomeComposer} placeholderExamples={DAILY_PROMPTS} onSend={startWithNova} placeholder="Ask Nova to set up your account" sendLabel="Start now" gradientBorder />
+                    )}
                   </div>
                 </div>
               </div>
               <SetupChecklistPanel
-                title="Setup progress"
-                subtitle="Follow these steps, or ask Nova to help you along the way."
-                className="mx-auto flex w-full max-w-[840px] flex-col gap-[var(--space-md)]"
+                title={ready ? 'Make UpKeep yours' : 'Setup progress'}
+                subtitle={ready ? 'Add your information to get more relevant results from Nova.' : 'Follow these steps, or ask Nova to help you along the way.'}
+                className={ready
+                  // Edge to edge on the right: top, bottom and side.
+                  ? 'flex w-[360px] shrink-0 flex-col gap-[var(--space-md)] border-l border-[var(--border-default)] bg-[var(--surface-primary)] p-[var(--space-lg)]'
+                  : 'mx-auto flex w-full max-w-[840px] flex-col gap-[var(--space-md)]'}
                 accountDone={setup.companyConfirmed}
                 // Fills in as Nova learns it: the industry first, then the company.
-                accountRows={[
+                accountRows={build.accountProgress !== undefined ? build.accountRows : [
                   ...(nova.profile.industry ? [{ label: 'Industry', value: nova.profile.industry }] : []),
                   ...(setup.companyConfirmed ? [
                     { label: 'Company', value: nova.company.name },
@@ -768,6 +878,9 @@ export function WelcomeScreen() {
                 onAdd={addChecklistItem}
                 onView={viewChecklistItem}
                 activeStep={activePlanStep}
+                accountProgress={build.accountProgress}
+                compact={ready}
+                building={build.building}
               >
                 <CreatedForYou
                   // Reports and docs Nova made — work orders and PMs live in their own lists.
@@ -781,7 +894,7 @@ export function WelcomeScreen() {
                 <NovaRecommendations items={recommendations} onInstall={installRecommendation} onUpgrade={setUpgradeFor} />
               </SetupChecklistPanel>
               {/* Ideas appear once the user gets to the team step. */}
-              {ideasUnlocked && (
+              {ideasUnlocked && !ready && (
               <div className="mt-[var(--space-xl)] nova-section-in">
                 <div className="mx-auto mb-[var(--space-xl)] h-px w-full max-w-[840px] bg-[var(--border-subtle)]" />
                 <NovaIdeas
@@ -881,5 +994,6 @@ export function WelcomeScreen() {
         onUpgrade={() => nova.closePaywall(false, true)}
       />
     </div>
+    </>
   )
 }

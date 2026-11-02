@@ -13,17 +13,18 @@ import { SearchableSelect } from '@/app/components/ui/SearchableSelect'
 type Key = keyof SetupCounts
 
 /** Each step and what it's for, so a new user knows why it matters. */
-const ITEMS: { key: Key; label: string; description: string; icon: LucideIcon }[] = [
-  { key: 'locations', label: 'Locations', description: 'Add where your team works to organize maintenance by location.', icon: MapPin },
-  { key: 'assets', label: 'Assets', description: 'Add your equipment to start tracking and maintaining it.', icon: Box },
-  { key: 'team', label: 'Team', description: 'People who do and request the work', icon: Users },
-  { key: 'workOrders', label: 'Work Orders', description: 'Add your first job to start managing maintenance.', icon: FileText },
+/** `hint` is the short line under each title in the compact (V2) panel. */
+const ITEMS: { key: Key; label: string; description: string; hint: string; icon: LucideIcon }[] = [
+  { key: 'locations', label: 'Locations', description: 'Add where your team works to organize maintenance by location.', hint: 'Organize where your team works', icon: MapPin },
+  { key: 'assets', label: 'Assets', description: 'Add your equipment to start tracking and maintaining it.', hint: 'Track the equipment you maintain', icon: Box },
+  { key: 'team', label: 'Team', description: 'People who do and request the work', hint: 'Bring your team into UpKeep', icon: Users },
+  { key: 'workOrders', label: 'Work Orders', description: 'Add your first job to start managing maintenance.', hint: 'Start managing maintenance work', icon: FileText },
 ]
 
 /** The setup guide: one row per step, each clearly done or not, with the
  * next one highlighted. Counts update as Nova adds things, and filled steps
  * open to show what was added. */
-export function SetupChecklistPanel({ headerTargetId, onAccountIncomplete, accountLocked = false, title = 'Set up your account', subtitle = 'Complete these steps here, or answer Nova’s questions as you go.', className, headerAction, accountDone, accountRows, accountLoading = false, accountDetails, accountSubmitLabel = 'Save', accountOpenByDefault = false, industryOptions, onSaveAccount, gmailConnected, onConnectGmail, counts, items, pending = [], onAdd, onView, children, activeStep }: {
+export function SetupChecklistPanel({ headerTargetId, onAccountIncomplete, accountLocked = false, title = 'Set up your account', subtitle = 'Complete these steps here, or answer Nova’s questions as you go.', className, headerAction, accountDone, accountRows, accountLoading = false, accountDetails, accountSubmitLabel = 'Save', accountOpenByDefault = false, industryOptions, onSaveAccount, gmailConnected, onConnectGmail, counts, items, pending = [], onAdd, onView, children, activeStep, accountProgress, building, compact = false }: {
   title?: string
   subtitle?: string
   /** Replaces the default container styles. */
@@ -63,6 +64,12 @@ export function SetupChecklistPanel({ headerTargetId, onAccountIncomplete, accou
   children?: ReactNode
   /** The step Nova is walking the user through — focus follows it. */
   activeStep?: Key
+  /** Nova is filling the account in (0–1) — its ring fills as it goes. */
+  accountProgress?: number
+  /** The step Nova is adding to right now, counting up as items land. */
+  building?: Key
+  /** A narrow side column: each step shows its title only. */
+  compact?: boolean
 }) {
   // Accordion: at most one step open; nothing opens on its own.
   const [openStep, setOpenStep] = useState<string | null>(accountOpenByDefault ? 'account' : null)
@@ -91,7 +98,7 @@ export function SetupChecklistPanel({ headerTargetId, onAccountIncomplete, accou
   // While the account is being filled in, the bar moves with it (each field is
   // a share of that first step); the count only ticks once it's set up.
   const [accountFill, setAccountFill] = useState(0)
-  const barDone = done + (accountDone ? 0 : accountFill)
+  const barDone = done + (accountDone ? 0 : accountProgress ?? accountFill)
   const total = ITEMS.length + 1
   // No step is singled out as "next" — the user may be answering Nova in the
   // chat or working here, so each step just shows done or not.
@@ -146,6 +153,8 @@ export function SetupChecklistPanel({ headerTargetId, onAccountIncomplete, accou
           onSave={onSaveAccount}
           submitLabel={accountSubmitLabel}
           openByDefault={accountOpenByDefault}
+          progress={accountProgress}
+          compact={compact}
         />
         {/* The other steps wait, faded, until the account is set up. */}
         <div inert={!accountDone} className={`flex flex-col gap-4 transition-opacity duration-500 ${accountDone ? 'opacity-100' : 'opacity-60'}`}>
@@ -157,13 +166,15 @@ export function SetupChecklistPanel({ headerTargetId, onAccountIncomplete, accou
               // One step open at a time: opening this folds the previous one.
               onToggle={() => setOpenStep(o => (o === item.key ? null : item.key))}
               label={item.label}
-              description={item.description}
+              description={compact ? item.hint : item.description}
               icon={item.icon}
               active={next === item.key}
               last={i === ITEMS.length - 1}
               value={counts[item.key]}
               added={items[item.key]}
               loading={pending.includes(item.key)}
+              building={building === item.key}
+              compact={compact}
               // The team comes from Gmail — connect it first, from this step.
               connectGmail={item.key === 'team' && !gmailConnected ? onConnectGmail : undefined}
               onAdd={() => onAdd(item.key)}
@@ -243,7 +254,7 @@ function FillRing({ percent }: { percent: number }) {
   )
 }
 
-function StepHeading({ icon: Icon, label, detail }: { icon: LucideIcon; label: string; detail?: ReactNode; done?: boolean }) {
+function StepHeading({ icon: Icon, label, detail, small = false }: { icon: LucideIcon; label: string; detail?: ReactNode; done?: boolean; /** A small hint line under the title (compact panel). */ small?: boolean }) {
   return (
     <>
       <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-[var(--radius-lg)] bg-[var(--color-accent-1)] text-[var(--color-accent-9)]">
@@ -251,7 +262,7 @@ function StepHeading({ icon: Icon, label, detail }: { icon: LucideIcon; label: s
       </span>
       <span className="flex min-w-0 flex-1 flex-col">
         <span className="text-[length:var(--font-size-base)] font-semibold text-[var(--color-neutral-12)]">{label}</span>
-        {detail && <span className="text-[length:var(--font-size-base)] leading-5 text-[var(--color-neutral-9)]">{detail}</span>}
+        {detail && <span className={`${small ? 'text-[length:var(--font-size-sm)] leading-4' : 'text-[length:var(--font-size-base)] leading-5'} text-[var(--color-neutral-9)]`}>{detail}</span>}
       </span>
     </>
   )
@@ -276,7 +287,7 @@ function FieldRow({ label, htmlFor, children }: { label: string; htmlFor: string
   )
 }
 
-function AccountStep({ expanded, onExpand, onFillChange, onIncomplete, locked = false, done, active, loading, rows, details, industryOptions, onSave, submitLabel = 'Save', openByDefault = false }: {
+function AccountStep({ expanded, onExpand, onFillChange, onIncomplete, locked = false, done, active, loading, rows, details, industryOptions, onSave, submitLabel = 'Save', openByDefault = false, progress, compact = false }: {
   /** Whether this is the panel's one open step. */
   expanded: boolean
   onExpand: () => void
@@ -295,6 +306,9 @@ function AccountStep({ expanded, onExpand, onFillChange, onIncomplete, locked = 
   onSave: (details: AccountDetails) => void
   submitLabel?: string
   openByDefault?: boolean
+  /** Nova is filling it in: shows how far along (0–1). */
+  progress?: number
+  compact?: boolean
 }) {
   // Clicking the card opens the fields to fill in (or edit) by hand.
   const [editing, setEditing] = useState(openByDefault && !done)
@@ -348,7 +362,7 @@ function AccountStep({ expanded, onExpand, onFillChange, onIncomplete, locked = 
   }
 
   return (
-    <StepRow step="account" active={editing} working={loading && !done} glow={!done && editing}>
+    <StepRow step="account" active={editing} working={(loading || progress !== undefined) && !done} glow={!done && editing}>
       <div ref={cardRef} onBlur={onBlur} className="contents">
       <div className="flex items-center gap-3 px-[var(--space-md)] py-3">
         {/* Done: the header shows/hides the summary. Not yet: it opens the form. */}
@@ -358,14 +372,16 @@ function AccountStep({ expanded, onExpand, onFillChange, onIncomplete, locked = 
           aria-expanded={editing || (done && summaryOpen)}
           className="flex min-w-0 flex-1 items-center gap-3 text-left cursor-pointer"
         >
-          <StepHeading icon={Building2} label="Your company details" done={done} detail={!done && editing ? 'Does everything look right?' : 'Tell us about your company'} />
+          <StepHeading icon={Building2} label={compact ? 'Company details' : 'Your company details'} small={compact && !editing} done={done} detail={compact && !editing ? 'Personalize your workspace' : !done && editing ? 'Does everything look right?' : 'Tell us about your company'} />
         </button>
         {done && !editing && (
           <button type="button" onClick={open} className="inline-flex shrink-0 items-center gap-1 text-[length:var(--font-size-sm)] font-medium text-[var(--color-accent-9)] transition-colors hover:text-[var(--color-accent-10)] cursor-pointer">
             <Pencil size={12} /> Edit
           </button>
         )}
-        {loading && !done
+        {progress !== undefined && !done
+          ? <FillRing percent={Math.round(progress * 100)} />
+          : loading && !done
           ? <Loader2 size={18} className="shrink-0 animate-spin text-[var(--color-accent-9)]" aria-label="In progress" />
           : done || !editing
             ? <StepStatus done={done} active={active} label="Confirm your account" />
@@ -434,7 +450,7 @@ function AccountStep({ expanded, onExpand, onFillChange, onIncomplete, locked = 
 /** A step that collects things (locations, assets…). Empty, the arrow or Add
  * starts it; filled, it shows how many and opens to list them. When its count
  * goes up the row pops and a "+N" floats off it. */
-function ListStep({ step, open, onToggle, label, description, icon, active, last, value, added, loading, connectGmail, onAdd, onView }: {
+function ListStep({ step, open, onToggle, label, description, icon, active, last, value, added, loading, building = false, compact = false, connectGmail, onAdd, onView }: {
   step: string
   open: boolean
   onToggle: () => void
@@ -446,6 +462,9 @@ function ListStep({ step, open, onToggle, label, description, icon, active, last
   value: number
   added: string[]
   loading: boolean
+  /** Nova is adding to it right now: the count goes up, done comes after. */
+  building?: boolean
+  compact?: boolean
   /** Set when the step needs Gmail before anything can be added. */
   connectGmail?: () => void
   onAdd: () => void
@@ -456,10 +475,13 @@ function ListStep({ step, open, onToggle, label, description, icon, active, last
   // Keeps the newest item in view while Nova adds them one by one.
   const listRef = useRef<HTMLUListElement>(null)
 
+  // Nova's count-up has its own calm animation — no "+1" floating off it.
+  const buildingRef = useRef(building)
+  useEffect(() => { buildingRef.current = building })
   useEffect(() => {
     const diff = value - previous.current
     previous.current = value
-    if (diff <= 0) return
+    if (diff <= 0 || buildingRef.current) return
     // Stays folded — the count tag says what landed; the user opens it.
     setGain(diff)
     const id = window.setTimeout(() => setGain(0), 1100)
@@ -475,20 +497,22 @@ function ListStep({ step, open, onToggle, label, description, icon, active, last
   const celebrating = gain > 0
 
   return (
-    <StepRow step={step} last={last} working={loading}>
+    <StepRow step={step} last={last} working={loading || building}>
       <div className="flex items-center gap-3 px-[var(--space-md)] py-3">
         <StepHeading
+          small={compact}
           icon={icon}
           label={label}
           done={filled}
-          detail={connectGmail && !filled ? 'Connect Gmail or Outlook so Nova can find the people on your team' : description}
+          detail={compact ? description : connectGmail && !filled ? 'Connect Gmail or Outlook so Nova can find the people on your team' : description}
         />
         <span className="relative flex shrink-0 items-center gap-2">
-          {loading ? (
-            <Loader2 size={16} className="animate-spin text-[var(--color-accent-9)]" />
+          {/* While Nova adds: a loader; once it's done, the count fades in. */}
+          {loading || building ? (
+            <Loader2 size={16} className="animate-spin text-[var(--color-accent-9)]" aria-label={`Adding ${label.toLowerCase()}`} />
           ) : filled ? (
             <>
-            <span className="inline-flex h-6 items-center rounded-full bg-[var(--color-accent-1)] px-2 text-[length:var(--font-size-sm)] font-medium text-[var(--color-accent-9)]">
+            <span className="inline-flex h-6 items-center rounded-full bg-[var(--color-accent-1)] px-2 text-[length:var(--font-size-sm)] font-medium tabular-nums text-[var(--color-accent-9)] nova-text-in">
               {value} added
             </span>
             <button type="button" onClick={onToggle} aria-expanded={open} aria-label={`${open ? 'Hide' : 'Show'} ${label.toLowerCase()}`} className="text-[var(--color-neutral-8)] cursor-pointer">
@@ -511,7 +535,10 @@ function ListStep({ step, open, onToggle, label, description, icon, active, last
               </span>
             </span>
           )}
-          {!loading && !(connectGmail && !filled) && <StepStatus done={filled} active={active} onGo={onAdd} label={`Add ${label.toLowerCase()}`} />}
+          {/* The side column (V2) lets the count say it's done — no check. */}
+          {!loading && !building && !(connectGmail && !filled) && !(compact && filled) && (
+            <StepStatus done={filled} active={active} onGo={onAdd} label={`Add ${label.toLowerCase()}`} />
+          )}
         </span>
       </div>
 

@@ -19,7 +19,7 @@ import {
   BarChart3, Gauge,
   Car, ClipboardCheck, FileClock, AlertTriangle,
   Package, ScrollText, Building2,
-  Bell, Check, ChevronUp, Smartphone, LayoutGrid, CircleHelp, MessagesSquare, CreditCard, Settings,
+  Bell, Check, ChevronUp, Smartphone, LayoutGrid, CircleHelp, MessagesSquare, CreditCard, Settings, Rocket, Sparkles,
 } from 'lucide-react'
 import { planById, type PlanId } from '@/app/lib/billing/plans'
 import { openPlans } from '@/app/lib/billing/trial-usage'
@@ -106,6 +106,14 @@ const sections: NavSection[] = [
       { label: 'Vendors & Customers', icon: Building2 },
     ],
   },
+  {
+    // Prototype switch between the two first-run experiences.
+    title: 'ONBOARDING',
+    items: [
+      { label: 'Onboarding V1', icon: Rocket, href: '/onboarding' },
+      { label: 'Onboarding V2', icon: Sparkles, href: '/onboarding-v2' },
+    ],
+  },
 ]
 
 const footerIcons: NavItem[] = [
@@ -176,7 +184,8 @@ function NavRow({ item, active, collapsed }: { item: NavItem; active: boolean; c
 
 export function SideNav({ collapsed }: SideNavProps) {
   const pathname = usePathname()
-  const setupPercent = setupProgress(useSetupState())
+  const setup = useSetupState()
+  const setupPercent = setupProgress(setup)
   const [appOpen, setAppOpen] = useState(false)
 
   return (
@@ -225,7 +234,7 @@ export function SideNav({ collapsed }: SideNavProps) {
         <div data-stagger style={{ '--i': 1 } as React.CSSProperties} className={`shrink-0 pt-[var(--space-sm)] ${collapsed ? 'flex justify-center' : 'px-[var(--space-xs)]'}`}>
           {setupPercent < 100 ? (
             <Link
-              href="/onboarding"
+              href={setup.welcomeHref}
               aria-label={`Setup your account, ${setupPercent}% done`}
               className={`flex items-center rounded-[var(--radius-lg)] bg-[var(--color-accent-9)] text-white shadow-[var(--shadow-sm)] transition-colors duration-[var(--duration-fast)] hover:bg-[var(--color-accent-10)] ${
                 collapsed ? 'h-9 w-9 justify-center' : 'h-11 justify-between px-3'
@@ -236,7 +245,7 @@ export function SideNav({ collapsed }: SideNavProps) {
             </Link>
           ) : (
             <Link
-              href="/onboarding"
+              href={setup.welcomeHref}
               aria-label="Setup complete"
               className={`flex items-center gap-2 rounded-[var(--radius-lg)] border border-[var(--border-default)] bg-[var(--surface-primary)] text-[var(--color-neutral-12)] transition-colors duration-[var(--duration-fast)] hover:bg-[var(--color-neutral-2)] nova-enter ${
                 collapsed ? 'h-9 w-9 justify-center' : 'h-11 px-3'
@@ -251,7 +260,7 @@ export function SideNav({ collapsed }: SideNavProps) {
         {/* Scrollable nav */}
         <ScrollArea.Root className="flex-1 overflow-hidden">
           <ScrollArea.Viewport className="h-full w-full px-[var(--space-xs)]">
-            <nav className={`flex flex-col gap-3 py-[var(--space-sm)] ${collapsed ? 'items-center' : 'items-stretch'}`}>
+            <nav className={`flex flex-col gap-3 pt-[var(--space-sm)] ${collapsed ? 'pb-16' : 'pb-24'} ${collapsed ? 'items-center' : 'items-stretch'}`}>
               {sections.map((section, i) =>
                 collapsed ? (
                   <div key={section.title} className="flex flex-col items-center gap-1">
