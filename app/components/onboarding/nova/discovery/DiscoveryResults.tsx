@@ -1,7 +1,7 @@
 'use client'
 
 import { useRef, useState, type KeyboardEvent, type ReactNode } from 'react'
-import { ChevronDown, Plus, Sparkles, ArrowRight, Pencil, Upload, FileSpreadsheet, X } from 'lucide-react'
+import { ChevronDown, Plus, Sparkles, ArrowRight, FileSpreadsheet, X } from 'lucide-react'
 import { Badge } from '@/app/components/ui/Badge'
 import { Button } from '@/app/components/ui/Button'
 import { Checkbox } from '@/app/components/ui/Checkbox'
@@ -18,13 +18,23 @@ import {
 
 type ListId = 'locations' | 'assets' | 'team'
 
-const LIST_COPY: Record<ListId, { title: string; one: string; many: string; add: string; empty: string }> = {
-  locations: { title: 'Locations', one: 'location', many: 'locations', add: 'Add new location', empty: 'I couldn’t find your locations. Add the sites your team maintains.' },
-  assets: { title: 'Assets', one: 'asset', many: 'assets', add: 'Add new asset', empty: 'No equipment suggested yet. Add what your team maintains.' },
+const LIST_COPY: Record<ListId, { title: string; hint?: string; one: string; many: string; add: string; empty: string }> = {
+  locations: { title: 'Locations', hint: 'The sites and buildings your team maintains', one: 'location', many: 'locations', add: 'Add new location', empty: 'I couldn’t find your locations. Add the sites your team maintains.' },
+  assets: { title: 'Assets', hint: 'The equipment you’ll track and maintain', one: 'asset', many: 'assets', add: 'Add new asset', empty: 'No equipment suggested yet. Add what your team maintains.' },
   team: { title: 'Team', one: 'member', many: 'members', add: 'Add Team member', empty: 'Add the people on your maintenance team by email.' },
 }
 
 /** A section's count, e.g. "3 Locations". */
+/** Bold section title with a small hint underneath. */
+function SectionTitle({ title, hint }: { title: string; hint?: string }) {
+  return (
+    <span className="flex min-w-0 flex-1 flex-col gap-0.5">
+      <span className="text-[length:var(--font-size-base)] font-bold leading-[21px] text-[var(--color-neutral-12)]">{title}</span>
+      {hint && <span className="text-[length:var(--font-size-sm)] leading-4 text-[var(--color-neutral-9)]">{hint}</span>}
+    </span>
+  )
+}
+
 function CountTag({ label }: { label: string }) {
   return <Badge severity="neutral" variant="subtle" size="lg" className="shrink-0 rounded-full font-normal">{label}</Badge>
 }
@@ -185,7 +195,7 @@ export function DiscoveryResults({ result, onConfirm, onSkip, leaving = false }:
           aria-controls={`discovery-${id}`}
           className={`flex w-full items-center gap-3 text-left cursor-pointer py-5`}
         >
-          <span className="flex-1 text-[length:var(--font-size-base)] font-bold leading-[21px] text-[var(--color-neutral-12)]">{copy.title}</span>
+          <SectionTitle title={copy.title} hint={copy.hint} />
           {items.length > 0
             ? <CountTag label={`${n} ${id === 'locations' ? (n === 1 ? copy.one : copy.many) : (n === 1 ? copy.one : copy.many).replace(/^./, c => c.toUpperCase())}`} />
             : <span className="text-[length:var(--font-size-sm)] text-[var(--color-neutral-8)]">{id === 'locations' ? 'None found' : 'None yet'}</span>}
@@ -255,10 +265,10 @@ export function DiscoveryResults({ result, onConfirm, onSkip, leaving = false }:
         {/* Company: in plain sight, editable on demand. */}
         <section className="flex flex-col gap-2 pb-5">
           <div className="flex items-center gap-3">
-            <span className="flex-1 text-[length:var(--font-size-base)] font-bold leading-[21px] text-[var(--color-neutral-12)]">Company</span>
+            <SectionTitle title="Company" hint="Confirm the details Nova found about your business" />
             {!editingCompany && (
-              <button type="button" onClick={() => setEditingCompany(true)} className="inline-flex items-center gap-1 text-[length:var(--font-size-sm)] font-medium text-[var(--color-accent-9)] transition-colors hover:text-[var(--color-accent-10)] cursor-pointer">
-                <Pencil size={12} /> Edit
+              <button type="button" onClick={() => setEditingCompany(true)} className="shrink-0 text-[length:var(--font-size-sm)] font-medium text-[var(--color-accent-9)] transition-colors hover:text-[var(--color-accent-10)] cursor-pointer">
+                Edit
               </button>
             )}
           </div>
@@ -311,10 +321,7 @@ function ImportData({ file, onChange }: { file: string | null; onChange: (name: 
   const input = useRef<HTMLInputElement>(null)
   return (
     <section className="flex items-center gap-3 border-t border-[var(--border-subtle)] pt-5">
-      <span className="flex min-w-0 flex-1 flex-col gap-0.5">
-        <span className="text-[length:var(--font-size-base)] font-bold leading-[21px] text-[var(--color-neutral-12)]">Import data</span>
-        <span className="text-[length:var(--font-size-sm)] text-[var(--color-neutral-9)]">Have your locations or assets in a spreadsheet? Add a CSV or Excel file.</span>
-      </span>
+      <SectionTitle title="Import data" hint="Already tracking locations or assets in a spreadsheet? Upload a CSV or Excel file." />
       {file ? (
         <span className="nova-text-in inline-flex max-w-[220px] shrink-0 items-center gap-1.5 rounded-full bg-[var(--color-neutral-3)] py-1 pl-2.5 pr-1.5 text-[length:var(--font-size-sm)] font-medium text-[var(--color-neutral-11)]">
           <FileSpreadsheet size={14} className="shrink-0" />
@@ -324,9 +331,9 @@ function ImportData({ file, onChange }: { file: string | null; onChange: (name: 
           </button>
         </span>
       ) : (
-        <Button variant="secondary" size="sm" className="shrink-0" onClick={() => input.current?.click()}>
-          <Upload size={14} /> Import
-        </Button>
+        <button type="button" onClick={() => input.current?.click()} className="shrink-0 text-[length:var(--font-size-sm)] font-medium text-[var(--color-accent-9)] transition-colors hover:text-[var(--color-accent-10)] cursor-pointer">
+          Import
+        </button>
       )}
       <input
         ref={input}
