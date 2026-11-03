@@ -265,7 +265,7 @@ export function DiscoveryResults({ result, onConfirm, onSkip, leaving = false }:
         {/* Company: in plain sight, editable on demand. */}
         <section className="flex flex-col gap-2 pb-5">
           <div className="flex items-center gap-3">
-            <SectionTitle title="Company" hint="Confirm the details Nova found about your business" />
+            <SectionTitle title="Company" />
             {!editingCompany && (
               <button type="button" onClick={() => setEditingCompany(true)} className="shrink-0 text-[length:var(--font-size-sm)] font-medium text-[var(--color-accent-9)] transition-colors hover:text-[var(--color-accent-10)] cursor-pointer">
                 Edit
