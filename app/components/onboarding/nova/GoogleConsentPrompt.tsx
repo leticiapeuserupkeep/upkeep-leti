@@ -33,11 +33,15 @@ const COPY = {
 
 /** Google consent as a card floating just above the composer — the way Claude
  * asks for approval inline — with why it's needed and what's safe about it. */
-export function GoogleConsentPrompt({ open, scope = 'doc', onAnswer }: {
-  open: boolean
-  scope?: 'doc' | 'gmail' | 'chat'
-  onAnswer: (allowed: boolean, provider?: 'gmail' | 'outlook' | 'slack' | 'teams') => void
-}) {
+type ConsentPromptProps = { open: boolean } & (
+  | { scope?: 'doc' | 'gmail'; onAnswer: (allowed: boolean, provider?: 'gmail' | 'outlook') => void }
+  | { scope: 'chat'; onAnswer: (allowed: boolean, provider?: 'slack' | 'teams') => void }
+)
+
+export function GoogleConsentPrompt(props: ConsentPromptProps) {
+  const { open, scope = 'doc' } = props
+  // Each scope only ever passes its own providers.
+  const onAnswer = props.onAnswer as (allowed: boolean, provider?: string) => void
   if (!open) return null
   const access = scope === 'doc' ? ACCESS.filter(a => !a.logo.includes('outlook')) : []
   // Gmail/Outlook, or Slack/Teams: two equal choices.

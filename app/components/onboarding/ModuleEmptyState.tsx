@@ -43,13 +43,13 @@ export function ModuleEmptyState({
   }, [])
 
   return (
-    <div className="flex min-h-full flex-col items-center justify-center gap-10 bg-[var(--surface-primary)] px-[var(--space-lg)] py-[var(--space-3xl)]">
+    <div className="flex min-h-full flex-col items-center gap-10 bg-[var(--surface-primary)] px-[var(--space-lg)] pt-[var(--space-3xl)]">
       {actionsSlot && createPortal(
         <Button variant="primary" size="md" onClick={onCreate}><Plus size={14} /> {headerLabel}</Button>,
         actionsSlot,
       )}
       {/* Header — sizes and colors follow the Figma empty-state spec. */}
-      <div className="flex w-full max-w-[816px] flex-col items-center gap-8 py-6 nova-enter">
+      <div className="my-auto flex w-full max-w-[816px] flex-col items-center gap-8 py-6 nova-enter">
         <div className="flex w-full flex-col items-center gap-3 text-center">
           {/* Illustration: a blank record with the module's icon badge. */}
           <div className="relative -mt-10 h-[125px] w-[194px]" aria-hidden>
@@ -80,15 +80,18 @@ export function ModuleEmptyState({
       </div>
 
       {/* Same rotating cards as the Welcome page's ideas. */}
+      {/* Pinned to the bottom of the page, under everything else. */}
       {suggestions.length > 0 && (
+        <div className="sticky bottom-0 flex w-full justify-center bg-[var(--surface-primary)] pb-[var(--space-xl)]">
         <IdeaCarousel
           eyebrow="Suggested by Nova"
           muted
-          className="max-w-[816px] pt-[60px]"
+          className="max-w-[816px]"
           cards={suggestions.map(s => ({ id: s.id, title: s.title, description: s.reason, icon: Icon }))}
           busyId={creatingId}
           onPick={card => { const s = suggestions.find(x => x.id === card.id); if (s) onSuggest(s) }}
         />
+        </div>
       )}
     </div>
   )
