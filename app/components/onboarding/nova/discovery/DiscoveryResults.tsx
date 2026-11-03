@@ -19,8 +19,8 @@ import {
 type ListId = 'locations' | 'assets' | 'team'
 
 const LIST_COPY: Record<ListId, { title: string; hint?: string; one: string; many: string; add: string; empty: string }> = {
-  locations: { title: 'Locations', hint: 'The sites and buildings your team maintains', one: 'location', many: 'locations', add: 'Add new location', empty: 'I couldn’t find your locations. Add the sites your team maintains.' },
-  assets: { title: 'Assets', hint: 'The equipment you’ll track and maintain', one: 'asset', many: 'assets', add: 'Add new asset', empty: 'No equipment suggested yet. Add what your team maintains.' },
+  locations: { title: 'Locations', hint: 'Found from publicly available company information.', one: 'location', many: 'locations', add: 'Add new location', empty: 'I couldn’t find your locations. Add the sites your team maintains.' },
+  assets: { title: 'Assets', hint: 'Suggested based on your industry.', one: 'asset', many: 'assets', add: 'Add new asset', empty: 'No equipment suggested yet. Add what your team maintains.' },
   team: { title: 'Team', one: 'member', many: 'members', add: 'Add Team member', empty: 'Add the people on your maintenance team by email.' },
 }
 
@@ -321,7 +321,7 @@ function ImportData({ file, onChange }: { file: string | null; onChange: (name: 
   const input = useRef<HTMLInputElement>(null)
   return (
     <section className="flex items-center gap-3 border-t border-[var(--border-subtle)] pt-5">
-      <SectionTitle title="Import data" hint="Already tracking locations or assets in a spreadsheet? Upload a CSV or Excel file." />
+      <SectionTitle title="Import data" hint="Add your locations or assets from CSV or Excel." />
       {file ? (
         <span className="nova-text-in inline-flex max-w-[220px] shrink-0 items-center gap-1.5 rounded-full bg-[var(--color-neutral-3)] py-1 pl-2.5 pr-1.5 text-[length:var(--font-size-sm)] font-medium text-[var(--color-neutral-11)]">
           <FileSpreadsheet size={14} className="shrink-0" />
