@@ -94,12 +94,14 @@ export function SetupChecklistPanel({ headerTargetId, onAccountIncomplete, accou
     return () => window.clearTimeout(id)
   }, [activeStep])
 
-  const done = (accountDone ? 1 : 0) + ITEMS.filter(i => counts[i.key] > 0).length
+  // V2 (compact) leaves the team out: invites come once the workspace is set up.
+  const steps = compact ? ITEMS.filter(i => i.key !== 'team') : ITEMS
+  const done = (accountDone ? 1 : 0) + steps.filter(i => counts[i.key] > 0).length
   // While the account is being filled in, the bar moves with it (each field is
   // a share of that first step); the count only ticks once it's set up.
   const [accountFill, setAccountFill] = useState(0)
   const barDone = done + (accountDone ? 0 : accountProgress ?? accountFill)
-  const total = ITEMS.length + 1
+  const total = steps.length + 1
   // No step is singled out as "next" — the user may be answering Nova in the
   // chat or working here, so each step just shows done or not.
   const next: string | undefined = undefined
@@ -158,7 +160,7 @@ export function SetupChecklistPanel({ headerTargetId, onAccountIncomplete, accou
         />
         {/* The other steps wait, faded, until the account is set up. */}
         <div inert={!accountDone} className={`flex flex-col gap-4 transition-opacity duration-500 ${accountDone ? 'opacity-100' : 'opacity-60'}`}>
-          {ITEMS.map((item, i) => (
+          {steps.map((item, i) => (
             <ListStep
               key={item.key}
               step={item.key}
@@ -169,7 +171,7 @@ export function SetupChecklistPanel({ headerTargetId, onAccountIncomplete, accou
               description={compact ? item.hint : item.description}
               icon={item.icon}
               active={next === item.key}
-              last={i === ITEMS.length - 1}
+              last={i === steps.length - 1}
               value={counts[item.key]}
               added={items[item.key]}
               loading={pending.includes(item.key)}
@@ -254,10 +256,10 @@ function FillRing({ percent }: { percent: number }) {
   )
 }
 
-function StepHeading({ icon: Icon, label, detail, small = false }: { icon: LucideIcon; label: string; detail?: ReactNode; done?: boolean; /** A small hint line under the title (compact panel). */ small?: boolean }) {
+function StepHeading({ icon: Icon, label, detail, small = false, neutral = false }: { icon: LucideIcon; label: string; detail?: ReactNode; done?: boolean; /** A small hint line under the title (compact panel). */ small?: boolean; /** Gray icon tile instead of blue (compact panel). */ neutral?: boolean }) {
   return (
     <>
-      <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-[var(--radius-lg)] bg-[var(--color-accent-1)] text-[var(--color-accent-9)]">
+      <span className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-[var(--radius-lg)] ${neutral ? 'bg-[var(--color-neutral-3)] text-[var(--color-neutral-10)]' : 'bg-[var(--color-accent-1)] text-[var(--color-accent-9)]'}`}>
         <Icon size={17} />
       </span>
       <span className="flex min-w-0 flex-1 flex-col">
@@ -372,7 +374,7 @@ function AccountStep({ expanded, onExpand, onFillChange, onIncomplete, locked = 
           aria-expanded={editing || (done && summaryOpen)}
           className="flex min-w-0 flex-1 items-center gap-3 text-left cursor-pointer"
         >
-          <StepHeading icon={Building2} label={compact ? 'Company details' : 'Your company details'} small={compact && !editing} done={done} detail={compact && !editing ? 'Personalize your workspace' : !done && editing ? 'Does everything look right?' : 'Tell us about your company'} />
+          <StepHeading icon={Building2} label={compact ? 'Company details' : 'Your company details'} small={compact && !editing} neutral={compact} done={done} detail={compact && !editing ? 'Personalize your workspace' : !done && editing ? 'Does everything look right?' : 'Tell us about your company'} />
         </button>
         {done && !editing && (
           <button type="button" onClick={open} className="inline-flex shrink-0 items-center gap-1 text-[length:var(--font-size-sm)] font-medium text-[var(--color-accent-9)] transition-colors hover:text-[var(--color-accent-10)] cursor-pointer">
@@ -514,6 +516,7 @@ function ListStep({ step, open, onToggle, label, description, icon, active, last
       <div className="flex items-center gap-3 px-[var(--space-md)] py-3">
         <StepHeading
           small={compact}
+          neutral={compact}
           icon={icon}
           label={label}
           done={filled}
@@ -525,7 +528,7 @@ function ListStep({ step, open, onToggle, label, description, icon, active, last
             <Loader2 size={16} className="animate-spin text-[var(--color-accent-9)]" aria-label={`Adding ${label.toLowerCase()}`} />
           ) : filled ? (
             <>
-            <span className="inline-flex h-6 items-center rounded-full bg-[var(--color-accent-1)] px-2 text-[length:var(--font-size-sm)] font-medium tabular-nums text-[var(--color-accent-9)] nova-text-in">
+            <span className={`inline-flex h-6 items-center rounded-full px-2 text-[length:var(--font-size-sm)] font-medium tabular-nums nova-text-in ${compact ? 'bg-[var(--color-neutral-3)] text-[var(--color-neutral-11)]' : 'bg-[var(--color-accent-1)] text-[var(--color-accent-9)]'}`}>
               {value} {compact && step === 'team' ? 'invited' : 'added'}
             </span>
             <button type="button" onClick={onToggle} aria-expanded={open} aria-label={`${open ? 'Hide' : 'Show'} ${label.toLowerCase()}`} className="text-[var(--color-neutral-8)] cursor-pointer">

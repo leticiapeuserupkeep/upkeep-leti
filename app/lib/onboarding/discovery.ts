@@ -48,6 +48,8 @@ export interface ConfirmedDiscovery {
   /** Verified people only; roles alone don't create members. */
   members: string[]
   roles: string[]
+  /** A spreadsheet the user added to import with the rest. */
+  importFile?: string
 }
 
 export type DiscoveryStepId = 'company' | 'industry' | 'locations' | 'assets' | 'team' | 'workspace'
@@ -58,7 +60,6 @@ export const DISCOVERY_STEPS: { id: DiscoveryStepId; message: string }[] = [
   { id: 'industry', message: 'Understanding your business…' },
   { id: 'locations', message: 'Discovering your locations…' },
   { id: 'assets', message: 'Identifying your equipment…' },
-  { id: 'team', message: 'Preparing your team structure…' },
   { id: 'workspace', message: 'Getting your workspace ready…' },
 ]
 
@@ -116,7 +117,8 @@ const ASSET_LOCATIONS: Record<string, string> = {
   'Electrical Panels': 'Main Manufacturing Facility',
 }
 
-/** The maintenance team found on the company's public pages (mock). */
+/** The maintenance team found on the company's public pages (mock). Not
+ * invited during onboarding; Nova suggests them when work needs assigning. */
 const FOUND_PEOPLE = [
   { name: 'Maria Lopez', role: 'Maintenance Manager' },
   { name: 'James Carter', role: 'Maintenance Technician' },
@@ -150,3 +152,6 @@ export function simulateDiscovery(scenario: DiscoveryScenario): { stepMs: number
     result: { company, locations, assets, team, teamVerified: true, sources: ['acme-mfg.com', 'public business listings'] },
   }
 }
+
+/** Who Nova suggests for a first work order, from the found team. */
+export const SUGGESTED_TECH = FOUND_PEOPLE[1]

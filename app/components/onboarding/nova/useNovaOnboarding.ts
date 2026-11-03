@@ -5,6 +5,7 @@ import { readingPause, introDuration } from './NovaPrimitives'
 import { ANALYSIS_STEP_MS } from './AnalysisSequence'
 import type { FocusAction, ReportDestination } from './NovaInsightCards'
 import { setupStore } from '@/app/lib/onboarding/setup-store'
+import { SUGGESTED_TECH } from '@/app/lib/onboarding/discovery'
 import {
   MOCK_COMPANY, analysisSteps, sourceName, affectedAssets,
   MAINTENANCE_PLAN, suggestedPeople, REPORT_DOC, TRIAL_SEATS, ACTION_PLAN,
@@ -91,6 +92,10 @@ function topicOf(ask: string): string {
  * request itself — first steps for each of the suggested prompts. */
 function readyReply(ask: string): string {
   const t = ask.toLowerCase()
+  // The team isn't invited during onboarding: the first work order is where
+  // Nova suggests someone, and asks for email to find the rest.
+  if (/gmail|outlook|connect/.test(t)) return 'Great — once your email is connected, I’ll look at who you work with most and suggest the right people for each job. You’ll choose who gets invited.'
+  if (/work order|\bwo\b|assign/.test(t)) return `Sure — tell me what needs fixing and where, and I’ll create the work order. Who should I assign it to? I found ${SUGGESTED_TECH.name} on your company’s site — a ${SUGGESTED_TECH.role.toLowerCase()} who looks like a good fit. Want to connect Gmail or Outlook so I can give you a more accurate list of your team?`
   if (/preventive|breakdown|pm plan/.test(t)) return 'Let’s build your preventive maintenance plan. I’ll start with the equipment you confirmed and suggest weekly and monthly checks for each — the ones that tend to fail first go at the top. Want me to draft it?'
   if (/safety|inspection/.test(t)) return 'Here’s a daily safety inspection to start from: machine guards and e-stops, lockout points, fire extinguishers, walkways and PPE. I’ll turn it into a checklist your technicians can fill in from their phones. Should I create it?'
   if (/downtime/.test(t)) return 'I’ll build an app to log downtime: the asset, when it stopped and restarted, the reason and who fixed it — with a weekly view of the worst offenders. Want to see a preview first?'

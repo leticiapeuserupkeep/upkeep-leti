@@ -1,7 +1,7 @@
 'use client'
 
-import { useState, type KeyboardEvent, type ReactNode } from 'react'
-import { ChevronDown, Plus, Sparkles, ArrowRight, Pencil } from 'lucide-react'
+import { useRef, useState, type KeyboardEvent, type ReactNode } from 'react'
+import { ChevronDown, Plus, Sparkles, ArrowRight, Pencil, Upload, FileSpreadsheet, X } from 'lucide-react'
 import { Badge } from '@/app/components/ui/Badge'
 import { Button } from '@/app/components/ui/Button'
 import { Checkbox } from '@/app/components/ui/Checkbox'
@@ -148,6 +148,8 @@ export function DiscoveryResults({ result, onConfirm, onSkip, leaving = false }:
   const toggle = (itemId: string) => setUnchecked(prev => (prev.includes(itemId) ? prev.filter(i => i !== itemId) : [...prev, itemId]))
   const kept = (id: ListId) => lists[id].filter(i => !unchecked.includes(i.id))
   const [adding, setAdding] = useState<ListId | null>(null)
+  // A spreadsheet to bring in on top of what Nova found.
+  const [importFile, setImportFile] = useState<string | null>(null)
 
   const edit = (id: ListId, fn: (items: DiscoveryItem[]) => DiscoveryItem[]) => setLists(prev => ({ ...prev, [id]: fn(prev[id]) }))
 
@@ -158,8 +160,11 @@ export function DiscoveryResults({ result, onConfirm, onSkip, leaving = false }:
       company: companyComplete ? { name: company.name.trim(), industry: company.industry, size: company.size } : null,
       locations: kept('locations').map(i => i.name),
       assets: kept('assets').map(i => i.name),
-      members: result.teamVerified ? kept('team').map(i => i.name) : [],
-      roles: result.teamVerified ? [] : kept('team').map(i => i.name),
+      // The team isn't invited during onboarding — Nova suggests people
+      // later, e.g. when a work order needs someone.
+      members: [],
+      roles: [],
+      importFile: importFile ?? undefined,
     })
   }
 
@@ -178,7 +183,7 @@ export function DiscoveryResults({ result, onConfirm, onSkip, leaving = false }:
           onClick={() => setOpen(o => (o === id ? null : id))}
           aria-expanded={isOpen}
           aria-controls={`discovery-${id}`}
-          className={`flex w-full items-center gap-3 text-left cursor-pointer ${id === 'team' && !isOpen ? 'pt-5' : 'py-5'}`}
+          className={`flex w-full items-center gap-3 text-left cursor-pointer py-5`}
         >
           <span className="flex-1 text-[length:var(--font-size-base)] font-bold leading-[21px] text-[var(--color-neutral-12)]">{copy.title}</span>
           {items.length > 0
@@ -283,7 +288,8 @@ export function DiscoveryResults({ result, onConfirm, onSkip, leaving = false }:
             </>
           )}
         </section>
-        {(['locations', 'assets', 'team'] as const).map(listSection)}
+        {(['locations', 'assets'] as const).map(listSection)}
+        <ImportData file={importFile} onChange={setImportFile} />
       </div>
 
       <footer className="flex items-center justify-between gap-3 border-t border-[var(--border-default)] pt-[var(--space-xl)]">
@@ -296,5 +302,39 @@ export function DiscoveryResults({ result, onConfirm, onSkip, leaving = false }:
       </footer>
     </div>
     </div>
+  )
+}
+
+/** Already keep locations and assets in a spreadsheet? Bring it in — Nova
+ * adds it alongside what it found when it sets the workspace up. */
+function ImportData({ file, onChange }: { file: string | null; onChange: (name: string | null) => void }) {
+  const input = useRef<HTMLInputElement>(null)
+  return (
+    <section className="flex items-center gap-3 border-t border-[var(--border-subtle)] pt-5">
+      <span className="flex min-w-0 flex-1 flex-col gap-0.5">
+        <span className="text-[length:var(--font-size-base)] font-bold leading-[21px] text-[var(--color-neutral-12)]">Import data</span>
+        <span className="text-[length:var(--font-size-sm)] text-[var(--color-neutral-9)]">Have your locations or assets in a spreadsheet? Add a CSV or Excel file.</span>
+      </span>
+      {file ? (
+        <span className="nova-text-in inline-flex max-w-[220px] shrink-0 items-center gap-1.5 rounded-full bg-[var(--color-neutral-3)] py-1 pl-2.5 pr-1.5 text-[length:var(--font-size-sm)] font-medium text-[var(--color-neutral-11)]">
+          <FileSpreadsheet size={14} className="shrink-0" />
+          <span className="truncate">{file}</span>
+          <button type="button" aria-label="Remove file" onClick={() => onChange(null)} className="shrink-0 rounded-full p-0.5 text-[var(--color-neutral-9)] hover:text-[var(--color-neutral-12)] cursor-pointer">
+            <X size={12} />
+          </button>
+        </span>
+      ) : (
+        <Button variant="secondary" size="sm" className="shrink-0" onClick={() => input.current?.click()}>
+          <Upload size={14} /> Import
+        </Button>
+      )}
+      <input
+        ref={input}
+        type="file"
+        accept=".csv,.xlsx,.xls"
+        className="hidden"
+        onChange={e => { const f = e.target.files?.[0]; if (f) onChange(f.name); e.target.value = '' }}
+      />
+    </section>
   )
 }

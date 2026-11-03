@@ -77,7 +77,7 @@ const READY_OPENING = ['I’ll get your workspace ready using the information yo
 const READY_BUILDING = 'I’m setting things up for you…'
 const READY_DONE = 'Your workspace is ready! ✨'
 const READY_NEXT = [
-  'I’ve added your locations, assets, and invited your team. Now let’s put UpKeep to work!',
+  'I’ve added your locations and assets. Now let’s put UpKeep to work!',
   'Here’s where I’d recommend starting:',
 ]
 const READY_RECOMMENDATION = {
@@ -86,6 +86,7 @@ const READY_RECOMMENDATION = {
   prompt: 'Help me create a preventive maintenance plan',
 }
 const READY_ACTIONS = [
+  { label: 'Create a work order', prompt: 'Create a work order' },
   { label: 'Create a safety checklist', prompt: 'Create a daily safety inspection checklist' },
   { label: 'Track equipment downtime', prompt: 'Build an app to track equipment downtime' },
   { label: 'Prioritize maintenance work', prompt: 'Help me prioritize maintenance work' },
@@ -124,6 +125,7 @@ export function WelcomeScreen({ version = 'v1' }: { version?: OnboardingVersion 
     builtLocations > 0 && `${plural(builtLocations, 'location', 'locations')} created`,
     builtAssets > 0 && `${plural(builtAssets, 'asset', 'assets')} added`,
     builtAssets > 0 && builtLocations > 0 && 'Assets linked to locations',
+    build.done && confirmed?.importFile && `Data imported from ${confirmed.importFile}`,
     builtTeam > 0 && `${plural(builtTeam, 'team invitation', 'team invitations')} sent`,
   ].filter((line): line is string => Boolean(line))
   // The step Nova is on right now, as a line in progress.
@@ -900,8 +902,8 @@ export function WelcomeScreen({ version = 'v1' }: { version?: OnboardingVersion 
                 title={ready ? 'Make UpKeep yours' : 'Setup progress'}
                 subtitle={ready ? 'Review what Nova added and complete your setup anytime.' : 'Follow these steps, or ask Nova to help you along the way.'}
                 className={ready
-                  // Edge to edge on the right: top, bottom and side.
-                  ? 'flex w-[360px] shrink-0 flex-col gap-[var(--space-md)] border-l border-[var(--border-default)] bg-[var(--surface-primary)] p-[var(--space-lg)]'
+                  // A floating card on the right that stays put while the chat scrolls.
+                  ? 'sticky top-6 my-6 mr-6 flex max-h-[calc(100dvh-96px)] w-[360px] shrink-0 flex-col gap-[var(--space-md)] self-start overflow-y-auto rounded-[20px] border border-[var(--border-subtle)] bg-[var(--surface-primary)] p-[var(--space-lg)] shadow-[var(--shadow-sm)]'
                   : 'mx-auto flex w-full max-w-[840px] flex-col gap-[var(--space-md)]'}
                 accountDone={setup.companyConfirmed}
                 // Fills in as Nova learns it: the industry first, then the company.

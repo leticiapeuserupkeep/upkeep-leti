@@ -1,11 +1,11 @@
 'use client'
 
 import { useEffect, useRef, useState } from 'react'
-import { Building2, Factory, MapPin, Box, Users, Sparkles, type LucideIcon } from 'lucide-react'
+import { Building2, Factory, MapPin, Box, Sparkles, type LucideIcon } from 'lucide-react'
 import { DISCOVERY_STEPS, DISCOVERY_STEP_MS } from '@/app/lib/onboarding/discovery'
 
 /** One icon per step, in the same order as DISCOVERY_STEPS. */
-const STEP_ICONS: LucideIcon[] = [Building2, Factory, MapPin, Box, Users, Sparkles]
+const STEP_ICONS: LucideIcon[] = [Building2, Factory, MapPin, Box, Sparkles]
 
 /** How long the outgoing icon and message take to leave. */
 const LEAVE_MS = 1000
