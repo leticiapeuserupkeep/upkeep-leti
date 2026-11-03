@@ -1,7 +1,7 @@
 'use client'
 
 import { useRef, useState, type KeyboardEvent, type ReactNode } from 'react'
-import { ChevronDown, Plus, Sparkles, ArrowRight, FileSpreadsheet, X } from 'lucide-react'
+import { ChevronDown, Plus, Sparkles, ArrowRight, FileSpreadsheet, Loader2, X } from 'lucide-react'
 import { Badge } from '@/app/components/ui/Badge'
 import { Button } from '@/app/components/ui/Button'
 import { Checkbox } from '@/app/components/ui/Checkbox'
@@ -12,7 +12,7 @@ import { COMPANY_SIZES } from '@/app/lib/onboarding/nova-onboarding-data'
 import { useSetupState } from '@/app/lib/onboarding/setup-store'
 import { PROFILE_OPTIONS } from '@/app/components/onboarding/nova/useNovaOnboarding'
 import {
-  discoveryItem, personFromEmail, suggestedAssetsFor,
+  discoveryItem, parseImportFile, personFromEmail, suggestedAssetsFor,
   type ConfirmedDiscovery, type DiscoveryItem, type DiscoveryResult,
 } from '@/app/lib/onboarding/discovery'
 
@@ -145,6 +145,9 @@ export function DiscoveryResults({ result, onConfirm, onSkip, leaving = false }:
     industry: result.company?.industry ?? '',
     size: result.company?.size ?? '',
   })
+  // Picking "Other" asks for the industry in the user's own words.
+  const [otherIndustry, setOtherIndustry] = useState('')
+  const industryName = company.industry === 'Other' ? otherIndustry.trim() : company.industry
   // Shown as plain text; fields only to fix it (or when nothing was found).
   const [editingCompany, setEditingCompany] = useState(!result.company)
   const [lists, setLists] = useState<Record<ListId, DiscoveryItem[]>>({
@@ -158,16 +161,39 @@ export function DiscoveryResults({ result, onConfirm, onSkip, leaving = false }:
   const toggle = (itemId: string) => setUnchecked(prev => (prev.includes(itemId) ? prev.filter(i => i !== itemId) : [...prev, itemId]))
   const kept = (id: ListId) => lists[id].filter(i => !unchecked.includes(i.id))
   const [adding, setAdding] = useState<ListId | null>(null)
-  // A spreadsheet to bring in on top of what Nova found.
+  // A spreadsheet that replaces what Nova found; removing it brings those back.
   const [importFile, setImportFile] = useState<string | null>(null)
+  const [importing, setImporting] = useState(false)
+  const beforeImport = useRef<Record<ListId, DiscoveryItem[]> | null>(null)
+  const fileInput = useRef<HTMLInputElement>(null)
+  const pickFile = () => { leaveCompany(); fileInput.current?.click() }
+  async function importData(file: File) {
+    setImporting(true)
+    const [data] = await Promise.all([parseImportFile(file), new Promise(r => window.setTimeout(r, 1200))])
+    if (!beforeImport.current) beforeImport.current = lists
+    setLists(prev => ({ ...prev, locations: data.locations, assets: data.assets }))
+    setUnchecked([])
+    setImportFile(file.name)
+    setImporting(false)
+  }
+  function removeImport() {
+    if (beforeImport.current) setLists(beforeImport.current)
+    beforeImport.current = null
+    setUnchecked([])
+    setImportFile(null)
+  }
 
   const edit = (id: ListId, fn: (items: DiscoveryItem[]) => DiscoveryItem[]) => setLists(prev => ({ ...prev, [id]: fn(prev[id]) }))
 
 
-  const companyComplete = Boolean(company.name.trim() && company.industry && company.size)
+  const companyComplete = Boolean(company.name.trim() && industryName && company.size)
+  // No Done button: moving on to anything else folds the fields back to text
+  // (once they're all filled in).
+  const leaveCompany = () => { if (companyComplete) setEditingCompany(false) }
   function confirm() {
+    leaveCompany()
     onConfirm({
-      company: companyComplete ? { name: company.name.trim(), industry: company.industry, size: company.size } : null,
+      company: companyComplete ? { name: company.name.trim(), industry: industryName, size: company.size } : null,
       locations: kept('locations').map(i => i.name),
       assets: kept('assets').map(i => i.name),
       // The team isn't invited during onboarding — Nova suggests people
@@ -185,17 +211,17 @@ export function DiscoveryResults({ result, onConfirm, onSkip, leaving = false }:
     const items = lists[id]
     const n = kept(id).length
     const isOpen = open === id
-    const industry = company.industry
+    const industry = industryName
     return (
       <section key={id} className="border-t border-[var(--border-subtle)]">
         <button
           type="button"
-          onClick={() => setOpen(o => (o === id ? null : id))}
+          onClick={() => { leaveCompany(); setOpen(o => (o === id ? null : id)) }}
           aria-expanded={isOpen}
           aria-controls={`discovery-${id}`}
           className={`flex w-full items-center gap-3 text-left cursor-pointer py-5`}
         >
-          <SectionTitle title={copy.title} hint={copy.hint} />
+          <SectionTitle title={copy.title} hint={importFile && id !== 'team' ? 'Created from your imported file.' : copy.hint} />
           {items.length > 0
             ? <CountTag label={`${n} ${id === 'locations' ? (n === 1 ? copy.one : copy.many) : (n === 1 ? copy.one : copy.many).replace(/^./, c => c.toUpperCase())}`} />
             : <span className="text-[length:var(--font-size-sm)] text-[var(--color-neutral-8)]">{id === 'locations' ? 'None found' : 'None yet'}</span>}
@@ -232,9 +258,16 @@ export function DiscoveryResults({ result, onConfirm, onSkip, leaving = false }:
                   onClose={() => setAdding(null)}
                 />
               ) : (
-                <Button variant="ghost" size="sm" className="self-start px-0" onClick={() => setAdding(id)}>
-                  <Plus size={12} /> {copy.add}
-                </Button>
+                <div className="flex items-center gap-4">
+                  <Button variant="ghost" size="sm" className="px-0" onClick={() => setAdding(id)}>
+                    <Plus size={12} /> {copy.add}
+                  </Button>
+                  {id !== 'team' && (
+                    <Button variant="ghost" size="sm" className="px-0" onClick={pickFile} disabled={importing}>
+                      Import data
+                    </Button>
+                  )}
+                </div>
               )}
             </div>
           </div>
@@ -278,17 +311,25 @@ export function DiscoveryResults({ result, onConfirm, onSkip, leaving = false }:
                 <TextInput id="discovery-company-name" value={company.name} onChange={e => setCompany(c => ({ ...c, name: e.target.value }))} />
               </FieldRow>
               <FieldRow label="Industry" htmlFor="discovery-industry">
-                <SearchableSelect value={company.industry} onChange={v => setCompany(c => ({ ...c, industry: v }))} options={PROFILE_OPTIONS.industry} />
+                <SearchableSelect value={company.industry} onChange={v => {
+                  setCompany(c => ({ ...c, industry: v }))
+                  // The select hands focus back to itself on close; move it to the new field after.
+                  if (v === 'Other') window.setTimeout(() => document.getElementById('discovery-industry-other')?.focus(), 50)
+                }} options={PROFILE_OPTIONS.industry} addEntity="industry" />
               </FieldRow>
+              {company.industry === 'Other' && (
+                <FieldRow label="" htmlFor="discovery-industry-other">
+                  <TextInput id="discovery-industry-other" placeholder="Enter your industry" aria-label="Your industry" value={otherIndustry} onChange={e => setOtherIndustry(e.target.value)} />
+                </FieldRow>
+              )}
               <FieldRow label="Company size" htmlFor="discovery-size">
                 <SearchableSelect value={company.size} onChange={v => setCompany(c => ({ ...c, size: v }))} options={COMPANY_SIZES} />
               </FieldRow>
-              <Button variant="secondary" size="sm" className="self-end" disabled={!companyComplete} onClick={() => setEditingCompany(false)}>Done</Button>
             </div>
           ) : (
             <>
               <dl className="grid grid-cols-[120px_1fr] gap-x-3 gap-y-1.5 leading-[21px]">
-                {[['Company name', company.name], ['Industry', company.industry], ['Company size', company.size]].map(([label, value]) => (
+                {[['Company name', company.name], ['Industry', industryName], ['Company size', company.size]].map(([label, value]) => (
                   <div key={label} className="contents">
                     <dt className="text-[length:var(--font-size-base)] text-[var(--color-neutral-9)]">{label}</dt>
                     <dd className="text-[length:var(--font-size-base)] font-medium text-[var(--color-neutral-12)]">{value}</dd>
@@ -299,7 +340,14 @@ export function DiscoveryResults({ result, onConfirm, onSkip, leaving = false }:
           )}
         </section>
         {(['locations', 'assets'] as const).map(listSection)}
-        <ImportData file={importFile} onChange={setImportFile} />
+        <ImportData file={importFile} importing={importing} counts={importFile ? { locations: lists.locations.length, assets: lists.assets.length } : null} onPick={pickFile} onRemove={removeImport} />
+        <input
+          ref={fileInput}
+          type="file"
+          accept=".csv,.xlsx,.xls"
+          className="hidden"
+          onChange={e => { const f = e.target.files?.[0]; if (f) importData(f); e.target.value = '' }}
+        />
       </div>
 
       <footer className="flex items-center justify-between gap-3 border-t border-[var(--border-default)] pt-[var(--space-xl)]">
@@ -315,33 +363,39 @@ export function DiscoveryResults({ result, onConfirm, onSkip, leaving = false }:
   )
 }
 
-/** Already keep locations and assets in a spreadsheet? Bring it in — Nova
- * adds it alongside what it found when it sets the workspace up. */
-function ImportData({ file, onChange }: { file: string | null; onChange: (name: string | null) => void }) {
-  const input = useRef<HTMLInputElement>(null)
+/** Already keep locations and assets in a spreadsheet? Nova reads it and
+ * uses it instead of what it found. */
+function ImportData({ file, importing, counts, onPick, onRemove }: {
+  file: string | null
+  importing: boolean
+  counts: { locations: number; assets: number } | null
+  onPick: () => void
+  onRemove: () => void
+}) {
+  const plural = (n: number, word: string) => `${n} ${word}${n === 1 ? '' : 's'}`
+  const hint = importing
+    ? 'Reading your file…'
+    : counts
+      ? `Imported ${plural(counts.locations, 'location')} and ${plural(counts.assets, 'asset')}.`
+      : 'Add your locations or assets from CSV or Excel.'
   return (
     <section className="flex items-center gap-3 border-t border-[var(--border-subtle)] pt-5">
-      <SectionTitle title="Import data" hint="Add your locations or assets from CSV or Excel." />
-      {file ? (
+      <SectionTitle title="Import data" hint={hint} />
+      {importing ? (
+        <Loader2 size={16} className="shrink-0 animate-spin text-[var(--color-neutral-9)]" aria-label="Importing" />
+      ) : file ? (
         <span className="nova-text-in inline-flex max-w-[220px] shrink-0 items-center gap-1.5 rounded-full bg-[var(--color-neutral-3)] py-1 pl-2.5 pr-1.5 text-[length:var(--font-size-sm)] font-medium text-[var(--color-neutral-11)]">
           <FileSpreadsheet size={14} className="shrink-0" />
           <span className="truncate">{file}</span>
-          <button type="button" aria-label="Remove file" onClick={() => onChange(null)} className="shrink-0 rounded-full p-0.5 text-[var(--color-neutral-9)] hover:text-[var(--color-neutral-12)] cursor-pointer">
+          <button type="button" aria-label="Remove file" onClick={onRemove} className="shrink-0 rounded-full p-0.5 text-[var(--color-neutral-9)] hover:text-[var(--color-neutral-12)] cursor-pointer">
             <X size={12} />
           </button>
         </span>
       ) : (
-        <button type="button" onClick={() => input.current?.click()} className="shrink-0 text-[length:var(--font-size-sm)] font-medium text-[var(--color-accent-9)] transition-colors hover:text-[var(--color-accent-10)] cursor-pointer">
+        <button type="button" onClick={onPick} className="shrink-0 text-[length:var(--font-size-sm)] font-medium text-[var(--color-accent-9)] transition-colors hover:text-[var(--color-accent-10)] cursor-pointer">
           Import
         </button>
       )}
-      <input
-        ref={input}
-        type="file"
-        accept=".csv,.xlsx,.xls"
-        className="hidden"
-        onChange={e => { const f = e.target.files?.[0]; if (f) onChange(f.name); e.target.value = '' }}
-      />
     </section>
   )
 }

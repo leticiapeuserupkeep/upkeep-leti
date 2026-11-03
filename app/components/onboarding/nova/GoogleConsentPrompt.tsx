@@ -19,6 +19,11 @@ const COPY = {
     why: 'Nova looks at who you email about maintenance to suggest your teammates, so you don’t have to add them one by one.',
     safety: ['You choose what Nova can access on the next screen', 'Only used to find your team; email content isn’t stored', 'Disconnect anytime from Settings'],
   },
+  chat: {
+    title: 'Connect your team’s chat',
+    why: 'Anyone on your team can report a problem from a channel, and it arrives in UpKeep as a request you can approve and assign.',
+    safety: ['You choose which channels Nova can see on the next screen', 'Only used to turn messages into maintenance requests', 'Disconnect anytime from Settings'],
+  },
   doc: {
     title: 'Connect your Google account',
     why: 'Nova saves your setup report as a Google Doc and uses your contacts to suggest teammates.',
@@ -30,11 +35,15 @@ const COPY = {
  * asks for approval inline — with why it's needed and what's safe about it. */
 export function GoogleConsentPrompt({ open, scope = 'doc', onAnswer }: {
   open: boolean
-  scope?: 'doc' | 'gmail'
-  onAnswer: (allowed: boolean, provider?: 'gmail' | 'outlook') => void
+  scope?: 'doc' | 'gmail' | 'chat'
+  onAnswer: (allowed: boolean, provider?: 'gmail' | 'outlook' | 'slack' | 'teams') => void
 }) {
   if (!open) return null
-  const access = scope === 'gmail' ? ACCESS.filter(a => /gmail|outlook/.test(a.logo)) : ACCESS.filter(a => !a.logo.includes('outlook'))
+  const access = scope === 'doc' ? ACCESS.filter(a => !a.logo.includes('outlook')) : []
+  // Gmail/Outlook, or Slack/Teams: two equal choices.
+  const providers = scope === 'chat'
+    ? [{ id: 'teams', label: 'Microsoft Teams', logo: '/images/integrations/teams.svg' }, { id: 'slack', label: 'Slack', logo: '/images/integrations/slack.svg' }] as const
+    : [{ id: 'outlook', label: 'Outlook', logo: '/images/integrations/outlook.svg' }, { id: 'gmail', label: 'Gmail', logo: '/images/integrations/gmail.svg' }] as const
   const copy = COPY[scope]
   return (
     <div
@@ -43,7 +52,7 @@ export function GoogleConsentPrompt({ open, scope = 'doc', onAnswer }: {
       className="flex flex-col gap-3 rounded-[var(--radius-2xl)] border border-[var(--border-default)] bg-[var(--surface-primary)] p-3.5 shadow-[var(--shadow-lg)] nova-panel-up"
     >
       <div className="flex items-center gap-3">
-        {scope !== 'gmail' && <span className="flex shrink-0 items-center -space-x-1">
+        {access.length > 0 && <span className="flex shrink-0 items-center -space-x-1">
           {access.map(a => (
             <span key={a.logo} className="flex h-8 w-8 items-center justify-center rounded-[var(--radius-lg)] border border-[var(--border-subtle)] bg-[var(--surface-primary)]">
               <Image src={a.logo} alt="" width={16} height={16} />
@@ -64,16 +73,15 @@ export function GoogleConsentPrompt({ open, scope = 'doc', onAnswer }: {
         ))}
       </ul>
 
-      {scope === 'gmail' ? (
+      {scope !== 'doc' ? (
         // Two equal choices, then a quiet way out.
         <div className="flex flex-col items-center gap-2">
           <div className="flex w-full gap-2">
-            <Button variant="secondary" size="lg" className="flex-1" onClick={() => onAnswer(true, 'outlook')}>
-              <Image src="/images/integrations/outlook.svg" alt="" width={18} height={18} /> Outlook
-            </Button>
-            <Button variant="secondary" size="lg" className="flex-1" onClick={() => onAnswer(true, 'gmail')}>
-              <Image src="/images/integrations/gmail.svg" alt="" width={18} height={18} /> Gmail
-            </Button>
+            {providers.map(p => (
+              <Button key={p.id} variant="secondary" size="lg" className="flex-1" onClick={() => onAnswer(true, p.id)}>
+                <Image src={p.logo} alt="" width={18} height={18} /> {p.label}
+              </Button>
+            ))}
           </div>
           <button
             type="button"

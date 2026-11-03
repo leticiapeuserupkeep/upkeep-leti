@@ -155,3 +155,61 @@ export function simulateDiscovery(scenario: DiscoveryScenario): { stepMs: number
 
 /** Who Nova suggests for a first work order, from the found team. */
 export const SUGGESTED_TECH = FOUND_PEOPLE[1]
+
+/** What came out of an imported spreadsheet. */
+export interface ImportedData {
+  locations: DiscoveryItem[]
+  assets: DiscoveryItem[]
+}
+
+/** A sample import, used when a file can't be read in the browser (Excel). */
+const SAMPLE_IMPORT: { name: string; location: string }[] = [
+  { name: 'CNC Machine #1', location: 'Plant 1 – Machining' },
+  { name: 'CNC Machine #2', location: 'Plant 1 – Machining' },
+  { name: 'Hydraulic Press', location: 'Plant 1 – Machining' },
+  { name: 'Air Compressor A', location: 'Plant 1 – Utilities' },
+  { name: 'Boiler #1', location: 'Plant 1 – Utilities' },
+  { name: 'Conveyor Line 3', location: 'Plant 2 – Assembly' },
+  { name: 'Robotic Welder', location: 'Plant 2 – Assembly' },
+  { name: 'Packaging Machine', location: 'Plant 2 – Packaging' },
+  { name: 'Forklift #4', location: 'Warehouse' },
+  { name: 'Forklift #5', location: 'Warehouse' },
+]
+
+/** Splits one CSV line, honoring quoted values. */
+function csvCells(line: string): string[] {
+  const cells: string[] = []
+  let cell = ''
+  let quoted = false
+  for (let i = 0; i < line.length; i++) {
+    const ch = line[i]
+    if (ch === '"') {
+      if (quoted && line[i + 1] === '"') { cell += '"'; i++ } else quoted = !quoted
+    } else if ((ch === ',' || ch === ';') && !quoted) { cells.push(cell.trim()); cell = '' }
+    else cell += ch
+  }
+  cells.push(cell.trim())
+  return cells
+}
+
+/** Reads assets and their locations from a CSV: an asset/equipment/name
+ * column and a location/site column. Locations are the unique sites used. */
+export async function parseImportFile(file: File): Promise<ImportedData> {
+  let rows: { name: string; location: string }[] = []
+  if (/\.csv$/i.test(file.name)) {
+    const lines = (await file.text()).split(/\r?\n/).filter(l => l.trim())
+    const header = csvCells(lines[0] ?? '').map(h => h.toLowerCase())
+    const locationCol = header.findIndex(h => /location|site|facility|building|area/.test(h))
+    let assetCol = header.findIndex(h => /asset|equipment|machine/.test(h) && !/id$|type|category/.test(h))
+    if (assetCol < 0) assetCol = header.findIndex((h, i) => /name/.test(h) && i !== locationCol)
+    if (assetCol >= 0 || locationCol >= 0) {
+      rows = lines.slice(1).map(csvCells).map(c => ({ name: assetCol >= 0 ? c[assetCol] ?? '' : '', location: locationCol >= 0 ? c[locationCol] ?? '' : '' }))
+    }
+  }
+  if (rows.length === 0) rows = SAMPLE_IMPORT
+  const locations = [...new Set(rows.map(r => r.location).filter(Boolean))]
+  return {
+    locations: locations.map(l => discoveryItem(l, 'added')),
+    assets: rows.filter(r => r.name).map(r => discoveryItem(r.name, 'added', { location: r.location || undefined })),
+  }
+}

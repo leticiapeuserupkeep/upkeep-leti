@@ -7,7 +7,7 @@ import type { FocusAction, ReportDestination } from './NovaInsightCards'
 import { setupStore } from '@/app/lib/onboarding/setup-store'
 import { SUGGESTED_TECH } from '@/app/lib/onboarding/discovery'
 import {
-  MOCK_COMPANY, analysisSteps, sourceName, affectedAssets,
+  MOCK_COMPANY, COMPANY_REPORT, analysisSteps, sourceName, affectedAssets,
   MAINTENANCE_PLAN, suggestedPeople, REPORT_DOC, TRIAL_SEATS, ACTION_PLAN,
   INTEGRATION_CATALOG, EMAIL_SOURCES, hasEmail,
   type CompanyProfile, type SourceId, type PlanItem, type PlanStepId, type ResearchStep, type SuggestedPerson, type UpkeepRole, type MaintenancePlanItem,
@@ -62,6 +62,8 @@ export type NovaMessage =
   | { id: number; kind: 'next-steps' }
   /** Closing tags: what to do next in UpKeep. */
   | { id: number; kind: 'next-ideas' }
+  /** Quick replies under Nova's question; typing an answer works too. */
+  | { id: number; kind: 'replies'; options: string[] }
 
 type NewMessage = NovaMessage extends infer M ? (M extends NovaMessage ? Omit<M, 'id'> : never) : never
 
@@ -101,6 +103,44 @@ function readyReply(ask: string): string {
   if (/downtime/.test(t)) return 'I’ll build an app to log downtime: the asset, when it stopped and restarted, the reason and who fixed it — with a weekly view of the worst offenders. Want to see a preview first?'
   if (/request|prioriti/.test(t)) return 'Let’s set up your request queue: anyone can send a request, and I’ll suggest a priority from how critical the asset is and the safety risk. Want me to set up the priority rules?'
   return 'On it. I’ll use what we set up in your workspace to get started — tell me a little more about what you need, or pick one of the suggestions.'
+}
+
+/** V2 with an empty account: Nova starts from what the user wants to get
+ * done and asks for what it needs on the way — one question at a time, each
+ * answer landing in the account right away. */
+export const READY_GOALS = [
+  { id: 'workload', label: 'Reduce my workload', intro: 'Let’s start by organizing incoming requests and recurring maintenance so you have less to coordinate manually.' },
+  { id: 'breakdowns', label: 'Prevent equipment breakdowns', intro: 'Let’s set up preventive maintenance so your equipment gets serviced before it fails, not after.' },
+  { id: 'team', label: 'Organize my team’s work', intro: 'Let’s set up where your team works and what they maintain, so every job has a clear place and owner.' },
+  { id: 'explore', label: 'Explore what UpKeep can do', intro: 'Happy to show you around! Let’s set up a small piece of your workspace so you can see UpKeep with your own data.' },
+] as const
+type GoalId = (typeof READY_GOALS)[number]['id']
+type GuideStep = 'site' | 'site-other' | 'industry' | 'industry-other' | 'equipment' | 'equipment-other' | 'asset-source' | 'asset-name' | 'location' | 'frequency' | 'tools'
+type Guide = { goal: GoalId; step: GuideStep; industry?: string; equipment?: string; asset?: string; location?: string }
+/** The company's sites found on public sources — picking one adds it as the first location. */
+const GUIDE_SITES = [MOCK_COMPANY.location, ...COMPANY_REPORT.usPlants.slice(0, 2).map(p => p.name), 'Other']
+const GUIDE_INDUSTRIES = ['Manufacturing', 'Facilities', 'Hospitality', 'Other']
+const GUIDE_EQUIPMENT: Record<string, string[]> = {
+  Manufacturing: ['Production equipment', 'Conveyors', 'Air compressors', 'Other'],
+  Facilities: ['HVAC units', 'Elevators', 'Generators', 'Other'],
+  Hospitality: ['HVAC units', 'Kitchen equipment', 'Pools & spas', 'Other'],
+}
+const GUIDE_EQUIPMENT_DEFAULT = ['HVAC units', 'Generators', 'Pumps', 'Other']
+export const GUIDE_IMPORT = 'Import a list'
+const GUIDE_ADD_ASSET = 'Add an asset'
+const PM_FREQUENCIES = ['Weekly', 'Monthly', 'Every 3 months', 'Every 6 months']
+/** "Air compressors" → "Air Compressor #1", the example name for a first asset. */
+function exampleAsset(equipment: string) {
+  const singular = equipment.replace(/ & .*$/, '').replace(/ies$/, 'y').replace(/s$/, '')
+  return `${singular.replace(/\b\w/g, c => c.toUpperCase())} #1`
+}
+
+/** Adds one location or asset to the account, as if added from the panel. */
+function addToAccount(key: 'locations' | 'assets', name: string) {
+  setupStore.update(prev => ({
+    counts: { ...prev.counts, [key]: prev.counts[key] + 1 },
+    addedNames: { ...prev.addedNames, [key]: [...prev.addedNames[key], name] },
+  }))
 }
 
 export function useNovaOnboarding() {
@@ -272,6 +312,8 @@ export function useNovaOnboarding() {
     setBusy(false)
     setProfile({})
     setStarted(false)
+    guide.current = null
+    setChatToolsOpen(false)
     fastForward.current = false
     seatsOverflow.current = 0
     buildPlanAnswer.current = null
@@ -387,6 +429,189 @@ export function useNovaOnboarding() {
   /** Onboarding V2: setup already happened from what Nova found, so the
    * first prompt gets an answer — no setup questions. */
   const readyMode = useRef(false)
+  const guide = useRef<Guide | null>(null)
+  // The Slack / Teams card above the message box, during the guided setup.
+  const [chatToolsOpen, setChatToolsOpen] = useState(false)
+  /** Nova's next question, with its quick replies. */
+  const askNext = useCallback(async (say: (text: string) => Promise<void>, text: string, options?: string[]) => {
+    await say(text)
+    if (options) push({ kind: 'replies', options })
+  }, [push])
+  /** Starts the guided setup for one of the goals. */
+  const startGoal = useCallback((goal: GoalId) => {
+    guide.current = { goal, step: 'site' }
+    const intro = READY_GOALS.find(g => g.id === goal)!.intro
+    run(async ({ say, think }) => {
+      await think(['Planning your first steps…'], 1200)
+      await say(intro)
+      await askNext(say, `I found these sites for ${companyRef.current.name}. Which one should we start with? I’ll add it as your first location.`, GUIDE_SITES)
+    })
+  }, [run, askNext])
+  /** V2: answers the guided setup's current question — or starts it from a
+   * goal (or a preventive-maintenance ask) while the account is empty. False
+   * when the message isn't part of it. */
+  const guideReply = useCallback((text: string): boolean => {
+    const g = guide.current
+    const answer = text.trim()
+    if (!g) {
+      const goal = READY_GOALS.find(x => x.label === answer)
+      const { counts } = setupStore.get()
+      const empty = counts.locations === 0 && counts.assets === 0
+      if (goal) { startGoal(goal.id); return true }
+      if (empty && /preventive|pm plan|\bpm\b/i.test(text)) { startGoal('breakdowns'); return true }
+      return false
+    }
+    if (!answer) return true
+    // The answer's chips have done their job.
+    setMessages(prev => prev.filter(m => m.kind !== 'replies'))
+    const next = (patch: Partial<Guide>, script: Parameters<typeof run>[0]) => {
+      guide.current = { ...g, ...patch }
+      run(script)
+    }
+    switch (g.step) {
+      case 'site':
+      case 'site-other':
+        if (answer === 'Other' && g.step === 'site') {
+          next({ step: 'site-other' }, async ({ say }) => { await say('What’s the site called, or its address? Type it in.') })
+          return true
+        }
+        addToAccount('locations', answer)
+        next({ step: 'industry', location: answer }, async ({ say, think }) => {
+          await think(['Adding the location…'], 900)
+          push({ kind: 'nova', text: `${answer} added to your locations`, check: true })
+          await askNext(say, 'What industry are you in?', GUIDE_INDUSTRIES)
+        })
+        return true
+      case 'industry':
+      case 'industry-other': {
+        if (answer === 'Other' && g.step === 'industry') {
+          next({ step: 'industry-other' }, async ({ say }) => { await say('Which industry? Type it in.') })
+          return true
+        }
+        // The industry completes the company details in the panel.
+        setProfile(prev => ({ ...prev, industry: answer }))
+        setCompanyConfirmed(true)
+        setupStore.update({ companyConfirmed: true })
+        next({ step: 'equipment', industry: answer }, async ({ say, think }) => {
+          await think(['Updating your company details…'], 900)
+          push({ kind: 'nova', text: 'Company details completed', check: true })
+          await askNext(say, `For ${answer.toLowerCase()}, let’s start with equipment that needs regular maintenance. Which of these do you use?`, GUIDE_EQUIPMENT[answer] ?? GUIDE_EQUIPMENT_DEFAULT)
+        })
+        return true
+      }
+      case 'equipment':
+      case 'equipment-other':
+        if (answer === 'Other' && g.step === 'equipment') {
+          next({ step: 'equipment-other' }, async ({ say }) => { await say('What kind of equipment? Type it in.') })
+          return true
+        }
+        // Picking the equipment adds it as the first asset, at the site picked
+        // before (or asks where it is).
+        if (g.location) {
+          guide.current = { ...g, step: 'location', equipment: answer, asset: exampleAsset(answer) }
+          return guideReply(g.location)
+        }
+        next({ step: 'location', equipment: answer, asset: exampleAsset(answer) }, async ({ say, wait }) => {
+          await wait(500)
+          await say(`Where is your ${answer.toLowerCase()} equipment located? Type the site or building — for example, Main Plant.`)
+        })
+        return true
+      case 'asset-source':
+        if (answer === GUIDE_ADD_ASSET) {
+          next({ step: 'asset-name' }, async ({ say }) => {
+            await say(`What’s the asset called? For example, ${exampleAsset(g.equipment ?? 'Air compressors')}.`)
+          })
+          return true
+        }
+        // Anything else typed here is taken as the asset's name.
+        guide.current = { ...g, step: 'asset-name' }
+        return guideReply(answer)
+      case 'asset-name':
+        // The site picked first is where it goes.
+        if (g.location) {
+          guide.current = { ...g, step: 'location', asset: answer }
+          return guideReply(g.location)
+        }
+        next({ step: 'location', asset: answer }, async ({ say, wait }) => {
+          await wait(500)
+          await say(`Where is ${answer} located? Type the site or building — for example, Main Plant.`)
+        })
+        return true
+      case 'location': {
+        const known = g.location === answer
+        if (!known) addToAccount('locations', answer)
+        addToAccount('assets', g.asset ?? answer)
+        next({ step: 'frequency', location: answer }, async ({ say, think }) => {
+          await think(['Adding it to your workspace…'], 1000)
+          if (!known) push({ kind: 'nova', text: `${answer} added to your locations`, check: true })
+          push({ kind: 'nova', text: `${g.asset} added to your assets, at ${answer}`, check: true })
+          await say('Next, let’s set up a recurring maintenance task for this asset.')
+          await askNext(say, `How often should ${g.asset} be serviced?`, PM_FREQUENCIES)
+        })
+        return true
+      }
+      case 'frequency': {
+        const frequency = answer.charAt(0).toUpperCase() + answer.slice(1)
+        setupStore.update(prev => ({
+          counts: { ...prev.counts, workOrders: prev.counts.workOrders + 1 },
+          created: [...prev.created, { id: `pm-${Date.now()}`, title: `${g.asset} preventive maintenance`, kind: 'pm', detail: frequency }],
+        }))
+        setPmScheduled(true)
+        next({ step: 'tools' }, async ({ say, think }) => {
+          await think(['Scheduling the maintenance…'], 1400)
+          push({ kind: 'nova', text: `${frequency} maintenance scheduled for ${g.asset}`, check: true })
+          push({ kind: 'nova', text: 'First work order created', check: true })
+          await say('Does your team use Slack or Microsoft Teams? Connecting it lets your team send maintenance requests straight from a channel.')
+          // Answered from the card above the message box (or by typing).
+          setChatToolsOpen(true)
+        })
+        return true
+      }
+      case 'tools':
+        guide.current = null
+        setChatToolsOpen(false)
+        run(async ({ say, think }) => {
+          if (/slack|teams/i.test(answer)) {
+            await think([`Connecting ${answer}…`], 1200)
+            push({ kind: 'nova', text: `${answer} connected — requests from your channels will show up in UpKeep`, check: true })
+          }
+          await say('You’re off to a great start! Your workspace now has a location, an asset and its maintenance schedule.')
+          await askNext(say, 'Have the rest of your equipment in a spreadsheet? Import it and I’ll add it all — or create a work order for something that needs fixing now.', [GUIDE_IMPORT, 'Create a work order'])
+        })
+        return true
+    }
+  }, [push, run, askNext, startGoal])
+  /** The guided setup's asset list came from a spreadsheet. */
+  const importGuideList = useCallback((fileName: string, data: { locations: string[]; assets: string[] }) => {
+    const g = guide.current
+    setMessages(prev => prev.filter(m => m.kind !== 'replies'))
+    push({ kind: 'user', text: `Imported ${fileName}` })
+    setupStore.update(prev => ({
+      counts: { ...prev.counts, locations: prev.counts.locations + data.locations.length, assets: prev.counts.assets + data.assets.length },
+      addedNames: { locations: [...prev.addedNames.locations, ...data.locations], assets: [...prev.addedNames.assets, ...data.assets] },
+    }))
+    const plural = (n: number, w: string) => `${n} ${w}${n === 1 ? '' : 's'}`
+    const added = async (think: (labels: string[], ms: number) => Promise<void>) => {
+      await think(['Reading your list…'], 1600)
+      push({ kind: 'nova', text: `${plural(data.locations.length, 'location')} added`, check: true })
+      push({ kind: 'nova', text: `${plural(data.assets.length, 'asset')} added`, check: true })
+    }
+    // After the guided setup: just bring it in.
+    if (!g) {
+      run(async ({ say, think }) => {
+        await added(think)
+        await say('All in — you’ll find them in Locations and Assets. Want me to suggest maintenance schedules for the new equipment?')
+      })
+      return
+    }
+    const asset = data.assets[0] ?? exampleAsset(g.equipment ?? 'Air compressors')
+    guide.current = { ...g, step: 'frequency', asset, location: data.locations[0] }
+    run(async ({ say, think }) => {
+      await added(think)
+      await say(`Next, let’s set up a recurring maintenance task, starting with ${asset}.`)
+      await askNext(say, `How often should ${asset} be serviced?`, PM_FREQUENCIES)
+    })
+  }, [push, run, askNext])
   /** V2: the conversation opens with Nova's note on what it set up
    * (`opening.lines`, then `done` as checked lines, then `next`), then the user's message. */
   const startReady = useCallback((text: string, opening?: { lines: string[]; done: string[]; next?: string[] }) => {
@@ -403,11 +628,12 @@ export function useNovaOnboarding() {
       opening.next?.forEach(line => push({ kind: 'nova', text: line }))
     }
     push({ kind: 'user', text })
+    if (guideReply(text)) return
     run(async ({ say, think }) => {
       await think(['Looking at your workspace…'], 1400)
       await say(readyReply(text))
     })
-  }, [push, release, run])
+  }, [push, release, run, guideReply])
 
   /** Started from the filled-in Account step: Nova already has the answers,
    * so it skips the questions and goes straight to setting up the account. */
@@ -1067,6 +1293,7 @@ export function useNovaOnboarding() {
 
   const ask = useCallback((text: string) => {
     push({ kind: 'user', text })
+    if (readyMode.current && guideReply(text)) return
     const sources = connectedRef.current
     run(async ({ say, think }) => {
       await think(['Thinking…'], 1600)
@@ -1078,14 +1305,19 @@ export function useNovaOnboarding() {
         ? `Good question. From ${sources.map(sourceName).join(' and ')}, the same few assets keep coming up — Induction Furnace #2 and Robot Cell 4 first. I’d start the Moline pilot by tracking those.`
         : 'Good question. For a pilot at Moline + East Moline I’d start with the critical line equipment — robots, CNCs and paint systems. Connect a source and I can tell you which ones are actually failing.')
     })
-  }, [push, run])
+  }, [push, run, guideReply])
+
+  /** The Slack / Teams card's answer, said as the user's reply. */
+  const answerChatTools = useCallback((allowed: boolean, provider?: string) => {
+    ask(!allowed ? 'Not now' : provider === 'teams' ? 'Microsoft Teams' : 'Slack')
+  }, [ask])
 
   return {
-    connectOther,
+    connectOther, chatToolsOpen, answerChatTools,
     messages, profile, answerChoice, saveAccount, started, start, busy, working: busy && awaiting === 0, stop, company, companyConfirmed, pmScheduled, generated, generating, planSkipped, integrationsLocked, mplanAdded, mplanAdding, mplanSkipped, appPromo, safetyAnswered, teamLocked, addedPeople, addingPeople, googleConsentOpen, consentScope, roles, answeredOffers, editingCompany, connected, sourcesLocked,
     emailed, reportOpen, paywallOpen, usedActions,
     planStepsDone, addPlanStep, skipPlanStep,
-    confirmCompany, startFromAccount, startReady, askMissingIndustry, startEditingCompany, saveCompany, cancelEditingCompany,
+    confirmCompany, startFromAccount, startReady, importGuideList, askMissingIndustry, startEditingCompany, saveCompany, cancelEditingCompany,
     connectSource, continueFromSources,
     openReport, closeReport, emailReport,
     runAction, addPmPlan, addAssets,

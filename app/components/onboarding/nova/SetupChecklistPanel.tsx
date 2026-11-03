@@ -129,7 +129,8 @@ export function SetupChecklistPanel({ headerTargetId, onAccountIncomplete, accou
             style={{ width: `${(barDone / total) * 100}%` }}
           />
         </span>
-        <span className="text-[length:var(--font-size-xs)] font-medium tabular-nums text-[var(--color-neutral-9)]">{done}/{total}</span>
+        {/* Compact panel: the bar alone; each step shows its own check. */}
+        {!compact && <span className="text-[length:var(--font-size-xs)] font-medium tabular-nums text-[var(--color-neutral-9)]">{done}/{total}</span>}
       </div>
     </div>
   )
@@ -158,9 +159,13 @@ export function SetupChecklistPanel({ headerTargetId, onAccountIncomplete, accou
           progress={accountProgress}
           compact={compact}
         />
-        {/* The other steps wait, faded, until the account is set up. */}
-        <div inert={!accountDone} className={`flex flex-col gap-4 transition-opacity duration-500 ${accountDone ? 'opacity-100' : 'opacity-60'}`}>
-          {steps.map((item, i) => (
+        {/* The other steps wait, faded, until the account is set up — in the
+            compact panel only the empty ones: what Nova already added stays clear. */}
+        <div inert={!accountDone && !compact} className={`flex flex-col gap-4 transition-opacity duration-500 ${accountDone || compact ? 'opacity-100' : 'opacity-60'}`}>
+          {steps.map((item, i) => {
+            const waiting = compact && !accountDone && counts[item.key] === 0
+            return (
+            <div key={item.key} inert={waiting} className={`transition-opacity duration-500 ${waiting ? 'opacity-60' : 'opacity-100'}`}>
             <ListStep
               key={item.key}
               step={item.key}
@@ -182,7 +187,9 @@ export function SetupChecklistPanel({ headerTargetId, onAccountIncomplete, accou
               onAdd={() => onAdd(item.key)}
               onView={() => onView(item.key)}
             />
-          ))}
+            </div>
+            )
+          })}
         </div>
       </div>
 
@@ -256,11 +263,12 @@ function FillRing({ percent }: { percent: number }) {
   )
 }
 
-function StepHeading({ icon: Icon, label, detail, small = false, neutral = false }: { icon: LucideIcon; label: string; detail?: ReactNode; done?: boolean; /** A small hint line under the title (compact panel). */ small?: boolean; /** Gray icon tile instead of blue (compact panel). */ neutral?: boolean }) {
+function StepHeading({ icon: Icon, label, detail, done = false, small = false, neutral = false }: { icon: LucideIcon; label: string; detail?: ReactNode; done?: boolean; /** A small hint line under the title (compact panel). */ small?: boolean; /** Gray icon tile instead of blue (compact panel). */ neutral?: boolean }) {
   return (
     <>
-      <span className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-[var(--radius-lg)] ${neutral ? 'bg-[var(--color-neutral-3)] text-[var(--color-neutral-10)]' : 'bg-[var(--color-accent-1)] text-[var(--color-accent-9)]'}`}>
-        <Icon size={17} />
+      {/* Compact panel: a finished step swaps its gray icon for a blue check. */}
+      <span className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-[var(--radius-lg)] transition-colors duration-[var(--duration-normal)] ${neutral && !done ? 'bg-[var(--color-neutral-3)] text-[var(--color-neutral-10)]' : 'bg-[var(--color-accent-1)] text-[var(--color-accent-9)]'}`}>
+        {neutral && done ? <Check size={17} className="nova-text-in" /> : <Icon size={17} />}
       </span>
       <span className="flex min-w-0 flex-1 flex-col">
         <span className="text-[length:var(--font-size-base)] font-semibold text-[var(--color-neutral-12)]">{label}</span>
@@ -350,6 +358,15 @@ function AccountStep({ expanded, onExpand, onFillChange, onIncomplete, locked = 
     setEditing(false)
   }
   const set = (key: keyof AccountDetails) => (value: string) => { dirty.current = true; setDraft(d => ({ ...d, [key]: value })) }
+  // V2: the summary always lists every field, so what's missing shows as "—".
+  const summaryRows = compact
+    ? [
+        { label: 'Company name', value: details.companyName || '—' },
+        { label: 'Company size', value: details.companySize || '—' },
+        { label: 'Industry', value: details.industry || '—' },
+      ]
+    : rows
+  const toggleSummary = () => (summaryOpen ? setSummaryOpen(false) : (setSummaryOpen(true), onExpand()))
 
   // Focus leaving the card folds it. A dropdown's list lives in a portal, so
   // focus there (or on its way back to the field) still counts as inside.
@@ -370,13 +387,13 @@ function AccountStep({ expanded, onExpand, onFillChange, onIncomplete, locked = 
         {/* Done: the header shows/hides the summary. Not yet: it opens the form. */}
         <button
           type="button"
-          onClick={() => (editing ? close(true) : done ? (summaryOpen ? setSummaryOpen(false) : (setSummaryOpen(true), onExpand())) : open())}
-          aria-expanded={editing || (done && summaryOpen)}
+          onClick={() => (editing ? close(true) : done || compact ? toggleSummary() : open())}
+          aria-expanded={editing || ((done || compact) && summaryOpen)}
           className="flex min-w-0 flex-1 items-center gap-3 text-left cursor-pointer"
         >
           <StepHeading icon={Building2} label={compact ? 'Company details' : 'Your company details'} small={compact && !editing} neutral={compact} done={done} detail={compact && !editing ? 'Personalize your workspace' : !done && editing ? 'Does everything look right?' : 'Tell us about your company'} />
         </button>
-        {done && !editing && (
+        {(done || compact) && !editing && (
           <button type="button" onClick={open} className="inline-flex shrink-0 items-center gap-1 text-[length:var(--font-size-sm)] font-medium text-[var(--color-accent-9)] transition-colors hover:text-[var(--color-accent-10)] cursor-pointer">
             <Pencil size={12} /> Edit
           </button>
@@ -385,12 +402,12 @@ function AccountStep({ expanded, onExpand, onFillChange, onIncomplete, locked = 
           ? <FillRing percent={Math.round(progress * 100)} />
           : loading && !done
           ? <Loader2 size={18} className="shrink-0 animate-spin text-[var(--color-accent-9)]" aria-label="In progress" />
-          : done && compact && !editing
+          : compact && !editing
             // V2: like the other steps — a chevron shows/hides the details.
             ? (
               <button
                 type="button"
-                onClick={() => (summaryOpen ? setSummaryOpen(false) : (setSummaryOpen(true), onExpand()))}
+                onClick={toggleSummary}
                 aria-expanded={summaryOpen}
                 aria-label={`${summaryOpen ? 'Hide' : 'Show'} company details`}
                 className="text-[var(--color-neutral-8)] cursor-pointer"
@@ -445,10 +462,10 @@ function AccountStep({ expanded, onExpand, onFillChange, onIncomplete, locked = 
         </form>
         </div>
       </div>
-      <div className={`grid transition-[grid-template-rows,opacity] duration-300 ease-[cubic-bezier(0.32,0.72,0,1)] ${!editing && rows.length > 0 && (!done || summaryOpen) ? 'grid-rows-[1fr] opacity-100' : 'grid-rows-[0fr] opacity-0'}`}>
+      <div className={`grid transition-[grid-template-rows,opacity] duration-300 ease-[cubic-bezier(0.32,0.72,0,1)] ${!editing && summaryRows.length > 0 && (compact ? summaryOpen : !done || summaryOpen) ? 'grid-rows-[1fr] opacity-100' : 'grid-rows-[0fr] opacity-0'}`}>
         <div className="min-h-0 overflow-hidden">
         <dl className="flex flex-col border-t border-[var(--border-subtle)] py-1">
-          {rows.map(row => (
+          {summaryRows.map(row => (
             <div key={row.label} className="flex items-center justify-between gap-3 px-[var(--space-md)] py-1.5 nova-enter">
               <dt className="text-[length:var(--font-size-sm)] text-[var(--color-neutral-9)]">{row.label}</dt>
               <dd className={`truncate text-[length:var(--font-size-sm)] font-medium ${row.value === '—' ? 'text-[var(--color-neutral-7)]' : 'text-[var(--color-neutral-12)]'}`}>{row.value}</dd>

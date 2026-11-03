@@ -52,11 +52,13 @@ interface SearchableSelectProps {
   createEntity?: string
   /** Runs when that footer is used. Without it the footer just closes the menu. */
   onCreate?: () => void
+  /** When a search finds nothing, offers to use what was typed, e.g. `Industry`. */
+  addEntity?: string
 }
 
 export function SearchableSelect({
   label, required, value, onChange, options, placeholder = '', className = '', showAvatar = false, error = false, onBlur,
-  optionTags, createEntity, onCreate,
+  optionTags, createEntity, onCreate, addEntity,
 }: SearchableSelectProps) {
   const [open, setOpen] = useState(false)
   const [query, setQuery] = useState('')
@@ -122,7 +124,18 @@ export function SearchableSelect({
             </div>
             <div className="py-1 max-h-[200px] overflow-y-auto">
               {filtered.length === 0 ? (
-                <p className="px-3 py-2 text-[13px] text-[var(--color-neutral-7)]">No results</p>
+                addEntity && query.trim() ? (
+                  <button
+                    type="button"
+                    onClick={() => { onChange(query.trim()); setOpen(false) }}
+                    className="w-full flex items-center gap-1.5 px-3 py-[var(--space-xs)] text-left text-[13px] font-medium text-[var(--color-accent-9)] cursor-pointer transition-colors hover:bg-[var(--color-neutral-3)]"
+                  >
+                    <Plus size={14} className="shrink-0" />
+                    <span className="truncate">Add {addEntity} “{query.trim()}”</span>
+                  </button>
+                ) : (
+                  <p className="px-3 py-2 text-[13px] text-[var(--color-neutral-7)]">No results</p>
+                )
               ) : filtered.map(o => (
                 <button
                   key={o}
