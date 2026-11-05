@@ -19,7 +19,7 @@ import {
   BarChart3, Gauge,
   Car, ClipboardCheck, FileClock, AlertTriangle,
   Package, ScrollText, Building2,
-  Bell, Check, ChevronUp, Smartphone, LayoutGrid, CircleHelp, MessagesSquare, CreditCard, Settings, Rocket, Sparkles,
+  Bell, Check, ChevronUp, Smartphone, LayoutGrid, CircleHelp, MessagesSquare, CreditCard, Settings, Sparkles,
 } from 'lucide-react'
 import { planById, type PlanId } from '@/app/lib/billing/plans'
 import { openPlans } from '@/app/lib/billing/trial-usage'
@@ -107,11 +107,10 @@ const sections: NavSection[] = [
     ],
   },
   {
-    // Prototype switch between the two first-run experiences.
+    // Prototype entry to the first-run experience.
     title: 'ONBOARDING',
     items: [
-      { label: 'Onboarding V1', icon: Rocket, href: '/onboarding' },
-      { label: 'Onboarding V2', icon: Sparkles, href: '/onboarding-v2' },
+      { label: 'Onboarding', icon: Sparkles, href: '/onboarding-v2' },
     ],
   },
 ]

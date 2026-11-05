@@ -1,4 +1,5 @@
-/** Onboarding V2 — rendered by the app layout like V1 (see WelcomeScreen). */
-export default function WelcomeV2Page() {
+/** The onboarding is rendered by the app layout and kept alive across
+ * navigation (see WelcomeScreen), so this route has nothing of its own. */
+export default function WelcomePage() {
   return null
 }

@@ -385,13 +385,6 @@
   to { transform: scaleX(1); }
 }
 
-/* First-run boot: after the skeleton, the shell assembles itself one piece
-   at a time. Each piece sets --i (its order) and optionally --base. */
-[data-boot="reveal"] [data-stagger] {
-  animation: nova-label-in 0.6s cubic-bezier(0.22, 1, 0.36, 1) both;
-  animation-delay: calc(var(--base, 0ms) + var(--i, 0) * 45ms);
-}
-
 /* Checklist counter changing — a quick pop so the eye catches it. */
 @keyframes nova-count-bump {
   0% { transform: scale(1); }

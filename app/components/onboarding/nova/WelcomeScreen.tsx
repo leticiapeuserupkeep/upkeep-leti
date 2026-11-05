@@ -97,26 +97,25 @@ const READY_ACTIONS = [
   { label: 'Prioritize maintenance work', prompt: 'Help me prioritize maintenance work' },
 ]
 
-export type OnboardingVersion = 'v1' | 'v2'
-export const ONBOARDING_PATHS: Record<OnboardingVersion, string> = { v1: '/onboarding', v2: '/onboarding-v2' }
+export const ONBOARDING_PATH = '/onboarding-v2'
 
 /** V1: Nova sets the account up in conversation. V2: Nova first researches
  * the company (full screen), the user confirms what it found, and the setup
  * checklist fills itself in from that. */
-export function WelcomeScreen({ version = 'v1' }: { version?: OnboardingVersion }) {
+export function WelcomeScreen() {
   const router = useRouter()
   const setup = useSetupState()
   const nova = useNovaOnboarding()
-  // The sidebar's "Setup your account" leads back to this version.
-  useEffect(() => { setupStore.update({ welcomeHref: ONBOARDING_PATHS[version] }) }, [version])
+  // The sidebar's "Setup your account" leads back here.
+  useEffect(() => { setupStore.update({ welcomeHref: ONBOARDING_PATH }) }, [])
 
   // V2: discovery runs first; confirming it sets the workspace up, skipping
   // it lands on the regular (V1) welcome.
-  const [discovery, setDiscovery] = useState<'running' | 'skipped' | ConfirmedDiscovery>(version === 'v2' ? 'running' : 'skipped')
+  const [discovery, setDiscovery] = useState<'running' | 'skipped' | ConfirmedDiscovery>('running')
   const confirmed = typeof discovery === 'object' ? discovery : null
   // Skipping V2's discovery still lands on V2's layout (Nova + setup panel),
   // so coming back from elsewhere finds it as it was left.
-  const skippedV2 = version === 'v2' && discovery === 'skipped'
+  const skippedV2 = discovery === 'skipped'
   const ready = confirmed !== null || skippedV2
   const build = useWorkspaceBuild(confirmed, company => nova.saveAccount({ role: 'Admin', industry: company.industry, companyName: company.name, companySize: company.size }))
   // A step counts once it has finished filling (or the build was stopped),
@@ -175,7 +174,7 @@ export function WelcomeScreen({ version = 'v1' }: { version?: OnboardingVersion 
   const welcomePath = usePathname()
   useEffect(() => {
     if (!welcomePath.startsWith('/onboarding') || nova.started || discovery === 'running') return
-    const id = window.setTimeout(() => welcomeComposer.current?.focus(), discovery === 'skipped' && version === 'v1' ? 400 : 700)
+    const id = window.setTimeout(() => welcomeComposer.current?.focus(), 700)
     return () => window.clearTimeout(id)
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [welcomePath, discovery])

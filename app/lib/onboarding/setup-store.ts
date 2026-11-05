@@ -66,7 +66,7 @@ function initialState(): SetupState {
     creating: false,
     connectedApps: [],
     setupComplete: false,
-    welcomeHref: '/onboarding',
+    welcomeHref: '/onboarding-v2',
   }
 }
 

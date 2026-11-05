@@ -1,5 +1,6 @@
-/** The Welcome conversation is rendered by the app layout and kept alive
- * across navigation (see WelcomeScreen), so this route has nothing of its own. */
-export default function WelcomePage() {
-  return null
+import { redirect } from 'next/navigation'
+
+/** The first-run experience lives at /onboarding-v2; this keeps old links working. */
+export default function OnboardingRedirect() {
+  redirect('/onboarding-v2')
 }
