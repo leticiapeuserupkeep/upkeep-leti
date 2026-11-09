@@ -1,0 +1,577 @@
+<title>Ultranova Assistant</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600&family=Figtree:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  /* Layout: full-height stage with the 3D assistant centered, wordmark top-left, controls pinned bottom. */
+  :root {
+    --bg-top: #000000;
+    --bg-bottom: #02050b;
+    --glow: #0e2c55;
+    --ink: #eaf3ff;
+    --ink-soft: #94aed0;
+    --accent: #4cc3ff;
+    --surface: rgba(16, 26, 44, 0.72);
+    --surface-line: rgba(140, 190, 255, 0.18);
+    --font-display: "Fredoka", "Trebuchet MS", system-ui, sans-serif;
+    --font-body: "Figtree", system-ui, -apple-system, "Segoe UI", sans-serif;
+    color-scheme: dark;
+  }
+  /* Light stage, toggled by the Fondo control (declared last so it wins over the dark blocks) */
+  :root[data-bg="light"] {
+    --bg-top: #fbfdff;
+    --bg-bottom: #e8f0f9;
+    --glow: #ffffff;
+    --ink: #0f2742;
+    --ink-soft: #52698a;
+    --accent: #1fa8f2;
+    --surface: rgba(255, 255, 255, 0.78);
+    --surface-line: rgba(31, 90, 150, 0.16);
+    color-scheme: light;
+  }
+
+  html, body { height: 100%; }
+  body {
+    background: linear-gradient(180deg, var(--bg-top), var(--bg-bottom));
+    color: var(--ink);
+    font-family: var(--font-body);
+    overflow: hidden;
+  }
+  .app {
+    height: 100%;
+    display: grid;
+    grid-template-rows: auto 1fr auto;
+    padding-block: 20px;
+    padding-left: max(16px, env(safe-area-inset-left, 0px));
+    padding-right: max(16px, env(safe-area-inset-right, 0px));
+    gap: 8px;
+  }
+  header { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; }
+  .wordmark { font-family: var(--font-display); font-weight: 600; font-size: 22px; letter-spacing: 0.01em; }
+  .wordmark span { color: var(--accent); }
+  .hint { font-size: 13px; color: var(--ink-soft); text-align: right; }
+
+  .stage { position: relative; min-height: 320px; min-width: 0; }
+  .stage::before {
+    content: ""; position: absolute; inset: 8% 10%;
+    background: radial-gradient(closest-side, var(--glow), transparent 72%);
+    opacity: 0.55; pointer-events: none;
+  }
+  #gl { position: absolute; inset: 0; width: 100%; height: 100%; display: block; cursor: pointer; touch-action: none; }
+
+  .bubble {
+    position: absolute; left: 50%; top: 6%;
+    transform: translate(18%, 0);
+    max-width: min(280px, 70%);
+    padding: 12px 16px;
+    background: var(--surface);
+    border: 1px solid var(--surface-line);
+    border-radius: 20px 20px 20px 6px;
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    font-size: 15px; line-height: 1.4;
+    box-shadow: 0 10px 30px rgba(20, 60, 110, 0.14);
+    transition: opacity 0.35s ease, transform 0.35s ease;
+    pointer-events: none;
+  }
+  .bubble.out { opacity: 0; transform: translate(18%, 8px); }
+
+  .controls { display: flex; flex-wrap: wrap; justify-content: center; gap: 12px; }
+  .seg {
+    display: inline-flex; padding: 4px; gap: 4px;
+    background: var(--surface); border: 1px solid var(--surface-line); border-radius: 999px;
+  }
+  .seg button, .cta {
+    font: 600 14px var(--font-body); color: var(--ink-soft);
+    background: transparent; border: 0; border-radius: 999px;
+    padding: 9px 18px; cursor: pointer; transition: background 0.2s, color 0.2s, transform 0.15s;
+  }
+  .seg button[aria-pressed="true"] { background: var(--accent); color: #04223a; }
+  .cta { background: var(--surface); border: 1px solid var(--surface-line); color: var(--ink); }
+  .seg button:hover, .cta:hover { transform: translateY(-1px); }
+  button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  .fallback { position: absolute; inset: 0; display: grid; place-items: center; text-align: center; color: var(--ink-soft); padding: 24px; }
+</style>
+
+<div class="app">
+  <header>
+    <div class="wordmark">Ultra<span>nova</span></div>
+    <div class="hint">Mueve el cursor. Toca al asistente.</div>
+  </header>
+  <div class="stage" id="stage">
+    <canvas id="gl" aria-label="Asistente 3D de Ultranova"></canvas>
+    <div class="bubble" id="bubble" role="status">Hola, soy tu asistente de Ultranova.</div>
+  </div>
+  <div class="controls">
+    <div class="seg" role="group" aria-label="Fondo">
+      <button id="bg-dark" aria-pressed="true">Fondo negro</button>
+      <button id="bg-light" aria-pressed="false">Fondo claro</button>
+    </div>
+    <button class="cta" id="wave">Saludar</button>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/three@0.152.2/build/three.min.js"></script>
+<script>
+(function () {
+  var stage = document.getElementById('stage');
+  var canvas = document.getElementById('gl');
+  var reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  var renderer;
+  try {
+    renderer = new THREE.WebGLRenderer({ canvas: canvas, antialias: true, alpha: true });
+  } catch (e) {
+    stage.insertAdjacentHTML('beforeend', '<div class="fallback">Este navegador no puede mostrar WebGL.</div>');
+    return;
+  }
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+  renderer.toneMapping = THREE.ACESFilmicToneMapping;
+  renderer.toneMappingExposure = 1.0;
+  renderer.shadowMap.enabled = true;
+  renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+
+  var scene = new THREE.Scene();
+  var camera = new THREE.PerspectiveCamera(30, 1, 0.1, 50);
+  camera.position.set(0, 0.25, 7.2);
+  camera.lookAt(0, -0.05, 0);
+
+  /* ---------- Procedural studio environment (soft boxes for glossy reflections) ---------- */
+  (function buildEnv() {
+    var env = new THREE.Scene();
+    var room = new THREE.Mesh(
+      new THREE.BoxGeometry(20, 14, 20),
+      new THREE.MeshBasicMaterial({ color: new THREE.Color(0.42, 0.5, 0.62), side: THREE.BackSide })
+    );
+    env.add(room);
+    function panel(w, h, x, y, z, rx, ry, c) {
+      var m = new THREE.Mesh(new THREE.PlaneGeometry(w, h), new THREE.MeshBasicMaterial({ color: c, side: THREE.DoubleSide }));
+      m.position.set(x, y, z); m.rotation.set(rx, ry, 0); env.add(m);
+    }
+    panel(9, 5, 0, 6.8, 2, Math.PI / 2, 0, new THREE.Color(6, 6, 6.4));          // top softbox
+    panel(4, 6, -7, 1.5, 5, 0, Math.PI / 2.6, new THREE.Color(5, 5.3, 5.7));    // key left
+    panel(2.5, 7, 7.5, 1, 3, 0, -Math.PI / 2.4, new THREE.Color(2.2, 3.6, 5.5)); // cool strip right
+    panel(10, 3, 0, -4, 6, -0.5, 0, new THREE.Color(1.4, 2.0, 2.8));             // floor bounce
+    var pm = new THREE.PMREMGenerator(renderer);
+    scene.environment = pm.fromScene(env, 0.02).texture;
+    pm.dispose();
+  })();
+
+  // Key light casts the soft self-shadows (arms on body, body on legs)
+  var key = new THREE.DirectionalLight(0xffffff, 1.5);
+  key.position.set(-3, 5, 5);
+  key.castShadow = true;
+  key.shadow.mapSize.set(2048, 2048);
+  key.shadow.camera.near = 1; key.shadow.camera.far = 16;
+  key.shadow.camera.left = -2.6; key.shadow.camera.right = 2.6;
+  key.shadow.camera.top = 2.6; key.shadow.camera.bottom = -2.6;
+  key.shadow.bias = -0.0006; key.shadow.normalBias = 0.03; key.shadow.radius = 5;
+  scene.add(key);
+  var rim = new THREE.PointLight(0x5cc8ff, 14, 14);
+  rim.position.set(3, 1, -3); scene.add(rim);
+
+  /* ---------- Materials: glossy moulded plastic ---------- */
+  var WHITE = '#f7faff', BLUE = '#3fa2f5', NAVY = '#071a3a', CYAN = '#38c4ff', LIGHT_BLUE = '#12a0ff';
+
+  function softTex(stops) {
+    var c = document.createElement('canvas'); c.width = c.height = 128;
+    var x = c.getContext('2d'), g = x.createRadialGradient(64, 64, 0, 64, 64, 64);
+    stops.forEach(function (s) { g.addColorStop(s[0], s[1]); });
+    x.fillStyle = g; x.fillRect(0, 0, 128, 128);
+    return new THREE.CanvasTexture(c);
+  }
+  var glintTex = softTex([[0, 'rgba(255,255,255,1)'], [0.35, 'rgba(255,255,255,0.85)'], [1, 'rgba(255,255,255,0)']]);
+  var eyeGlowTex = softTex([[0, 'rgba(120,220,255,0.95)'], [0.5, 'rgba(40,170,255,0.55)'], [1, 'rgba(20,120,255,0)']]);
+  var haloTex = softTex([[0, 'rgba(40,170,255,0.95)'], [0.3, 'rgba(20,140,255,0.5)'], [1, 'rgba(10,110,255,0)']]);
+  function sprite(tex, size, additive) {
+    var s = new THREE.Sprite(new THREE.SpriteMaterial({ map: tex, transparent: true, depthWrite: false, blending: additive ? THREE.AdditiveBlending : THREE.NormalBlending }));
+    s.scale.set(size, size, 1); return s;
+  }
+
+  function plastic(color, extra) {
+    return new THREE.MeshPhysicalMaterial(Object.assign({ color: color, roughness: 0.34, clearcoat: 0.5, clearcoatRoughness: 0.28 }, extra || {}));
+  }
+  var bodyMat = plastic(0xffffff, { vertexColors: true });
+  var whiteMat = plastic(WHITE);
+  var blueMat = plastic(BLUE);
+  var visorMat = plastic('#fdfeff', { roughness: 0.26, clearcoat: 0.8, clearcoatRoughness: 0.12 });
+  var grooveMat = new THREE.MeshStandardMaterial({ color: '#8fb0d2', roughness: 0.6 });
+  var seamMat = new THREE.MeshStandardMaterial({ color: '#7ea3cb', roughness: 0.6 });
+  var seamBlueMat = new THREE.MeshStandardMaterial({ color: '#2a78c4', roughness: 0.55 });
+  var navyMat = new THREE.MeshPhysicalMaterial({ color: '#030b1c', roughness: 0.2, clearcoat: 1, clearcoatRoughness: 0.03, envMapIntensity: 0.6 });
+  var glowMat = new THREE.MeshStandardMaterial({ color: '#1b8ff0', emissive: CYAN, emissiveIntensity: 1.6, roughness: 0.3 });
+  var ringMat = new THREE.MeshBasicMaterial({ color: LIGHT_BLUE, toneMapped: false });
+  var eyeGlassMat = new THREE.MeshPhysicalMaterial({ color: '#ffffff', transparent: true, opacity: 0.07, roughness: 0, clearcoat: 1, clearcoatRoughness: 0, envMapIntensity: 1.4, depthWrite: false });
+
+  function casts(m, cast, recv) { m.castShadow = cast !== false; m.receiveShadow = recv !== false; return m; }
+
+  /* ---------- Character ---------- */
+  var root = new THREE.Group(); scene.add(root);
+  var rig = new THREE.Group(); root.add(rig);   // squash & stretch + bobbing
+
+  // Body: one egg-like shell. White upper, blue lower, with soft light-dependent shading baked in vertex colours.
+  // The face is carved INTO the shell: inside a rounded-rect outline the surface is pushed in, with a smooth wall.
+  var PLATE = { cy: 0.18, a: 0.68, b: 0.44, n: 3.4 }, DEP = 0.04;
+  var EYE = { x: 0.3, y: 0.27, rx: 0.21, ry: 0.235 }, DEPE = 0.022;      // eye sockets, carved inside the face recess
+  function eyeT(wx, wy, s) { return Math.sqrt(Math.pow((wx - EYE.x * s) / EYE.rx, 2) + Math.pow((wy - EYE.y) / EYE.ry, 2)); }
+  var bodyGeo = new THREE.SphereGeometry(1, 384, 288);
+  var pos = bodyGeo.attributes.position, cols = [];
+  var cWhite = new THREE.Color(WHITE), cWhiteShade = new THREE.Color('#c9dcf0');
+  var cBlue = new THREE.Color(BLUE), cBlueShade = new THREE.Color('#1f6fc4');
+  var cA = new THREE.Color(), cB = new THREE.Color();
+  for (var i = 0; i < pos.count; i++) {
+    var x = pos.getX(i), y = pos.getY(i), z = pos.getZ(i);
+    var lit = THREE.MathUtils.smoothstep(-0.35 * x + 0.55 * y + 0.45 * z, -0.5, 0.75);
+    cA.copy(cWhiteShade).lerp(cWhite, lit);
+    cB.copy(cBlueShade).lerp(cBlue, lit);
+    cA.lerp(cB, 1 - THREE.MathUtils.smoothstep(y, -0.36, -0.3));
+    cols.push(cA.r, cA.g, cA.b);
+    var wx = x * (1 + 0.05 * y), wy = 0.95 * y, sc = 1;       // slightly wider shoulders than hips
+    if (z > 0.2) {
+      var tq = Math.pow(Math.pow(Math.abs(wx) / PLATE.a, PLATE.n) + Math.pow(Math.abs(wy - PLATE.cy) / PLATE.b, PLATE.n), 1 / PLATE.n);
+      sc = 1 - DEP * (1 - THREE.MathUtils.smoothstep(tq, 0.93, 1.0));
+      var te = Math.min(eyeT(wx, wy, -1), eyeT(wx, wy, 1));
+      sc *= 1 - DEPE * (1 - THREE.MathUtils.smoothstep(te, 0.9, 1.07));
+    }
+    pos.setXYZ(i, wx * sc, y * sc, z * sc);
+  }
+  bodyGeo.setAttribute('color', new THREE.Float32BufferAttribute(cols, 3));
+  bodyGeo.computeVertexNormals();
+  var body = casts(new THREE.Mesh(bodyGeo, bodyMat));
+  body.scale.set(1, 0.95, 0.92); rig.add(body);
+
+  // Panel cut lines drawn on the shell surface (yU = height on the unit sphere)
+  function seam(yU, a0, a1, closed, radius, mat) {
+    var pts = [], n = 120, r = Math.sqrt(1 - yU * yU), k = 1 + 0.05 * yU;
+    for (var j = 0; j < n; j++) {
+      var th = closed ? (j / n) * Math.PI * 2 : a0 + (a1 - a0) * (j / (n - 1));
+      pts.push(new THREE.Vector3(r * k * Math.sin(th) * 1.003, 0.95 * yU, 0.92 * r * Math.cos(th) * 1.003));
+    }
+    var m = new THREE.Mesh(new THREE.TubeGeometry(new THREE.CatmullRomCurve3(pts, closed), n * 2, radius, 6, closed), mat);
+    m.receiveShadow = true; rig.add(m); return m;
+  }
+  seam(-0.33, 0, 0, true, 0.011, seamBlueMat);                 // white / blue split
+  seam(0.8, -1.25, 1.25, false, 0.007, seamMat);               // crown seam over the head
+
+  // Face plate: a rounded-rectangle panel that follows the shell's curvature, raised a hair with a bevelled edge.
+  // Eyes and mouth all live inside it, outlined by two hairlines (same white as the shell, no coloured fill).
+  function bodyZ(px, py) {
+    var yU = py / 0.95, k = 1 + 0.05 * yU, v = 1 - Math.pow(px / k, 2) - yU * yU;
+    return v > 0 ? 0.92 * Math.sqrt(v) : 0;
+  }
+  function sgnPow(v, p) { return Math.sign(v) * Math.pow(Math.abs(v), p); }
+  function plateEdge(th) {   // point on the rounded-rect boundary at angle th (in plate space)
+    return [PLATE.a * sgnPow(Math.cos(th), 2 / PLATE.n), PLATE.cy + PLATE.b * sgnPow(Math.sin(th), 2 / PLATE.n)];
+  }
+  var SC1 = 1 - DEP, SC2 = SC1 * (1 - DEPE);
+  function facePt(px, py) { return SC1 * bodyZ(px / SC1, py / SC1); }      // floor of the face recess
+  function eyeFloor(px, py) { return SC2 * bodyZ(px / SC2, py / SC2); }    // floor of an eye socket
+  function tiltFor(py) { return -Math.asin(THREE.MathUtils.clamp(py / 0.95, -0.9, 0.9)); }
+
+  var face = new THREE.Group(); rig.add(face);
+
+  function hairline(t, mat, radius, floor) {
+    var pts = [], n = 160;
+    for (var j = 0; j < n; j++) {
+      var e = plateEdge((j / n) * Math.PI * 2), px = e[0] * t, py = PLATE.cy + (e[1] - PLATE.cy) * t;
+      pts.push(new THREE.Vector3(px, py, (floor ? facePt(px, py) : bodyZ(px, py)) + 0.002));
+    }
+    var m = new THREE.Mesh(new THREE.TubeGeometry(new THREE.CatmullRomCurve3(pts, true), 320, radius, 6, true), mat);
+    m.receiveShadow = true; face.add(m);
+  }
+  hairline(1.0, new THREE.MeshStandardMaterial({ color: '#a9c2dd', roughness: 0.55 }), 0.0032, false);  // cut line on the rim
+  hairline(0.93, new THREE.MeshStandardMaterial({ color: '#cddcee', roughness: 0.55 }), 0.0022, true);  // base of the wall
+
+  // Eyes: flat lenses set INTO the face (decals that hug the carved socket), built from layers:
+  // black glass, a blue liquid pool, and light reflections. The liquid and reflections slide as the assistant moves.
+  var EW = 320, EH = 360;
+  function canvasTex(draw) {
+    var c = document.createElement('canvas'); c.width = EW; c.height = EH; draw(c.getContext('2d'));
+    var t = new THREE.CanvasTexture(c); t.anisotropy = 4; return t;
+  }
+  function WX(u) { return EW * (0.1 + 0.8 * u); }     // moving layers show the middle 80% of their canvas
+  function WY(v) { return EH * (0.1 + 0.8 * v); }
+  var eyeMask = canvasTex(function (x) {
+    x.fillStyle = '#000'; x.fillRect(0, 0, EW, EH);
+    x.fillStyle = '#fff'; x.beginPath(); x.ellipse(EW / 2, EH / 2, EW / 2 - 1, EH / 2 - 1, 0, 0, Math.PI * 2); x.fill();
+  });
+  var eyeBase = canvasTex(function (x) {
+    x.beginPath(); x.ellipse(EW / 2, EH / 2, EW / 2 - 1, EH / 2 - 1, 0, 0, Math.PI * 2); x.clip();
+    var g = x.createLinearGradient(0, 0, 0, EH); g.addColorStop(0, '#010103'); g.addColorStop(1, '#02030a');
+    x.fillStyle = g; x.fillRect(0, 0, EW, EH);
+    var vg = x.createRadialGradient(EW / 2, EH / 2, EH * 0.36, EW / 2, EH / 2, EH * 0.55);
+    vg.addColorStop(0, 'rgba(0,4,16,0)'); vg.addColorStop(1, 'rgba(0,4,16,0.6)');
+    x.fillStyle = vg; x.fillRect(0, 0, EW, EH);
+  });
+  var liquidTex = canvasTex(function (x) {
+    var y0 = WY(0.5), g = x.createLinearGradient(0, y0, 0, EH);      // visible, saturated liquid line with a soft top edge
+    g.addColorStop(0, 'rgba(20,90,225,0)'); g.addColorStop(0.16, 'rgba(20,95,232,0.55)');
+    g.addColorStop(0.5, 'rgba(22,110,238,0.62)'); g.addColorStop(1, 'rgba(42,166,245,0.95)');
+    x.fillStyle = g; x.fillRect(0, y0, EW, EH - y0);
+    x.save(); x.translate(WX(0.46), WY(0.9)); x.scale(1, 0.5);
+    var gl = x.createRadialGradient(0, 0, 0, 0, 0, EW * 0.8 * 0.46);
+    gl.addColorStop(0, 'rgba(120,225,255,0.95)'); gl.addColorStop(0.55, 'rgba(60,175,255,0.55)'); gl.addColorStop(1, 'rgba(40,150,255,0)');
+    x.fillStyle = gl; x.fillRect(-EW, -EW, 2 * EW, 2 * EW); x.restore();
+  });
+  var glintTex2 = canvasTex(function (x) {
+    x.fillStyle = '#3a9cf0'; x.beginPath(); x.arc(WX(0.7), WY(0.5), EW * 0.8 * 0.04, 0, Math.PI * 2); x.fill();
+    x.fillStyle = 'rgba(120,200,255,0.5)'; x.beginPath(); x.arc(WX(0.77), WY(0.8), EW * 0.8 * 0.05, 0, Math.PI * 2); x.fill();
+    x.save(); x.translate(WX(0.66), WY(0.2)); x.rotate(-0.55); x.scale(1, 0.72);
+    var hg = x.createRadialGradient(0, 0, 0, 0, 0, EW * 0.8 * 0.17);
+    hg.addColorStop(0, 'rgba(236,239,246,0.95)'); hg.addColorStop(0.78, 'rgba(226,231,241,0.9)'); hg.addColorStop(1, 'rgba(226,231,241,0)');
+    x.fillStyle = hg; x.beginPath(); x.arc(0, 0, EW * 0.8 * 0.17, 0, Math.PI * 2); x.fill(); x.restore();
+  });
+  [liquidTex, glintTex2].forEach(function (t) { t.repeat.set(0.8, 0.8); t.offset.set(0.1, 0.1); });
+
+  function decalMat(map, alpha, po) {
+    return new THREE.MeshBasicMaterial({ map: map, alphaMap: alpha, transparent: true, toneMapped: false, depthWrite: false, polygonOffset: true, polygonOffsetFactor: po, polygonOffsetUnits: po });
+  }
+  var T0 = 0.9;   // decal covers the socket floor; the carved wall starts right at its edge
+  function eyeDecalGeo(ex, ey) {
+    var S = 56, R = 12, v = [], uv = [], idx = [];
+    function add(r, th) {
+      var px = ex + EYE.rx * T0 * r * Math.cos(th), py = EYE.y + EYE.ry * T0 * r * Math.sin(th);
+      v.push(px - ex, py - ey, eyeFloor(px, py) + 0.0012);
+      uv.push(0.5 + 0.5 * r * Math.cos(th), 0.5 + 0.5 * r * Math.sin(th));
+    }
+    add(0, 0);
+    for (var r = 1; r <= R; r++) for (var s = 0; s < S; s++) add(r / R, (s / S) * Math.PI * 2);
+    for (var s1 = 0; s1 < S; s1++) idx.push(0, 1 + s1, 1 + ((s1 + 1) % S));
+    for (var r1 = 1; r1 < R; r1++) for (var s2 = 0; s2 < S; s2++) {
+      var a = 1 + (r1 - 1) * S + s2, b = 1 + (r1 - 1) * S + ((s2 + 1) % S), c = a + S, d = b + S;
+      idx.push(a, c, b, b, c, d);
+    }
+    var geo = new THREE.BufferGeometry();
+    geo.setAttribute('position', new THREE.Float32BufferAttribute(v, 3));
+    geo.setAttribute('uv', new THREE.Float32BufferAttribute(uv, 2));
+    geo.setIndex(idx); return geo;
+  }
+  // Shading around each socket: soft shadow on the wall facing the light (upper left), pale blue rim light opposite
+  function socketRingGeo(ex) {
+    var S = 72, R = 12, te0 = 0.9, te1 = 1.22, v = [], col = [], idx = [], sm = THREE.MathUtils.smoothstep;
+    function bump(t, a, b) { return t > a && t < b ? Math.sin(Math.PI * (t - a) / (b - a)) : 0; }
+    for (var r = 0; r <= R; r++) {
+      var te = te0 + (te1 - te0) * (r / R);
+      for (var sI = 0; sI < S; sI++) {
+        var th = (sI / S) * Math.PI * 2, px = ex + EYE.rx * te * Math.cos(th), py = EYE.y + EYE.ry * te * Math.sin(th);
+        var scv = SC1 * (1 - DEPE * (1 - sm(te, 0.9, 1.07)));
+        v.push(px - ex, py - EYE.y, scv * bodyZ(px / scv, py / scv) + 0.0014);
+        var toLight = 0.5 + 0.5 * Math.cos(th - 0.8), away = 0.5 - 0.5 * Math.cos(th - 0.8);   // shadow upper right, glint lower left
+        var aS = 0.6 * Math.pow(toLight, 1.6) * bump(te, 0.9, 1.12);
+        var aH = 0.8 * Math.pow(away, 2.4) * bump(te, 1.0, 1.2);
+        var a = 1 - (1 - aS) * (1 - aH), k = aS + aH + 1e-6;
+        col.push((0.08 * aS + 0.92 * aH) / k, (0.2 * aS + 0.97 * aH) / k, (0.52 * aS + 1.0 * aH) / k, a);
+      }
+    }
+    var idx2 = [];
+    for (var r2 = 0; r2 < R; r2++) for (var s2 = 0; s2 < S; s2++) {
+      var a0 = r2 * S + s2, b0 = r2 * S + ((s2 + 1) % S), c0 = a0 + S, d0 = b0 + S;
+      idx2.push(a0, c0, b0, b0, c0, d0);
+    }
+    var geo = new THREE.BufferGeometry();
+    geo.setAttribute('position', new THREE.Float32BufferAttribute(v, 3));
+    geo.setAttribute('color', new THREE.Float32BufferAttribute(col, 4));
+    geo.setIndex(idx2); return geo;
+  }
+  var ringShadeMat = new THREE.MeshBasicMaterial({ vertexColors: true, transparent: true, depthWrite: false, toneMapped: false, polygonOffset: true, polygonOffsetFactor: -2, polygonOffsetUnits: -2 });
+
+  var eyes = [];
+  [-1, 1].forEach(function (s) {
+    var ex = EYE.x * s, ey = EYE.y;
+    var ring = new THREE.Mesh(socketRingGeo(ex), ringShadeMat); ring.position.set(ex, ey, 0); ring.renderOrder = 4; face.add(ring);
+    var g = new THREE.Group(); g.position.set(ex, ey, 0); face.add(g);
+    [[eyeBase, null, -2, 1], [liquidTex, eyeMask, -3, 2], [glintTex2, eyeMask, -4, 3]].forEach(function (L) {
+      var m = new THREE.Mesh(eyeDecalGeo(ex, ey), decalMat(L[0], L[1], L[2]));
+      m.renderOrder = L[3]; g.add(m);
+    });
+    eyes.push({ g: g });
+  });
+
+  // Mouth: a smile cut into the face (a dark slot, sunk flush with the surface), round at both ends
+  var MR = 0.1, MCY = 0.04, MR_X = 1.1, mpts = [];
+  for (var mj = 0; mj <= 32; mj++) {
+    var phi = -0.85 * Math.PI + (0.7 * Math.PI) * (mj / 32), mx2 = MR * MR_X * Math.cos(phi), my2 = MCY + MR * Math.sin(phi);
+    mpts.push(new THREE.Vector3(mx2, my2, facePt(mx2, my2) - 0.005));
+  }
+  var mouth = new THREE.Mesh(new THREE.TubeGeometry(new THREE.CatmullRomCurve3(mpts), 64, 0.0165, 12, false), navyMat);
+  face.add(mouth);
+  [mpts[0], mpts[mpts.length - 1]].forEach(function (pt) {
+    var cap = new THREE.Mesh(new THREE.SphereGeometry(0.0165, 16, 12), navyMat); cap.position.copy(pt); face.add(cap);
+  });
+
+  // Ear pods: white plate in a blue border with a glowing ring
+  [-1, 1].forEach(function (s) {
+    var g = new THREE.Group(); g.position.set(0.9 * s, 0.1, 0.06); g.rotation.z = -0.3 * s; rig.add(g);
+    var disc = casts(new THREE.Mesh(new THREE.CylinderGeometry(0.285, 0.285, 0.16, 56), whiteMat));
+    disc.rotation.z = Math.PI / 2; g.add(disc);
+    var border = new THREE.Mesh(new THREE.TorusGeometry(0.285, 0.022, 10, 64), blueMat);
+    border.rotation.y = Math.PI / 2; border.position.x = 0.075 * s; g.add(border);
+    var plate = new THREE.Mesh(new THREE.CylinderGeometry(0.2, 0.2, 0.02, 56), whiteMat);
+    plate.rotation.z = Math.PI / 2; plate.position.x = 0.085 * s; g.add(plate);
+    var ring = new THREE.Mesh(new THREE.TorusGeometry(0.215, 0.03, 12, 64), ringMat);
+    ring.rotation.y = Math.PI / 2; ring.position.x = 0.09 * s; g.add(ring);
+  });
+
+  // Arms: white limb on a blue shoulder joint
+  var arms = [-1, 1].map(function (s) {
+    var piv = new THREE.Group(); piv.position.set(0.93 * s, -0.28, 0.05); rig.add(piv);
+    var joint = casts(new THREE.Mesh(new THREE.SphereGeometry(0.125, 32, 24), blueMat)); piv.add(joint);
+    var arm = casts(new THREE.Mesh(new THREE.CapsuleGeometry(0.105, 0.3, 10, 24), whiteMat));
+    arm.position.y = -0.22; piv.add(arm);
+    piv.rotation.z = 0.7 * s; piv.userData.rest = 0.7 * s;
+    return piv;
+  });
+
+  // Legs: one rounded pod each, white on top fading to blue at the foot, angled out and forward
+  var legGeo = new THREE.SphereGeometry(1, 48, 36), lp = legGeo.attributes.position, lc = [], tc = new THREE.Color();
+  for (var q = 0; q < lp.count; q++) {
+    var ly = lp.getY(q), lit2 = THREE.MathUtils.smoothstep(-0.35 * lp.getX(q) + 0.55 * ly + 0.45 * lp.getZ(q), -0.5, 0.75);
+    var w = new THREE.Color(WHITE).lerp(new THREE.Color('#c9dcf0'), 1 - lit2);
+    var b = new THREE.Color(BLUE).lerp(new THREE.Color('#1f6fc4'), 1 - lit2);
+    tc.copy(b).lerp(w, THREE.MathUtils.smoothstep(ly, -0.28, -0.22));   // colour change sits at y = -0.25
+    lc.push(tc.r, tc.g, tc.b);
+  }
+  legGeo.setAttribute('color', new THREE.Float32BufferAttribute(lc, 3));
+  [-1, 1].forEach(function (s) {
+    var g = new THREE.Group(); g.position.set(0.36 * s, -0.8, 0.1); g.rotation.set(-0.15, 0, 0.12 * s); rig.add(g);
+    var pod = casts(new THREE.Mesh(legGeo, bodyMat));
+    pod.scale.set(0.22, 0.28, 0.24); pod.position.y = -0.1; g.add(pod);
+    // glowing ring right where the white turns blue
+    var glowRim = new THREE.Mesh(new THREE.TorusGeometry(0.213, 0.014, 8, 48), ringMat);
+    glowRim.rotation.x = Math.PI / 2; glowRim.scale.set(1, 1.09, 1);
+    glowRim.position.y = -0.1 + 0.28 * -0.25; g.add(glowRim);
+  });
+
+  // Belly button
+  var btn = casts(new THREE.Mesh(new THREE.CylinderGeometry(0.075, 0.075, 0.03, 32), visorMat));
+  btn.position.set(0, -0.55, 0.77); btn.rotation.x = Math.PI / 2 + 0.5; rig.add(btn);
+
+  // Antenna with glowing bulb
+  var antenna = new THREE.Group(); antenna.position.set(0.14, 0.9, -0.05); antenna.rotation.z = -0.28; rig.add(antenna);
+  var stem = new THREE.Mesh(new THREE.CylinderGeometry(0.016, 0.02, 0.5, 16), new THREE.MeshStandardMaterial({ color: '#cfd8e6', roughness: 0.35, metalness: 0.4 }));
+  stem.position.y = 0.25; antenna.add(stem);
+  var bulbGroup = new THREE.Group(); bulbGroup.position.y = 0.55; antenna.add(bulbGroup);
+  bulbGroup.add(new THREE.Mesh(new THREE.SphereGeometry(0.075, 24, 18), new THREE.MeshBasicMaterial({ color: LIGHT_BLUE, toneMapped: false })));
+  bulbGroup.add(new THREE.Mesh(new THREE.SphereGeometry(0.105, 32, 24), new THREE.MeshPhysicalMaterial({
+    color: '#5cbcff', roughness: 0.04, clearcoat: 1, clearcoatRoughness: 0, transparent: true, opacity: 0.35, envMapIntensity: 2, depthWrite: false
+  })));
+  var halo = sprite(haloTex, 0.7, true); bulbGroup.add(halo);
+  var bulbLight = new THREE.PointLight(0x1fa8ff, 2, 3); bulbGroup.add(bulbLight);
+
+  // Ground shadow (soft blue pool on black, grey-blue shadow on light)
+  var sc = document.createElement('canvas'); sc.width = sc.height = 128;
+  var shadowTex = new THREE.CanvasTexture(sc);
+  function drawBlob(dark) {
+    var sx = sc.getContext('2d'); sx.clearRect(0, 0, 128, 128);
+    var g = sx.createRadialGradient(64, 64, 4, 64, 64, 62);
+    g.addColorStop(0, dark ? 'rgba(40,150,255,0.34)' : 'rgba(20,50,90,0.38)');
+    g.addColorStop(1, dark ? 'rgba(40,150,255,0)' : 'rgba(20,50,90,0)');
+    sx.fillStyle = g; sx.fillRect(0, 0, 128, 128); shadowTex.needsUpdate = true;
+  }
+  drawBlob(true);
+  var shadow = new THREE.Mesh(new THREE.PlaneGeometry(2.6, 2.6), new THREE.MeshBasicMaterial({ map: shadowTex, transparent: true, depthWrite: false }));
+  shadow.rotation.x = -Math.PI / 2; shadow.position.y = -1.6; scene.add(shadow);
+
+  /* ---------- Interaction ---------- */
+  var mx = 0, my = 0, tx = 0, ty = 0;
+  window.addEventListener('pointermove', function (e) {
+    var r = stage.getBoundingClientRect();
+    mx = THREE.MathUtils.clamp(((e.clientX - r.left) / r.width) * 2 - 1, -1.4, 1.4);
+    my = THREE.MathUtils.clamp(((e.clientY - r.top) / r.height) * 2 - 1, -1.4, 1.4);
+  });
+
+  var hopY = 0, hopV = 0, squash = 0, squashV = 0, waveT = -1, blinkT = 0, nextBlink = 2.5;
+  function hop(power) { if (hopY < 0.02) { hopV = power || 5.2; squashV = -2; } }
+  function wave() { waveT = 0; hop(3.6); say('¡Hola! Soy tu asistente de Ultranova.'); }
+
+  var lines = [
+    'Puedo ayudarte a empezar con Ultranova.',
+    'Pregúntame lo que necesites.',
+    '¿Listo para tu primer paso?',
+    'Estoy aquí cuando me necesites.'
+  ], li = 0, bubble = document.getElementById('bubble'), bubbleTimer;
+  function say(text) {
+    bubble.classList.add('out');
+    clearTimeout(bubbleTimer);
+    bubbleTimer = setTimeout(function () { bubble.textContent = text; bubble.classList.remove('out'); }, 260);
+  }
+  function setBg(mode) {
+    var dark = mode === 'dark';
+    if (dark) document.documentElement.removeAttribute('data-bg'); else document.documentElement.setAttribute('data-bg', 'light');
+    document.getElementById('bg-dark').setAttribute('aria-pressed', String(dark));
+    document.getElementById('bg-light').setAttribute('aria-pressed', String(!dark));
+    drawBlob(dark);
+  }
+  canvas.addEventListener('click', function () { hop(); say(lines[li++ % lines.length]); });
+  document.getElementById('wave').addEventListener('click', wave);
+  document.getElementById('bg-dark').addEventListener('click', function () { setBg('dark'); });
+  document.getElementById('bg-light').addEventListener('click', function () { setBg('light'); });
+
+  /* ---------- Layout ---------- */
+  function resize() {
+    var w = stage.clientWidth, h = stage.clientHeight;
+    renderer.setSize(w, h, false);
+    camera.aspect = w / h;
+    var need = 3.5, fovV = THREE.MathUtils.degToRad(camera.fov);
+    var distH = (need / 2) / Math.tan(fovV / 2);
+    var distW = (2.6 / camera.aspect) / 2 / Math.tan(fovV / 2);
+    camera.position.z = Math.max(distH, distW, 6.2);
+    camera.updateProjectionMatrix();
+  }
+  new ResizeObserver(resize).observe(stage); resize();
+
+  /* ---------- Loop ---------- */
+  var clock = new THREE.Clock();
+  function tick() {
+    var dt = Math.min(clock.getDelta(), 0.05), t = clock.elapsedTime;
+    var amp = reduce ? 0.3 : 1;
+
+    tx += (mx - tx) * Math.min(1, dt * 5); ty += (my - ty) * Math.min(1, dt * 5);
+    root.rotation.y = tx * 0.5 + Math.sin(t * 0.7) * 0.08 * amp;
+    root.rotation.x = ty * 0.22;
+    root.rotation.z = -tx * 0.05;
+    var C = THREE.MathUtils.clamp, ry = root.rotation.y, rx = root.rotation.x;
+    glintTex2.offset.set(0.1 + C(ry * 0.2, -0.095, 0.095) + Math.sin(t * 1.7) * 0.008, 0.1 - C(rx * 0.45, -0.095, 0.095) + Math.cos(t * 1.7) * 0.006);
+    liquidTex.offset.set(0.1 + C(ry * 0.09, -0.05, 0.05), 0.1 + C(hopV * 0.006 - rx * 0.12, -0.06, 0.06) + Math.sin(t * 1.7) * 0.007);
+
+    hopV -= 16 * dt; hopY += hopV * dt;
+    if (hopY < 0) { if (hopV < -1) squashV = hopV * 0.14; hopY = 0; hopV = 0; }
+    squashV += (-120 * squash - 9 * squashV) * dt; squash += squashV * dt;
+    var stretch = THREE.MathUtils.clamp(hopV * 0.025, -0.08, 0.12);
+    var sy = 1 + stretch - squash, sxz = 1 / Math.sqrt(Math.max(sy, 0.5));
+    rig.scale.set(sxz, sy, sxz);
+    var bob = Math.sin(t * 1.7) * 0.07 * amp;
+    rig.position.y = 0.2 + bob + hopY - (1 - sy) * 0.9;
+    var h = Math.max(0, bob + hopY);
+    shadow.scale.setScalar(1 - h * 0.18); shadow.material.opacity = 1 - h * 0.25;
+
+    antenna.rotation.z = -0.28 - tx * 0.18 + Math.sin(t * 3.1) * 0.06 * amp - hopV * 0.025;
+    antenna.rotation.x = Math.cos(t * 2.3) * 0.05 * amp;
+    bulbLight.intensity = 1.8 + Math.sin(t * 3) * 0.5;
+    halo.scale.setScalar(0.7 + Math.sin(t * 3) * 0.06);
+
+    var a0 = arms[0], a1 = arms[1];
+    a0.rotation.z = a0.userData.rest - Math.sin(t * 1.7 + 1) * 0.06 * amp - hopY * 0.3;
+    var wz = a1.userData.rest + Math.sin(t * 1.7) * 0.06 * amp + hopY * 0.3;
+    if (waveT >= 0) {
+      waveT += dt;
+      var k = Math.sin(Math.min(waveT / 0.35, 1) * Math.PI / 2);
+      wz = THREE.MathUtils.lerp(wz, 2.6 + Math.sin(waveT * 14) * 0.28, k);
+      if (waveT > 2.2) waveT = -1;
+    }
+    a1.rotation.z += (wz - a1.rotation.z) * Math.min(1, dt * 12);
+
+    nextBlink -= dt;
+    if (nextBlink < 0) { blinkT = 0.0001; nextBlink = 2 + Math.random() * 3; }
+    var bl = 1;
+    if (blinkT > 0) { blinkT += dt; bl = 1 - Math.sin(Math.min(blinkT / 0.16, 1) * Math.PI) * 0.92; if (blinkT > 0.16) blinkT = 0; }
+    eyes.forEach(function (e) { e.g.scale.y = bl; });
+
+    renderer.render(scene, camera);
+    requestAnimationFrame(tick);
+  }
+  tick();
+  setTimeout(wave, 900);
+})();
+</script>
