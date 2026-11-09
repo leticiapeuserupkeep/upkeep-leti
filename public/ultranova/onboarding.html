@@ -4,10 +4,10 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600&family=Figtree:wght@400;500;600&display=swap" rel="stylesheet">
 <style>
-  /* Layout: glass ribbon + aurora behind (bg canvas), centered step content, assistant drawn on top (fg canvas).
-     One committed dark look: deep violet night, fuchsia and indigo light, a single cool cyan for small accents. */
+  /* Layout: still glass-ribbon image behind (floats very slowly), centered step content, assistant drawn on top (fg canvas).
+     One committed dark look: black, violet and fuchsia glass, a single cool cyan for small accents. */
   :root {
-    --bg: #07031a;
+    --bg: #030108;
     --bg-2: #120637;
     --violet: #8b5cf6;
     --fuchsia: #d946ef;
@@ -29,10 +29,8 @@
   body {
     min-height: 100dvh;
     background:
-      radial-gradient(900px 620px at 12% -8%, rgba(168, 85, 247, 0.55), transparent 62%),
-      radial-gradient(820px 600px at 104% 8%, rgba(99, 102, 241, 0.38), transparent 62%),
-      radial-gradient(1000px 720px at 50% 118%, rgba(217, 70, 239, 0.34), transparent 62%),
-      linear-gradient(180deg, #0c0528, var(--bg) 58%, #050214);
+      radial-gradient(900px 600px at 80% 110%, rgba(139, 92, 246, 0.18), transparent 62%),
+      linear-gradient(180deg, #05020f, var(--bg) 60%, #030109);
     background-color: var(--bg);
     color: var(--ink);
     font-family: var(--font-body);
@@ -41,19 +39,22 @@
   }
 
   /* ---------- atmosphere ---------- */
-  .beams, .stars, .grain { position: fixed; inset: 0; pointer-events: none; }
-  .beams { overflow: hidden; z-index: 0; }
-  .beams::before, .beams::after {
-    content: ""; position: absolute; top: -20%; width: 26vw; min-width: 160px; height: 120%;
-    background: linear-gradient(180deg, rgba(217, 70, 239, 0.55), rgba(139, 92, 246, 0.18) 55%, transparent 80%);
-    filter: blur(46px); mix-blend-mode: screen; opacity: 0.5;
-    animation: drift 14s ease-in-out infinite alternate;
+  .stars, .grain { position: fixed; inset: 0; pointer-events: none; }
+  .bgimg { position: fixed; inset: 0; z-index: 0; overflow: hidden; pointer-events: none; background: #000; }
+  .bgimg i {
+    position: absolute; inset: -4%; display: block;
+    background: url("bg.jpg") center / cover no-repeat; transform: scaleX(-1) scale(1.04);
+    animation: float 18s ease-in-out infinite; will-change: transform;
   }
-  .beams::before { left: 8%; transform: rotate(16deg); }
-  .beams::after { right: 6%; transform: rotate(-12deg); background: linear-gradient(180deg, rgba(99, 102, 241, 0.6), rgba(56, 189, 248, 0.12) 55%, transparent 80%); animation-duration: 18s; animation-delay: -6s; }
-  @keyframes drift { from { opacity: 0.35; translate: -2vw 0; } to { opacity: 0.6; translate: 3vw 2vh; } }
+  .bgimg::after { content: ""; position: absolute; inset: 0; background: linear-gradient(90deg, rgba(3, 1, 8, 0.55), transparent 55%); }
+  /* a gentle drift, a few pixels and a fraction of a degree */
+  @keyframes float {
+    0%, 100% { transform: scaleX(-1) scale(1.04) translate3d(0, 0, 0) rotate(0deg); }
+    50% { transform: scaleX(-1) scale(1.04) translate3d(0, -9px, 0) rotate(0.35deg); }
+  }
+  @media (max-width: 899px) { .bgimg i { background-size: auto 90%; background-position: 75% 0; } .bgimg::after { background: linear-gradient(180deg, transparent 20%, rgba(3, 1, 8, 0.7)); } }
   .stars {
-    z-index: 0; opacity: 0.7;
+    z-index: 0; opacity: 0.45;
     background-image:
       radial-gradient(1.2px 1.2px at 12% 22%, #fff, transparent), radial-gradient(1px 1px at 28% 64%, #e9d5ff, transparent),
       radial-gradient(1.4px 1.4px at 44% 12%, #fff, transparent), radial-gradient(1px 1px at 63% 38%, #c4b5fd, transparent),
@@ -67,9 +68,7 @@
     z-index: 1; opacity: 0.07; mix-blend-mode: overlay;
     background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='160' height='160'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/></filter><rect width='100%' height='100%' filter='url(%23n)'/></svg>");
   }
-  #bg, #fg { position: fixed; inset: 0; width: 100%; height: 100%; pointer-events: none; display: block; }
-  #bg { z-index: 0; }
-  #fg { z-index: 20; }
+  #fg { position: fixed; inset: 0; width: 100%; height: 100%; pointer-events: none; display: block; z-index: 20; }
 
   /* ---------- frame ---------- */
   .app {
@@ -190,8 +189,7 @@
   @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation-duration: 0.01ms !important; animation-iteration-count: 1 !important; transition-duration: 0.01ms !important; } }
 </style>
 
-<div class="beams"></div><div class="stars"></div><div class="grain"></div>
-<canvas id="bg" aria-hidden="true"></canvas>
+<div class="bgimg" aria-hidden="true"><i></i></div><div class="stars"></div><div class="grain"></div>
 
 <div class="app">
   <header class="top">
@@ -200,7 +198,7 @@
       <span>Ultranova</span>
     </div>
     <div class="dots" id="dots" aria-hidden="true"><span class="on"></span><span></span><span></span></div>
-    <button class="skip" id="skip">Omitir</button>
+    <button class="skip" id="skip">Skip</button>
   </header>
 
   <main class="stage">
@@ -209,33 +207,33 @@
       <div class="split">
         <div class="hero-col">
           <div class="hero"><i class="ring two"></i><i class="ring"></i><div class="slot" data-robot="hero"></div>
-            <div class="nameplate"><small>Hola, soy</small><span id="plate">tu asistente</span></div>
+            <div class="nameplate"><small>Hi, I'm</small><span id="plate">your assistant</span></div>
           </div>
         </div>
         <div class="text-col">
-          <span class="eyebrow"><i></i>Paso 1 de 3</span>
-          <h1 id="h0" tabindex="-1">¿Cómo quieres <span class="hl">llamarme</span>?</h1>
-          <p class="lede">Lo usaré cada vez que hablemos.</p>
-          <div class="field"><input id="name" type="text" maxlength="18" autocomplete="off" placeholder="Ponme un nombre" aria-label="Nombre del asistente"></div>
+          <span class="eyebrow"><i></i>Step 1 of 3</span>
+          <h1 id="h0" tabindex="-1">What do you want to <span class="hl">call me</span>?</h1>
+          <p class="lede">I'll use it every time we talk.</p>
+          <div class="field"><input id="name" type="text" maxlength="18" autocomplete="off" placeholder="Give me a name" aria-label="Assistant name"></div>
           <div class="suggest" id="suggest"><button class="chip" type="button">Nova</button><button class="chip" type="button">Luma</button><button class="chip" type="button">Pupi</button><button class="chip" type="button">Orbi</button></div>
-          <div class="actions"><button class="btn primary" id="next0" disabled>Continuar</button></div>
+          <div class="actions"><button class="btn primary" id="next0" disabled>Continue</button></div>
         </div>
       </div>
       <div class="features">
-        <div class="glass feature"><div class="ico" style="background:rgba(94,234,212,.14)"><svg viewBox="0 0 24 24" fill="none" stroke="#5eead4" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14.7 6.3a4 4 0 0 0-5.4 5.1L3 17.7 6.3 21l6.3-6.3a4 4 0 0 0 5.1-5.4l-2.6 2.6-2.4-.6-.6-2.4z"/></svg></div><div><h3>Tu trabajo</h3><p>Pregunta qué vence, inicia un temporizador o crea una orden de trabajo.</p></div></div>
-        <div class="glass feature"><div class="ico" style="background:rgba(251,191,36,.14)"><svg viewBox="0 0 24 24" fill="none" stroke="#fbbf24" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M6 8a6 6 0 1 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.9 1.9 0 0 0 3.4 0"/></svg></div><div><h3>Recordatorios</h3><p>Pídeme que te recuerde algo. Te avisaré cuando sea el momento.</p></div></div>
-        <div class="glass feature"><div class="ico" style="background:rgba(129,140,248,.16)"><svg viewBox="0 0 24 24" fill="none" stroke="#a5b4fc" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg></div><div><h3>Tareas programadas</h3><p>Programa trabajo para más tarde. Volveré con el resultado.</p></div></div>
+        <div class="glass feature"><div class="ico" style="background:rgba(94,234,212,.14)"><svg viewBox="0 0 24 24" fill="none" stroke="#5eead4" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14.7 6.3a4 4 0 0 0-5.4 5.1L3 17.7 6.3 21l6.3-6.3a4 4 0 0 0 5.1-5.4l-2.6 2.6-2.4-.6-.6-2.4z"/></svg></div><div><h3>Your work</h3><p>Ask what's due, start a timer or create a work order.</p></div></div>
+        <div class="glass feature"><div class="ico" style="background:rgba(251,191,36,.14)"><svg viewBox="0 0 24 24" fill="none" stroke="#fbbf24" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M6 8a6 6 0 1 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.9 1.9 0 0 0 3.4 0"/></svg></div><div><h3>Reminders</h3><p>Ask me to remind you of something. I'll let you know when it's time.</p></div></div>
+        <div class="glass feature"><div class="ico" style="background:rgba(129,140,248,.16)"><svg viewBox="0 0 24 24" fill="none" stroke="#a5b4fc" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg></div><div><h3>Scheduled tasks</h3><p>Schedule work for later. I'll come back with the result.</p></div></div>
       </div>
     </section>
 
     <!-- 2 · avatar -->
     <section class="step" data-step="1" aria-labelledby="h1">
       <div class="center">
-        <span class="eyebrow"><i></i>Paso 2 de 3</span>
-        <h1 id="h1" tabindex="-1">¿Cómo quieres que <span class="hl">me vea</span>?</h1>
-        <p class="lede">Elige un avatar.</p>
+        <span class="eyebrow"><i></i>Step 2 of 3</span>
+        <h1 id="h1" tabindex="-1">How do you want me to <span class="hl">look</span>?</h1>
+        <p class="lede">Pick an avatar.</p>
       </div>
-      <div class="avatars" id="avatars" role="group" aria-label="Avatares">
+      <div class="avatars" id="avatars" role="group" aria-label="Avatars">
         <button class="avatar" style="--h:268" data-i="0" aria-pressed="false" aria-label="Avatar 1"><span class="slot" data-robot="a0"></span><span class="tick"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg></span></button>
         <button class="avatar" style="--h:300" data-i="1" aria-pressed="false" aria-label="Avatar 2"><span class="slot" data-robot="a1"></span><span class="tick"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg></span></button>
         <button class="avatar" style="--h:200" data-i="2" aria-pressed="false" aria-label="Avatar 3"><span class="slot" data-robot="a2"></span><span class="tick"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg></span></button>
@@ -243,8 +241,8 @@
         <button class="avatar" style="--h:320" data-i="4" aria-pressed="false" aria-label="Avatar 5"><span class="slot" data-robot="a4"></span><span class="tick"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg></span></button>
       </div>
       <div class="actions" style="justify-content:center;margin-top:36px">
-        <button class="btn ghost" id="back1">Atrás</button>
-        <button class="btn primary" id="next1" disabled>Continuar</button>
+        <button class="btn ghost" id="back1">Back</button>
+        <button class="btn primary" id="next1" disabled>Continue</button>
       </div>
     </section>
 
@@ -252,21 +250,21 @@
     <section class="step" data-step="2" aria-labelledby="h2">
       <div class="ready center">
         <div class="hero sm"><i class="ring two"></i><i class="ring"></i><div class="slot" data-robot="final"></div></div>
-        <span class="eyebrow" style="margin-top:6px"><i></i>Paso 3 de 3</span>
-        <h1 id="h2" tabindex="-1" style="font-size:clamp(28px,4.4vw,44px)">Mucho gusto, soy <span class="hl" id="finalName">Nova</span></h1>
+        <span class="eyebrow" style="margin-top:6px"><i></i>Step 3 of 3</span>
+        <h1 id="h2" tabindex="-1" style="font-size:clamp(28px,4.4vw,44px)">Nice to meet you, I'm <span class="hl" id="finalName">Nova</span></h1>
         <div class="glass chat">
-          <p class="bubble b1" id="greet">Pregúntame qué está vencido, qué solicitudes necesitan aprobación o pídeme crear una orden de trabajo.</p>
-          <p class="bubble b2">¿Quieres que te lo recuerde o que programe una tarea para más tarde?</p>
-          <div class="quick"><button class="chip" type="button">Qué está vencido</button><button class="chip" type="button">Solicitudes por aprobar</button><button class="chip" type="button">Crear una orden de trabajo</button></div>
+          <p class="bubble b1" id="greet">Ask me what's overdue, which requests need approval, or have me create a work order.</p>
+          <p class="bubble b2">Want me to remind you, or schedule a task for later?</p>
+          <div class="quick"><button class="chip" type="button">What's overdue</button><button class="chip" type="button">Requests to approve</button><button class="chip" type="button">Create a work order</button></div>
           <div class="composer" aria-hidden="true">
             <span class="circ"><svg viewBox="0 0 24 24" fill="none" stroke="#f5f0ff" stroke-width="2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg></span>
-            <span class="ph" id="ph">Mensaje a Nova</span>
+            <span class="ph" id="ph">Message Nova</span>
             <span class="circ hot"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="3" width="6" height="12" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/></svg></span>
           </div>
         </div>
         <div class="actions" style="justify-content:center">
-          <button class="btn ghost" id="back2">Atrás</button>
-          <button class="btn primary" id="finish">Entrar a Ultranova</button>
+          <button class="btn ghost" id="back2">Back</button>
+          <button class="btn primary" id="finish">Enter Ultranova</button>
         </div>
       </div>
     </section>
@@ -626,59 +624,11 @@
     };
   }
 
-  /* =====================================================================
-     Background: slow twisting glass ribbon
-     ===================================================================== */
-  var ribbon = null;
-  function initRibbon() {
-    var cv = document.getElementById('bg'), r2;
-    try { r2 = new THREE.WebGLRenderer({ canvas: cv, antialias: true, alpha: true }); } catch (e) { return null; }
-    r2.setPixelRatio(Math.min(window.devicePixelRatio || 1, 1.5));
-    r2.toneMapping = THREE.ACESFilmicToneMapping; r2.toneMappingExposure = 1.15;
-    var sc = new THREE.Scene(), cam = new THREE.PerspectiveCamera(35, 1, 0.1, 60); cam.position.set(0, 0, 11);
-    var env = new THREE.Scene();
-    env.add(new THREE.Mesh(new THREE.BoxGeometry(24, 16, 24), new THREE.MeshBasicMaterial({ color: new THREE.Color(0.1, 0.04, 0.22), side: THREE.BackSide })));
-    function panel(w, h, x, y, z, ry, c) { var m = new THREE.Mesh(new THREE.PlaneGeometry(w, h), new THREE.MeshBasicMaterial({ color: c, side: THREE.DoubleSide })); m.position.set(x, y, z); m.rotation.y = ry; env.add(m); }
-    panel(5, 8, -8, 1, 4, Math.PI / 2.4, new THREE.Color(7, 1.6, 7));      // magenta
-    panel(4, 8, 8, 0, 3, -Math.PI / 2.4, new THREE.Color(1.2, 3.2, 7));    // cyan-blue
-    panel(9, 4, 0, 8, 2, 0, new THREE.Color(5, 4.4, 7));                   // top violet-white
-    panel(8, 3, 0, -7, 5, 0, new THREE.Color(2.6, 0.8, 5));                // floor violet
-    var pm = new THREE.PMREMGenerator(r2); sc.environment = pm.fromScene(env, 0.03).texture; pm.dispose();
-
-    // a twisted strip following a trefoil path
-    var N = 360, pts = [];
-    for (var i = 0; i < N; i++) { var t = (i / N) * Math.PI * 2; pts.push(new THREE.Vector3(Math.sin(t) + 2 * Math.sin(2 * t), Math.cos(t) - 2 * Math.cos(2 * t), -Math.sin(3 * t)).multiplyScalar(0.95)); }
-    var curve = new THREE.CatmullRomCurve3(pts, true), fr = curve.computeFrenetFrames(N, true);
-    var pos = [], col = [], idx = [], stops = [new THREE.Color('#7c3aed'), new THREE.Color('#e879f9'), new THREE.Color('#38bdf8'), new THREE.Color('#a855f7')], cc = new THREE.Color();
-    for (var j = 0; j <= N; j++) {
-      var u = j / N, p = curve.getPoint(u % 1), tw = u * Math.PI * 2 * 3, w = 0.42 + 0.12 * Math.sin(u * Math.PI * 2 * 3);
-      var n = fr.normals[j % N], b = fr.binormals[j % N], dx = n.x * Math.cos(tw) + b.x * Math.sin(tw), dy = n.y * Math.cos(tw) + b.y * Math.sin(tw), dz = n.z * Math.cos(tw) + b.z * Math.sin(tw);
-      pos.push(p.x + dx * w, p.y + dy * w, p.z + dz * w, p.x - dx * w, p.y - dy * w, p.z - dz * w);
-      var f = (u * stops.length) % stops.length, i0 = Math.floor(f), k = f - i0; cc.copy(stops[i0 % stops.length]).lerp(stops[(i0 + 1) % stops.length], k);
-      col.push(cc.r, cc.g, cc.b, cc.r, cc.g, cc.b);
-    }
-    for (var q = 0; q < N; q++) { var a = 2 * q, b2 = a + 1, c = a + 2, d = a + 3; idx.push(a, b2, c, b2, d, c); }
-    var g = new THREE.BufferGeometry();
-    g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3)); g.setAttribute('color', new THREE.Float32BufferAttribute(col, 3)); g.setIndex(idx); g.computeVertexNormals();
-    var mat = new THREE.MeshPhysicalMaterial({ vertexColors: true, metalness: 0.15, roughness: 0.1, clearcoat: 1, clearcoatRoughness: 0.05, transparent: true, opacity: 0.6, side: THREE.DoubleSide, envMapIntensity: 1.8, depthWrite: false });
-    var knot = new THREE.Mesh(g, mat), holder = new THREE.Group(); holder.add(knot); sc.add(holder);
-    var bx = 0, by = 0;
-    window.addEventListener('pointermove', function (e) { bx = e.clientX / window.innerWidth - 0.5; by = e.clientY / window.innerHeight - 0.5; }, { passive: true });
-    function resize() {
-      var w = cv.clientWidth, h = cv.clientHeight; r2.setSize(w, h, false); cam.aspect = w / h; cam.updateProjectionMatrix();
-      var wide = cam.aspect > 1.1; holder.position.set(wide ? 3.6 : 0, wide ? 0.2 : -3.2, 0); holder.scale.setScalar(wide ? 1 : 0.62); mat.opacity = wide ? 0.6 : 0.4;
-    }
-    window.addEventListener('resize', resize); resize();
-    return { render: function (t) { var tt = reduce ? 4 : t; knot.rotation.y = tt * 0.14 + bx * 0.5; knot.rotation.x = 0.35 + by * 0.25 + Math.sin(tt * 0.2) * 0.1; knot.rotation.z = tt * 0.05; r2.render(sc, cam); } };
-  }
-
   try { robots = initRobots(); } catch (e) { document.body.classList.add('no-gl'); }
-  try { ribbon = initRibbon(); } catch (e) { ribbon = null; }
   var last = performance.now();
   (function loop(now) {
     requestAnimationFrame(loop);
     var dt = Math.min((now - last) / 1000, 0.05); last = now;
-    try { if (ribbon) ribbon.render(now / 1000); } catch (e) { ribbon = null; }
     try { if (robots) robots.render(now / 1000, dt); } catch (e) { if (window.console) console.error(e); }
   })(last);
 
@@ -705,11 +655,11 @@
   function cleanName() { return nameInput.value.trim(); }
   function fillName() {
     var n = cleanName(); state.name = n;
-    document.getElementById('plate').textContent = n || 'tu asistente'; next0.disabled = !n;
+    document.getElementById('plate').textContent = n || 'your assistant'; next0.disabled = !n;
   }
   function fillFinal() {
     var n = state.name || 'Nova';
-    document.getElementById('finalName').textContent = n; document.getElementById('ph').textContent = 'Mensaje a ' + n;
+    document.getElementById('finalName').textContent = n; document.getElementById('ph').textContent = 'Message ' + n;
   }
   var typed = 0;
   nameInput.addEventListener('input', function () { fillName(); if (++typed % 3 === 1 && robots) robots.hop('hero'); });
@@ -728,8 +678,8 @@
   next1.addEventListener('click', function () { go(2); });
   document.getElementById('back1').addEventListener('click', function () { go(0); });
   document.getElementById('back2').addEventListener('click', function () { go(1); });
-  document.getElementById('finish').addEventListener('click', function () { toast('Listo. Aquí continuaría tu cuenta en Ultranova.'); });
+  document.getElementById('finish').addEventListener('click', function () { toast('Done. Your account would continue here in Ultranova.'); });
   document.getElementById('skip').addEventListener('click', function () { if (!state.name) { state.name = 'Nova'; } if (state.avatar < 0) state.avatar = 0; go(2); });
-  [].slice.call(document.querySelectorAll('.quick .chip')).forEach(function (c) { c.addEventListener('click', function () { toast('Así empezaría la conversación: “' + c.textContent + '”.'); if (robots) robots.hop('final'); }); });
+  [].slice.call(document.querySelectorAll('.quick .chip')).forEach(function (c) { c.addEventListener('click', function () { toast('This is how the conversation would start: “' + c.textContent + '”.'); if (robots) robots.hop('final'); }); });
 })();
 </script>
