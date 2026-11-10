@@ -62,7 +62,9 @@
     .nav-closed .side-foot { flex-direction: column-reverse; justify-content: flex-start; gap: 8px; padding: 12px 0 16px; }
     .nav-closed .foot-right > :not(.nav-close) { display: none; }
   }
-  @media (max-width: 860px) { .nav-close { display: none; } }
+  @media (max-width: 860px) { .sidebar .nav-close { display: none; } }   /* the drawer has its own close (scrim / menu button) */
+  body:has(.menu-open) #fg { opacity: 0; }   /* the assistant is a canvas above the page: hide it while the drawer is open */
+  #fg { transition: opacity 0.3s; }
   .nav-close .un-icon { transition: transform 0.4s var(--ease); }
   .nav-closed .nav-close .un-icon { transform: scaleX(-1); }
 
@@ -227,6 +229,7 @@
     .assistant { width: 150px; height: 150px; }
     .greeting p { max-width: 34ch; }
     .chips { gap: 8px; }
+    .tabhint { display: none; }   /* no Tab key on a phone: the suggestion stays in the placeholder */
   }
   /* light mode (toggle in the sidebar footer): the main area goes light, the purple sidebar stays as is */
   :root[data-theme="light"] { --bg: #f6f3fb; --ink: #1a0b46; --ink-soft: rgba(26, 11, 70, 0.65); --bar: #fff; --un-ink: #1a0b46; --un-ink-soft: rgba(26, 11, 70, 0.65); --un-glass: rgba(26, 11, 70, 0.05); --un-line: rgba(26, 11, 70, 0.14); color-scheme: light; }
@@ -278,10 +281,6 @@
       <span class="brand-text">Ultranova</span>
     </div>
     <nav class="nav">
-      <button class="nav-item" type="button" data-tip="Dashboard">
-        <svg class="un-icon" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="4"/><path d="M10 3v18M10 12h11"/></svg>
-        <span class="grow">Dashboard</span>
-      </button>
       <div>
         <button class="nav-item active" type="button" data-tip="Chat" id="chatToggle" aria-expanded="true" aria-controls="history">
           <svg class="un-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5.5A2.5 2.5 0 0 1 6.5 3h11A2.5 2.5 0 0 1 20 5.5v8a2.5 2.5 0 0 1-2.5 2.5H10l-4.5 4v-4A2.5 2.5 0 0 1 4 13.5z"/></svg>
@@ -705,7 +704,7 @@
   function cmsCreated(type, label, href) {
     var k = KINDS[type] || KINDS.WO; cmsTimers.forEach(clearTimeout); cmsTimers = [];
     label = label || (type + '-' + (++k.n)); href = href || k.href;
-    document.getElementById('cmsKind').innerHTML = k.un-icon; document.getElementById('cmsText').textContent = label + ' created';
+    document.getElementById('cmsKind').innerHTML = k.icon; document.getElementById('cmsText').textContent = label + ' created';
     cms.classList.remove('done'); void cms.offsetWidth; cms.classList.add('busy');
     cms.setAttribute('href', href); cms.setAttribute('aria-label', label + ' created. Open it in the CMS'); cms.querySelector('.alt').removeAttribute('aria-hidden');
     cmsTimers.push(setTimeout(function () { cms.classList.add('done'); }, 1300));  /* spinner → check */
