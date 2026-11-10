@@ -94,29 +94,27 @@
   .btn {
     display: inline-flex; align-items: center; justify-content: center; height: 48px; padding: 0 28px; border-radius: 99px; border: 0; cursor: pointer;
     font: 500 15px var(--font-display); color: #fff; transition: transform 0.25s var(--ease), box-shadow 0.25s;
-    background: linear-gradient(135deg, #8b5cf6, #c026d3 120%); box-shadow: 0 14px 40px -14px rgba(168, 85, 247, 0.9), inset 0 1px 0 rgba(255, 255, 255, 0.35);
+    background: linear-gradient(135deg, #8b5cf6, #c026d3 120%); box-shadow: 0 14px 40px -14px rgba(168, 85, 247, 0.9);
   }
-  .btn:hover { transform: translateY(-2px); box-shadow: 0 18px 46px -12px rgba(192, 38, 211, 0.9), inset 0 1px 0 rgba(255, 255, 255, 0.35); }
+  .btn:hover { transform: translateY(-2px); box-shadow: 0 18px 46px -12px rgba(192, 38, 211, 0.9); }
   button:focus-visible { outline: 2px solid var(--cyan); outline-offset: 3px; }
 
   .foot { display: flex; flex-direction: column; align-items: center; gap: 14px; margin-top: 8px; }
-  .dots { display: flex; gap: 8px; align-items: center; }
+  .dots { display: none; /* progress dots hidden for now: use `flex` to show them again */ gap: 8px; align-items: center; margin-bottom: 16px; }
   .dots span { width: 9px; height: 9px; border-radius: 99px; background: rgba(255, 255, 255, 0.28); transition: width 0.4s var(--ease), background 0.4s; }
   .dots span.on { width: 40px; background: linear-gradient(90deg, #8b5cf6, #d946ef); }
   .skip { background: none; border: 0; color: var(--ink-soft); font: 400 15px var(--font-body); text-decoration: underline; text-underline-offset: 3px; cursor: pointer; padding: 4px; }
   .skip:hover { color: var(--ink); }
 
   /* ---------- step 1: welcome ---------- */
-  .s0 { gap: 0; }
-  .s0 h1 { margin-top: 22px; }
-  .s0 h2 { margin-top: 58px; }
-  .s0 .lede { margin-top: 22px; }
-  .s0 .btn { margin-top: 44px; }
+  .s0 { gap: 24px; }   /* even spacing between the title, tagline, text and button */
+  .s0 h1 { margin: 0; font-size: clamp(30px, 8vw, 58px); line-height: 58px; }
+  .s0 .lede { padding-bottom: 12px; }
 
   /* ---------- step 2: select assistant ---------- */
-  .s1 h1 { margin-top: 18px; }
+  .s1 h1 { margin-top: 18px; padding-bottom: 20px; font-size: clamp(30px, 8vw, 58px); line-height: 58px; }
   /* five-up carousel: every assistant sits at an offset from the focused one (-2..2, wrapping); the focused one is large and awake */
-  .pick { --w: 190px; position: relative; width: 100%; height: calc(var(--w) * 1.05); margin-top: 18px; touch-action: pan-y; cursor: grab; user-select: none; -webkit-user-select: none; }
+  .pick { --w: 190px; position: relative; width: 100%; height: calc(var(--w) * 1.05); margin-top: -30px;  /* tucks under the name pill; the robots are drawn above it */ touch-action: pan-y; cursor: grab; user-select: none; -webkit-user-select: none; }
   .pick.drag { cursor: grabbing; }
   .pick::before { content: ""; position: absolute; left: 50%; top: 50%; width: var(--w); height: var(--w); transform: translate(-50%, -50%); border-radius: 50%; background: radial-gradient(closest-side, hsla(var(--h, 268), 90%, 62%, 0.4), transparent 72%); filter: blur(6px); transition: background 0.6s; pointer-events: none; }
   .ast { position: absolute; left: 50%; top: 50%; width: var(--w); height: var(--w); margin: calc(var(--w) / -2) 0 0 calc(var(--w) / -2); padding: 0; border: 0; background: none; cursor: inherit;
@@ -129,23 +127,23 @@
   .ast.jump { transition: none; opacity: 0; }  /* wrapping around: reappear on the far side instead of flying across */
   .ast[data-off="1"]:hover, .ast[data-off="-1"]:hover { opacity: 0.8; }
   .slot { position: absolute; inset: 0; }
-  .name-pill { display: inline-flex; align-items: baseline; gap: 8px; margin-top: 14px; padding: 12px 26px; border-radius: 99px; background: var(--glass); border: 1px solid var(--glass-line); font: 400 15px var(--font-body); color: var(--ink-soft); }
+  .name-pill { display: inline-flex; align-items: baseline; gap: 8px; margin-top: 18px; padding: 12px 26px; border-radius: 99px; background: var(--glass); border: 1px solid var(--glass-line); font: 400 15px var(--font-body); color: var(--ink-soft); }
   .name-pill b { font: 600 19px var(--font-display); color: var(--ink); }
   .s1 .btn { margin-top: 30px; }
 
   /* ---------- step 3: what to help with ---------- */
   .s2 .mini { position: relative; width: 92px; height: 92px; margin-top: -4px; }
   .hello { margin-top: 6px; padding: 12px 26px; border-radius: 99px; background: var(--glass-strong); border: 1px solid var(--glass-line); font: 500 17px var(--font-display); }
-  .s2 h1 { margin-top: 22px; }
-  .s2 .soft { margin-top: 16px; }
+  .s2 h1 { margin: 16px 0; padding: 24px 0; font-size: clamp(22px, 4.2vw, 30px); }   /* the step 3 title is smaller than the other step titles */
+  .s2 .soft { margin-top: 0; }   /* the title's 16px bottom margin is the gap */
   .topics { display: flex; flex-wrap: wrap; justify-content: center; gap: 12px; margin-top: 18px; }
-  .topic { border: 1px solid var(--chip-line); background: transparent; color: var(--ink); font: 400 14px var(--font-chip); padding: 12px 22px; border-radius: 4px; cursor: pointer; transition: background 0.2s, border-color 0.2s, box-shadow 0.2s; }
+  .topic { border: 1px solid var(--chip-line); background: transparent; color: var(--ink); font: 400 14px var(--font-chip); padding: 12px 22px; border-radius: 4px; cursor: pointer; transition: background 0.3s, border-color 0.3s, box-shadow 0.3s, color 0.3s; }
   .topic:hover { background: rgba(166, 0, 172, 0.18); }
-  .topic[aria-pressed="true"] { background: rgba(166, 0, 172, 0.45); border-color: #e879f9; box-shadow: 0 0 22px -4px rgba(217, 70, 239, 0.7); }
+  .topic[aria-pressed="true"] { background: rgba(0, 237, 197, 0.16); border-color: #00edc5; color: #eafffb; box-shadow: 0 0 22px -6px rgba(0, 237, 197, 0.65); }   /* selected: green, the same green as the live dots */
   .s2 .btn { margin-top: 36px; }
 
   .no-gl .slot { background: radial-gradient(closest-side, rgba(196, 181, 253, 0.9), rgba(139, 92, 246, 0.2) 70%, transparent 72%); border-radius: 50%; margin: 18%; }
-  @media (max-width: 560px) { .card { padding: 28px 18px 22px; border-radius: 32px; } .pick { --w: 150px; } .ast[data-off="2"], .ast[data-off="-2"] { opacity: 0; pointer-events: none; } .s0 h2 { margin-top: 40px; } }
+  @media (max-width: 560px) { .card { padding: 28px 18px 22px; border-radius: 32px; } .pick { --w: 150px; } .ast[data-off="2"], .ast[data-off="-2"] { opacity: 0; pointer-events: none; } }
   @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation-duration: 0.01ms !important; animation-iteration-count: 1 !important; transition-duration: 0.01ms !important; } }
 </style>
 
@@ -161,6 +159,7 @@
 
   <main class="stage">
     <div class="card" id="card">
+      <div class="dots" id="dots" aria-hidden="true"><span class="on"></span><span></span><span></span></div>
       <span class="eyebrow"><i></i><span id="eyebrow">Step 1 of 3</span></span>
 
       <div class="steps">
@@ -174,16 +173,16 @@
 
         <!-- 2 · select assistant -->
         <section class="step s1" data-step="1" aria-labelledby="h1">
-          <h1 id="h1" tabindex="-1">Select your Assistant</h1>
+          <h1 id="h1" tabindex="-1">Select your <span class="hl">Assistant</span></h1>
+          <div class="name-pill" aria-live="polite">Hi, I’m <b id="pname">Core</b></div>
           <div class="pick" id="pick" role="group" aria-label="Assistants. Drag, click or use the arrow keys to rotate">
-            <button class="ast" data-i="0" aria-label="Luma"><span class="slot" data-robot="a0"></span></button>
-            <button class="ast" data-i="1" aria-label="Nova"><span class="slot" data-robot="a1"></span></button>
-            <button class="ast" data-i="2" aria-label="Orbi"><span class="slot" data-robot="a2"></span></button>
-            <button class="ast" data-i="3" aria-label="Pupi"><span class="slot" data-robot="a3"></span></button>
-            <button class="ast" data-i="4" aria-label="Zeta"><span class="slot" data-robot="a4"></span></button>
+            <button class="ast" data-i="0" aria-label="Core"><span class="slot" data-robot="a0"></span></button>
+            <button class="ast" data-i="1" aria-label="Lumen"><span class="slot" data-robot="a1"></span></button>
+            <button class="ast" data-i="2" aria-label="Mesh"><span class="slot" data-robot="a2"></span></button>
+            <button class="ast" data-i="3" aria-label="Volt"><span class="slot" data-robot="a3"></span></button>
+            <button class="ast" data-i="4" aria-label="Pulse"><span class="slot" data-robot="a4"></span></button>
           </div>
-          <div class="name-pill" aria-live="polite">Hi, I’m <b id="pname">Luma</b></div>
-          <button class="btn" id="next1">Choose Luma</button>
+          <button class="btn" id="next1">Choose Core</button>
         </section>
 
         <!-- 3 · what would you like help with -->
@@ -203,7 +202,6 @@
       </div>
 
       <div class="foot">
-        <div class="dots" id="dots" aria-hidden="true"><span class="on"></span><span></span><span></span></div>
         <button class="skip" id="skip">Skip</button>
       </div>
     </div>
@@ -236,7 +234,7 @@
   /* =====================================================================
      Onboarding flow: welcome → select assistant → topics → home.html
      ===================================================================== */
-  var ASSISTANTS = ['Luma', 'Nova', 'Orbi', 'Pupi', 'Zeta'], HUES = [268, 300, 200, 240, 320];
+  var ASSISTANTS = ['Core', 'Lumen', 'Mesh', 'Volt', 'Pulse'], HUES = [268, 300, 200, 240, 320];
   var steps = [].slice.call(document.querySelectorAll('.step')), dots = [].slice.call(document.querySelectorAll('#dots span'));
   var state = { step: 0, avatar: 0 }, busy = false;
 
@@ -249,6 +247,7 @@
       dots.forEach(function (d, i) { d.classList.toggle('on', i === n); });
       document.body.style.setProperty('--s', n);
       document.getElementById('eyebrow').textContent = 'Step ' + (n + 1) + ' of 3';
+      if (n === 2) document.querySelector('[data-robot="final"]').setAttribute('data-variant', state.avatar);   /* the chosen assistant greets you */
       if (n === 1 && robots) setTimeout(function () { robots.wake('a' + state.avatar); }, 120); /* instances exist after the first frame */
       var h = nxt.querySelector('h1'); if (h) h.focus({ preventScroll: true });
       busy = false;

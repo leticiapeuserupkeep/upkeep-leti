@@ -68,7 +68,46 @@
   .chat-item .more { display: none; width: 24px; height: 24px; border-radius: 4px; align-items: center; justify-content: center; color: var(--ink); }
   .chat-item:hover .more, .chat-item:focus-within .more { display: flex; }
   .chat-item .more svg { width: 16px; height: 16px; fill: currentColor; }
-  .side-foot { margin-top: auto; display: flex; align-items: center; justify-content: space-between; padding: 16px; }
+  .chat-item .more { cursor: pointer; transition: background 0.2s; }
+  .chat-item .more:hover, .chat-item.menu-open .more { background: rgba(255, 255, 255, 0.12); }
+  .chat-item.menu-open .more { display: flex; }
+  .chat-item input.rename { flex: 1; min-width: 0; height: 24px; padding: 0 6px; border: 1px solid var(--brand-line); border-radius: 4px; background: rgba(0, 0, 0, 0.35); color: var(--ink); font: 400 14px/20px var(--font-display); outline: 0; }
+  .history li { overflow: hidden; transition: max-height 0.4s var(--ease), opacity 0.3s; max-height: 40px; }
+  .history li.gone { max-height: 0; opacity: 0; }
+  /* chat options submenu: Rename / Archive */
+  .ctx-menu { position: fixed; z-index: 50; min-width: 168px; padding: 6px; border-radius: 8px; background: #1d0f45; border: 1px solid rgba(255, 255, 255, 0.14); box-shadow: 0 16px 40px rgba(0, 0, 0, 0.55);
+    opacity: 0; transform: translateY(-4px) scale(0.98); transform-origin: top left; pointer-events: none; transition: opacity 0.18s, transform 0.22s var(--ease); }
+  .ctx-menu.show { opacity: 1; transform: none; pointer-events: auto; }
+  .ctx-menu button { display: flex; align-items: center; gap: 10px; width: 100%; height: 36px; padding: 0 10px; border-radius: 4px; font: 400 14px/20px var(--font-display); color: var(--ink); text-align: left; transition: background 0.15s; }
+  .ctx-menu button:hover, .ctx-menu button:focus-visible { background: rgba(255, 255, 255, 0.1); }
+  .ctx-menu .icon { width: 16px; height: 16px; color: var(--ink-soft); }
+
+  /* "Back to CMS" banner, at the bottom of the sidebar above the profile row. When the assistant creates something in the CMS it
+     swaps to a live status (icon, "WO-1043 created", spinner → check) and returns to the default after a few seconds. */
+  .cms { position: relative; margin: auto 16px 0; display: block; height: 44px; border-radius: 8px; overflow: hidden; color: #101113; text-decoration: none;
+    background: #f1f3f5; border: 1px solid #ced4da;  /* light gray, like the CMS sidebar */
+    transition: background 0.3s, border-color 0.4s; }
+  .cms:hover { background: #e9ecef; }
+  .cms.busy { border-color: #00b894; }
+  .cms .pane { position: absolute; inset: 0; display: flex; align-items: center; gap: 10px; padding: 0 14px; font: 500 14px/20px var(--font-display);
+    transition: opacity 0.45s var(--ease), transform 0.55s var(--ease); }
+  .cms .pane.alt { opacity: 0; transform: translateY(14px); }
+  .cms.busy .pane.def { opacity: 0; transform: translateY(-14px); }
+  .cms.busy .pane.alt { opacity: 1; transform: none; }
+  .cms .grow { flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .cms .cog { width: 20px; height: 20px; flex: none; fill: none; stroke: #ff5a52; stroke-width: 1.6; stroke-linecap: round; stroke-linejoin: round; }
+  .cms .go { width: 16px; height: 16px; color: #868e96; transition: transform 0.3s var(--ease); }
+  .cms:hover .go { transform: translateX(3px); }
+  .cms .kind { width: 20px; height: 20px; flex: none; color: #00a384; }
+  .cms .state { position: relative; width: 20px; height: 20px; flex: none; }
+  .cms .state svg { position: absolute; inset: 0; width: 20px; height: 20px; fill: none; stroke-linecap: round; stroke-linejoin: round; transition: opacity 0.35s, transform 0.5s var(--ease); }
+  .cms .spin { stroke: #868e96; stroke-width: 2; animation: cms-spin 0.9s linear infinite; }
+  .cms .tick { stroke: #00a384; stroke-width: 2.4; opacity: 0; transform: scale(0.5); }
+  .cms.done .spin { opacity: 0; }
+  .cms.done .tick { opacity: 1; transform: none; }
+  @keyframes cms-spin { to { transform: rotate(360deg); } }
+  @media (prefers-reduced-motion: reduce) { .cms .spin { animation-duration: 2.4s; } }
+  .side-foot { display: flex; align-items: center; justify-content: space-between; padding: 16px; }
   .me { width: 32px; height: 32px; border-radius: 50%; display: grid; place-items: center; background: linear-gradient(135deg, #8b5cf6, #d946ef); font: 600 14px/1 var(--font-display); }
   .gear { width: 32px; height: 32px; display: grid; place-items: center; border-radius: 50%; color: #d9c8ff; transition: background 0.2s; }
   .gear:hover { background: rgba(255, 255, 255, 0.08); }
@@ -92,16 +131,76 @@
   .chatbar { align-self: center; width: min(700px, 100%); display: flex; flex-direction: column; gap: 25px; padding: 20px; border-radius: 8px; background: var(--bar); box-shadow: 0 8px 32px rgba(8, 0, 30, 0.6); border: 1px solid transparent; transition: border-color 0.2s; }
   .chatbar:focus-within { border-color: rgba(221, 0, 255, 0.5); }
   .chatbar textarea { width: 100%; height: 20px; max-height: 160px; resize: none; padding: 0; border: 0; background: transparent; outline: 0; font: 400 14px/20px var(--font-body); }
-  .chatbar textarea::placeholder { color: var(--ink); opacity: 1; }
+  .chatbar .field { position: relative; }
+  .tabhint { position: absolute; right: 0; top: 0; padding: 0 6px; height: 20px; display: flex; align-items: center; border: 1px solid rgba(255, 255, 255, 0.3); border-radius: 4px; font: 500 11px/1 var(--font-body); color: rgba(255, 255, 255, 0.6); opacity: 0; transform: translateX(6px); transition: opacity 0.3s, transform 0.4s var(--ease); pointer-events: none; }
+  .chatbar.has-suggest .tabhint { opacity: 1; transform: none; }
+  .chatbar textarea::placeholder { color: var(--ink); opacity: 0.6; }
   .bar-row { display: flex; align-items: center; justify-content: space-between; height: 24px; }
   .bar-row .right { display: flex; align-items: center; gap: 8px; }
   .round, .tool { width: 24px; height: 24px; display: grid; place-items: center; border-radius: 50%; transition: transform 0.2s var(--ease), background 0.2s; }
-  .round { background: #e6edfe; color: #1a0b46; }
-  .round:hover { transform: scale(1.08); }
+  .round { background: transparent; border: 1px solid rgba(255, 255, 255, 0.4); color: #fff; transition: transform 0.2s var(--ease), background 0.25s; }
+  .round:hover { transform: scale(1.08); background: rgba(255, 255, 255, 0.12); }
   .round .icon { width: 14px; height: 14px; stroke-width: 2; }
   .tool { border-radius: 4px; color: var(--ink); }
   .tool:hover { background: rgba(255, 255, 255, 0.1); }
   .tool .icon { width: 20px; height: 20px; }
+
+  /* send button turns green once there is something to send */
+  .tool[type="submit"] { border-radius: 99px; transition: background 0.35s var(--ease), color 0.35s, transform 0.3s var(--ease), box-shadow 0.35s; }
+  .tool[type="submit"].ready { background: var(--dot-live); color: #04120f; box-shadow: 0 6px 18px -6px rgba(0, 237, 197, 0.8); }
+  .tool[type="submit"].ready:hover { transform: translateY(-1px); background: #2ff5d4; }
+
+  /* conversation: the greeting makes way for the thread once something is sent */
+  .thread { display: none; flex: 1; min-height: 0; width: min(700px, 100%); align-self: center; flex-direction: column; gap: 14px; overflow-y: auto; padding: 4px 2px 12px; scroll-behavior: smooth; }
+  .chatting .thread { display: flex; }
+  /* in a conversation the assistant stays fixed and floating at the top of the chat; the thread scrolls under its own space */
+  .chatting .stage { flex: 0 0 auto; height: 0; padding-bottom: 0; }
+  .chatting .assistant { position: fixed; z-index: 5; top: 12px; left: calc(var(--sidebar-w) + (100vw - var(--sidebar-w)) / 2 - 44px); width: 88px; height: 88px; }
+  .main.chatting { height: 100dvh; min-height: 0; padding-top: 0; }
+  /* the messages scroll all the way up, under a translucent blurred black band that holds the assistant */
+  .chatting .thread { overscroll-behavior: contain; padding-top: 112px; scroll-padding-top: 112px; }
+  .main.chatting::before { content: ""; position: fixed; z-index: 4; top: 0; left: var(--sidebar-w); right: 0; height: 108px; pointer-events: none;
+    background: rgba(0, 0, 0, 0.4); -webkit-backdrop-filter: blur(10px); backdrop-filter: blur(10px);
+    -webkit-mask-image: linear-gradient(#000 72%, transparent); mask-image: linear-gradient(#000 72%, transparent); }
+  .chatting .greeting, .chatting .chips { display: none; }
+  .msg { max-width: 82%; padding: 10px 14px; border-radius: 12px; font: 400 14px/20px var(--font-body); animation: msg-in 0.45s var(--ease) backwards; }
+  .msg.user { align-self: flex-end; background: #2a1160; border-bottom-right-radius: 4px; }
+  .msg.ai { align-self: flex-start; background: rgba(255, 255, 255, 0.06); border: 1px solid rgba(255, 255, 255, 0.08); border-bottom-left-radius: 4px; }
+  .msg.ai b { display: block; margin-bottom: 2px; font: 600 12px/16px var(--font-display); color: #d9c8ff; }
+  /* follow-up options under the assistant's last message: it stays proactive, and "Other" is always there */
+  .opts { display: flex; flex-wrap: wrap; gap: 8px; align-self: flex-start; max-width: 82%; margin-top: -4px; }
+  .opts .chip { animation: opt-in 0.5s var(--ease) backwards; animation-delay: calc(var(--i, 0) * 70ms + 120ms); }
+  .opts .chip.other { border-style: dashed; border-color: rgba(255, 255, 255, 0.35); color: var(--ink-soft); }
+  .opts .chip.other:hover { color: var(--ink); border-color: var(--brand); }
+  .opts.gone { opacity: 0; transform: translateY(-4px); transition: opacity 0.25s, transform 0.25s; pointer-events: none; }
+  @keyframes opt-in { from { opacity: 0; transform: translateY(8px); } }
+  .typing { display: inline-flex; gap: 4px; align-items: center; height: 20px; }
+  .typing i { width: 6px; height: 6px; border-radius: 50%; background: var(--ink-soft); animation: blip 1s ease-in-out infinite; }
+  .typing i:nth-child(2) { animation-delay: 0.15s; } .typing i:nth-child(3) { animation-delay: 0.3s; }
+  @keyframes blip { 0%, 80%, 100% { opacity: 0.3; transform: translateY(0); } 40% { opacity: 1; transform: translateY(-3px); } }
+  @keyframes msg-in { from { opacity: 0; transform: translateY(8px); } }
+  /* preview of the Work Order the assistant created (same field layout as the CMS detail) */
+  .wo-card { display: block; margin-top: 12px; border: 1px solid rgba(255, 255, 255, 0.14); border-radius: 10px; background: rgba(255, 255, 255, 0.04); overflow: hidden; color: inherit; text-decoration: none; animation: wo-in 0.6s var(--ease) 0.15s backwards; transition: border-color 0.25s, background 0.25s; }
+  .wo-card:hover { border-color: rgba(221, 0, 255, 0.5); background: rgba(255, 255, 255, 0.07); }
+  @keyframes wo-in { from { opacity: 0; transform: translateY(10px) scale(0.985); } }
+  .wo-head { display: flex; align-items: center; gap: 10px; padding: 12px 14px; border-bottom: 1px dashed rgba(255, 255, 255, 0.14); }
+  .wo-head .id { font: 600 14px/20px var(--font-display); }
+  .wo-head .state { display: inline-flex; align-items: center; gap: 6px; padding: 2px 10px; border-radius: 99px; border: 1px solid rgba(0, 237, 197, 0.45); color: var(--dot-live); font: 500 12px/18px var(--font-body); }
+  .wo-head .state::before { content: ""; width: 6px; height: 6px; border-radius: 50%; background: var(--dot-live); }
+  .wo-head .open { margin-left: auto; font: 500 12px/16px var(--font-body); color: var(--ink-soft); }
+  .wo-title { padding: 12px 14px 4px; font: 600 15px/20px var(--font-display); }
+  .wo-desc { padding: 0 14px 12px; color: var(--ink-soft); font: 400 13px/18px var(--font-body); }
+  .wo-row { display: flex; align-items: center; gap: 12px; padding: 10px 14px; border-top: 1px dashed rgba(255, 255, 255, 0.14); }
+  .wo-row .k { width: 92px; flex: none; font: 500 11px/16px var(--font-body); letter-spacing: 0.04em; text-transform: uppercase; color: var(--ink-soft); }
+  .wo-row .v { display: flex; align-items: center; gap: 8px; min-width: 0; font: 400 13px/18px var(--font-body); }
+  .wo-row .v.link { color: #9db4ff; }
+  .wo-row .tag { padding: 1px 8px; border: 1px solid rgba(255, 255, 255, 0.25); border-radius: 4px; font: 400 12px/18px var(--font-body); color: var(--ink); }
+  .wo-row .flag { width: 14px; height: 14px; fill: currentColor; }
+  .snd { width: 32px; height: 32px; display: grid; place-items: center; border-radius: 50%; color: #d9c8ff; transition: background 0.2s; }
+  .snd:hover { background: rgba(255, 255, 255, 0.08); }
+  .snd .icon { width: 16px; height: 16px; }
+  .snd .off { display: none; } .snd.muted .on { display: none; } .snd.muted .off { display: block; }
+  .foot-right { display: flex; align-items: center; gap: 4px; }
 
   .toast { position: fixed; left: 50%; bottom: 24px; z-index: 40; transform: translate(-50%, 20px); opacity: 0; padding: 12px 20px; border-radius: 99px; background: #2a1160; border: 1px solid rgba(255, 255, 255, 0.14); font: 500 14px/20px var(--font-display); pointer-events: none; transition: opacity 0.3s, transform 0.3s var(--ease); }
   .toast.show { opacity: 1; transform: translate(-50%, 0); }
@@ -130,6 +229,9 @@
     .topbar .brand { padding: 0; font-size: 18px; }
     .topbar .brand svg { width: 22px; height: 22px; }
     .stage { padding-bottom: 24px; }
+    .chatting .assistant { top: 60px; left: calc(50vw - 44px); }
+    .main.chatting::before { top: 56px; left: 0; height: 120px; }
+    .chatting .thread { padding-top: 130px; scroll-padding-top: 130px; }
     .assistant { width: 150px; height: 150px; }
     .greeting p { max-width: 34ch; }
     .chips { gap: 8px; }
@@ -175,11 +277,29 @@
         <span class="grow">Tasks</span>
       </button>
     </nav>
+    <a class="cms" id="cms" href="/work-orders" aria-live="polite" aria-label="Back to CMS">
+      <span class="pane def">
+        <svg class="cog" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="3.2"/><path d="M12 2.8l1.5 2.2 2.6-.6.9 2.5 2.5.9-.6 2.6L21.2 12l-2.3 1.6.6 2.6-2.5.9-.9 2.5-2.6-.6L12 21.2l-1.5-2.2-2.6.6-.9-2.5-2.5-.9.6-2.6L2.8 12l2.3-1.6-.6-2.6 2.5-.9.9-2.5 2.6.6z"/></svg>
+        <span class="grow">Back to CMS</span>
+        <svg class="go icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+      </span>
+      <span class="pane alt" aria-hidden="true">
+        <svg class="kind icon" viewBox="0 0 24 24" id="cmsKind"></svg>
+        <span class="grow" id="cmsText">WO created</span>
+        <span class="state"><svg class="spin" viewBox="0 0 24 24"><path d="M12 3a9 9 0 1 0 9 9"/></svg><svg class="tick" viewBox="0 0 24 24"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg></span>
+      </span>
+    </a>
     <div class="side-foot">
       <span class="me" aria-label="Your profile">L</span>
+      <div class="foot-right">
+      <button class="snd" type="button" id="sound" aria-label="Sound effects" aria-pressed="true">
+        <svg class="icon on" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9.5v5h3.5L12 18.5v-13L7.5 9.5zM15.5 9a4 4 0 0 1 0 6M18 6.5a7.5 7.5 0 0 1 0 11"/></svg>
+        <svg class="icon off" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9.5v5h3.5L12 18.5v-13L7.5 9.5zM16 9.5l5 5M21 9.5l-5 5"/></svg>
+      </button>
       <button class="gear" type="button" aria-label="Settings">
         <svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M12 2.5l1.6 2.3 2.8-.5.9 2.7 2.7.9-.5 2.8L21.8 12l-2.3 1.6.5 2.8-2.7.9-.9 2.7-2.8-.5L12 21.8l-1.6-2.3-2.8.5-.9-2.7-2.7-.9.5-2.8L2.2 12l2.3-1.6-.5-2.8 2.7-.9.9-2.7 2.8.5z"/></svg>
       </button>
+      </div>
     </div>
   </aside>
   <div class="scrim" id="scrim"></div>
@@ -196,19 +316,16 @@
     <section class="stage" aria-labelledby="hello">
       <div class="assistant"><div data-robot="hero"></div></div>
       <div class="greeting">
-        <h1 id="hello">Hi Leti, I'm <span id="agentName">Supernova</span></h1>
-        <span class="role">Sales agent</span>
-        <p>I can help you find account insights, prepare outreach, and stay on top of your pipeline.</p>
+        <h1 id="hello">All set, Leti.</h1>
+        <p>Tell me what you need done. I’ll take it from here and let you know when I need you.</p>
       </div>
-      <div class="chips" id="chips">
-        <button class="chip" type="button">Research a prospect</button>
-        <button class="chip" type="button">Draft an outreach email</button>
-        <button class="chip" type="button">Summarize account activity</button>
-      </div>
+      <div class="chips" id="chips" aria-label="Suggested actions"></div>
     </section>
 
+    <div class="thread" id="thread" aria-live="polite" aria-label="Conversation"></div>
+
     <form class="chatbar" id="form" autocomplete="off">
-      <textarea id="prompt" rows="1" placeholder="Ask anything" aria-label="Message"></textarea>
+      <div class="field"><textarea id="prompt" rows="1" placeholder="Tell me what you’d like me to take care of…" aria-label="Message"></textarea><kbd class="tabhint" aria-hidden="true">Tab</kbd></div>
       <div class="bar-row">
         <button class="round" type="button" aria-label="Add attachment"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg></button>
         <div class="right">
@@ -225,6 +342,7 @@
 
 <script src="https://cdn.jsdelivr.net/npm/three@0.152.2/build/three.min.js"></script>
 <script src="robot.js"></script>
+<script src="sfx.js"></script>
 <script>
 (function () {
   'use strict';
@@ -233,28 +351,210 @@
   catch (e) { document.body.classList.add('no-gl'); }
 
   // name chosen during onboarding (falls back to the design's default)
+  /* Continues the onboarding: the assistant's name and the areas picked there shape this screen. */
+  var agentName = 'Core', help = [];
   try {
     var saved = JSON.parse(sessionStorage.getItem('ultranova.assistant') || 'null');
-    if (saved && saved.name) document.getElementById('agentName').textContent = saved.name;
+    if (saved && saved.name) agentName = saved.name;
+    if (saved && typeof saved.avatar === 'number') document.querySelector('[data-robot="hero"]').setAttribute('data-variant', saved.avatar);
+    if (saved && saved.help) help = saved.help;
   } catch (e) { /* no saved onboarding: keep the default */ }
+
+  /* suggested actions follow what was picked in the onboarding; nothing picked → a general set */
+  var SUGGEST = {
+    'Sales & outreach': ['Research a prospect', 'Draft an email'],
+    'Projects & tasks': ['Plan my week', 'Create a task'],
+    'Operations': ['Create a work order', 'Review overdue work orders'],
+    'Everyday Productivity': ['Plan my week', 'Summarize my day']
+  };
+  var actions = [];
+  help.forEach(function (area) { (SUGGEST[area] || []).forEach(function (a) { if (actions.indexOf(a) < 0) actions.push(a); }); });
+  if (!actions.length) actions = ['Plan my week', 'Create a work order', 'Draft an email'];
+  document.getElementById('chips').innerHTML = actions.slice(0, 4).map(function (a) { return '<button class="chip" type="button" data-sfx>' + a + '</button>'; }).join('');
+  /* the placeholder follows the conversation: a general invitation at first, then what the assistant is asking for */
+  var DEFAULT_PH = 'Tell me what you’d like me to take care of…', ctx = null;
+  /* while the assistant is asking: an example of a good answer, in the user's voice */
+  var ASKS = {
+    'Research a prospect': 'e.g. Acme Corp, or Jane Smith at Acme…',
+    'Draft an email': 'e.g. Tell the vendor the delivery is two days late…',
+    'Draft an outreach email': 'e.g. Introduce our team to the new facilities manager…',
+    'Create a work order': 'e.g. The boiler in Building A isn’t working…',
+    'Plan my week': 'e.g. Finish the PM schedule, review 3 requests, visit Site B…',
+    'Create a task': 'e.g. Follow up with the vendor on Friday…',
+    'Review overdue work orders': 'e.g. Building A, or the night shift team…',
+    'Summarize my day': 'e.g. Include open work orders and approvals…'
+  };
+  /* once something is done: the likely next step (Tab accepts it), like a suggested follow-up */
+  var NEXT = {
+    'Create a work order': 'Assign it to a technician…',
+    'PM': 'Set the next due date and assignee…',
+    'Research a prospect': 'Draft an outreach email to them…',
+    'Draft an email': 'Make it shorter and send it…',
+    'Draft an outreach email': 'Make it shorter and send it…',
+    'Plan my week': 'Move anything that can wait to next week…',
+    'Create a task': 'Set a due date and remind me…',
+    'Review overdue work orders': 'Reassign the most urgent one…',
+    'Summarize my day': 'Share it with my team…'
+  };
+  var suggestion = '';
+  document.getElementById('prompt').placeholder = DEFAULT_PH;
 
   var app = document.getElementById('app'), prompt = document.getElementById('prompt'), toastEl = document.getElementById('toast'), toastTimer;
   function toast(msg) { toastEl.textContent = msg; toastEl.classList.add('show'); clearTimeout(toastTimer); toastTimer = setTimeout(function () { toastEl.classList.remove('show'); }, 2600); }
   function grow() { prompt.style.height = '20px'; prompt.style.height = Math.min(prompt.scrollHeight, 160) + 'px'; }
 
-  // suggestions drop their text into the message box
-  document.getElementById('chips').addEventListener('click', function (e) {
-    var c = e.target.closest('.chip'); if (!c) return;
-    prompt.value = c.textContent; grow(); prompt.focus(); if (robots) robots.hop('hero');
+  /* ---- conversation (prototype): a suggestion runs as a prompt right away; the assistant "thinks", answers with a chime,
+     and the box then asks for what it needs. ---- */
+  var LONG_MS = 3000;  /* the chime is only for answers that took a while */
+  var main = document.querySelector('.main'), thread = document.getElementById('thread'), sendBtn = document.querySelector('.tool[type="submit"]'), busy = false;
+  var FOLLOW = {
+    'Research a prospect': 'Sure. Who or which company should I look into?',
+    'Draft an email': 'Happy to. Who’s it for, and what would you like to say?',
+    'Draft an outreach email': 'Happy to. Who’s it for, and what would you like to say?',
+    'Create a work order': 'On it. Describe the issue and I’ll create the work order.',
+    'Plan my week': 'Let’s plan it. What do you need to get done?',
+    'Create a task': 'Sure. What’s the task?',
+    'Review overdue work orders': 'I can do that. Which location or team should I look at?',
+    'Summarize my day': 'Of course. Anything in particular to include?'
+  };
+  var DONE = {
+    'Research a prospect': 'Done. I put together a short brief and saved it to your notes.',
+    'Draft an email': 'Done. The draft is ready in your drafts folder for you to review.',
+    'Draft an outreach email': 'Done. The draft is ready in your drafts folder for you to review.',
+    'Plan my week': 'Done. I organized your week and blocked time for each item.',
+    'Create a task': 'Done. The task is created and assigned to you.',
+    'Review overdue work orders': 'Done. I found what’s overdue and flagged what needs you first.',
+    'Summarize my day': 'Done. Your summary is ready.'
+  };
+  function addMsg(who, html) {
+    var m = document.createElement('div'); m.className = 'msg ' + who;
+    m.innerHTML = who === 'ai' ? '<b>' + agentName + '</b>' + html : html; thread.appendChild(m);
+    thread.scrollTop = thread.scrollHeight; return m;
+  }
+  function esc(t) { return t.replace(/[&<>]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;' }[c]; }); }
+  function reply(text) {
+    var kind = null, out;
+    if (ctx) {                                   /* answering what the assistant asked */
+      kind = ctx === 'Create a work order' ? 'WO' : null;
+      out = kind ? null : (DONE[ctx] || 'Got it. I’m on it and I’ll let you know when I need you.');
+    } else if (FOLLOW[text]) {                   /* a suggestion: the assistant asks for details */
+      return { text: FOLLOW[text], ask: text };
+    } else {
+      kind = /\b(work order|wo)\b/i.test(text) ? 'WO' : /\b(pm|preventive)\b/i.test(text) ? 'PM' : null;
+      out = kind ? null : 'Got it. I’m on it and I’ll let you know when I need you.';
+    }
+    if (kind) return { long: true, text: 'Done. <b style="display:inline;font:inherit;color:inherit">{label}</b> is created in the CMS. Use the button at the bottom left to open it.', created: kind };
+    return { long: true, text: out };
+  }
+  /* options offered after each answer, so the user always has a next move; "Other" lets them say something else */
+  var ANSWERS = {
+    'Create a work order': ['The boiler in Building A isn’t working', 'AC not cooling on floor 2', 'Water leak in the break room'],
+    'Research a prospect': ['Acme Corp', 'Jane Smith at Acme', 'One of our competitors'],
+    'Draft an email': ['Tell the vendor the delivery is two days late', 'Follow up on yesterday’s quote', 'Thank a customer for their order'],
+    'Draft an outreach email': ['Introduce our team to a new contact', 'Follow up after a meeting', 'Re-engage a quiet account'],
+    'Plan my week': ['Finish the PM schedule', 'Review 3 requests and visit Site B', 'Protect two hours for focus time'],
+    'Create a task': ['Follow up with the vendor on Friday', 'Order spare filters', 'Update the safety checklist'],
+    'Review overdue work orders': ['Building A', 'The night shift team', 'All locations'],
+    'Summarize my day': ['Include open work orders', 'Include approvals', 'Keep it to three lines']
+  };
+  var NEXTOPTS = {
+    'Create a work order': ['Assign it to a technician', 'Set the priority to High', 'Create another work order'],
+    'PM': ['Set the next due date and assignee', 'Create the work order now', 'Show me the schedule'],
+    'Research a prospect': ['Draft an outreach email to them', 'Add them to my pipeline', 'Research a similar company'],
+    'Draft an email': ['Make it shorter and send it', 'Change the tone', 'Draft a follow-up for next week'],
+    'Draft an outreach email': ['Make it shorter and send it', 'Change the tone', 'Draft a follow-up for next week'],
+    'Plan my week': ['Move anything that can wait to next week', 'Block focus time', 'Add a reminder for Monday'],
+    'Create a task': ['Set a due date and remind me', 'Assign it to someone else', 'Create another task'],
+    'Review overdue work orders': ['Reassign the most urgent one', 'Notify the teams involved', 'Show me what’s blocked'],
+    'Summarize my day': ['Share it with my team', 'Add it to my notes', 'Plan tomorrow']
+  };
+  var GENERIC_OPTS = ['Plan my week', 'Create a work order', 'Draft an email'];
+  function clearOpts() {
+    [].forEach.call(thread.querySelectorAll('.opts'), function (o) { o.classList.add('gone'); setTimeout(function () { o.remove(); }, 260); });
+  }
+  function showOpts(list) {
+    var box = document.createElement('div'); box.className = 'opts'; box.setAttribute('role', 'group'); box.setAttribute('aria-label', 'Suggested replies');
+    list.slice(0, 3).concat(['Other…']).forEach(function (t, i) {
+      var b = document.createElement('button'); b.type = 'button'; b.className = 'chip' + (i === 3 || t === 'Other…' ? ' other' : ''); b.setAttribute('data-sfx', ''); b.style.setProperty('--i', i); b.textContent = t; box.appendChild(b);
+    });
+    thread.appendChild(box); thread.scrollTop = thread.scrollHeight;
+  }
+  thread.addEventListener('click', function (e) {
+    var c = e.target.closest('.opts .chip'); if (!c) return;
+    if (c.classList.contains('other')) { prompt.placeholder = 'Tell me something else…'; suggestion = ''; hint(); prompt.focus(); return; }
+    send(c.textContent);
   });
-  prompt.addEventListener('input', grow);
-  prompt.addEventListener('keydown', function (e) { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); document.getElementById('form').requestSubmit(); } });
+
+  /* a Work Order preview built from what the user wrote (prototype: location, asset and priority are inferred from keywords) */
+  function woPreview(label, text) {
+    var t = text.replace(/\s+/g, ' ').trim(), first = t.split(/[.,;]| and | but | because /i)[0].trim() || t;
+    var name = first.charAt(0).toUpperCase() + first.slice(1, 56) + (first.length > 56 ? '…' : '');
+    var desc = first.length < t.length ? t.charAt(0).toUpperCase() + t.slice(1) : 'Created by ' + agentName + ' from the chat.';
+    var bld = /building\s+([a-z0-9])/i.exec(t), loc = bld ? 'Building ' + bld[1].toUpperCase() : 'Building A';
+    var asset = /pump/i.test(t) ? 'Water Cooling Pump' : /hvac|a\/c|air/i.test(t) ? 'HVAC Unit 3' : /elevator|lift/i.test(t) ? 'Elevator 2' : 'Boiler #2';
+    var high = /leak|urgent|fire|smoke|flood|broken|not working|isn.t working/i.test(t), prio = high ? 'High' : 'Medium';
+    var a = document.createElement('a'); a.className = 'wo-card'; a.href = '/work-orders'; a.setAttribute('aria-label', label + ': ' + name + '. Open in the CMS');
+    a.innerHTML = '<div class="wo-head"><span class="id">' + esc(label) + '</span><span class="state">Open</span><span class="open">View in CMS →</span></div>'
+      + '<div class="wo-title">' + esc(name) + '</div><div class="wo-desc">' + esc(desc) + '</div>'
+      + '<div class="wo-row"><span class="k">Location</span><span class="v link">' + esc(loc) + '</span></div>'
+      + '<div class="wo-row"><span class="k">Asset</span><span class="v link">' + esc(asset) + '</span><span class="tag">Operational</span></div>'
+      + '<div class="wo-row"><span class="k">Assigned to</span><span class="v">Unassigned</span></div>'
+      + '<div class="wo-row"><span class="k">Priority</span><span class="v"><svg class="flag" viewBox="0 0 24 24" aria-hidden="true" style="color:' + (high ? '#ff7a7a' : '#ffc86b') + '"><path d="M6 3h1.5v18H6zM8 4h11l-2.5 4.2L19 12H8z"/></svg>' + prio + '</span></div>';
+    return a;
+  }
+  function send(text) {
+    text = (text || '').trim(); if (!text || busy) return;
+    clearOpts(); busy = true; main.classList.add('chatting'); addMsg('user', esc(text));
+    prompt.value = ''; setReady(); grow(); var asked = ctx; ctx = null; suggestion = ''; hint(); prompt.placeholder = DEFAULT_PH;
+    if (robots) robots.hop('hero');
+    var typing = addMsg('ai', '<span class="typing" aria-label="Thinking"><i></i><i></i><i></i></span>');
+    var r = (ctx = asked, reply(text)); ctx = null;
+    var wait = r.ask ? 1100 : 3600;  /* asking for details is quick; doing the work takes longer */
+    setTimeout(function () {
+      var label = r.created ? cmsCreated(r.created) : null;
+      typing.innerHTML = '<b>' + agentName + '</b>' + (label ? r.text.replace('{label}', label) : r.text);
+      if (r.created === 'WO' && label) typing.appendChild(woPreview(label, text));
+      thread.scrollTop = thread.scrollHeight;
+      if (wait >= LONG_MS && window.UltranovaSFX) UltranovaSFX.ready();  /* chime only after a long wait */
+      if (robots) robots.wave('hero');
+      showOpts(r.ask ? (ANSWERS[r.ask] || GENERIC_OPTS) : (NEXTOPTS[asked || (r.created === 'PM' ? 'PM' : null)] || GENERIC_OPTS));
+      if (r.ask) {   /* the example in the box can be accepted with Tab (without the "e.g." and the dots) */
+        ctx = r.ask; prompt.placeholder = ASKS[r.ask] || DEFAULT_PH; suggestion = /^e\.g\./.test(ASKS[r.ask] || '') ? ASKS[r.ask].replace(/^e\.g\.\s*/, '').replace(/…$/, '') : ''; hint(); prompt.focus();
+      }
+      else {                                       /* finished: offer the likely next step */
+        var key = asked || (r.created === 'PM' ? 'PM' : null), next = NEXT[key];
+        prompt.placeholder = next || DEFAULT_PH; suggestion = next ? next.replace(/…$/, '') : ''; hint(); prompt.focus();
+      }
+      busy = false;
+    }, wait);
+  }
+  function hint() { document.getElementById('form').classList.toggle('has-suggest', !!suggestion && !prompt.value); }
+  function setReady() { hint(); sendBtn.classList.toggle('ready', !!prompt.value.trim()); }
+
+  // a suggestion starts the conversation straight away (no second click)
+  document.getElementById('chips').addEventListener('click', function (e) {
+    var c = e.target.closest('.chip'); if (c) send(c.textContent);
+  });
+  prompt.addEventListener('input', function () { grow(); setReady(); });
+  /* Tab accepts the suggestion from anywhere on the page (not only when the box is focused): it is written into the box, ready to send */
+  document.addEventListener('keydown', function (e) {
+    if (e.key !== 'Tab' || e.shiftKey || !suggestion || prompt.value) return;
+    e.preventDefault(); prompt.value = suggestion; suggestion = ''; hint(); grow(); setReady(); prompt.focus();
+    prompt.setSelectionRange(prompt.value.length, prompt.value.length);
+  });
+  prompt.addEventListener('keydown', function (e) {
+    if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); document.getElementById('form').requestSubmit(); } });
   document.getElementById('form').addEventListener('submit', function (e) {
     e.preventDefault();
     if (!prompt.value.trim()) { prompt.focus(); return; }
-    toast('Prototype: this message would go to ' + document.getElementById('agentName').textContent + '.');
-    if (robots) robots.wave('hero'); prompt.value = ''; grow();
+    send(prompt.value);
   });
+
+  // sound on/off (remembered)
+  var snd = document.getElementById('sound');
+  function paintSound() { var m = window.UltranovaSFX && UltranovaSFX.isMuted(); snd.classList.toggle('muted', !!m); snd.setAttribute('aria-pressed', String(!m)); snd.setAttribute('aria-label', m ? 'Turn sound on' : 'Turn sound off'); }
+  snd.addEventListener('click', function () { if (window.UltranovaSFX) { UltranovaSFX.setMuted(!UltranovaSFX.isMuted()); paintSound(); } });
+  paintSound();
 
   // chat history: collapse the list, mark the open conversation
   var toggle = document.getElementById('chatToggle'), history = document.getElementById('history');
@@ -262,10 +562,61 @@
     var open = toggle.getAttribute('aria-expanded') === 'true';
     toggle.setAttribute('aria-expanded', String(!open)); history.hidden = open;
   });
+  /* chat options: the three dots open a small submenu with Rename and Archive */
+  var menuEl = document.createElement('div'), menuFor = null; menuEl.className = 'ctx-menu'; menuEl.setAttribute('role', 'menu');
+  menuEl.innerHTML = '<button type="button" role="menuitem" data-act="rename"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20h4L19 9l-4-4L4 16zM13.5 6.5l4 4"/></svg>Rename</button>'
+    + '<button type="button" role="menuitem" data-act="archive"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4" width="18" height="4" rx="1"/><path d="M5 8v11a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V8M10 12h4"/></svg>Archive</button>';
+  document.body.appendChild(menuEl);
+  function closeMenu() { menuEl.classList.remove('show'); if (menuFor) menuFor.classList.remove('menu-open'); menuFor = null; }
+  function openMenu(item, anchor) {
+    closeMenu(); menuFor = item; item.classList.add('menu-open');
+    var r = anchor.getBoundingClientRect(); menuEl.style.left = Math.min(r.right + 8, innerWidth - 180) + 'px'; menuEl.style.top = Math.max(8, r.top - 4) + 'px';
+    requestAnimationFrame(function () { menuEl.classList.add('show'); });
+  }
+  function startRename(item) {
+    var span = item.querySelector('span'), input = document.createElement('input'); input.className = 'rename'; input.value = span.textContent; input.setAttribute('aria-label', 'Chat name');
+    span.replaceWith(input); input.focus(); input.select();
+    function done(save) { var v = input.value.trim(); var sp = document.createElement('span'); sp.textContent = save && v ? v : span.textContent; input.replaceWith(sp); }
+    input.addEventListener('keydown', function (e) { e.stopPropagation(); if (e.key === 'Enter') done(true); else if (e.key === 'Escape') done(false); });
+    input.addEventListener('blur', function () { if (input.isConnected) done(true); });
+    input.addEventListener('click', function (e) { e.stopPropagation(); });
+  }
+  function archive(item) {
+    var li = item.closest('li'); li.style.maxHeight = li.offsetHeight + 'px'; void li.offsetWidth; li.classList.add('gone');
+    setTimeout(function () { li.remove(); toast('Chat archived.'); }, 420);
+  }
+  menuEl.addEventListener('click', function (e) {
+    var b = e.target.closest('button'); if (!b || !menuFor) return; var item = menuFor; closeMenu();
+    if (b.getAttribute('data-act') === 'rename') startRename(item); else archive(item);
+  });
+  document.addEventListener('click', function (e) { if (!e.target.closest('.ctx-menu') && !e.target.closest('.more')) closeMenu(); });
+  document.addEventListener('keydown', function (e) { if (e.key === 'Escape') closeMenu(); });
   document.getElementById('chatList').addEventListener('click', function (e) {
+    var dots = e.target.closest('.more');
+    if (dots) { e.stopPropagation(); var it = dots.closest('.chat-item'); if (menuFor === it) closeMenu(); else openMenu(it, dots); return; }
     var b = e.target.closest('.chat-item'); if (!b) return;
     [].forEach.call(document.querySelectorAll('.chat-item'), function (x) { x.classList.toggle('live', x === b); });
   });
+
+
+  // CMS bridge: when the assistant creates something in the CMS, the banner shows it live, then goes back to "Back to CMS".
+  var KINDS = {
+    WO: { icon: '<path d="M9 4h6v3H9zM7 5.5H6a1 1 0 0 0-1 1V20a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V6.5a1 1 0 0 0-1-1h-1M9 12h6M9 16h4"/>', href: '/work-orders', n: 1042 },
+    PM: { icon: '<rect x="3.5" y="5" width="17" height="15.5" rx="2"/><path d="M3.5 10h17M8 3v4M16 3v4M9 15l2 2 4-4"/>', href: '/predictive-maintenance', n: 217 }
+  };
+  var cms = document.getElementById('cms'), cmsTimers = [], cmsHome = cms.getAttribute('href');
+  function cmsReset() { cms.classList.remove('busy', 'done'); cms.setAttribute('href', cmsHome); cms.setAttribute('aria-label', 'Back to CMS'); cms.querySelector('.alt').setAttribute('aria-hidden', 'true'); }
+  function cmsCreated(type, label, href) {
+    var k = KINDS[type] || KINDS.WO; cmsTimers.forEach(clearTimeout); cmsTimers = [];
+    label = label || (type + '-' + (++k.n)); href = href || k.href;
+    document.getElementById('cmsKind').innerHTML = k.icon; document.getElementById('cmsText').textContent = label + ' created';
+    cms.classList.remove('done'); void cms.offsetWidth; cms.classList.add('busy');
+    cms.setAttribute('href', href); cms.setAttribute('aria-label', label + ' created. Open it in the CMS'); cms.querySelector('.alt').removeAttribute('aria-hidden');
+    cmsTimers.push(setTimeout(function () { cms.classList.add('done'); }, 1300));  /* spinner → check */
+    cmsTimers.push(setTimeout(cmsReset, 5200));                                      /* back to the default banner */
+    return label;
+  }
+  window.UltranovaCMS = { created: cmsCreated };
 
   // drawer on small screens
   function menu(open) { app.classList.toggle('menu-open', open); document.body.classList.toggle('menu-open', open); }

@@ -1233,3 +1233,38 @@
 @media (prefers-reduced-motion: reduce) {
   .nova-discovery-backdrop { animation: none; scale: 1.06; }
 }
+
+/* Ultranova banner: every few seconds a shiny purple glint runs along its 2px border, blurred by 2px.
+   The glint lives on the wrapper's ::before (behind the card); the card paints its own gradient on the padding box,
+   so only the transparent 2px border (and a soft halo outside it) shows the blurred glint. */
+@keyframes ultranova-glint {   /* same start as before, but the glint decelerates: quick at first, slowing down and fading out gently at the end */
+  0% { background-position: 88% 0; opacity: 0; animation-timing-function: cubic-bezier(0.12, 0.65, 0.2, 1); }
+  3% { opacity: 1; animation-timing-function: linear; }
+  18% { opacity: 1; animation-timing-function: cubic-bezier(0.3, 0, 0.7, 1); }
+  40% { background-position: 12% 0; opacity: 0; }
+  100% { background-position: 12% 0; opacity: 0; }
+}
+
+.ultranova-wrap::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background-image: linear-gradient(110deg, transparent 18%, #d946ef 36%, #ffffff 50%, #a78bfa 64%, transparent 82%);
+  background-size: 300% 100%;
+  background-repeat: no-repeat;
+  background-position: 88% 0;
+  opacity: 0;
+  filter: blur(2px);
+  animation: ultranova-glint 6s linear infinite;
+}
+.ultranova-wrap[data-open="true"]::before { animation: none; opacity: 0; transition: opacity 0.4s; }
+.ultranova-card {
+  background-image: linear-gradient(135deg, #570a9e 0%, #1b0434 55%, #000 100%);
+  background-origin: border-box;
+  background-clip: padding-box;
+  background-repeat: no-repeat;
+}
+@media (prefers-reduced-motion: reduce) {
+  .ultranova-wrap::before { animation: none; opacity: 0; }
+}

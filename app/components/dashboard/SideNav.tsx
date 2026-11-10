@@ -19,7 +19,7 @@ import {
   BarChart3, Gauge,
   Car, ClipboardCheck, FileClock, AlertTriangle,
   Package, ScrollText, Building2,
-  SquareCode, StickyNote, ArrowRight,
+  ChevronDown,
   Bell, Check, ChevronUp, Smartphone, LayoutGrid, CircleHelp, MessagesSquare, CreditCard, Settings, Sparkles,
 } from 'lucide-react'
 import { planById, type PlanId } from '@/app/lib/billing/plans'
@@ -43,6 +43,8 @@ interface SideNavProps {
 interface NavSection {
   title: string
   defaultClosed?: boolean
+  /** Kept in the list but not rendered. */
+  hidden?: boolean
   /** The whole section is part of a paid plan. */
   plan?: PlanId
   items: NavItem[]
@@ -51,6 +53,7 @@ interface NavSection {
 const sections: NavSection[] = [
   {
     title: 'NOVA',
+    hidden: true, // hidden for now: remove to show it again
     items: [
       { label: 'Chat', icon: MessageCircle, href: '/agents' },
       { label: 'Scheduled Tasks', icon: Workflow, href: '/workflows' },
@@ -108,22 +111,17 @@ const sections: NavSection[] = [
     ],
   },
   {
-    // Prototype entry to the first-run experience.
+    // Prototype entry to the first-run experience. Hidden for now: remove `hidden` to show it again.
     title: 'ONBOARDING',
+    hidden: true,
     items: [
       { label: 'Onboarding', icon: Sparkles, href: '/onboarding-v2' },
     ],
   },
 ]
 
-/** Ultranova lives in its own card at the top of the nav. Every button opens the onboarding (static page in /public, so a plain anchor). */
+/** Ultranova entry: a small card (name + star) that expands to a short pitch and a "Start now!" CTA into the onboarding (static page in /public, so a plain anchor). */
 const ULTRANOVA_HREF = '/ultranova/onboarding.html'
-const ultranovaItems: NavItem[] = [
-  { label: 'Chat', icon: MessageCircle, dot: true },
-  { label: 'Workflows', icon: Workflow },
-  { label: 'Apps', icon: SquareCode },
-  { label: 'Captures', icon: StickyNote },
-]
 
 /** Ultranova's four-point star mark (same glyph as the onboarding). */
 function UltranovaMark({ size = 20 }: { size?: number }) {
@@ -135,37 +133,63 @@ function UltranovaMark({ size = 20 }: { size?: number }) {
 }
 
 function UltranovaCard() {
+  const [open, setOpen] = useState(false)
   return (
-    <div className="w-full rounded-[var(--radius-lg)] p-4 text-white font-[family-name:var(--font-outfit)] font-normal bg-[linear-gradient(135deg,#570a9e_0%,#1b0434_55%,#000_100%)]">
-      <a href={ULTRANOVA_HREF} className="flex items-center justify-between h-9 pl-2 pr-0 -mt-1">
+    <div data-open={open} className="ultranova-wrap relative w-full rounded-[var(--radius-lg)]">
+    <div className="ultranova-card relative w-full rounded-[var(--radius-lg)] border-2 border-transparent text-white font-[family-name:var(--font-outfit)] font-normal">
+      <button
+        type="button"
+        onClick={() => setOpen((o) => !o)}
+        aria-expanded={open}
+        aria-controls="ultranova-card-body"
+        className="group flex items-center justify-between w-full h-12 px-4 rounded-[var(--radius-lg)] cursor-pointer hover:bg-white/[0.08] transition-colors duration-500 ease-[cubic-bezier(0.22,1,0.36,1)]"
+      >
         <span className="text-[length:16px] font-medium leading-4 text-white">Ultranova</span>
-        <UltranovaMark />
-      </a>
-      <div className="mt-1 flex flex-col">
-        {ultranovaItems.map((item) => (
-          <a
-            key={item.label}
-            href={ULTRANOVA_HREF}
-            className="group flex items-center gap-2 w-full px-2 h-8 rounded-[var(--radius-sm)] text-white/90 hover:bg-white/[0.08] hover:text-white transition-[background-color,color] duration-300 ease-[var(--ease-default)]"
-          >
-            <item.icon size={16} className="shrink-0" />
-            <span className="flex-1 text-left text-[length:var(--font-size-base)] leading-5 truncate">{item.label}</span>
-            {/* the live dot gives way to an arrow that slides in from the left on hover */}
-            <span className="relative flex items-center justify-center w-4 h-4 shrink-0">
-              {item.dot && (
-                <span className="absolute w-1.5 h-1.5 rounded-full bg-[#00edc5] transition-opacity duration-300 group-hover:opacity-0" />
-              )}
-              <ArrowRight
-                size={16}
-                className="absolute opacity-0 -translate-x-2 transition-[opacity,transform] duration-300 ease-[var(--ease-default)] group-hover:opacity-100 group-hover:translate-x-0"
+        {/* the star gives way to a down arrow on hover (and while open) */}
+        <span className="relative flex items-center justify-center w-5 h-5 shrink-0">
+          <span className={`absolute transition-[opacity,transform] duration-500 ease-[cubic-bezier(0.22,1,0.36,1)] ${open ? 'opacity-0 scale-50 rotate-90' : 'group-hover:opacity-0 group-hover:scale-50 group-hover:rotate-90'}`}>
+            <UltranovaMark />
+          </span>
+          <ChevronDown
+            size={18}
+            className={`absolute transition-[opacity,transform] duration-500 delay-75 ease-[cubic-bezier(0.22,1,0.36,1)] ${
+              open ? 'opacity-100 rotate-180' : 'opacity-0 -translate-y-2 scale-75 group-hover:opacity-100 group-hover:translate-y-0 group-hover:scale-100'
+            }`}
+          />
+        </span>
+      </button>
+      <div
+        id="ultranova-card-body"
+        className={`grid transition-[grid-template-rows,opacity] duration-500 ease-[var(--ease-default)] ${open ? 'grid-rows-[1fr] opacity-100' : 'grid-rows-[0fr] opacity-0'}`}
+      >
+        <div className="overflow-hidden" inert={!open}>
+          <div className="px-4 pb-4">
+            <p className="text-[length:var(--font-size-base)] leading-5 text-white/80">
+              Meet your AI assistant that keeps working while you’re away.
+            </p>
+            {/* purple gradient; on hover a brighter fuchsia→violet layer fades in over it (gradients can't be transitioned directly) */}
+            <a
+              href={ULTRANOVA_HREF}
+              className="group/cta relative isolate mt-3 flex items-center justify-center h-10 overflow-hidden rounded-full text-white text-[length:var(--font-size-base)] font-medium bg-[linear-gradient(135deg,#8b5cf6,#c026d3_120%)] shadow-[0_12px_32px_-12px_rgba(168,85,247,0.9)] hover:shadow-[0_14px_36px_-10px_rgba(217,70,239,0.9)] transition-[color,box-shadow] duration-500 ease-[var(--ease-default)]"
+            >
+              <span aria-hidden="true" className="absolute inset-0 -z-10 bg-[linear-gradient(135deg,#e879f9,#8b5cf6)] opacity-0 transition-opacity duration-500 ease-[var(--ease-default)] group-hover/cta:opacity-100" />
+              {/* shine on the border only: a soft glint glides around the edge (resets instantly when the mouse leaves) */}
+              <span
+                aria-hidden="true"
+                className="pointer-events-none absolute inset-0 rounded-full p-[1.5px] bg-[linear-gradient(110deg,transparent_25%,rgba(255,255,255,0.7)_50%,transparent_75%)] bg-[length:300%_100%] bg-[position:88%_0] transition-[background-position] duration-0 group-hover/cta:bg-[position:12%_0] group-hover/cta:duration-[1300ms] ease-in-out [-webkit-mask-image:linear-gradient(#000_0_0),linear-gradient(#000_0_0)] [-webkit-mask-clip:content-box,border-box] [-webkit-mask-composite:xor] [mask-image:linear-gradient(#000_0_0),linear-gradient(#000_0_0)] [mask-clip:content-box,border-box] [mask-composite:exclude]"
               />
-            </span>
-          </a>
-        ))}
+              Start now!
+            </a>
+          </div>
+        </div>
       </div>
+    </div>
     </div>
   )
 }
+
+/** The floating "Get the UpKeep App" banner is hidden for now; flip to bring it back. */
+const SHOW_MOBILE_APP_PROMO = false
 
 const footerIcons: NavItem[] = [
   { label: 'Help Center', icon: CircleHelp },
@@ -237,6 +261,9 @@ export function SideNav({ collapsed }: SideNavProps) {
   const pathname = usePathname()
   const setup = useSetupState()
   const setupPercent = setupProgress(setup)
+  /** Blue while the setup screen is open; light gray anywhere else. */
+  const setupPath = setup.welcomeHref.split('?')[0]
+  const setupActive = pathname === setupPath || pathname.startsWith(setupPath + '/')
   const [appOpen, setAppOpen] = useState(false)
 
   return (
@@ -287,12 +314,14 @@ export function SideNav({ collapsed }: SideNavProps) {
             <Link
               href={setup.welcomeHref}
               aria-label={`Setup your account, ${setupPercent}% done`}
-              className={`flex items-center rounded-[var(--radius-lg)] bg-[var(--color-accent-9)] text-white shadow-[var(--shadow-sm)] transition-colors duration-[var(--duration-fast)] hover:bg-[var(--color-accent-10)] ${
-                collapsed ? 'h-9 w-9 justify-center' : 'h-11 justify-between px-3'
-              }`}
+              className={`flex items-center rounded-[var(--radius-lg)] transition-colors duration-[var(--duration-fast)] ${
+                setupActive
+                  ? 'bg-[var(--color-accent-9)] text-white shadow-[var(--shadow-sm)] hover:bg-[var(--color-accent-10)]'
+                  : 'border border-[var(--border-default)] bg-[var(--surface-primary)] text-[var(--color-neutral-12)] hover:bg-[var(--color-neutral-2)]'
+              } ${collapsed ? 'h-9 w-9 justify-center' : 'h-11 justify-between px-3'}`}
             >
               {!collapsed && <span className="text-[length:var(--font-size-base)] font-medium">Setup your account</span>}
-              <ProgressRing value={setupPercent} size={collapsed ? 22 : 24} strokeWidth={3} trackColor="rgba(255,255,255,0.3)" fillColor="white" showLabel={false} />
+              <ProgressRing value={setupPercent} size={collapsed ? 22 : 24} strokeWidth={3} trackColor={setupActive ? 'rgba(255,255,255,0.3)' : 'var(--color-neutral-6)'} fillColor={setupActive ? 'white' : 'var(--color-accent-9)'} showLabel={false} />
             </Link>
           ) : (
             <Link
@@ -311,21 +340,8 @@ export function SideNav({ collapsed }: SideNavProps) {
         {/* Scrollable nav */}
         <ScrollArea.Root className="flex-1 overflow-hidden">
           <ScrollArea.Viewport className="h-full w-full px-[var(--space-xs)]">
-            <nav className={`flex flex-col gap-3 pt-[var(--space-sm)] ${collapsed ? 'pb-16' : 'pb-24'} ${collapsed ? 'items-center' : 'items-stretch'}`}>
-              {collapsed ? (
-                <Tooltip content="Ultranova" side="right" sideOffset={8}>
-                  <a
-                    href={ULTRANOVA_HREF}
-                    aria-label="Ultranova"
-                    className="flex items-center justify-center w-9 h-9 rounded-[var(--radius-lg)] bg-[linear-gradient(135deg,#570a9e,#000)]"
-                  >
-                    <UltranovaMark size={18} />
-                  </a>
-                </Tooltip>
-              ) : (
-                <UltranovaCard />
-              )}
-              {sections.map((section, i) =>
+            <nav className={`flex flex-col gap-3 pt-2 ${collapsed ? 'pb-4' : 'pb-4'} ${collapsed ? 'items-center' : 'items-stretch'}`}>
+              {sections.filter((section) => !section.hidden).map((section, i) =>
                 collapsed ? (
                   <div key={section.title} className="flex flex-col items-center gap-1">
                     {section.items.slice(0, 1).map(item => (
@@ -371,6 +387,7 @@ export function SideNav({ collapsed }: SideNavProps) {
 
         {/* Nova on the phone, always there: floating over the bottom of the
             nav, just above the footer. */}
+        {SHOW_MOBILE_APP_PROMO && (
         <div className="relative h-0">
           <div className={`absolute bottom-full z-10 mb-[var(--space-sm)] ${collapsed ? 'left-1/2 -translate-x-1/2' : 'inset-x-[var(--space-sm)]'}`}>
             <button
@@ -391,7 +408,25 @@ export function SideNav({ collapsed }: SideNavProps) {
             </button>
           </div>
         </div>
+        )}
         <MobileAppModal open={appOpen} onOpenChange={setAppOpen} />
+
+        {/* Ultranova: fixed at the bottom of the sidebar, above the footer, so it never scrolls away with the menu */}
+        <div className={`shrink-0 pb-[var(--space-xs)] ${collapsed ? 'flex justify-center' : 'px-[var(--space-xs)]'}`}>
+          {collapsed ? (
+            <Tooltip content="Ultranova" side="right" sideOffset={8}>
+              <a
+                href={ULTRANOVA_HREF}
+                aria-label="Ultranova"
+                className="flex items-center justify-center w-9 h-9 rounded-[var(--radius-lg)] bg-[linear-gradient(135deg,#570a9e,#000)]"
+              >
+                <UltranovaMark size={18} />
+              </a>
+            </Tooltip>
+          ) : (
+            <UltranovaCard />
+          )}
+        </div>
 
         <Separator.Root className="h-px bg-[var(--border-default)]" />
 
