@@ -19,7 +19,7 @@ import {
   Bell, ChevronUp,
   LayoutGrid, CircleHelp, MessageCircle, Settings,
   Signal, Radar, Radio, Siren, Timer, Settings2, Warehouse, ScrollText,
-  ClipboardCheck, FileClock,
+  ClipboardCheck, FileClock, Workflow, SquareCode, StickyNote, ArrowRight,
 } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
 
@@ -27,6 +27,8 @@ interface NavItem {
   label: string
   icon: LucideIcon
   href?: string
+  /** Static page served from /public (not a Next route): use a plain anchor so the browser does a full load. */
+  external?: boolean
   dot?: boolean
 }
 
@@ -123,6 +125,57 @@ const sections: NavSection[] = [
   },
 ]
 
+/** Ultranova lives in its own card at the top of the nav. Every button opens the onboarding (static page in /public, so a plain anchor). */
+const ULTRANOVA_HREF = '/ultranova/onboarding.html'
+const ultranovaItems: NavItem[] = [
+  { label: 'Chat', icon: MessageCircle, dot: true },
+  { label: 'Workflows', icon: Workflow },
+  { label: 'Apps', icon: SquareCode },
+  { label: 'Captures', icon: StickyNote },
+]
+
+/** Ultranova's four-point star mark (same glyph as the onboarding). */
+function UltranovaMark({ size = 20 }: { size?: number }) {
+  return (
+    <svg width={size} height={size} viewBox="2.5 2 27 27" aria-hidden="true" className="shrink-0">
+      <path d="M16 2l3.2 9.6L29 14.8l-9.8 3.2L16 29l-3.2-11L3 14.8l9.8-3.2z" fill="#dd00ff" />
+    </svg>
+  )
+}
+
+function UltranovaCard() {
+  return (
+    <div className="w-full rounded-[var(--radius-lg)] p-4 text-white font-[family-name:var(--font-outfit)] font-normal bg-[linear-gradient(135deg,#570a9e_0%,#1b0434_55%,#000_100%)]">
+      <a href={ULTRANOVA_HREF} className="flex items-center justify-between h-9 pl-2 pr-0 -mt-1">
+        <span className="text-[length:16px] font-medium leading-4 text-white">Ultranova</span>
+        <UltranovaMark />
+      </a>
+      <div className="mt-1 flex flex-col">
+        {ultranovaItems.map((item) => (
+          <a
+            key={item.label}
+            href={ULTRANOVA_HREF}
+            className="group flex items-center gap-2 w-full px-2 h-8 rounded-[var(--radius-sm)] text-white/90 hover:bg-white/[0.08] hover:text-white transition-[background-color,color] duration-300 ease-[var(--ease-default)]"
+          >
+            <item.icon size={16} className="shrink-0" />
+            <span className="flex-1 text-left text-[length:var(--font-size-base)] leading-5 truncate">{item.label}</span>
+            {/* the live dot gives way to an arrow that slides in from the left on hover */}
+            <span className="relative flex items-center justify-center w-4 h-4 shrink-0">
+              {item.dot && (
+                <span className="absolute w-1.5 h-1.5 rounded-full bg-[#00edc5] transition-opacity duration-300 group-hover:opacity-0" />
+              )}
+              <ArrowRight
+                size={16}
+                className="absolute opacity-0 -translate-x-2 transition-[opacity,transform] duration-300 ease-[var(--ease-default)] group-hover:opacity-100 group-hover:translate-x-0"
+              />
+            </span>
+          </a>
+        ))}
+      </div>
+    </div>
+  )
+}
+
 const footerIcons = [
   { icon: LayoutGrid, label: 'Apps' },
   { icon: CircleHelp, label: 'Help' },
@@ -158,7 +211,7 @@ function CollapsedIcon({ item, active, label }: { item: NavItem; active: boolean
   )
 
   if (item.href) {
-    return <Link href={item.href}>{inner}</Link>
+    return item.external ? <a href={item.href}>{inner}</a> : <Link href={item.href}>{inner}</Link>
   }
   return inner
 }
@@ -236,6 +289,19 @@ export function SideNav({ collapsed }: SideNavProps) {
                 collapsed ? 'items-center' : 'items-start'
               }`}
             >
+              {collapsed ? (
+                <Tooltip content="Ultranova" side="right" sideOffset={8}>
+                  <a
+                    href={ULTRANOVA_HREF}
+                    aria-label="Ultranova"
+                    className="flex items-center justify-center w-9 h-9 rounded-[var(--radius-lg)] bg-[linear-gradient(135deg,#570a9e,#000)]"
+                  >
+                    <UltranovaMark size={18} />
+                  </a>
+                </Tooltip>
+              ) : (
+                <UltranovaCard />
+              )}
               {sections.map((section) =>
                 collapsed ? (
                   <div key={section.title} className="flex flex-col items-center gap-1">
@@ -286,7 +352,11 @@ export function SideNav({ collapsed }: SideNavProps) {
                         )
 
                         if (item.href) {
-                          return (
+                          return item.external ? (
+                            <a key={item.label} href={item.href} className={classes}>
+                              {inner}
+                            </a>
+                          ) : (
                             <Link key={item.label} href={item.href} className={classes}>
                               {inner}
                             </Link>

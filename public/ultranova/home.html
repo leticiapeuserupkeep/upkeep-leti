@@ -1,0 +1,278 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Ultranova</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500&family=Outfit:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  /* Home (the screen you land on after onboarding): glass sidebar, centered assistant greeting, chat bar.
+     Values follow the Figma frame "Nova / Ultranova" (sidebar 260px, Outfit + Inter, #dd00ff accent). */
+  :root {
+    --bg: #000;
+    --brand: #dd00ff;
+    --brand-line: #a600ac;
+    --sidebar-top: #000;
+    --sidebar-bottom: #570a9e;
+    --nav-active: #461f5c;
+    --dot: #5e016c;
+    --dot-live: #00edc5;
+    --bar: #1a0b46;
+    --ink: #fff;
+    --ink-soft: rgba(255, 255, 255, 0.7);
+    --font-display: "Outfit", system-ui, sans-serif;
+    --font-body: "Inter", system-ui, -apple-system, "Segoe UI", sans-serif;
+    --sidebar-w: 260px;
+    --ease: cubic-bezier(0.2, 0.8, 0.2, 1);
+    color-scheme: dark;
+  }
+  * { box-sizing: border-box; }
+  html { background: var(--bg); }
+  body { margin: 0; min-height: 100dvh; color: var(--ink); font: 400 14px/20px var(--font-body); background: var(--bg); overflow-x: hidden; -webkit-font-smoothing: antialiased; }
+  button, textarea { font: inherit; color: inherit; }
+  button { cursor: pointer; background: none; border: 0; padding: 0; }
+  :focus-visible { outline: 2px solid var(--brand); outline-offset: 2px; }
+  svg { display: block; flex: none; }
+  .icon { width: 20px; height: 20px; fill: none; stroke: currentColor; stroke-width: 1.5; stroke-linecap: round; stroke-linejoin: round; }
+
+  /* glass ribbon (exported from the Figma frame): black everywhere except bottom-left, so it blends into the page */
+  .backdrop { position: fixed; inset: 0; z-index: 0; pointer-events: none; background: #000 url("home-bg.png") var(--sidebar-w) 100% / min(980px, 68vw) auto no-repeat; }
+
+  .app { position: relative; z-index: 1; display: grid; grid-template-columns: var(--sidebar-w) minmax(0, 1fr); min-height: 100dvh; }
+
+  /* ---------- sidebar ---------- */
+  .sidebar {
+    position: sticky; top: 0; height: 100dvh; display: flex; flex-direction: column;
+    background: linear-gradient(180deg, var(--sidebar-top), var(--sidebar-bottom));
+    -webkit-backdrop-filter: blur(16px); backdrop-filter: blur(16px);
+  }
+  .brand { display: flex; align-items: center; gap: 10px; padding: 20px 12px; font: 600 20px/25px var(--font-display); color: #f5f0ff; }
+  .brand svg { width: 26px; height: 26px; fill: var(--brand); }
+  .nav { display: flex; flex-direction: column; gap: 8px; padding: 12px 8px 0; min-height: 0; overflow-y: auto; }
+  .nav-item { display: flex; align-items: center; gap: 12px; width: 100%; padding: 12px; border-radius: 4px; font: 500 14px/20px var(--font-display); text-align: left; transition: background 0.2s var(--ease); }
+  .nav-item:hover { background: rgba(255, 255, 255, 0.06); }
+  .nav-item.active { background: var(--nav-active); }
+  .nav-item .grow { flex: 1; }
+  .nav-item .chev { width: 18px; height: 18px; stroke: var(--brand); transition: transform 0.25s var(--ease); }
+  .nav-item[aria-expanded="false"] .chev { transform: rotate(-90deg); }
+  .history { display: grid; grid-template-rows: 1fr; transition: grid-template-rows 0.3s var(--ease); }
+  .history[hidden] { display: grid; grid-template-rows: 0fr; visibility: hidden; }
+  .history > ul { margin: 0; padding: 0; list-style: none; min-height: 0; overflow: hidden; }
+  .chat-item { position: relative; display: flex; align-items: center; gap: 12px; width: 100%; height: 40px; padding: 8px 12px 8px 16px; font: 400 14px/20px var(--font-display); color: var(--ink-soft); text-align: left; border-radius: 4px; transition: color 0.2s, background 0.2s; }
+  .chat-item:hover { color: var(--ink); background: rgba(255, 255, 255, 0.05); }
+  .chat-item::before { content: ""; width: 6px; height: 6px; flex: none; border-radius: 50%; background: var(--dot); transition: background 0.2s; }
+  .chat-item.live::before { background: var(--dot-live); }
+  .chat-item span { flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .chat-item .more { display: none; width: 24px; height: 24px; border-radius: 4px; align-items: center; justify-content: center; color: var(--ink); }
+  .chat-item:hover .more, .chat-item:focus-within .more { display: flex; }
+  .chat-item .more svg { width: 16px; height: 16px; fill: currentColor; }
+  .side-foot { margin-top: auto; display: flex; align-items: center; justify-content: space-between; padding: 16px; }
+  .me { width: 32px; height: 32px; border-radius: 50%; display: grid; place-items: center; background: linear-gradient(135deg, #8b5cf6, #d946ef); font: 600 14px/1 var(--font-display); }
+  .gear { width: 32px; height: 32px; display: grid; place-items: center; border-radius: 50%; color: #d9c8ff; transition: background 0.2s; }
+  .gear:hover { background: rgba(255, 255, 255, 0.08); }
+  .gear .icon { width: 16px; height: 16px; }
+
+  /* ---------- main ---------- */
+  .main { position: relative; display: flex; flex-direction: column; min-width: 0; min-height: 100dvh; padding: 32px 60px; gap: 10px; }
+  .topbar, .scrim { display: none; }
+  .stage { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; padding-bottom: 80px; }
+  .assistant { width: 176px; height: 176px; margin-bottom: 0; }
+  .assistant [data-robot] { width: 100%; height: 100%; }
+  .greeting { display: flex; flex-direction: column; align-items: center; gap: 5px; padding-bottom: 29px; }
+  .greeting h1 { margin: 0; font: 700 20px/24px var(--font-display); }
+  .greeting .role { font: 500 12px/16px var(--font-body); letter-spacing: 0.02em; text-transform: uppercase; }
+  .greeting p { margin: 0; max-width: 640px; font: 400 14px/20px var(--font-display); }
+  .chips { display: flex; flex-wrap: wrap; justify-content: center; gap: 12px; }
+  .chip { height: 32px; padding: 8px 16px; border: 1px solid var(--brand-line); border-radius: 4px; font: 500 14px/16px var(--font-body); transition: background 0.2s, border-color 0.2s, transform 0.2s var(--ease); }
+  .chip:hover { background: rgba(221, 0, 255, 0.12); border-color: var(--brand); }
+  .chip:active { transform: scale(0.97); }
+
+  .chatbar { align-self: center; width: min(700px, 100%); display: flex; flex-direction: column; gap: 25px; padding: 20px; border-radius: 8px; background: var(--bar); box-shadow: 0 8px 32px rgba(8, 0, 30, 0.6); border: 1px solid transparent; transition: border-color 0.2s; }
+  .chatbar:focus-within { border-color: rgba(221, 0, 255, 0.5); }
+  .chatbar textarea { width: 100%; height: 20px; max-height: 160px; resize: none; padding: 0; border: 0; background: transparent; outline: 0; font: 400 14px/20px var(--font-body); }
+  .chatbar textarea::placeholder { color: var(--ink); opacity: 1; }
+  .bar-row { display: flex; align-items: center; justify-content: space-between; height: 24px; }
+  .bar-row .right { display: flex; align-items: center; gap: 8px; }
+  .round, .tool { width: 24px; height: 24px; display: grid; place-items: center; border-radius: 50%; transition: transform 0.2s var(--ease), background 0.2s; }
+  .round { background: #e6edfe; color: #1a0b46; }
+  .round:hover { transform: scale(1.08); }
+  .round .icon { width: 14px; height: 14px; stroke-width: 2; }
+  .tool { border-radius: 4px; color: var(--ink); }
+  .tool:hover { background: rgba(255, 255, 255, 0.1); }
+  .tool .icon { width: 20px; height: 20px; }
+
+  .toast { position: fixed; left: 50%; bottom: 24px; z-index: 40; transform: translate(-50%, 20px); opacity: 0; padding: 12px 20px; border-radius: 99px; background: #2a1160; border: 1px solid rgba(255, 255, 255, 0.14); font: 500 14px/20px var(--font-display); pointer-events: none; transition: opacity 0.3s, transform 0.3s var(--ease); }
+  .toast.show { opacity: 1; transform: translate(-50%, 0); }
+  #fg { position: fixed; inset: 0; width: 100%; height: 100%; pointer-events: none; display: block; z-index: 20; }
+  .no-gl .assistant [data-robot] { margin: 18%; width: 64%; height: 64%; border-radius: 50%; background: radial-gradient(closest-side, #c4b5fd, rgba(139, 92, 246, 0.2) 70%, transparent 72%); }
+
+  @media (prefers-reduced-motion: no-preference) {
+    .stage > * { animation: rise 0.7s var(--ease) backwards; }
+    .stage > .greeting { animation-delay: 0.08s; }
+    .stage > .chips { animation-delay: 0.16s; }
+    .chatbar { animation: rise 0.7s var(--ease) 0.24s backwards; }
+    @keyframes rise { from { opacity: 0; transform: translateY(10px); } }
+  }
+  @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation: none !important; transition-duration: 0.01ms !important; } }
+
+  /* ---------- small screens: the sidebar becomes a drawer ---------- */
+  @media (max-width: 860px) {
+    .backdrop { background-position: 0 100%; background-size: 100vw auto; }
+    .app { grid-template-columns: minmax(0, 1fr); }
+    .sidebar { position: fixed; z-index: 30; left: 0; top: 0; width: min(300px, 84vw); transform: translateX(-102%); transition: transform 0.3s var(--ease); background: linear-gradient(180deg, #05010d, var(--sidebar-bottom)); }
+    .menu-open .sidebar { transform: none; }
+    .scrim { display: block; position: fixed; inset: 0; z-index: 25; background: rgba(0, 0, 0, 0.6); opacity: 0; pointer-events: none; transition: opacity 0.3s; }
+    .menu-open .scrim { opacity: 1; pointer-events: auto; }
+    .main { padding: 12px 16px max(16px, env(safe-area-inset-bottom, 0px)); }
+    .topbar { display: flex; align-items: center; justify-content: space-between; height: 44px; }
+    .topbar .brand { padding: 0; font-size: 18px; }
+    .topbar .brand svg { width: 22px; height: 22px; }
+    .stage { padding-bottom: 24px; }
+    .assistant { width: 150px; height: 150px; }
+    .greeting p { max-width: 34ch; }
+    .chips { gap: 8px; }
+  }
+</style>
+</head>
+<body>
+<div class="backdrop" aria-hidden="true"></div>
+
+<div class="app" id="app">
+  <aside class="sidebar" id="sidebar" aria-label="Main navigation">
+    <div class="brand">
+      <svg viewBox="0 0 32 32" aria-hidden="true"><path d="M16 1l3.4 10.2L30 14.8l-10.6 3.4L16 30l-3.4-11.8L2 14.8l10.6-3.6z"/></svg>
+      Ultranova
+    </div>
+    <nav class="nav">
+      <button class="nav-item" type="button">
+        <svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="4"/><path d="M10 3v18M10 12h11"/></svg>
+        <span class="grow">Dashboard</span>
+      </button>
+      <div>
+        <button class="nav-item active" type="button" id="chatToggle" aria-expanded="true" aria-controls="history">
+          <svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5.5A2.5 2.5 0 0 1 6.5 3h11A2.5 2.5 0 0 1 20 5.5v8a2.5 2.5 0 0 1-2.5 2.5H10l-4.5 4v-4A2.5 2.5 0 0 1 4 13.5z"/></svg>
+          <span class="grow">Chat</span>
+          <svg class="icon chev" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4v15M6 13l6 6 6-6"/></svg>
+        </button>
+        <div class="history" id="history">
+          <ul id="chatList">
+            <li><button class="chat-item live" type="button"><span>Research a prospect</span><i class="more" aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="5" cy="12" r="1.8"/><circle cx="12" cy="12" r="1.8"/><circle cx="19" cy="12" r="1.8"/></svg></i></button></li>
+            <li><button class="chat-item" type="button"><span>Investigate a potential customer</span><i class="more" aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="5" cy="12" r="1.8"/><circle cx="12" cy="12" r="1.8"/><circle cx="19" cy="12" r="1.8"/></svg></i></button></li>
+            <li><button class="chat-item" type="button"><span>Gather information on a lead</span><i class="more" aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="5" cy="12" r="1.8"/><circle cx="12" cy="12" r="1.8"/><circle cx="19" cy="12" r="1.8"/></svg></i></button></li>
+            <li><button class="chat-item" type="button"><span>Analyze a sales prospect</span><i class="more" aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="5" cy="12" r="1.8"/><circle cx="12" cy="12" r="1.8"/><circle cx="19" cy="12" r="1.8"/></svg></i></button></li>
+            <li><button class="chat-item" type="button"><span>Explore potential client details</span><i class="more" aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="5" cy="12" r="1.8"/><circle cx="12" cy="12" r="1.8"/><circle cx="19" cy="12" r="1.8"/></svg></i></button></li>
+          </ul>
+        </div>
+      </div>
+      <button class="nav-item" type="button">
+        <svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M13 2 4 14h7l-1 8 9-12h-7z"/></svg>
+        <span class="grow">Apps</span>
+      </button>
+      <button class="nav-item" type="button">
+        <svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 6l2 2 3-3.5M3 13l2 2 3-3.5M3 20l2 2 3-3.5M12 7h9M12 14h9M12 21h9"/></svg>
+        <span class="grow">Tasks</span>
+      </button>
+    </nav>
+    <div class="side-foot">
+      <span class="me" aria-label="Your profile">L</span>
+      <button class="gear" type="button" aria-label="Settings">
+        <svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M12 2.5l1.6 2.3 2.8-.5.9 2.7 2.7.9-.5 2.8L21.8 12l-2.3 1.6.5 2.8-2.7.9-.9 2.7-2.8-.5L12 21.8l-1.6-2.3-2.8.5-.9-2.7-2.7-.9.5-2.8L2.2 12l2.3-1.6-.5-2.8 2.7-.9.9-2.7 2.8.5z"/></svg>
+      </button>
+    </div>
+  </aside>
+  <div class="scrim" id="scrim"></div>
+
+  <main class="main">
+    <div class="topbar">
+      <button class="tool" type="button" id="menuBtn" aria-label="Open menu" style="width:40px;height:40px">
+        <svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"/></svg>
+      </button>
+      <div class="brand"><svg viewBox="0 0 32 32" aria-hidden="true"><path d="M16 1l3.4 10.2L30 14.8l-10.6 3.4L16 30l-3.4-11.8L2 14.8l10.6-3.6z"/></svg>Ultranova</div>
+      <span style="width:40px"></span>
+    </div>
+
+    <section class="stage" aria-labelledby="hello">
+      <div class="assistant"><div data-robot="hero"></div></div>
+      <div class="greeting">
+        <h1 id="hello">Hi Leti, I'm <span id="agentName">Supernova</span></h1>
+        <span class="role">Sales agent</span>
+        <p>I can help you find account insights, prepare outreach, and stay on top of your pipeline.</p>
+      </div>
+      <div class="chips" id="chips">
+        <button class="chip" type="button">Research a prospect</button>
+        <button class="chip" type="button">Draft an outreach email</button>
+        <button class="chip" type="button">Summarize account activity</button>
+      </div>
+    </section>
+
+    <form class="chatbar" id="form" autocomplete="off">
+      <textarea id="prompt" rows="1" placeholder="Ask anything" aria-label="Message"></textarea>
+      <div class="bar-row">
+        <button class="round" type="button" aria-label="Add attachment"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg></button>
+        <div class="right">
+          <button class="tool" type="button" aria-label="Voice input"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5.5 11.5a6.5 6.5 0 0 0 13 0M12 18v3"/></svg></button>
+          <button class="tool" type="submit" aria-label="Send"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 20V5M6 11l6-6 6 6"/></svg></button>
+        </div>
+      </div>
+    </form>
+  </main>
+</div>
+
+<canvas id="fg" aria-hidden="true"></canvas>
+<div class="toast" id="toast" role="status"></div>
+
+<script src="https://cdn.jsdelivr.net/npm/three@0.152.2/build/three.min.js"></script>
+<script src="robot.js"></script>
+<script>
+(function () {
+  'use strict';
+  var robots = null;
+  try { robots = UltranovaRobots.init({ canvas: document.getElementById('fg'), hi: ['hero'], greet: ['hero'] }); }
+  catch (e) { document.body.classList.add('no-gl'); }
+
+  // name chosen during onboarding (falls back to the design's default)
+  try {
+    var saved = JSON.parse(sessionStorage.getItem('ultranova.assistant') || 'null');
+    if (saved && saved.name) document.getElementById('agentName').textContent = saved.name;
+  } catch (e) { /* no saved onboarding: keep the default */ }
+
+  var app = document.getElementById('app'), prompt = document.getElementById('prompt'), toastEl = document.getElementById('toast'), toastTimer;
+  function toast(msg) { toastEl.textContent = msg; toastEl.classList.add('show'); clearTimeout(toastTimer); toastTimer = setTimeout(function () { toastEl.classList.remove('show'); }, 2600); }
+  function grow() { prompt.style.height = '20px'; prompt.style.height = Math.min(prompt.scrollHeight, 160) + 'px'; }
+
+  // suggestions drop their text into the message box
+  document.getElementById('chips').addEventListener('click', function (e) {
+    var c = e.target.closest('.chip'); if (!c) return;
+    prompt.value = c.textContent; grow(); prompt.focus(); if (robots) robots.hop('hero');
+  });
+  prompt.addEventListener('input', grow);
+  prompt.addEventListener('keydown', function (e) { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); document.getElementById('form').requestSubmit(); } });
+  document.getElementById('form').addEventListener('submit', function (e) {
+    e.preventDefault();
+    if (!prompt.value.trim()) { prompt.focus(); return; }
+    toast('Prototype: this message would go to ' + document.getElementById('agentName').textContent + '.');
+    if (robots) robots.wave('hero'); prompt.value = ''; grow();
+  });
+
+  // chat history: collapse the list, mark the open conversation
+  var toggle = document.getElementById('chatToggle'), history = document.getElementById('history');
+  toggle.addEventListener('click', function () {
+    var open = toggle.getAttribute('aria-expanded') === 'true';
+    toggle.setAttribute('aria-expanded', String(!open)); history.hidden = open;
+  });
+  document.getElementById('chatList').addEventListener('click', function (e) {
+    var b = e.target.closest('.chat-item'); if (!b) return;
+    [].forEach.call(document.querySelectorAll('.chat-item'), function (x) { x.classList.toggle('live', x === b); });
+  });
+
+  // drawer on small screens
+  function menu(open) { app.classList.toggle('menu-open', open); document.body.classList.toggle('menu-open', open); }
+  document.getElementById('menuBtn').addEventListener('click', function () { menu(true); });
+  document.getElementById('scrim').addEventListener('click', function () { menu(false); });
+  document.addEventListener('keydown', function (e) { if (e.key === 'Escape') menu(false); });
+})();
+</script>
+</body>
+</html>
