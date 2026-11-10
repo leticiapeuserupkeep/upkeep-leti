@@ -6,15 +6,21 @@ import {
   SlidersHorizontal,
   ChevronDown, X, Circle, CircleDot, Ban, CheckCircle2,
   Check, Minus, MoreHorizontal, Download, Archive, Trash2,
-  Flag, MapPin, Box, User, Loader, Info,
+  Flag, MapPin, Box, User, Loader, Info, FileText,
 } from 'lucide-react'
-import type { LucideIcon } from 'lucide-react'
+import { Droplets, ShieldCheck, Wrench, ClipboardList, type LucideIcon } from 'lucide-react'
+import { TemplatePickerModal, type ModuleTemplate } from '@/app/components/onboarding/TemplatePickerModal'
 import * as Dialog from '@radix-ui/react-dialog'
 import { Switch } from '@/app/components/ui'
 import Link from 'next/link'
 import { Table, TableToolbar, TableHeader, TableBody, TableHead, TableCell } from '@/app/components/ui/Table'
 import { Button } from '@/app/components/ui/Button'
+import { Skeleton } from '@/app/components/ui/Skeleton'
 import { IconButton } from '@/app/components/ui/IconButton'
+import { ModuleEmptyState } from '@/app/components/onboarding/ModuleEmptyState'
+import { NovaSidePanel, OPEN_NOVA_PANEL_EVENT } from '@/app/components/onboarding/NovaSidePanel'
+import { setupStore, useSetupState } from '@/app/lib/onboarding/setup-store'
+import { SUGGESTED_WORK_ORDER_CARDS, itemFromPrompt, type ModuleSuggestion } from '@/app/lib/onboarding/nova-onboarding-data'
 
 /* ── Types ── */
 
@@ -37,25 +43,6 @@ interface WorkOrderItem {
 
 /* ── Mock Data ── */
 
-const workOrders: WorkOrderItem[] = [
-  { id: 'wo-102', woNumber: '102', title: 'Compressed air dryer annual service', description: 'Quarterly condenser coil cleaning and refrigerant check for compressed air dryer system', dueDate: '03/12/26 - 09:00 AM', status: 'Open', priority: 'Low', category: 'Preventative', hasAlert: true },
-  { id: 'wo-101', woNumber: '101', title: 'Floor scrubber FS-02 squeegee replacement', description: 'Replace worn squeegee blades on floor scrubber unit FS-02 in warehouse zone B', dueDate: '03/05/26 - 09:00 AM', status: 'Open', priority: 'Low', category: 'Preventative', hasAlert: true },
-  { id: 'wo-089', woNumber: '089', title: 'Binding Machine D blade replacement', description: 'Binding machine cutting blade replacement and alignment calibration', dueDate: '03/14/26 - 09:00 AM', status: 'Open', priority: 'Low', category: 'Preventative', hasAlert: true },
-  { id: 'wo-062', woNumber: '062', title: 'R&D Lab electrical panel inspection', description: 'Annual thermographic scan and connection torque verification for lab electrical panels', status: 'Open', priority: 'Low', category: 'Electrical' },
-  { id: 'wo-061', woNumber: '061', title: 'Fire suppression panel testing', description: 'Annual fire alarm system inspection and functional test of all pull stations and detectors', status: 'Open', priority: 'Low', category: 'Safety' },
-  { id: 'wo-060', woNumber: '060', title: 'Upgrade lighting in warehouse B', description: 'Replace existing fluorescent fixtures with LED panels in warehouse section B', status: 'Open', priority: 'Low', category: 'Upgrade' },
-  { id: 'wo-059', woNumber: '059', title: 'Forklift FL-204 battery replacement', description: 'Battery pack showing degraded capacity, needs full replacement for continued operation', status: 'Open', priority: 'Low', category: 'Damage' },
-  { id: 'wo-058', woNumber: '058', title: 'Chicago office roof leak repair', description: 'Water intrusion detected near northwest stairwell, investigate source and apply repair', status: 'Open', priority: 'Low', category: 'Damage' },
-  { id: 'wo-057', woNumber: '057', title: 'Compressor CR-01 vibration analysis', description: 'Cold Room Compressor CR-01 exhibiting abnormal vibration during startup cycle', status: 'Open', priority: 'Low', category: 'Damage' },
-  { id: 'wo-056', woNumber: '056', title: 'Emergency generator load bank test', description: 'Perform monthly load bank test and fuel system inspection on emergency generator', status: 'Open', priority: 'Low', category: 'Inspection' },
-  { id: 'wo-055', woNumber: '055', title: 'Quarterly HVAC filter replacement', description: 'Replace all air filters on HVAC units across floors 1-3 of the main office building', status: 'Open', priority: 'Low', category: 'Preventative' },
-  { id: 'wo-054', woNumber: '054', title: 'Conveyor belt CB-12 tracking issue', description: 'Belt is tracking to the left causing product spillage at transfer point', status: 'Open', priority: 'Low', category: 'Damage' },
-  { id: 'wo-053', woNumber: '053', title: 'Warehouse dock door 7 inspection', description: 'Annual inspection of overhead dock door springs, cables, and safety mechanisms', status: 'Open', priority: 'Low', category: 'Inspection' },
-  { id: 'wo-052', woNumber: '052', title: 'HVAC Unit AHU-03 vibration report', description: 'Unusual vibration detected during routine monitoring, requires diagnostic assessment', status: 'Open', priority: 'Low', category: 'Damage' },
-  { id: 'wo-051', woNumber: '051', title: 'Fire extinguisher inspection round', description: 'Monthly visual inspection of all portable fire extinguishers across facility', status: 'Open', priority: 'Low', category: 'Safety' },
-  { id: 'wo-050', woNumber: '050', title: 'Parking lot lighting repair', description: 'Several parking lot lights reported out in employee lot, check ballasts and replace', status: 'Open', priority: 'Low', category: 'Electrical' },
-  { id: 'wo-049', woNumber: '049', title: 'Roof drain cleaning schedule', description: 'Seasonal roof drain and gutter cleaning to prevent water pooling and damage', status: 'Open', priority: 'Low', category: 'Preventative' },
-]
 
 /* ── Status Config ── */
 
@@ -484,16 +471,84 @@ function ExportModal({
 
 /* ── Page ── */
 
+const WO_TEMPLATES: ModuleTemplate[] = [
+  { name: 'Fix a leak', detail: 'Corrective · hydraulics or plumbing', icon: Droplets },
+  { name: 'Safety inspection', detail: 'Checklist with sign-off', icon: ShieldCheck },
+  { name: 'Equipment repair', detail: 'Diagnose, repair, test', icon: Wrench },
+  { name: 'Monthly PM', detail: 'Recurring preventive maintenance', icon: ClipboardList },
+]
+
 export default function WorkOrdersPage() {
+  // Only what this user (or Nova, during setup) actually created.
+  const [workOrders, setWorkOrders] = useState<WorkOrderItem[]>([])
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
   const [showToast, setShowToast] = useState(false)
   const [searchValue, setSearchValue] = useState('')
   const [showExportModal, setShowExportModal] = useState(false)
   const [toolbarPortal, setToolbarPortal] = useState<HTMLElement | null>(null)
 
+  const setup = useSetupState()
+  const [novaOpen, setNovaOpen] = useState(false)
+  // Title of the work order Nova is creating — shown as a skeleton row first.
+  const [pendingTitle, setPendingTitle] = useState<string | null>(null)
+  const [highlightedWoId, setHighlightedWoId] = useState<string | null>(null)
+
   useEffect(() => {
     setToolbarPortal(document.getElementById('table-toolbar-portal'))
   }, [])
+
+  // The top bar's "Ask Nova" opens the side panel.
+  useEffect(() => {
+    const open = () => setNovaOpen(true)
+    window.addEventListener(OPEN_NOVA_PANEL_EVENT, open)
+    return () => window.removeEventListener(OPEN_NOVA_PANEL_EVENT, open)
+  }, [])
+
+  // Work orders Nova created during onboarding show up here.
+  useEffect(() => {
+    const fromSetup = setup.created.filter(c => c.kind === 'work-order')
+    setWorkOrders(prev => {
+      const missing = fromSetup.filter(c => !prev.some(wo => wo.id === c.id))
+      if (missing.length === 0) return prev
+      return [
+        ...missing.map((c, i) => ({
+          id: c.id,
+          woNumber: String(prev.length + i + 1).padStart(3, '0'),
+          title: c.title,
+          description: 'Created by Nova from this week’s maintenance overview',
+          status: 'Open' as WOStatus,
+          priority: (c.detail?.includes('High') ? 'High' : 'Medium') as WOPriority,
+          category: 'Inspection' as WOCategory,
+        })),
+        ...prev,
+      ]
+    })
+  }, [setup.created])
+
+  const addWorkOrder = useCallback((title: string, byNova: boolean, priority: WOPriority = 'Medium') => {
+    const id = `wo-${Date.now()}`
+    setWorkOrders(prev => [{
+      id,
+      woNumber: String(prev.length + 1).padStart(3, '0'),
+      title,
+      description: byNova ? 'Created with Nova' : '',
+      status: 'Open',
+      priority,
+      category: 'Inspection',
+    }, ...prev])
+    setHighlightedWoId(id)
+    setupStore.update(prev => ({ counts: { ...prev.counts, workOrders: prev.counts.workOrders + 1 } }))
+    window.setTimeout(() => setHighlightedWoId(null), 4000)
+  }, [])
+
+  // A suggestion card opens Nova, which creates it there — then it's in the list.
+  const [novaRequest, setNovaRequest] = useState<{ text: string; id: number } | null>(null)
+  const [templateOpen, setTemplateOpen] = useState(false)
+  const askNova = useCallback((text: string) => {
+    setNovaOpen(true)
+    setNovaRequest({ text, id: Date.now() })
+  }, [])
+  const createSuggestion = useCallback((s: ModuleSuggestion) => askNova(s.title), [askNova])
 
   const toggleSelect = useCallback((id: string) => {
     setSelectedIds((prev) => {
@@ -527,9 +582,12 @@ export default function WorkOrdersPage() {
       )
     : workOrders
 
+  const isEmpty = workOrders.length === 0 && !pendingTitle
+  const suggestions = SUGGESTED_WORK_ORDER_CARDS.filter(c => !workOrders.some(wo => wo.title === c.title))
+
   return (
     <div className="flex flex-col flex-1 w-full relative">
-      {toolbarPortal && createPortal(
+      {toolbarPortal && !isEmpty && createPortal(
         <TableToolbar
           itemCountLabel={`${filtered.length} of ${workOrders.length} items`}
           sortLabel="Sort: Work Order Title"
@@ -539,6 +597,30 @@ export default function WorkOrdersPage() {
         />,
         toolbarPortal
       )}
+      {isEmpty ? (
+        <main className="flex-1 overflow-y-auto">
+          <ModuleEmptyState
+            icon={FileText}
+            title="No work orders created yet"
+            headerLabel="Create Work Order"
+            description="Create one yourself, or ask Nova to help you get started."
+            createLabel="Create Manually"
+            onCreate={() => addWorkOrder('New work order', false)}
+            prompt={suggestions[0] ? `Create a work order to ${suggestions[0].title.charAt(0).toLowerCase()}${suggestions[0].title.slice(1)}` : 'Create a work order'}
+            onAskNova={askNova}
+            onUseTemplate={() => setTemplateOpen(true)}
+            suggestions={suggestions}
+            onSuggest={createSuggestion}
+          />
+          <TemplatePickerModal
+            open={templateOpen}
+            onOpenChange={setTemplateOpen}
+            description="Common jobs to start from"
+            templates={WO_TEMPLATES}
+            onPick={t => addWorkOrder(t.name, false)}
+          />
+        </main>
+      ) : (
       <main className="flex-1 overflow-y-auto">
         <div className="w-full px-[var(--space-2xl)] py-[var(--space-xl)]">
           {/* ── Filters ── */}
@@ -616,13 +698,30 @@ export default function WorkOrdersPage() {
                 </tr>
               </TableHeader>
               <TableBody>
+                {pendingTitle && (
+                  // Nova is still writing it — a placeholder row holds its place.
+                  <tr aria-label={`Creating ${pendingTitle}`} className="nova-enter">
+                    <td className="py-4 pl-6 pr-2"><Skeleton className="h-[18px] w-[18px]" rounded="sm" /></td>
+                    <TableCell><Skeleton className="h-4 w-10" /></TableCell>
+                    <TableCell><Skeleton className="h-4 w-40" /></TableCell>
+                    <TableCell><Skeleton className="h-4 w-32" /></TableCell>
+                    <TableCell><Skeleton className="h-4 w-16" /></TableCell>
+                    <TableCell><Skeleton className="h-4 w-16" /></TableCell>
+                    <TableCell><Skeleton className="h-5 w-14" rounded="full" /></TableCell>
+                    <TableCell><Skeleton className="h-5 w-14" rounded="full" /></TableCell>
+                    <TableCell><Skeleton className="h-4 w-20" /></TableCell>
+                  </tr>
+                )}
                 {filtered.map((wo, i) => {
                   const isSelected = selectedIds.has(wo.id)
+                  const isHighlighted = wo.id === highlightedWoId
                   return (
                     <tr
                       key={wo.id}
-                      className={`transition-colors duration-[var(--duration-fast)] cursor-pointer select-none opacity-0 ${
-                        isSelected
+                      className={`transition-colors duration-500 cursor-pointer select-none opacity-0 ${
+                        isHighlighted
+                          ? 'bg-[var(--color-accent-2)]'
+                          : isSelected
                           ? 'bg-[var(--color-accent-1)] hover:bg-[var(--color-accent-2)]'
                           : 'hover:bg-[var(--color-neutral-2)]'
                       }`}
@@ -675,6 +774,7 @@ export default function WorkOrdersPage() {
           </div>
         </div>
       </main>
+      )}
 
       {/* ── Bulk Actions ── */}
       {selectedCount > 0 && (
@@ -748,6 +848,23 @@ export default function WorkOrdersPage() {
         onOpenChange={setShowExportModal}
         selectedCount={selectedCount}
         onExport={() => setShowToast(true)}
+      />
+
+      <NovaSidePanel
+        open={novaOpen}
+        onClose={() => setNovaOpen(false)}
+        intro="What needs to be done? Describe the job, or pick one of these."
+        quickActions={suggestions.map(c => c.title)}
+        placeholder="Describe the job you need to be done"
+        onCreate={prompt => {
+          const text = itemFromPrompt(prompt, SUGGESTED_WORK_ORDER_CARDS)
+          const suggested = SUGGESTED_WORK_ORDER_CARDS.find(c => c.title === text)
+          setPendingTitle(null)
+          addWorkOrder(text, true, suggested?.tone === 'error' ? 'High' : 'Medium')
+          return text
+        }}
+        request={novaRequest}
+        onCreating={setPendingTitle}
       />
     </div>
   )
