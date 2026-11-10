@@ -124,7 +124,8 @@
   @keyframes cms-spin { to { transform: rotate(360deg); } }
   @media (prefers-reduced-motion: reduce) { .cms .spin { animation-duration: 2.4s; } }
   .side-foot { display: flex; align-items: center; justify-content: space-between; padding: 16px; }
-  .me { width: 32px; height: 32px; border-radius: 50%; display: grid; place-items: center; background: linear-gradient(135deg, #8b5cf6, #d946ef); font: 600 14px/1 var(--font-display); }
+  .me:hover { transform: scale(1.06); box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.18); }
+  .me { cursor: pointer; color: #fff; transition: transform 0.2s var(--ease), box-shadow 0.25s; width: 32px; height: 32px; border-radius: 50%; display: grid; place-items: center; background: linear-gradient(135deg, #8b5cf6, #d946ef); font: 600 14px/1 var(--font-display); }
   .gear { width: 32px; height: 32px; display: grid; place-items: center; border-radius: 50%; color: #d9c8ff; transition: background 0.2s; }
   .gear:hover { background: rgba(255, 255, 255, 0.08); }
   .gear .un-icon { width: 20px; height: 20px; }
@@ -310,7 +311,7 @@
       </span>
     </a>
     <div class="side-foot">
-      <span class="me" aria-label="Your profile">L</span>
+      <button class="me" type="button" id="profileBtn" data-tip="Profile" aria-label="Your profile" aria-haspopup="menu" aria-expanded="false">L</button>
       <div class="foot-right">
       <button class="un-toggle un-toggle--sm" type="button" id="theme" data-tip="Dark mode" role="switch" aria-checked="true" aria-label="Dark mode"><span class="un-toggle__track"></span><span class="un-toggle__label">Dark</span></button>
       <button class="snd" type="button" id="sound" hidden aria-label="Sound effects" aria-pressed="true">
@@ -574,6 +575,29 @@
 
   // sound on/off (remembered)
   /* dark / light mode: the switch is on while dark; turning it off shows "Light" (choice is remembered) */
+  /* profile menu: View profile / Log out (opens upward from the avatar) */
+  var profBtn = document.getElementById('profileBtn'), profMenu = document.createElement('div');
+  profMenu.className = 'un-menu'; profMenu.setAttribute('role', 'menu'); profMenu.style.transformOrigin = 'bottom left';
+  profMenu.innerHTML = '<button type="button" role="menuitem" data-act="profile"><svg class="un-icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 20c1.5-4 4.5-6 8-6s6.5 2 8 6"/></svg>View profile</button>'
+    + '<button type="button" role="menuitem" data-act="logout"><svg class="un-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M10 4H6a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h4M15 8l4 4-4 4M19 12H9"/></svg>Log out</button>';
+  document.body.appendChild(profMenu);
+  function closeProf() { profMenu.classList.remove('show'); profBtn.setAttribute('aria-expanded', 'false'); }
+  profBtn.addEventListener('click', function (e) {
+    e.stopPropagation();
+    if (profMenu.classList.contains('show')) { closeProf(); return; }
+    var r = profBtn.getBoundingClientRect();
+    profMenu.style.left = (r.right + 10) + 'px'; profMenu.style.top = 'auto'; profMenu.style.bottom = Math.max(8, innerHeight - r.bottom) + 'px';
+    profBtn.setAttribute('aria-expanded', 'true'); requestAnimationFrame(function () { profMenu.classList.add('show'); });
+    profMenu.querySelector('button').focus({ preventScroll: true });
+  });
+  profMenu.addEventListener('click', function (e) {
+    var b = e.target.closest('button'); if (!b) return; closeProf();
+    if (b.getAttribute('data-act') === 'profile') toast('Profile is coming soon.');
+    else { try { sessionStorage.removeItem('ultranova.assistant'); } catch (err) {} location.href = 'onboarding.html'; }
+  });
+  document.addEventListener('click', function (e) { if (!e.target.closest('.un-menu')) closeProf(); });
+  document.addEventListener('keydown', function (e) { if (e.key === 'Escape') closeProf(); });
+
   /* collapse / reopen the sidebar (remembered) */
   function setNav(closed) {
     document.getElementById('app').classList.toggle('nav-closed', closed);
