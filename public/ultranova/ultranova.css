@@ -137,8 +137,8 @@ button, input, textarea, kbd { font-family: inherit; }
 .un-toggle { display: inline-flex; align-items: center; gap: 8px; padding: 4px; border: 0; background: none; color: inherit; cursor: pointer; font: 500 14px/20px var(--font-display); }
 .un-toggle__track { position: relative; width: 36px; height: 20px; flex: none; border-radius: var(--un-r-pill); background: rgba(255, 255, 255, 0.25); transition: background 0.3s var(--ease); }
 .un-toggle__track::after { content: ""; position: absolute; top: 2px; left: 2px; width: 16px; height: 16px; border-radius: 50%; background: #fff; box-shadow: 0 1px 3px rgba(0, 0, 0, 0.35); transition: transform 0.3s var(--ease); }
-.un-toggle[aria-checked="true"] .un-toggle__track { background: var(--un-live); }
-.un-toggle[aria-checked="true"] .un-toggle__track::after { transform: translateX(16px); background: #04120f; }
+.un-toggle[aria-checked="true"] .un-toggle__track { background: linear-gradient(135deg, var(--un-violet), var(--un-fuchsia)); }
+.un-toggle[aria-checked="true"] .un-toggle__track::after { transform: translateX(16px); }
 .un-toggle:focus-visible { outline: 2px solid var(--un-live); outline-offset: 2px; border-radius: var(--un-r-sm); }
 .un-toggle--sm { gap: 6px; padding: 2px; font-size: 12px; line-height: 16px; }
 .un-toggle--sm .un-toggle__track { width: 28px; height: 16px; }
