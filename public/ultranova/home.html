@@ -201,6 +201,9 @@
   }
   /* light mode (toggle in the sidebar footer): the main area goes light, the purple sidebar stays as is */
   :root[data-theme="light"] { --bg: #f6f3fb; --ink: #1a0b46; --ink-soft: rgba(26, 11, 70, 0.65); --bar: #fff; --un-ink: #1a0b46; --un-ink-soft: rgba(26, 11, 70, 0.65); --un-glass: rgba(26, 11, 70, 0.05); --un-line: rgba(26, 11, 70, 0.14); color-scheme: light; }
+  :root[data-theme="light"] #fg { filter: drop-shadow(0 8px 12px rgba(26, 11, 70, 0.35)); }
+  :root[data-theme="light"] .assistant { position: relative; }
+  :root[data-theme="light"] .assistant::before { content: ""; position: absolute; inset: -22%; border-radius: 50%; background: radial-gradient(closest-side, #fff 35%, rgba(255, 255, 255, 0.7) 60%, transparent 100%); pointer-events: none; }
   :root[data-theme="light"] .backdrop { background: var(--bg); }
   :root[data-theme="light"] .sidebar { background: linear-gradient(180deg, #ffffff, #ece4fa); border-right: 1px solid rgba(26, 11, 70, 0.08); }
   :root[data-theme="light"] .brand { color: #1a0b46; }
@@ -546,6 +549,7 @@
   var themeBtn = document.getElementById('theme');
   function setTheme(dark) {
     document.documentElement.setAttribute('data-theme', dark ? 'dark' : 'light');
+    if (robots && robots.setLight) robots.setLight(!dark);
     themeBtn.setAttribute('aria-checked', dark); themeBtn.setAttribute('aria-label', dark ? 'Dark mode' : 'Light mode');
     themeBtn.querySelector('.un-toggle__label').textContent = dark ? 'Dark' : 'Light';
     try { localStorage.setItem('ultranova.theme', dark ? 'dark' : 'light'); } catch (e) {}

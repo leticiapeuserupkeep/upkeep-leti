@@ -655,7 +655,9 @@
     return {
       hop: function (id) { var s = byId[id]; if (s && s.inst) s.inst.hop(); },
       wave: function (id) { var s = byId[id]; if (s && s.inst) s.inst.wave(); },
-      wake: function (id) { var s = byId[id]; if (s) s.wakeReq = true; }
+      wake: function (id) { var s = byId[id]; if (s) s.wakeReq = true; },
+      /* light page backgrounds: a lower exposure turns the white shell into a soft grey so the assistant keeps its contrast */
+      setLight: function (on) { renderer.toneMappingExposure = on ? 0.74 : 1.0; }
     };
   }
   global.UltranovaRobots = { init: init };
