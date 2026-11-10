@@ -660,7 +660,7 @@
       setLight: function (on, ms) {
         var from = renderer.toneMappingExposure, to = on ? 0.74 : 1.0, t0 = performance.now(), dur = ms || 0;
         if (!dur) { renderer.toneMappingExposure = to; return; }
-        (function step(now) { var k = Math.min(1, (now - t0) / dur), e = 1 - Math.pow(1 - k, 3); renderer.toneMappingExposure = from + (to - from) * e; if (k < 1) requestAnimationFrame(step); })(t0);
+        (function step(now) { var k = Math.min(1, (now - t0) / dur), e = 1 - Math.pow(1 - k, 3.5); renderer.toneMappingExposure = from + (to - from) * e; if (k < 1) requestAnimationFrame(step); })(t0);
       }
     };
   }

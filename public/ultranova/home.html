@@ -260,13 +260,12 @@
   :root[data-theme="light"] .un-chip:hover { background: rgba(221, 0, 255, 0.08); }
   :root[data-theme="light"] .wo-card { border-color: rgba(26, 11, 70, 0.14); background: #fff; }
   :root[data-theme="light"] .main.chatting::before { background: rgba(246, 243, 251, 0.6); }
-  /* dark ↔ light: while html.theming is on, colors ease over with a per-element delay (--d, set from JS by distance to the switch) so the screen gets "painted" outward */
+  /* dark ↔ light: while html.theming is on, every color eases over at the same time */
   html.theming *, html.theming *::before, html.theming *::after {
-    transition: background-color 0.7s var(--ease) var(--d, 0s), color 0.7s var(--ease) var(--d, 0s), border-color 0.7s var(--ease) var(--d, 0s), fill 0.7s var(--ease) var(--d, 0s), stroke 0.7s var(--ease) var(--d, 0s), box-shadow 0.7s var(--ease) var(--d, 0s);
+    transition: background-color 0.8s var(--ease) var(--d, 0s), color 0.8s var(--ease) var(--d, 0s), border-color 0.8s var(--ease) var(--d, 0s), fill 0.8s var(--ease) var(--d, 0s), stroke 0.8s var(--ease) var(--d, 0s), box-shadow 0.8s var(--ease) var(--d, 0s);
   }
-  html.theming .sidebar::before, html.theming .backdrop::before, html.theming .assistant::before { transition: opacity 0.9s var(--ease) var(--d, 0s); }
-  html.theming .backdrop { --d: 0s; }
-  html.theming .un-toggle__track, html.theming .un-toggle__track::after { transition: transform 0.3s var(--ease), background 0.3s var(--ease); }
+  html.theming .sidebar::before, html.theming .backdrop::before, html.theming .assistant::before { transition: opacity 0.8s var(--ease) var(--d, 0s); }
+    html.theming .un-toggle__track, html.theming .un-toggle__track::after { transition: transform 0.3s var(--ease), background 0.3s var(--ease); }
 </style>
 </head>
 <body>
@@ -629,31 +628,17 @@
   document.getElementById('navClose').addEventListener('click', function () { setNav(!document.getElementById('app').classList.contains('nav-closed')); });
   try { if (localStorage.getItem('ultranova.nav') === 'closed') setNav(true); } catch (e) {}
   var themeBtn = document.getElementById('theme');
-  /* the paint wave: each element gets a delay from its distance to the switch, and a few pop (a small jump or a growth) as their colors change */
-  var paintTimer = null, POP = '.un-chip, .un-btn, .me, .chatbar, .cms, .assistant, .un-msg, .wo-card, .nav-item.active, .gear, .un-icon-btn, .greeting h1';
+  /* dark ↔ light: everything eases over together (colors, sidebar, page background, assistant); html.theming enables the transitions for ~1s */
+  var paintTimer = null;
   function paintWave() {
-    if (matchMedia('(prefers-reduced-motion: reduce)').matches) return 0;
-    var root = document.documentElement, o = themeBtn.getBoundingClientRect(), cx = o.left + o.width / 2, cy = o.top + o.height / 2, far = Math.hypot(innerWidth, innerHeight);
-    var els = [].slice.call(document.querySelectorAll('#sidebar, #sidebar *, .main, .main *'));
-    els.forEach(function (el) {
-      var b = el.getBoundingClientRect(), d = Math.hypot(b.left + b.width / 2 - cx, b.top + b.height / 2 - cy) / far;
-      el.style.setProperty('--d', (d * 1.1).toFixed(2) + 's');
-    });
-    [].slice.call(document.querySelectorAll(POP)).forEach(function (el, i) {
-      if (!el.animate || el.offsetParent === null && getComputedStyle(el).position !== 'fixed') return;
-      var delay = parseFloat(el.style.getPropertyValue('--d')) * 1000 + 120, jump = i % 2 === 0;
-      el.animate(jump ? [{ transform: 'translateY(0)' }, { transform: 'translateY(-7px)', offset: 0.4 }, { transform: 'translateY(0)' }]
-                       : [{ transform: 'scale(1)' }, { transform: 'scale(1.07)', offset: 0.45 }, { transform: 'scale(1)' }],
-        { duration: 650, delay: delay, easing: 'cubic-bezier(0.34, 1.56, 0.64, 1)' });
-    });
-    root.classList.add('theming'); clearTimeout(paintTimer);
-    paintTimer = setTimeout(function () { root.classList.remove('theming'); els.forEach(function (el) { el.style.removeProperty('--d'); }); }, 2400);
-    return 1;
+    if (matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+    var root = document.documentElement; root.classList.add('theming'); clearTimeout(paintTimer);
+    paintTimer = setTimeout(function () { root.classList.remove('theming'); }, 1100);
   }
   function setTheme(dark, animate) {
     if (animate) paintWave();
     document.documentElement.setAttribute('data-theme', dark ? 'dark' : 'light');
-    if (robots && robots.setLight) robots.setLight(!dark, animate ? 1100 : 0);
+    if (robots && robots.setLight) robots.setLight(!dark, animate ? 800 : 0);
     themeBtn.setAttribute('aria-checked', dark); themeBtn.setAttribute('aria-label', dark ? 'Dark mode' : 'Light mode');
     themeBtn.querySelector('.un-toggle__label').textContent = dark ? 'Dark' : 'Light';
     try { localStorage.setItem('ultranova.theme', dark ? 'dark' : 'light'); } catch (e) {}
