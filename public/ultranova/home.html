@@ -175,6 +175,7 @@
   .snd { width: 32px; height: 32px; display: grid; place-items: center; border-radius: 50%; color: #d9c8ff; transition: background 0.2s; }
   .snd:hover { background: rgba(255, 255, 255, 0.08); }
   .snd .un-icon { width: 20px; height: 20px; }
+  .snd[hidden] { display: none; }   /* sound toggle hidden for now: remove the `hidden` attribute to bring it back */
   .snd .off { display: none; } .snd.muted .on { display: none; } .snd.muted .off { display: block; }
   .foot-right { display: flex; align-items: center; gap: 4px; }
 
@@ -298,7 +299,7 @@
       <span class="me" aria-label="Your profile">L</span>
       <div class="foot-right">
       <button class="un-toggle un-toggle--sm" type="button" id="theme" role="switch" aria-checked="true" aria-label="Dark mode"><span class="un-toggle__track"></span><span class="un-toggle__label">Dark</span></button>
-      <button class="snd" type="button" id="sound" aria-label="Sound effects" aria-pressed="true">
+      <button class="snd" type="button" id="sound" hidden aria-label="Sound effects" aria-pressed="true">
         <svg class="un-icon on" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9.5v5h3.5L12 18.5v-13L7.5 9.5zM15.5 9a4 4 0 0 1 0 6M18 6.5a7.5 7.5 0 0 1 0 11"/></svg>
         <svg class="un-icon off" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9.5v5h3.5L12 18.5v-13L7.5 9.5zM16 9.5l5 5M21 9.5l-5 5"/></svg>
       </button>
