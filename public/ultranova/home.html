@@ -43,17 +43,17 @@
 
   .app { position: relative; z-index: 1; display: grid; grid-template-columns: var(--sidebar-w) minmax(0, 1fr); min-height: 100dvh; }
 
-  /* collapsible sidebar (desktop): it shrinks to a 70px rail of icons; hovering an icon shows a tooltip with its name.
+  /* collapsible sidebar (desktop): it shrinks to a 60px rail of icons; hovering an icon shows a tooltip with its name.
      --sidebar-w follows, so everything positioned from it (backdrop, floating assistant, blurred band) moves with it. */
   .app { transition: grid-template-columns 0.45s var(--ease); }
   .sidebar { width: var(--sidebar-w); transition: width 0.45s var(--ease); }
   @media (min-width: 861px) {
-    :root:has(.app.nav-closed) { --sidebar-w: 70px; }   /* on the root so the backdrop (a sibling of .app) follows too */
+    :root:has(.app.nav-closed) { --sidebar-w: 60px; }   /* on the root so the backdrop (a sibling of .app) follows too */
     .nav-closed .brand { padding-inline: 0; justify-content: center; }
     .nav-closed .brand-text, .nav-closed .nav-item .grow, .nav-closed .nav-item .chev, .nav-closed .history, .nav-closed .cms .grow, .nav-closed .cms .go { display: none; }
     .nav-closed .nav { overflow: visible; }
     .nav-closed .nav-item { justify-content: center; padding-inline: 0; }
-    .nav-closed .cms { margin-inline: 11px; }
+    .nav-closed .cms { margin-inline: 8px; }
     .nav-closed .cms .pane { justify-content: center; padding: 0; }
     .nav-closed .cms .pane.alt .state, .nav-closed .cms .pane.alt .grow { display: none; }
     /* rail footer, top to bottom: Back to CMS (above), expand button, profile avatar at the very bottom */
