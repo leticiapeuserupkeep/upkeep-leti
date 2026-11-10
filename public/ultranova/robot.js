@@ -65,10 +65,10 @@
     }
     var VARIANTS = [
       null,                                   /* 0 · Core: the original blue, round (filled in below) */
-      palette(262, null, 3.4),                /* 1 · purple, cube like a notebook */
-      Object.assign(palette(128, 'cogbody', 2, 0.42, 0.6), { pantsY: -0.31, flat: true, flatZ: 0.235, btnY: -0.74 }),   /* drier, yellower green */
+      palette(40, null, 3.4, 0.38, 0.9),      /* 1 · deep amber yellow, cube like a notebook */
+      Object.assign(palette(128, 'cogbody', 2, 0.35, 0.6), { pantsY: -0.31, flat: true, flatZ: 0.235, btnY: -0.74 }),   /* drier, yellower green */
       Object.assign(palette(46, 'wrenchbody', 2, 0.54), { pantsY: -0.66, flat: true, flatZ: 0.235, btnY: -0.95, faceDY: -0.38 }),   /* 3 · butter yellow, the body is a wrench */
-      Object.assign(palette(355, 'nutbody', 2), { pantsY: -0.31, flat: true, flatZ: 0.235, btnY: -0.7 })   /* 4 · soft coral, the body is a hex nut */
+      Object.assign(palette(355, 'nutbody', 2, 0.5), { pantsY: -0.31, flat: true, flatZ: 0.235, btnY: -0.7 })   /* 4 · soft coral, the body is a hex nut */
     ];
     var CUR = 0, V = null, NN = 2;
     function useVariant(i) {
