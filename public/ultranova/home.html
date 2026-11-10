@@ -202,7 +202,20 @@
   /* light mode (toggle in the sidebar footer): the main area goes light, the purple sidebar stays as is */
   :root[data-theme="light"] { --bg: #f6f3fb; --ink: #1a0b46; --ink-soft: rgba(26, 11, 70, 0.65); --bar: #fff; --un-ink: #1a0b46; --un-ink-soft: rgba(26, 11, 70, 0.65); --un-glass: rgba(26, 11, 70, 0.05); --un-line: rgba(26, 11, 70, 0.14); color-scheme: light; }
   :root[data-theme="light"] .backdrop { background: var(--bg); }
-  :root[data-theme="light"] .sidebar { --ink: #fff; --ink-soft: rgba(255, 255, 255, 0.7); --un-ink: #fff; --un-ink-soft: rgba(255, 255, 255, 0.7); color: #fff; }
+  :root[data-theme="light"] .sidebar { background: linear-gradient(180deg, #ffffff, #ece4fa); border-right: 1px solid rgba(26, 11, 70, 0.08); }
+  :root[data-theme="light"] .brand { color: #1a0b46; }
+  :root[data-theme="light"] .nav-item:hover, :root[data-theme="light"] .chat-item:hover { background: rgba(26, 11, 70, 0.06); }
+  :root[data-theme="light"] .nav-item.active { background: #e3d7fa; }
+  :root[data-theme="light"] .chat-item::before { background: #c9b6ee; }
+  :root[data-theme="light"] .chat-item.live::before { background: #00b894; }
+  :root[data-theme="light"] .chat-item .more:hover, :root[data-theme="light"] .chat-item.menu-open .more { background: rgba(26, 11, 70, 0.1); }
+  :root[data-theme="light"] .gear, :root[data-theme="light"] .snd { color: #6d28d9; }
+  :root[data-theme="light"] .gear:hover, :root[data-theme="light"] .snd:hover { background: rgba(26, 11, 70, 0.07); }
+  :root[data-theme="light"] .un-toggle__track { background: rgba(26, 11, 70, 0.25); }
+  :root[data-theme="light"] .un-toggle[aria-checked="true"] .un-toggle__track { background: #00b894; }
+  :root[data-theme="light"] .un-menu { --un-menu: #fff; --un-line: rgba(26, 11, 70, 0.14); box-shadow: 0 16px 40px rgba(26, 11, 70, 0.18); }
+  :root[data-theme="light"] .un-menu button:hover { background: rgba(26, 11, 70, 0.07); }
+  :root[data-theme="light"] .scrim { background: rgba(26, 11, 70, 0.3); }
   :root[data-theme="light"] .chatbar { box-shadow: 0 8px 32px rgba(26, 11, 70, 0.12); border-color: rgba(26, 11, 70, 0.1); }
   :root[data-theme="light"] .chatbar textarea::placeholder, :root[data-theme="light"] .tabhint, :root[data-theme="light"] .un-icon-btn--round { color: rgba(26, 11, 70, 0.6); border-color: rgba(26, 11, 70, 0.3); }
   :root[data-theme="light"] .un-icon-btn:hover { background: rgba(26, 11, 70, 0.08); }
