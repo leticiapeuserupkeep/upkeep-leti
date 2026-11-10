@@ -657,7 +657,11 @@
       wave: function (id) { var s = byId[id]; if (s && s.inst) s.inst.wave(); },
       wake: function (id) { var s = byId[id]; if (s) s.wakeReq = true; },
       /* light page backgrounds: a lower exposure turns the white shell into a soft grey so the assistant keeps its contrast */
-      setLight: function (on) { renderer.toneMappingExposure = on ? 0.74 : 1.0; }
+      setLight: function (on, ms) {
+        var from = renderer.toneMappingExposure, to = on ? 0.74 : 1.0, t0 = performance.now(), dur = ms || 0;
+        if (!dur) { renderer.toneMappingExposure = to; return; }
+        (function step(now) { var k = Math.min(1, (now - t0) / dur), e = 1 - Math.pow(1 - k, 3); renderer.toneMappingExposure = from + (to - from) * e; if (k < 1) requestAnimationFrame(step); })(t0);
+      }
     };
   }
   global.UltranovaRobots = { init: init };
