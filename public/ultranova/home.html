@@ -39,6 +39,17 @@
 
   .app { position: relative; z-index: 1; display: grid; grid-template-columns: var(--sidebar-w) minmax(0, 1fr); min-height: 100dvh; }
 
+  /* collapsible sidebar (desktop): --sidebar-w goes to 0 so everything positioned from it follows; the sidebar slides out */
+  .app { transition: grid-template-columns 0.45s var(--ease); }
+  .sidebar { width: 260px; transition: transform 0.45s var(--ease), visibility 0s; }
+  .app.nav-closed { --sidebar-w: 0px; }
+  .app.nav-closed .sidebar { transform: translateX(-100%); visibility: hidden; transition: transform 0.45s var(--ease), visibility 0s 0.45s; }
+  .nav-toggle { color: var(--un-ink); }
+  .nav-close { margin-left: auto; }
+  .nav-open { position: fixed; z-index: 6; top: 16px; left: 16px; width: 32px; height: 32px; opacity: 0; pointer-events: none; transition: opacity 0.35s 0.2s, background 0.25s; }
+  .app.nav-closed .nav-open { opacity: 1; pointer-events: auto; }
+  @media (max-width: 860px) { .nav-close, .nav-open { display: none; } }
+
   /* ---------- sidebar ---------- */
   .sidebar {
     position: sticky; top: 0; height: 100dvh; display: flex; flex-direction: column;
@@ -240,6 +251,7 @@
     <div class="brand">
       <svg viewBox="0 0 32 32" aria-hidden="true"><path d="M16 1l3.4 10.2L30 14.8l-10.6 3.4L16 30l-3.4-11.8L2 14.8l10.6-3.6z"/></svg>
       Ultranova
+      <button class="un-icon-btn nav-toggle nav-close" type="button" id="navClose" aria-label="Close sidebar" aria-controls="sidebar"><svg class="un-icon" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="3"/><path d="M9 4v16"/></svg></button>
     </div>
     <nav class="nav">
       <button class="nav-item" type="button">
@@ -300,6 +312,7 @@
   <div class="scrim" id="scrim"></div>
 
   <main class="main">
+    <button class="un-icon-btn nav-toggle nav-open" type="button" id="navOpen" aria-label="Open sidebar" aria-controls="sidebar"><svg class="un-icon" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="3"/><path d="M9 4v16"/></svg></button>
     <div class="topbar">
       <button class="un-icon-btn" type="button" id="menuBtn" aria-label="Open menu" style="width:40px;height:40px">
         <svg class="un-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"/></svg>
@@ -547,6 +560,15 @@
 
   // sound on/off (remembered)
   /* dark / light mode: the switch is on while dark; turning it off shows "Light" (choice is remembered) */
+  /* collapse / reopen the sidebar (remembered) */
+  function setNav(closed) {
+    document.getElementById('app').classList.toggle('nav-closed', closed);
+    document.getElementById('sidebar').inert = closed;
+    try { localStorage.setItem('ultranova.nav', closed ? 'closed' : 'open'); } catch (e) {}
+  }
+  document.getElementById('navClose').addEventListener('click', function () { setNav(true); });
+  document.getElementById('navOpen').addEventListener('click', function () { setNav(false); });
+  try { if (localStorage.getItem('ultranova.nav') === 'closed') setNav(true); } catch (e) {}
   var themeBtn = document.getElementById('theme');
   function setTheme(dark) {
     document.documentElement.setAttribute('data-theme', dark ? 'dark' : 'light');
