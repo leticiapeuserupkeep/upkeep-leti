@@ -1,0 +1,113 @@
+'use client'
+
+import { useEffect, useState } from 'react'
+import { createPortal } from 'react-dom'
+
+import { ChevronRight, LayoutPanelLeft, Plus, Pointer, type LucideIcon } from 'lucide-react'
+import { Button } from '@/app/components/ui/Button'
+import { NovaComposer } from '@/app/components/onboarding/nova/NovaComposer'
+import { IdeaCarousel } from '@/app/components/onboarding/nova/NovaIdeas'
+import type { ModuleSuggestion } from '@/app/lib/onboarding/nova-onboarding-data'
+
+interface ModuleEmptyStateProps {
+  /** Icon on the illustration's badge. */
+  icon: LucideIcon
+  title: string
+  description: string
+  createLabel: string
+  /** The page header's primary action, e.g. "Create Location" — same as Create manually. */
+  headerLabel: string
+  onCreate: () => void
+  /** What the message box starts with — sent to Nova as-is. */
+  prompt: string
+  onAskNova: (text: string) => void
+  /** Start from a template; the button only shows when there's one. */
+  onUseTemplate?: () => void
+  /** Things Nova would create here, from what it found during setup. */
+  suggestions: ModuleSuggestion[]
+  creatingId?: string | null
+  onSuggest: (s: ModuleSuggestion) => void
+}
+
+/** Empty module (Work Orders, Assets, Parts…): ask Nova from the message box
+ * (a prompt is ready to send), create it yourself or from a template, or start
+ * from what Nova already found needs doing. */
+export function ModuleEmptyState({
+  icon: Icon, title, description, createLabel, headerLabel, onCreate, prompt, onAskNova, onUseTemplate, suggestions, creatingId, onSuggest,
+}: ModuleEmptyStateProps) {
+  // The header's actions slot exists only after mount.
+  const [actionsSlot, setActionsSlot] = useState<HTMLElement | null>(null)
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setActionsSlot(document.getElementById('page-header-actions'))
+  }, [])
+
+  return (
+    <div className="flex min-h-full flex-col items-center gap-10 bg-[var(--surface-primary)] px-[var(--space-lg)] pt-[var(--space-3xl)]">
+      {actionsSlot && createPortal(
+        <Button variant="primary" size="md" onClick={onCreate}><Plus size={14} /> {headerLabel}</Button>,
+        actionsSlot,
+      )}
+      {/* Header — sizes and colors follow the Figma empty-state spec. */}
+      <div className="my-auto flex w-full max-w-[816px] flex-col items-center gap-8 py-6 nova-enter">
+        <div className="flex w-full flex-col items-center gap-3 text-center">
+          {/* Illustration: a blank record with the module's icon badge. */}
+          <div className="relative -mt-10 h-[125px] w-[194px]" aria-hidden>
+            <div className="absolute left-1/2 top-1/2 h-[109px] w-[177px] -translate-x-1/2 -translate-y-1/2">
+              <div className="absolute left-0 top-0 flex h-[97px] w-[160px] flex-col items-start gap-[11px] rounded-[12px] border border-[#E0E1E6] bg-white p-4">
+                <span className="h-2 w-[128px] rounded-[4px] bg-[#F9F9FB]" />
+                <span className="h-2 w-[104px] rounded-[4px] bg-[#F0F0F3]" />
+                <span className="h-2 w-[78px] rounded-[4px] bg-[#F0F0F3]" />
+                <span className="h-2 w-[92px] rounded-[4px] bg-[#F0F0F3]" />
+              </div>
+              <span className="absolute left-[121px] top-[53px] flex h-14 w-14 items-center justify-center rounded-[28px] bg-[#F0F0F3] text-[#60646C]">
+                <Icon size={24} strokeWidth={1.4} />
+              </span>
+            </div>
+          </div>
+          <h2 className="text-[20px] font-bold leading-8 text-[#1C2024]">{title}</h2>
+          <p className="text-[14px] leading-5 text-[#1C2024]">{description}</p>
+        </div>
+        {/* Ask Nova first: the box comes with a prompt, ready to send. */}
+        <div className="w-full max-w-[640px]">
+          <NovaComposer initialValue={prompt} onSend={onAskNova} placeholder="Ask Nova to help you get started" sendLabel="Create with Nova" gradientBorder />
+        </div>
+        {/* Other ways in, as two option cards under the box. */}
+        <div className={`-mt-2 grid w-full max-w-[640px] gap-3 ${onUseTemplate ? 'grid-cols-2' : 'grid-cols-1'}`}>
+          <StartOption icon={Pointer} label={createLabel} onClick={onCreate} />
+          {onUseTemplate && <StartOption icon={LayoutPanelLeft} label="Create from template" onClick={onUseTemplate} />}
+        </div>
+      </div>
+
+      {/* Same rotating cards as the Welcome page's ideas. */}
+      {/* Pinned to the bottom of the page, under everything else. */}
+      {suggestions.length > 0 && (
+        <div className="sticky bottom-0 flex w-full justify-center bg-[var(--surface-primary)] pb-[var(--space-xl)]">
+        <IdeaCarousel
+          eyebrow="Suggested by Nova"
+          muted
+          className="max-w-[816px]"
+          cards={suggestions.map(s => ({ id: s.id, title: s.title, description: s.reason, icon: Icon }))}
+          busyId={creatingId}
+          onPick={card => { const s = suggestions.find(x => x.id === card.id); if (s) onSuggest(s) }}
+        />
+        </div>
+      )}
+    </div>
+  )
+}
+
+/** A way to start without Nova: icon, label, chevron — the whole card clicks. */
+function StartOption({ icon: Icon, label, onClick }: { icon: LucideIcon; label: string; onClick: () => void }) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className="group flex items-center gap-3 rounded-[var(--radius-xl)] bg-[var(--color-neutral-2)] px-[var(--space-md)] py-3.5 text-left transition-colors duration-[var(--duration-fast)] hover:bg-[var(--color-neutral-3)] cursor-pointer"
+    >
+      <Icon size={20} strokeWidth={1.5} className="shrink-0 text-[var(--color-neutral-12)]" />
+      <span className="flex-1 text-[length:var(--font-size-base)] font-semibold text-[var(--color-neutral-12)]">{label}</span>
+      <ChevronRight size={16} className="shrink-0 text-[var(--color-neutral-11)] transition-transform duration-[var(--duration-fast)] group-hover:translate-x-0.5" />
+    </button>
+  )
+}

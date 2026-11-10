@@ -9,6 +9,11 @@ interface ModalProps {
   onOpenChange: (open: boolean) => void
   children: ReactNode
   maxWidth?: string
+  /** Fixes the dialog's height instead of sizing to content — for a flow
+   * with several steps of varying length that shouldn't visibly resize. */
+  height?: string
+  /** Overrides the default var(--radius-2xl) corner radius. */
+  radius?: string
   /**
    * Accessible name for modals that render their own heading instead of
    * <ModalHeader>. Radix requires exactly one Dialog.Title per dialog, so
@@ -17,19 +22,22 @@ interface ModalProps {
   srTitle?: string
 }
 
-export function Modal({ open, onOpenChange, children, maxWidth = '480px', srTitle }: ModalProps) {
+export function Modal({ open, onOpenChange, children, maxWidth = '480px', height, radius, srTitle }: ModalProps) {
   return (
     <Dialog.Root open={open} onOpenChange={onOpenChange}>
       <Dialog.Portal>
         <Dialog.Overlay className="modal-overlay fixed inset-0 z-[var(--z-overlay)] bg-black/40" />
         <Dialog.Content
-          className="modal-content fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-[var(--z-modal)] w-[calc(100%-32px)] max-h-[calc(100dvh-48px)] rounded-[var(--radius-2xl)] border border-[var(--border-default)] bg-[var(--surface-primary)] shadow-[var(--shadow-xl)] focus:outline-none flex flex-col overflow-visible"
-          style={{ maxWidth }}
+          className="modal-content fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-[var(--z-modal)] w-[calc(100%-32px)] max-h-[calc(100dvh-48px)] border border-[var(--border-default)] bg-[var(--surface-primary)] shadow-[var(--shadow-xl)] focus:outline-none flex flex-col overflow-visible"
+          style={{ maxWidth, height, borderRadius: radius ?? 'var(--radius-2xl)' }}
         >
           {srTitle && <Dialog.Title className="sr-only">{srTitle}</Dialog.Title>}
           {/* Matches the content cap above so short screens give the body as much
               room as possible instead of squeezing it into 85vh. */}
-          <div className="flex flex-col overflow-hidden rounded-[var(--radius-2xl)] max-h-[calc(100dvh-48px)]">
+          <div
+            className={`flex flex-col overflow-hidden max-h-[calc(100dvh-48px)] ${height ? 'h-full' : ''}`}
+            style={{ borderRadius: radius ?? 'var(--radius-2xl)' }}
+          >
             {children}
           </div>
         </Dialog.Content>

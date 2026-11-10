@@ -1,126 +1,117 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import Link from 'next/link'
 import Image from 'next/image'
 import { usePathname } from 'next/navigation'
 import * as Avatar from '@radix-ui/react-avatar'
-import * as Collapsible from '@radix-ui/react-collapsible'
 import * as ScrollArea from '@radix-ui/react-scroll-area'
 import * as Separator from '@radix-ui/react-separator'
 import { Tooltip, TooltipProvider } from '@/app/components/ui'
+import { ProgressRing } from '@/app/components/ui/ProgressRing'
+import { useSetupState, setupProgress } from '@/app/lib/onboarding/setup-store'
+import { MobileAppModal } from '@/app/components/onboarding/nova/MobileAppCard'
+import * as Collapsible from '@radix-ui/react-collapsible'
 import {
-  ClipboardList, Wrench, CalendarClock, Inbox,
-  Sparkles, BarChart3, Gauge, Wifi,
-  Box, MapPin, Users, ListChecks, FileText, FileDown, Files,
-  Car, Map, FileSearch, Ticket, AlertTriangle, Plug,
-  Rocket, Receipt, Building2,
-  Gem, Download, Command, Wand2, Wallet, Bot,
-  Bell, ChevronUp,
-  LayoutGrid, CircleHelp, MessageCircle, Settings,
-  Signal, Radar, Radio, Siren, Timer, Settings2, Warehouse, ScrollText,
-  ClipboardCheck, FileClock, Workflow, SquareCode, StickyNote, ArrowRight,
+  MessageCircle, Workflow, AppWindow,
+  Clipboard, Warehouse, CalendarClock, Inbox,
+  Box, MapPin, Users, ListChecks, Files, FileDown,
+  BarChart3, Gauge,
+  Car, ClipboardCheck, FileClock, AlertTriangle,
+  Package, ScrollText, Building2,
+  SquareCode, StickyNote, ArrowRight,
+  Bell, Check, ChevronUp, Smartphone, LayoutGrid, CircleHelp, MessagesSquare, CreditCard, Settings, Sparkles,
 } from 'lucide-react'
+import { planById, type PlanId } from '@/app/lib/billing/plans'
+import { openPlans } from '@/app/lib/billing/trial-usage'
 import type { LucideIcon } from 'lucide-react'
 
 interface NavItem {
   label: string
   icon: LucideIcon
   href?: string
-  /** Static page served from /public (not a Next route): use a plain anchor so the browser does a full load. */
-  external?: boolean
   dot?: boolean
-}
-
-interface NavSection {
-  title: string
-  badge?: string
-  defaultClosed?: boolean
-  items: NavItem[]
+  /** Paid feature, open during the trial — shown with a PRO badge. */
+  plan?: PlanId
+  onClick?: () => void
 }
 
 interface SideNavProps {
   collapsed: boolean
 }
 
+interface NavSection {
+  title: string
+  defaultClosed?: boolean
+  /** The whole section is part of a paid plan. */
+  plan?: PlanId
+  items: NavItem[]
+}
+
 const sections: NavSection[] = [
+  {
+    title: 'NOVA',
+    items: [
+      { label: 'Chat', icon: MessageCircle, href: '/agents' },
+      { label: 'Scheduled Tasks', icon: Workflow, href: '/workflows' },
+      { label: 'Custom Apps', icon: AppWindow, href: '/studio/browse' },
+    ],
+  },
   {
     title: 'CORE',
     items: [
-      { label: 'Work Orders', icon: ClipboardList, href: '/work-orders' },
-      { label: 'Preventive Maintenance', icon: CalendarClock, href: '/predictive-maintenance' },
-      { label: 'Intelligence', icon: Sparkles },
+      { label: 'Work Orders', icon: Clipboard, href: '/work-orders' },
+      { label: 'Preventive Maintenance', icon: Warehouse, href: '/predictive-maintenance', plan: 'premium' },
       { label: 'Scheduler', icon: CalendarClock, href: '/scheduler' },
-      { label: 'Requests', icon: Inbox },
+      { label: 'Requests', icon: Inbox, plan: 'professional' },
     ],
   },
   {
-    title: 'SUPERNOVA',
+    title: 'RESOURCES',
     items: [
-      { label: 'Command Center', icon: Radar, href: '/command-center' },
-      { label: 'Chat', icon: MessageCircle, href: '/agents' },
-      { label: 'Agents', icon: Users, href: '/aimates' },
-      { label: 'Integrations', icon: Sparkles },
-      { label: 'Workflows', icon: Bot, href: '/workflows' },
-      { label: 'SuperNova Staging', icon: Rocket, href: '/supernova/staging' },
-      { label: 'Settings', icon: Settings },
-    ],
-  },
-  {
-    title: 'STUDIO',
-    items: [
-      { label: 'Create New App', icon: Wand2, href: '/studio/create', dot: true },
-      { label: 'Browse Apps', icon: Gem, href: '/studio/browse' },
-      { label: 'Installed Apps', icon: Download, href: '/studio/installed' },
-      { label: 'Apps I Built', icon: Command, href: '/studio/built' },
-      { label: 'Billing & Usage', icon: Receipt, href: '/billing' },
+      { label: 'Assets', icon: Box, href: '/assets' },
+      { label: 'Locations', icon: MapPin, href: '/locations' },
+      { label: 'People & Teams', icon: Users },
+      { label: 'Checklists', icon: ListChecks, plan: 'premium' },
+      { label: 'Files', icon: Files, href: '/exports' },
+      { label: 'Import & Export', icon: FileDown },
     ],
   },
   {
     title: 'DATA & ANALYTICS',
+    plan: 'premium',
+    defaultClosed: true,
     items: [
       { label: 'Analytics', icon: BarChart3 },
       { label: 'Meters', icon: Gauge },
     ],
   },
   {
-    title: 'RESOURCES',
-    items: [
-      { label: 'Assets', icon: Box },
-      { label: 'Locations', icon: MapPin },
-      { label: 'People & Teams', icon: Users },
-      { label: 'Checklists', icon: ListChecks },
-      { label: 'File Management', icon: Files, href: '/exports' },
-      { label: 'Import & Export', icon: FileDown, href: '/exports' },
-    ],
-  },
-  {
-    title: 'FLEET',
+    title: 'FLEET MAINTENANCE',
+    plan: 'professional',
+    defaultClosed: true,
     items: [
       { label: 'Vehicles', icon: Car, href: '/fleet/vehicles' },
       { label: 'Inspections', icon: ClipboardCheck },
       { label: 'Inspection History', icon: FileClock },
       { label: 'Recalls', icon: AlertTriangle },
-      { label: 'Alerts', icon: AlertTriangle },
-      { label: 'Integrations', icon: Plug },
-    ],
-  },
-  {
-    title: 'EDGE',
-    items: [
-      { label: 'Sensors', icon: Radio, href: '/edge/sensors' },
-      { label: 'Gateways', icon: Timer },
-      { label: 'Alerts', icon: Siren },
-      { label: 'Runtime', icon: Signal, href: '/edge/runtime' },
-      { label: 'Settings', icon: Settings2 },
     ],
   },
   {
     title: 'PROCUREMENT',
+    plan: 'premium',
+    defaultClosed: true,
     items: [
-      { label: 'Parts & Inventory', icon: Warehouse },
+      { label: 'Parts & Inventory', icon: Package, href: '/parts' },
       { label: 'Purchase Orders', icon: ScrollText },
       { label: 'Vendors & Customers', icon: Building2 },
+    ],
+  },
+  {
+    // Prototype entry to the first-run experience.
+    title: 'ONBOARDING',
+    items: [
+      { label: 'Onboarding', icon: Sparkles, href: '/onboarding-v2' },
     ],
   },
 ]
@@ -176,20 +167,16 @@ function UltranovaCard() {
   )
 }
 
-const footerIcons = [
-  { icon: LayoutGrid, label: 'Apps' },
-  { icon: CircleHelp, label: 'Help' },
-  { icon: MessageCircle, label: 'Feedback' },
-  { icon: Settings, label: 'Settings' },
+const footerIcons: NavItem[] = [
+  { label: 'Help Center', icon: CircleHelp },
+  { label: 'Contact', icon: MessagesSquare },
+  { label: 'Billing', icon: CreditCard, onClick: openPlans },
+  { label: 'Settings', icon: Settings },
 ]
 
 function isActive(pathname: string, href?: string, label?: string): boolean {
   if (!href) return false
   if (href === '/dashboard') return pathname === '/dashboard' || pathname === '/'
-  if (href === '/studio/browse') return pathname === '/studio' || pathname.startsWith('/studio/browse')
-  if (label === 'File Management') return pathname.startsWith('/exports') || pathname.startsWith('/files')
-  if (label === 'Import & Export') return false
-  if (href === '/supernova/staging') return pathname === '/supernova/staging' || pathname.startsWith('/supernova/staging/')
   return pathname === href || pathname.startsWith(href + '/')
 }
 
@@ -211,34 +198,46 @@ function CollapsedIcon({ item, active, label }: { item: NavItem; active: boolean
   )
 
   if (item.href) {
-    return item.external ? <a href={item.href}>{inner}</a> : <Link href={item.href}>{inner}</Link>
+    return <Link href={item.href}>{inner}</Link>
   }
   return inner
 }
 
-const ONBOARDING_KEY = 'supernova_onboarded'
+/** Marks paid features that are open during the trial; the tooltip says which
+ * plan keeps them. */
+function ProBadge({ plan }: { plan: PlanId }) {
+  return (
+    <span title={`Free during your trial — included in ${planById(plan).name}`} className="inline-flex h-[18px] shrink-0 items-center rounded-full bg-[var(--color-purple-light)] px-1.5 text-[10px] font-semibold uppercase tracking-[0.04em] text-[var(--color-purple)]">
+      Pro
+    </span>
+  )
+}
+
+function NavRow({ item, active, collapsed }: { item: NavItem; active: boolean; collapsed: boolean }) {
+  if (collapsed) return <CollapsedIcon item={item} active={active} label={item.label} />
+  const classes = `flex items-center gap-2 w-full px-2 h-8 rounded-[var(--radius-sm)] transition-colors duration-[var(--duration-fast)] ease-[var(--ease-default)] cursor-pointer ${
+    active
+      ? 'bg-[var(--color-neutral-5)] font-semibold text-[var(--color-neutral-12)]'
+      : 'font-medium text-[var(--color-neutral-12)] hover:bg-[var(--color-neutral-4)]'
+  }`
+  const inner = (
+    <>
+      <item.icon size={16} className="shrink-0" />
+      <span className="flex-1 text-left text-[length:var(--font-size-base)] leading-5 truncate">{item.label}</span>
+      {item.plan && <ProBadge plan={item.plan} />}
+      {item.dot && <span className="w-1.5 h-1.5 rounded-full bg-[var(--color-accent-9)] shrink-0" />}
+    </>
+  )
+  return item.href
+    ? <Link href={item.href} className={classes}>{inner}</Link>
+    : <button type="button" className={classes}>{inner}</button>
+}
 
 export function SideNav({ collapsed }: SideNavProps) {
   const pathname = usePathname()
-  const [supernovaUnlocked, setSupernovaUnlocked] = useState(false)
-
-  useEffect(() => {
-    const check = () => setSupernovaUnlocked(localStorage.getItem(ONBOARDING_KEY) === 'true')
-    check()
-    window.addEventListener('supernova-onboarding-complete', check)
-    window.addEventListener('storage', check)
-    return () => {
-      window.removeEventListener('supernova-onboarding-complete', check)
-      window.removeEventListener('storage', check)
-    }
-  }, [])
-
-  const handleReplaySetup = () => {
-    localStorage.removeItem(ONBOARDING_KEY)
-    localStorage.removeItem('upkeep-supernova-onboarding')
-    setSupernovaUnlocked(false)
-    window.location.href = '/command-center'
-  }
+  const setup = useSetupState()
+  const setupPercent = setupProgress(setup)
+  const [appOpen, setAppOpen] = useState(false)
 
   return (
     <TooltipProvider delayDuration={300}>
@@ -254,7 +253,7 @@ export function SideNav({ collapsed }: SideNavProps) {
           }`}
         >
           {!collapsed && (
-            <Link href="/dashboard">
+            <Link href="/dashboard" data-stagger style={{ '--i': 0 } as React.CSSProperties}>
               <Image src="/images/logo-upkeep.svg" alt="UpKeep" width={96} height={24} priority />
             </Link>
           )}
@@ -270,7 +269,7 @@ export function SideNav({ collapsed }: SideNavProps) {
                 aria-label="Notifications"
               >
                 <Bell size={16} className="text-[var(--color-neutral-9)]" />
-                <span className="absolute top-1.5 right-1.5 w-1.5 h-1.5 rounded-full bg-[var(--color-error)]" />
+                <span className="absolute top-1.5 right-1.5 w-1.5 h-1.5 rounded-full bg-[var(--color-accent-9)]" />
               </button>
               <Avatar.Root className="w-7 h-7 rounded-full overflow-hidden shrink-0">
                 <Avatar.Fallback className="flex items-center justify-center w-full h-full bg-[var(--color-purple-light)] text-[var(--color-purple)] text-[length:var(--font-size-xs)] font-semibold">
@@ -281,14 +280,38 @@ export function SideNav({ collapsed }: SideNavProps) {
           )}
         </div>
 
+        {/* Always here: in progress it leads back into Nova's welcome; once
+            complete it stays as the place to review what was set up. */}
+        <div data-stagger style={{ '--i': 1 } as React.CSSProperties} className={`shrink-0 pt-[var(--space-sm)] ${collapsed ? 'flex justify-center' : 'px-[var(--space-xs)]'}`}>
+          {setupPercent < 100 ? (
+            <Link
+              href={setup.welcomeHref}
+              aria-label={`Setup your account, ${setupPercent}% done`}
+              className={`flex items-center rounded-[var(--radius-lg)] bg-[var(--color-accent-9)] text-white shadow-[var(--shadow-sm)] transition-colors duration-[var(--duration-fast)] hover:bg-[var(--color-accent-10)] ${
+                collapsed ? 'h-9 w-9 justify-center' : 'h-11 justify-between px-3'
+              }`}
+            >
+              {!collapsed && <span className="text-[length:var(--font-size-base)] font-medium">Setup your account</span>}
+              <ProgressRing value={setupPercent} size={collapsed ? 22 : 24} strokeWidth={3} trackColor="rgba(255,255,255,0.3)" fillColor="white" showLabel={false} />
+            </Link>
+          ) : (
+            <Link
+              href={setup.welcomeHref}
+              aria-label="Setup complete"
+              className={`flex items-center gap-2 rounded-[var(--radius-lg)] border border-[var(--border-default)] bg-[var(--surface-primary)] text-[var(--color-neutral-12)] transition-colors duration-[var(--duration-fast)] hover:bg-[var(--color-neutral-2)] nova-enter ${
+                collapsed ? 'h-9 w-9 justify-center' : 'h-11 px-3'
+              }`}
+            >
+              <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-[var(--color-success)] text-white"><Check size={12} strokeWidth={3} /></span>
+              {!collapsed && <span className="text-[length:var(--font-size-base)] font-medium">Setup complete</span>}
+            </Link>
+          )}
+        </div>
+
         {/* Scrollable nav */}
         <ScrollArea.Root className="flex-1 overflow-hidden">
           <ScrollArea.Viewport className="h-full w-full px-[var(--space-xs)]">
-            <nav
-              className={`flex flex-col gap-3 py-[var(--space-xs)] ${
-                collapsed ? 'items-center' : 'items-start'
-              }`}
-            >
+            <nav className={`flex flex-col gap-3 pt-[var(--space-sm)] ${collapsed ? 'pb-16' : 'pb-24'} ${collapsed ? 'items-center' : 'items-stretch'}`}>
               {collapsed ? (
                 <Tooltip content="Ultranova" side="right" sideOffset={8}>
                   <a
@@ -302,81 +325,36 @@ export function SideNav({ collapsed }: SideNavProps) {
               ) : (
                 <UltranovaCard />
               )}
-              {sections.map((section) =>
+              {sections.map((section, i) =>
                 collapsed ? (
                   <div key={section.title} className="flex flex-col items-center gap-1">
-                    {section.items.slice(0, 1).map((item) => (
-                      <CollapsedIcon
-                        key={item.label}
-                        item={item}
-                        active={isActive(pathname, item.href, item.label)}
-                        label={item.label}
-                      />
+                    {section.items.slice(0, 1).map(item => (
+                      <NavRow key={item.label} item={item} active={isActive(pathname, item.href, item.label)} collapsed />
                     ))}
                   </div>
                 ) : (
-                  <Collapsible.Root key={section.title} defaultOpen={!section.defaultClosed} className="w-full">
-                    <Collapsible.Trigger suppressHydrationWarning className="flex items-center gap-2 w-full px-2 pt-2 pb-1 h-7 rounded-[var(--radius-sm)] cursor-pointer group">
-                      <span className="flex-1 text-left text-[length:var(--font-size-sm)] font-medium uppercase tracking-[0.02em] text-[var(--color-neutral-8)]">
+                  <Collapsible.Root
+                    key={section.title}
+                    defaultOpen={!section.defaultClosed}
+                    className="w-full"
+                    data-stagger
+                    style={{ '--i': 2 + i } as React.CSSProperties}
+                  >
+                    <Collapsible.Trigger suppressHydrationWarning className="group flex h-7 w-full cursor-pointer items-center gap-2 rounded-[var(--radius-sm)] px-2 pb-1 pt-2">
+                      <span className="flex flex-1 items-center gap-1.5 text-left text-[length:var(--font-size-sm)] font-medium uppercase tracking-[0.02em] text-[var(--color-neutral-8)]">
                         {section.title}
                       </span>
-                      {section.badge && (
-                        <span className="flex items-center justify-center px-2 h-5 rounded-lg bg-[var(--color-accent-1)] border border-[var(--color-accent-4)] text-[length:10px] font-medium text-[var(--color-accent-9)]">
-                          {section.badge}
-                        </span>
-                      )}
+                      {/* Right-aligned, next to the chevron — same column as item badges. */}
+                      {section.plan && <ProBadge plan={section.plan} />}
                       <ChevronUp
                         size={14}
                         className="text-[var(--color-neutral-8)] transition-transform duration-[var(--duration-slow)] ease-[var(--ease-default)] group-data-[state=closed]:rotate-180"
                       />
                     </Collapsible.Trigger>
-                    <Collapsible.Content className="nav-collapsible-content overflow-hidden">
-                      {section.items.map((item) => {
-                        const active = isActive(pathname, item.href, item.label)
-                        const classes = `flex items-center gap-2 w-full px-2 h-8 rounded-[var(--radius-sm)] transition-colors duration-[var(--duration-fast)] ease-[var(--ease-default)] ${
-                          active
-                            ? 'bg-[var(--color-neutral-5)] font-semibold text-[var(--color-neutral-12)] cursor-pointer'
-                            : 'font-medium text-[var(--color-neutral-12)] hover:bg-[var(--color-neutral-4)] cursor-pointer'
-                        }`
-
-                        const inner = (
-                          <>
-                            <item.icon size={16} className="shrink-0" />
-                            <span className="flex-1 text-left text-[length:var(--font-size-base)] leading-5 truncate">
-                              {item.label}
-                            </span>
-                            {item.dot && (
-                              <span className="w-1.5 h-1.5 rounded-full bg-[var(--color-accent-9)] shrink-0" />
-                            )}
-                          </>
-                        )
-
-                        if (item.href) {
-                          return item.external ? (
-                            <a key={item.label} href={item.href} className={classes}>
-                              {inner}
-                            </a>
-                          ) : (
-                            <Link key={item.label} href={item.href} className={classes}>
-                              {inner}
-                            </Link>
-                          )
-                        }
-
-                        return (
-                          <button key={item.label} className={classes}>
-                            {inner}
-                          </button>
-                        )
-                      })}
-                      {section.title === 'SUPERNOVA' && supernovaUnlocked && (
-                        <button
-                          onClick={handleReplaySetup}
-                          className="flex items-center gap-2 w-full px-2 h-7 mt-1 text-[11px] font-medium text-[var(--color-neutral-7)] hover:text-[var(--color-neutral-9)] cursor-pointer transition-colors"
-                        >
-                          Replay setup
-                        </button>
-                      )}
+                    <Collapsible.Content suppressHydrationWarning className="nav-collapsible-content overflow-hidden">
+                      {section.items.map(item => (
+                        <NavRow key={item.label} item={item} active={isActive(pathname, item.href, item.label)} collapsed={false} />
+                      ))}
                     </Collapsible.Content>
                   </Collapsible.Root>
                 )
@@ -391,35 +369,55 @@ export function SideNav({ collapsed }: SideNavProps) {
           </ScrollArea.Scrollbar>
         </ScrollArea.Root>
 
+        {/* Nova on the phone, always there: floating over the bottom of the
+            nav, just above the footer. */}
+        <div className="relative h-0">
+          <div className={`absolute bottom-full z-10 mb-[var(--space-sm)] ${collapsed ? 'left-1/2 -translate-x-1/2' : 'inset-x-[var(--space-sm)]'}`}>
+            <button
+              type="button"
+              onClick={() => setAppOpen(true)}
+              aria-label="Get the UpKeep App"
+              className={`flex items-center gap-3 rounded-[var(--radius-xl)] bg-[var(--color-accent-12)] text-left text-white shadow-[var(--shadow-lg)] transition-[filter] duration-[var(--duration-fast)] hover:brightness-110 cursor-pointer nova-panel-up ${
+                collapsed ? 'h-9 w-9 justify-center' : 'w-full px-3 py-2.5'
+              }`}
+            >
+              <Smartphone size={18} className="shrink-0 text-white/80" />
+              {!collapsed && (
+                <span className="flex min-w-0 flex-col">
+                  <span className="truncate text-[length:var(--font-size-base)] font-semibold">Get the UpKeep App</span>
+                  <span className="text-[length:var(--font-size-sm)] leading-4 text-white/70">Your maintenance assistant, on the go.</span>
+                </span>
+              )}
+            </button>
+          </div>
+        </div>
+        <MobileAppModal open={appOpen} onOpenChange={setAppOpen} />
+
         <Separator.Root className="h-px bg-[var(--border-default)]" />
 
         {/* Footer */}
-        <div
-          className={`flex items-center h-14 shrink-0 ${
-            collapsed ? 'justify-center p-3' : 'justify-between px-3 py-3'
-          }`}
-        >
-          {collapsed ? (
-            <Tooltip content="Settings" side="right" sideOffset={8}>
-              <button
-                className="flex items-center justify-center w-9 h-9 rounded-[var(--radius-lg)] text-[var(--color-neutral-8)] hover:bg-[var(--color-neutral-4)] cursor-pointer transition-colors duration-[var(--duration-fast)]"
-                aria-label="Settings"
-              >
-                <Settings size={18} />
-              </button>
-            </Tooltip>
-          ) : (
+        <div className={`flex h-14 shrink-0 items-center ${collapsed ? 'justify-center p-3' : 'justify-between px-3 py-3'}`}>
+          <Tooltip content="Apps" side="top" sideOffset={6}>
+            <button
+              type="button"
+              aria-label="Apps"
+              className="flex h-8 w-8 items-center justify-center rounded-[var(--radius-lg)] bg-[var(--surface-primary)] text-[var(--color-neutral-10)] shadow-[var(--shadow-sm)] transition-colors duration-[var(--duration-fast)] hover:text-[var(--color-neutral-12)] cursor-pointer"
+            >
+              <LayoutGrid size={16} />
+            </button>
+          </Tooltip>
+          {!collapsed && (
             <div className="flex items-center gap-1">
-              {footerIcons.map(({ icon: Icon, label }) => (
-                <Tooltip key={label} content={label} side="top" sideOffset={6}>
-                  <button
-                    className="flex items-center justify-center w-8 h-8 rounded-[var(--radius-lg)] text-[var(--color-neutral-8)] hover:bg-[var(--color-neutral-4)] hover:text-[var(--color-neutral-11)] cursor-pointer transition-colors duration-[var(--duration-fast)]"
-                    aria-label={label}
-                  >
-                    <Icon size={16} />
-                  </button>
-                </Tooltip>
-              ))}
+              {footerIcons.map(({ icon: Icon, label, href, onClick }) => {
+                const cls = 'flex h-8 w-8 items-center justify-center rounded-[var(--radius-lg)] text-[var(--color-neutral-8)] transition-colors duration-[var(--duration-fast)] hover:bg-[var(--color-neutral-4)] hover:text-[var(--color-neutral-11)] cursor-pointer'
+                return (
+                  <Tooltip key={label} content={label} side="top" sideOffset={6}>
+                    {href
+                      ? <Link href={href} aria-label={label} className={cls}><Icon size={16} /></Link>
+                      : <button type="button" aria-label={label} onClick={onClick} className={cls}><Icon size={16} /></button>}
+                  </Tooltip>
+                )
+              })}
             </div>
           )}
         </div>

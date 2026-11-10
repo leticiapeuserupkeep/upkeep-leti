@@ -10,6 +10,14 @@ import { Button } from '@/app/components/ui/Button'
 import { IconButton } from '@/app/components/ui/IconButton'
 import { MeterConfigModal } from '@/app/components/edge/MeterConfigModal'
 import { DashboardProvider } from '@/app/lib/dashboard/dashboard-context'
+import { useSetupState } from '@/app/lib/onboarding/setup-store'
+import { WelcomeScreen } from '@/app/components/onboarding/nova/WelcomeScreen'
+import { PlansModal } from '@/app/components/billing/PlansModal'
+import { PlanTag } from '@/app/components/billing/PlanTag'
+import { OPEN_PLANS_EVENT, openPlans } from '@/app/lib/billing/trial-usage'
+import type { PlanId } from '@/app/lib/billing/plans'
+import { TrialBadge } from '@/app/components/dashboard/TrialBadge'
+
 import { runtimeSensors } from '@/app/lib/edge-data'
 import { sites } from '@/app/lib/mock-data'
 import type { Role } from '@/app/lib/models'
@@ -34,6 +42,10 @@ function getPageTitle(pathname: string): string {
   if (pathname.startsWith('/supernova/staging')) return 'SuperNova Staging'
   if (pathname.startsWith('/workflows')) return 'Workflows'
   if (pathname.startsWith('/aimates')) return 'Agents'
+  if (pathname.startsWith('/assets')) return 'Assets'
+  if (pathname.startsWith('/parts')) return 'Inventory'
+  if (pathname.startsWith('/onboarding')) return 'Welcome'
+  if (pathname.startsWith('/locations')) return 'Locations'
   return 'Dashboard'
 }
 
@@ -81,8 +93,29 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   const isRuntimeDetail = /^\/edge\/runtime\/[^/]+/.test(pathname)
   const isRuntimeSection = isRuntimeList || isRuntimeDetail
   const isWorkOrders = pathname.startsWith('/work-orders')
+  const isWelcome = pathname.startsWith('/onboarding')
+  // Once opened, the onboarding stays mounted (hidden elsewhere) so its
+  // conversation and state survive navigating around the app.
+  const [welcomeOpened, setWelcomeOpened] = useState(isWelcome)
+  if (isWelcome && !welcomeOpened) setWelcomeOpened(true)
+  const setup = useSetupState()
+  const isWorkOrdersEmptyOnboarding = isWorkOrders && setup.workOrderLanding
+  // Empty list: no view switcher or table toolbar, just the empty state.
+  const isWorkOrdersEmpty = isWorkOrdersEmptyOnboarding || (isWorkOrders && setup.counts.workOrders === 0)
   const isFleetDetail = /^\/fleet\/vehicles\/[^/]+/.test(pathname)
   const isScheduler = pathname.startsWith('/scheduler')
+  // Paid sections open during the trial: the header says which plan keeps them.
+  // (Inventory marks its Parts tab instead.)
+  const sectionPlan: PlanId | null = pathname.startsWith('/predictive-maintenance')
+    ? 'premium'
+    : pathname.startsWith('/fleet') ? 'professional' : null
+  // The pricing page, as a modal — from the trial badge, Billing or a plan tag.
+  const [plansOpen, setPlansOpen] = useState(false)
+  useEffect(() => {
+    const open = () => setPlansOpen(true)
+    window.addEventListener(OPEN_PLANS_EVENT, open)
+    return () => window.removeEventListener(OPEN_PLANS_EVENT, open)
+  }, [])
   const isCommandCenter = pathname.startsWith('/command-center')
   const isEdgeSensors = pathname === '/edge/sensors'
 
@@ -99,6 +132,9 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   }, [])
 
   function getActions() {
+    if (isWelcome) return <TrialBadge daysLeft={5} onUpgrade={openPlans} />
+    // Pages that own their header buttons portal them in here.
+    if (pathname.startsWith('/assets') || pathname.startsWith('/locations') || pathname.startsWith('/parts')) return <div id="page-header-actions" className="flex items-center gap-[var(--space-sm)]" />
     if (isEdgeSensors) {
       return (
         <Button variant="primary" size="sm" type="button" onClick={() => setShowAddRuntime(true)}>
@@ -143,6 +179,8 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
       )
     }
     if (isWorkOrders) {
+      // No work orders yet: the empty state portals its own Create button here.
+      if (isWorkOrdersEmpty) return <div id="page-header-actions" className="flex items-center gap-[var(--space-sm)]" />
       return (
         <>
           <Button variant="primary" size="md">
@@ -185,8 +223,12 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   return (
     <div className="flex min-h-screen bg-[var(--surface-canvas)]">
       <SideNav collapsed={sidebarCollapsed} />
+      <PlansModal open={plansOpen} onOpenChange={setPlansOpen} />
 
       <div
+        // Nova's side panel sets --nova-panel-w while open, so the page makes
+        // room for it instead of sitting underneath.
+        style={{ marginRight: 'var(--nova-panel-w, 0px)', transition: 'margin-right 300ms cubic-bezier(0.32, 0.72, 0, 1)' }}
         className={`flex flex-col flex-1 min-w-0 min-h-0 ${
           isCommandCenter || isPMCreate ? 'h-screen overflow-hidden' : 'min-h-screen'
         }`}
@@ -202,7 +244,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
             onTimeRangeChange={setTimeRange}
             onToggleSidebar={() => setSidebarCollapsed((prev) => !prev)}
             sites={sites}
-            minimal={isEdge || isStudioSection || pathname.startsWith('/exports') || pathname.startsWith('/files') || isWorkOrders || pathname.startsWith('/scheduler') || isPMList}
+            minimal={isWelcome || pathname.startsWith('/locations') || pathname.startsWith('/assets') || pathname.startsWith('/parts') || isEdge || isStudioSection || pathname.startsWith('/exports') || pathname.startsWith('/files') || isWorkOrders || pathname.startsWith('/scheduler') || isPMList}
             backHref={isRuntimeDetail ? '/edge/runtime' : undefined}
             afterTitle={isEdgeSensors ? (
               <Button
@@ -215,7 +257,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
                 <FileDown size={14} />
                 Export Readings
               </Button>
-            ) : isWorkOrders ? (
+            ) : isWorkOrders && !isWorkOrdersEmpty ? (
               <button className="inline-flex items-center gap-1.5 ml-2 px-2.5 py-1 rounded-[var(--radius-lg)] border border-[var(--border-default)] bg-[var(--surface-secondary)] text-[length:var(--font-size-sm)] font-medium text-[var(--color-neutral-9)] cursor-pointer hover:bg-[var(--color-neutral-3)] transition-colors duration-[var(--duration-fast)]">
                 <LayoutGrid size={14} className="text-[var(--color-neutral-7)]" />
                 Table
@@ -245,6 +287,10 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
                   )
                 })}
               </div>
+            ) : pathname.startsWith('/parts') ? (
+              <div id="page-after-title" className="flex items-center self-stretch" />
+            ) : sectionPlan ? (
+              <PlanTag plan={sectionPlan} />
             ) : undefined}
             actions={isScheduler ? (
               <div id="scheduler-header-actions" className="flex items-center gap-[var(--space-sm)]" />
@@ -265,6 +311,13 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
                 isCommandCenter ? 'overflow-hidden' : ''
               }`}
             >
+              {/* Kept mounted once opened, hidden elsewhere — the chat keeps its
+                  state and scroll when the user visits other sections. */}
+              {welcomeOpened && (
+                <div className={isWelcome ? 'contents' : 'hidden'}>
+                  <WelcomeScreen />
+                </div>
+              )}
               {children}
             </div>
           </DashboardProvider>
