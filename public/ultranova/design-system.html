@@ -25,6 +25,12 @@
   .sw span { display: block; padding: 8px 10px; color: var(--un-ink-soft); }
   .type div { display: flex; align-items: baseline; gap: 16px; padding: 8px 0; border-bottom: 1px dashed var(--un-line); }
   .type small { width: 150px; flex: none; color: var(--un-ink-soft); font-size: 12px; }
+  h3.mt { font-weight: 500; font-size: 13px; letter-spacing: .06em; color: var(--un-ink-soft); margin: 20px 0 8px; }
+  .mx { overflow-x: auto; display: block; }
+  .mx.light { background: #f4f1fa; }
+  .mgrid { display: grid; grid-template-columns: 72px repeat(5, max-content); gap: 14px 22px; align-items: center; }
+  .mgrid small { color: var(--un-ink-soft); font-size: 12px; } .mx.light small { color: #5b5470; }
+  .cell { display: flex; gap: 8px; align-items: center; }
   .thread { display: flex; flex-direction: column; gap: 10px; width: 100%; }
   .un-toast.static { position: static; opacity: 1; transform: none; }
   .un-menu.static { position: static; opacity: 1; transform: none; pointer-events: auto; }
@@ -58,8 +64,9 @@
   </div>
 
   <h2>Button · <code>.un-btn</code></h2>
-  <p class="note">Primary call to action. Text link: <code>.un-link</code>.</p>
-  <div class="demo"><button class="un-btn">Let’s Get Started</button><button class="un-link">Skip</button></div>
+  <p class="note">Size: <code>--sm</code> 32 · <code>--md</code> 40 · <code>--lg</code> 48 (default). Style: <code>--filled</code> (default), <code>--ghost</code> (no bg, no border), <code>--soft</code> (soft border), <code>--hard</code> (hard border). Color: <code>--purple</code> (default), <code>--white</code>, <code>--gray</code>, <code>--black</code>, <code>--green</code>. <code>--icon</code> for icon-only. Text link: <code>.un-link</code>.</p>
+  <div id="btns"></div>
+  <div class="demo"><button class="un-link">Skip</button></div>
 
   <h2>Chip · <code>.un-chip</code></h2>
   <p class="note">Suggested actions, reply options and topics. Modifiers: <code>--dashed</code> (“Other…”), <code>--lg</code>; selected via <code>aria-pressed="true"</code>.</p>
@@ -106,5 +113,22 @@
   <h2>Card · <code>.un-card</code></h2>
   <div class="demo" style="background:#000"><div class="un-card" style="padding:32px;width:100%;text-align:center"><span class="un-pill un-pill--small"><i class="un-dot"></i>Glass card</span></div></div>
 </main>
+<script>
+/* builds the button matrix from the real classes: one table per size, rows = style, columns = color */
+(function () {
+  var sizes = ['sm', 'md', 'lg'], styles = ['filled', 'ghost', 'soft', 'hard'], colors = ['purple', 'white', 'gray', 'black', 'green'];
+  var arrow = '<svg class="un-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg>';
+  function table(size, light) {
+    var h = '<h3 class="mt">' + size.toUpperCase() + (light ? ' · on a light surface' : '') + '</h3><div class="demo mx' + (light ? ' light' : '') + '"><div class="mgrid"><span></span>' + colors.map(function (c) { return '<small>' + c + '</small>'; }).join('');
+    styles.forEach(function (st) {
+      h += '<small>' + st + '</small>' + colors.map(function (c) {
+        return '<span class="cell"><button class="un-btn un-btn--' + size + ' un-btn--' + st + ' un-btn--' + c + '">Button</button><button class="un-btn un-btn--icon un-btn--' + size + ' un-btn--' + st + ' un-btn--' + c + '" aria-label="Back">' + arrow + '</button></span>';
+      }).join('');
+    });
+    return h + '</div></div>';
+  }
+  document.getElementById('btns').innerHTML = sizes.map(function (s) { return table(s, false); }).join('') + table('md', true);
+})();
+</script>
 </body>
 </html>

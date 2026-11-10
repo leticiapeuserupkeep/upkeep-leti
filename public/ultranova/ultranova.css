@@ -52,14 +52,40 @@ button, input, textarea, kbd { font-family: inherit; }
 .un-brand { display: inline-flex; align-items: center; gap: 10px; font-weight: 500; font-size: 20px; letter-spacing: 0.01em; }
 .un-brand svg { width: 26px; height: 26px; flex: none; }
 
-/* ---------- button (primary call to action) ---------- */
+/* ---------- button ----------
+   .un-btn + size (--sm 32 · --md 40 · --lg 48, default) + style + color.
+   Style: --filled (default) · --ghost (no bg, no border) · --soft (soft border) · --hard (strong border).
+   Color: --purple (default) · --white · --gray · --black · --green.
+   --icon makes it a square-to-circle icon button. Example: <button class="un-btn un-btn--md un-btn--soft un-btn--green">Save</button> */
 .un-btn {
-  display: inline-flex; align-items: center; justify-content: center; height: 48px; padding: 0 28px; border: 0; border-radius: var(--un-r-pill); cursor: pointer;
-  font: 500 15px var(--font-display); color: #fff;
-  background: linear-gradient(135deg, var(--un-violet), #c026d3 120%); box-shadow: 0 14px 40px -14px rgba(168, 85, 247, 0.9);
-  transition: transform 0.25s var(--ease), box-shadow 0.25s;
+  --h: 48px; --px: 28px; --fs: 15px;
+  --c: #a78bfa; --bg: linear-gradient(135deg, var(--un-violet), #c026d3 120%); --on: #fff;   /* purple */
+  display: inline-flex; align-items: center; justify-content: center; gap: 8px; height: var(--h); padding: 0 var(--px); border: 1px solid transparent; border-radius: var(--un-r-pill); cursor: pointer;
+  font: 500 var(--fs) var(--font-display); color: var(--on); background: var(--bg); box-shadow: 0 14px 40px -14px rgba(168, 85, 247, 0.9);
+  transition: transform 0.25s var(--ease), box-shadow 0.25s, background 0.25s, border-color 0.25s, color 0.25s;
 }
 .un-btn:hover { transform: translateY(-2px); box-shadow: 0 18px 46px -12px rgba(192, 38, 211, 0.9); }
+.un-btn:active { transform: scale(0.97); }
+.un-btn .un-icon { width: 1.25em; height: 1.25em; }
+/* sizes */
+.un-btn--sm { --h: 32px; --px: 16px; --fs: 14px; }
+.un-btn--md { --h: 40px; --px: 20px; --fs: 15px; }
+.un-btn--lg { --h: 48px; --px: 28px; --fs: 15px; }
+.un-btn--icon { width: var(--h); padding: 0; }
+/* colors (each sets: --c line/text color, --bg filled background, --on text on filled) */
+.un-btn--purple { --c: #a78bfa; --bg: linear-gradient(135deg, var(--un-violet), #c026d3 120%); --on: #fff; }
+.un-btn--white  { --c: #fff; --bg: #fff; --on: #0a0214; }
+.un-btn--gray   { --c: #9d94b3; --bg: #5b5470; --on: #fff; }
+.un-btn--black  { --c: #0a0214; --bg: #0a0214; --on: #fff; }
+.un-btn--green  { --c: var(--un-live); --bg: var(--un-live); --on: #04120f; }
+.un-btn--green:hover { box-shadow: 0 14px 36px -12px rgba(0, 237, 197, 0.8); }
+.un-btn--white:hover, .un-btn--gray:hover, .un-btn--black:hover { box-shadow: 0 14px 36px -14px rgba(0, 0, 0, 0.6); }
+/* styles: filled is the default above; the others drop the background and keep the color as text (+ border) */
+.un-btn--ghost, .un-btn--soft, .un-btn--hard { background: transparent; color: var(--c); box-shadow: none; }
+.un-btn--ghost:hover, .un-btn--soft:hover, .un-btn--hard:hover { transform: none; box-shadow: none; background: color-mix(in srgb, var(--c) 12%, transparent); }
+.un-btn--soft { border-color: color-mix(in srgb, var(--c) 30%, transparent); }
+.un-btn--hard { border-color: var(--c); }
+.un-btn--soft:hover { border-color: color-mix(in srgb, var(--c) 50%, transparent); }
 .un-btn:focus-visible, .un-chip:focus-visible, .un-link:focus-visible { outline: 2px solid var(--un-live); outline-offset: 3px; }
 
 /* text link-style button ("Skip") */
@@ -102,7 +128,6 @@ button, input, textarea, kbd { font-family: inherit; }
 .un-icon-btn--round { border-radius: 50%; border: 1px solid rgba(255, 255, 255, 0.4); }
 .un-icon-btn--round:hover { transform: scale(1.08); background: rgba(255, 255, 255, 0.12); }
 .un-icon-btn--round .un-icon { width: 14px; height: 14px; stroke-width: 2; }
-.un-icon-btn--lg { width: 40px; height: 40px; border-radius: 50%; background: var(--un-glass); border: 1px solid var(--un-line); }
 .un-icon-btn--send { border-radius: var(--un-r-pill); }
 .un-icon-btn--send.ready { background: var(--un-live); color: #04120f; box-shadow: 0 6px 18px -6px rgba(0, 237, 197, 0.8); }
 .un-icon-btn--send.ready:hover { transform: translateY(-1px); background: #2ff5d4; }
