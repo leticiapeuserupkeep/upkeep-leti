@@ -15,8 +15,8 @@
     --bg: #000;
     --brand: #dd00ff;
     --brand-line: #a600ac;
-    --sidebar-top: #000;
-    --sidebar-bottom: #570a9e;
+    --sidebar-top: rgba(0, 0, 0, 0.6);         /* the sidebar is 60% opaque over a 16px blur, so the ribbon shows through (Figma) */
+    --sidebar-bottom: rgba(87, 10, 158, 0.6);
     --nav-active: #461f5c;
     --dot: #5e016c;
     --dot-live: #00edc5;
@@ -37,7 +37,7 @@
   /* glass ribbon (exported from the Figma frame): black everywhere except bottom-left, so it blends into the page */
   .backdrop { position: fixed; inset: 0; z-index: 0; pointer-events: none; background: #000; }
   /* the ribbon image sits bottom-left of the content area; its top and right edges fade out so it never shows a cut */
-  .backdrop::before { content: ""; position: absolute; left: var(--sidebar-w); bottom: 0; width: min(980px, 68vw); aspect-ratio: 980 / 729; background: url("home-bg.png") 0 100% / 100% 100% no-repeat; transition: left 0.45s var(--ease);
+  .backdrop::before { content: ""; position: absolute; left: 0; bottom: 0; width: min(1240px, 82vw); aspect-ratio: 980 / 729; background: url("home-bg.png") 0 100% / 100% 100% no-repeat; 
     -webkit-mask-image: linear-gradient(to top, #000 55%, transparent), linear-gradient(to right, #000 50%, transparent); -webkit-mask-composite: source-in;
     mask-image: linear-gradient(to top, #000 55%, transparent), linear-gradient(to right, #000 50%, transparent); mask-composite: intersect; }
 
@@ -47,7 +47,7 @@
      --sidebar-w follows, so everything positioned from it (backdrop, floating assistant, blurred band) moves with it. */
   .app { transition: grid-template-columns 0.45s var(--ease); }
   .sidebar { width: var(--sidebar-w); border-right: 1px solid transparent; transition: width 0.45s var(--ease); }
-  .sidebar::before { content: ""; position: absolute; inset: 0; z-index: 0; opacity: 0; pointer-events: none; background: linear-gradient(180deg, #ffffff, #ece4fa); }   /* light layer, fades in with the theme */
+  .sidebar::before { content: ""; position: absolute; inset: 0; z-index: 0; opacity: 0; pointer-events: none; background: linear-gradient(180deg, rgba(255, 255, 255, 0.6), rgba(236, 228, 250, 0.6)); }   /* light layer, fades in with the theme */
   .sidebar > * { position: relative; z-index: 1; }
   @media (min-width: 861px) {
     :root:has(.app.nav-closed) { --sidebar-w: 60px; }   /* on the root so the backdrop (a sibling of .app) follows too */
@@ -213,8 +213,9 @@
   /* ---------- small screens: the sidebar becomes a drawer ---------- */
   @media (max-width: 860px) {
     .backdrop::before { left: 0; width: 100vw; }
+    .backdrop::after { left: -10vw; width: 130vw; bottom: -20vw; }
     .app { grid-template-columns: minmax(0, 1fr); }
-    .sidebar { position: fixed; z-index: 30; left: 0; top: 0; width: min(300px, 84vw); transform: translateX(-102%); transition: transform 0.3s var(--ease); background: linear-gradient(180deg, #05010d, var(--sidebar-bottom)); }
+    .sidebar { position: fixed; z-index: 30; left: 0; top: 0; width: min(300px, 84vw); transform: translateX(-102%); transition: transform 0.3s var(--ease); background: linear-gradient(180deg, #05010d, #570a9e); }
     .menu-open .sidebar { transform: none; }
     .scrim { display: block; position: fixed; inset: 0; z-index: 25; background: rgba(0, 0, 0, 0.6); opacity: 0; pointer-events: none; transition: opacity 0.3s; }
     .menu-open .scrim { opacity: 1; pointer-events: auto; }
@@ -237,6 +238,9 @@
   :root[data-theme="light"] .assistant::before { opacity: 1; }
   :root[data-theme="light"] .backdrop { background: var(--bg); }
   :root[data-theme="light"] .backdrop::before { opacity: 0; }
+  /* light-mode ribbon (Figma "Nova" light frame): bottom-left, mostly below the fold so only its crest shows; multiply keeps the page tint where the image is white */
+  .backdrop::after { content: ""; position: absolute; left: -40px; bottom: calc(-1 * min(1300px, 90vw) * 0.15); width: min(1300px, 90vw); aspect-ratio: 4096 / 1229; background: url("home-bg-light.jpg") 0 0 / 100% 100% no-repeat; mix-blend-mode: multiply; opacity: 0; pointer-events: none; }
+  :root[data-theme="light"] .backdrop::after { opacity: 1; }
   :root[data-theme="light"] .sidebar { border-right-color: rgba(26, 11, 70, 0.08); }
   :root[data-theme="light"] .sidebar::before { opacity: 1; }
   :root[data-theme="light"] .brand { color: #1a0b46; }
@@ -267,7 +271,7 @@
   html.theming *, html.theming *::before, html.theming *::after {
     transition: background-color 0.8s var(--ease) var(--d, 0s), color 0.8s var(--ease) var(--d, 0s), border-color 0.8s var(--ease) var(--d, 0s), fill 0.8s var(--ease) var(--d, 0s), stroke 0.8s var(--ease) var(--d, 0s), box-shadow 0.8s var(--ease) var(--d, 0s);
   }
-  html.theming .sidebar::before, html.theming .backdrop::before, html.theming .assistant::before { transition: opacity 0.8s var(--ease) var(--d, 0s); }
+  html.theming .sidebar::before, html.theming .backdrop::before, html.theming .backdrop::after, html.theming .assistant::before { transition: opacity 0.8s var(--ease) var(--d, 0s); }
     html.theming .un-toggle__track, html.theming .un-toggle__track::after { transition: transform 0.3s var(--ease), background 0.3s var(--ease); }
 </style>
 </head>
