@@ -102,6 +102,7 @@ button, input, textarea, kbd { font-family: inherit; }
 .un-icon-btn--round { border-radius: 50%; border: 1px solid rgba(255, 255, 255, 0.4); }
 .un-icon-btn--round:hover { transform: scale(1.08); background: rgba(255, 255, 255, 0.12); }
 .un-icon-btn--round .un-icon { width: 14px; height: 14px; stroke-width: 2; }
+.un-icon-btn--lg { width: 40px; height: 40px; border-radius: 50%; background: var(--un-glass); border: 1px solid var(--un-line); }
 .un-icon-btn--send { border-radius: var(--un-r-pill); }
 .un-icon-btn--send.ready { background: var(--un-live); color: #04120f; box-shadow: 0 6px 18px -6px rgba(0, 237, 197, 0.8); }
 .un-icon-btn--send.ready:hover { transform: translateY(-1px); background: #2ff5d4; }
