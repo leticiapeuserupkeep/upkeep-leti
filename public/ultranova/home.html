@@ -45,7 +45,6 @@
   .app.nav-closed { --sidebar-w: 0px; }
   .app.nav-closed .sidebar { transform: translateX(-100%); visibility: hidden; transition: transform 0.45s var(--ease), visibility 0s 0.45s; }
   .nav-toggle { color: var(--un-ink); }
-  .nav-close { margin-left: auto; }
   .nav-open { position: fixed; z-index: 6; top: 16px; left: 16px; width: 32px; height: 32px; opacity: 0; pointer-events: none; transition: opacity 0.35s 0.2s, background 0.25s; }
   .app.nav-closed .nav-open { opacity: 1; pointer-events: auto; }
   @media (max-width: 860px) { .nav-close, .nav-open { display: none; } }
@@ -251,7 +250,6 @@
     <div class="brand">
       <svg viewBox="0 0 32 32" aria-hidden="true"><path d="M16 1l3.4 10.2L30 14.8l-10.6 3.4L16 30l-3.4-11.8L2 14.8l10.6-3.6z"/></svg>
       Ultranova
-      <button class="un-icon-btn nav-toggle nav-close" type="button" id="navClose" aria-label="Close sidebar" aria-controls="sidebar"><svg class="un-icon" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="3"/><path d="M9 4v16"/></svg></button>
     </div>
     <nav class="nav">
       <button class="nav-item" type="button">
@@ -306,6 +304,7 @@
       <button class="gear" type="button" aria-label="Settings">
         <svg class="un-icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M12 2.5l1.6 2.3 2.8-.5.9 2.7 2.7.9-.5 2.8L21.8 12l-2.3 1.6.5 2.8-2.7.9-.9 2.7-2.8-.5L12 21.8l-1.6-2.3-2.8.5-.9-2.7-2.7-.9.5-2.8L2.2 12l2.3-1.6-.5-2.8 2.7-.9.9-2.7 2.8.5z"/></svg>
       </button>
+      <button class="gear nav-close" type="button" id="navClose" aria-label="Close sidebar" aria-controls="sidebar"><svg class="un-icon" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="3"/><path d="M9 4v16"/></svg></button>
       </div>
     </div>
   </aside>
