@@ -134,7 +134,7 @@ button, input, textarea, kbd { font-family: inherit; }
 
 /* ---------- toggle (switch with a label) ----------
    <button class="un-toggle un-toggle--sm" role="switch" aria-checked="true"><span class="un-toggle__track"></span><span class="un-toggle__label">Dark</span></button> */
-.un-toggle { display: inline-flex; align-items: center; gap: 8px; padding: 4px; border: 0; background: none; color: inherit; cursor: pointer; font: 500 14px/20px var(--font-display); }
+.un-toggle { display: inline-flex; flex-direction: row-reverse; align-items: center; gap: 8px; padding: 4px; border: 0; background: none; color: inherit; cursor: pointer; font: 500 14px/20px var(--font-display); }
 .un-toggle__track { position: relative; width: 36px; height: 20px; flex: none; border-radius: var(--un-r-pill); background: rgba(255, 255, 255, 0.25); transition: background 0.3s var(--ease); }
 .un-toggle__track::after { content: ""; position: absolute; top: 2px; left: 2px; width: 16px; height: 16px; border-radius: 50%; background: #fff; box-shadow: 0 1px 3px rgba(0, 0, 0, 0.35); transition: transform 0.3s var(--ease); }
 .un-toggle[aria-checked="true"] .un-toggle__track { background: linear-gradient(135deg, var(--un-violet), var(--un-fuchsia)); }
