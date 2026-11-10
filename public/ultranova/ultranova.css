@@ -154,6 +154,8 @@ button, input, textarea, kbd { font-family: inherit; }
 .un-menu.show { opacity: 1; transform: none; pointer-events: auto; }
 .un-menu button { display: flex; align-items: center; gap: 10px; width: 100%; height: 36px; padding: 0 10px; border: 0; border-radius: var(--un-r-sm); background: none; font: 400 14px/20px var(--font-display); color: var(--un-ink); text-align: left; cursor: pointer; transition: background 0.15s; }
 .un-menu button:hover, .un-menu button:focus-visible { background: rgba(255, 255, 255, 0.1); }
+.un-menu__sep { height: 1px; margin: 6px 0; border: 0; background: var(--un-line); }
+.un-menu__end { justify-content: space-between; }
 .un-menu .un-icon { width: 16px; height: 16px; color: var(--un-ink-soft); }
 
 /* ---------- tooltip (single floating label; position it with left/top = anchor point, it centers vertically) ---------- */

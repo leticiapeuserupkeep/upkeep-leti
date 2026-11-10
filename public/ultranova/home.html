@@ -578,8 +578,9 @@
   /* profile menu: View profile / Log out (opens upward from the avatar) */
   var profBtn = document.getElementById('profileBtn'), profMenu = document.createElement('div');
   profMenu.className = 'un-menu'; profMenu.setAttribute('role', 'menu'); profMenu.style.transformOrigin = 'bottom left';
-  profMenu.innerHTML = '<button type="button" role="menuitem" data-act="profile"><svg class="un-icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 20c1.5-4 4.5-6 8-6s6.5 2 8 6"/></svg>View profile</button>'
-    + '<button type="button" role="menuitem" data-act="logout"><svg class="un-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M10 4H6a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h4M15 8l4 4-4 4M19 12H9"/></svg>Log out</button>';
+  profMenu.innerHTML = '<button type="button" role="menuitem" data-act="profile">View profile</button>'
+    + '<hr class="un-menu__sep">'
+    + '<button type="button" role="menuitem" data-act="logout" class="un-menu__end">Log out<svg class="un-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M10 4H6a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h4M15 8l4 4-4 4M19 12H9"/></svg></button>';
   document.body.appendChild(profMenu);
   function closeProf() { profMenu.classList.remove('show'); profBtn.setAttribute('aria-expanded', 'false'); }
   profBtn.addEventListener('click', function (e) {
