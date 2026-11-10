@@ -328,7 +328,7 @@
     'Sales & outreach': ['Research a prospect', 'Draft an email'],
     'Projects & tasks': ['Plan my week', 'Create a task'],
     'Operations': ['Create a work order', 'Review overdue work orders'],
-    'Everyday Productivity': ['Plan my week', 'Summarize my day']
+    'Productivity': ['Plan my week', 'Summarize my day']
   };
   var actions = [];
   help.forEach(function (area) { (SUGGEST[area] || []).forEach(function (a) { if (actions.indexOf(a) < 0) actions.push(a); }); });
