@@ -156,6 +156,10 @@ button, input, textarea, kbd { font-family: inherit; }
 .un-menu button:hover, .un-menu button:focus-visible { background: rgba(255, 255, 255, 0.1); }
 .un-menu .un-icon { width: 16px; height: 16px; color: var(--un-ink-soft); }
 
+/* ---------- tooltip (single floating label; position it with left/top = anchor point, it centers vertically) ---------- */
+.un-tooltip { position: fixed; z-index: 60; transform: translate(-4px, -50%); opacity: 0; padding: 6px 10px; border-radius: var(--un-r-sm); background: #1d0f45; border: 1px solid var(--un-line); color: #fff; font: 500 13px/16px var(--font-display); white-space: nowrap; pointer-events: none; transition: opacity 0.18s, transform 0.22s var(--ease); }
+.un-tooltip.show { opacity: 1; transform: translate(0, -50%); }
+
 /* ---------- toast ---------- */
 .un-toast { position: fixed; left: 50%; bottom: 24px; z-index: 40; transform: translate(-50%, 20px); opacity: 0; padding: 12px 20px; border-radius: var(--un-r-pill); background: var(--un-surface-raised); border: 1px solid var(--un-line); font: 500 14px/20px var(--font-display); pointer-events: none; transition: opacity 0.3s, transform 0.3s var(--ease); }
 .un-toast.show { opacity: 1; transform: translate(-50%, 0); }
