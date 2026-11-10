@@ -1,8 +1,11 @@
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Ultranova Onboarding</title>
 <meta name="claude:viewport-fit-sides" content="cover">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700&family=Figtree:wght@400;500;600&family=Inter:wght@400;500&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="ultranova.css">
 <style>
   /* Layout: still glass-ribbon image behind (floats very slowly), one centered glass card holding three steps
      (Welcome → Select your assistant → What would you like help with), assistant drawn on top (fg canvas).
@@ -20,10 +23,6 @@
     --glass-line: rgba(255, 255, 255, 0.14);
     --card: rgba(22, 3, 44, 0.86);
     --chip-line: #a600ac;
-    --font-display: "Outfit", "Trebuchet MS", system-ui, sans-serif;
-    --font-body: "Figtree", system-ui, -apple-system, "Segoe UI", sans-serif;
-    --font-chip: "Inter", system-ui, sans-serif;
-    --ease: cubic-bezier(0.2, 0.8, 0.2, 1);
     color-scheme: dark;
   }
 
@@ -59,29 +58,40 @@
     padding-right: max(16px, env(safe-area-inset-right, 0px));
   }
   .top { width: 100%; max-width: 1160px; margin-inline: auto; }
-  .brand { display: inline-flex; align-items: center; gap: 10px; font-family: var(--font-display); font-weight: 500; font-size: 20px; letter-spacing: 0.01em; }
-  .brand svg { width: 26px; height: 26px; flex: none; }
   .stage { flex: 1; display: grid; place-items: center; padding-block: 16px; min-width: 0; }
 
   /* ---------- card ---------- */
   .card {
     position: relative; width: min(100%, 680px); min-height: 560px; display: flex; flex-direction: column; align-items: center;
-    padding: 36px 32px 28px; border-radius: 40px; text-align: center;
-    background: linear-gradient(180deg, rgba(20, 2, 40, 0.92), var(--card));
-    border: 1px solid rgba(255, 255, 255, 0.07);
-    backdrop-filter: blur(28px); -webkit-backdrop-filter: blur(28px);
-    box-shadow: 0 40px 90px -40px rgba(0, 0, 0, 0.8), inset 0 1px 0 rgba(255, 255, 255, 0.06);
+    padding: 36px 32px 28px; text-align: center;
   }
   .card.moving { animation: nudge 0.9s var(--ease); }
   @keyframes nudge { 0% { transform: none; } 30% { transform: translateY(6px) scale(0.992); } 100% { transform: none; } }
-  .eyebrow { display: inline-flex; align-items: center; gap: 8px; padding: 6px 14px; border-radius: 99px; background: var(--glass); border: 1px solid var(--glass-line); font-size: 13px; color: var(--ink-soft); }
-  .eyebrow i { width: 6px; height: 6px; border-radius: 99px; background: var(--cyan); box-shadow: 0 0 10px var(--cyan); }
 
+  /* back button: top-left of the card, only from step 2 on */
+  .back { position: absolute; top: 24px; left: 24px; z-index: 2; opacity: 0; pointer-events: none; transform: translateX(6px); transition: opacity 0.4s, transform 0.5s var(--ease), background 0.25s; }
+  .card:not([data-step="0"]) .back { opacity: 1; pointer-events: auto; transform: none; }
   .steps { flex: 1; width: 100%; display: grid; align-items: center; min-width: 0; }
   .step { display: none; width: 100%; min-width: 0; flex-direction: column; align-items: center; padding-block: 12px; }
-  .step.active { display: flex; animation: stepIn 0.7s var(--ease) backwards; }
+  .step.active { display: flex; animation: stepIn 0.5s ease backwards; }
   .step.out { opacity: 0; transform: translateX(-56px) scale(0.97); transition: opacity 0.28s ease, transform 0.32s cubic-bezier(0.4, 0, 1, 1); }
-  @keyframes stepIn { from { opacity: 0; transform: translateX(56px) scale(0.97); } to { opacity: 1; transform: none; } }
+  @keyframes stepIn { from { opacity: 0; } to { opacity: 1; } }
+
+  /* ---------- entrance: everything shows up one by one, soft and slow ---------- */
+  @keyframes cardIn { from { opacity: 0; transform: translateY(40px) scale(0.965); } to { opacity: 1; transform: none; } }
+  @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+  .bgimg { animation: fadeIn 1.6s ease both; }
+  .card { animation: cardIn 1s var(--ease) 0.25s backwards; }
+  .foot { animation: un-rise 0.8s var(--ease) 1.5s backwards; }
+  /* each child of the active step rises in turn (--d is set per item below); the topic chips follow one after another */
+  .step.active > * { animation: un-rise 0.85s var(--ease) calc(0.75s + var(--n, 0) * 0.14s) backwards; }
+  .step.active > :nth-child(1) { --n: 0; } .step.active > :nth-child(2) { --n: 1; } .step.active > :nth-child(3) { --n: 2; }
+  .step.active > :nth-child(4) { --n: 3; } .step.active > :nth-child(5) { --n: 4; } .step.active > :nth-child(6) { --n: 5; }
+  .step.active .un-chip { animation: un-rise 0.7s var(--ease) calc(1.2s + var(--c, 0) * 0.1s) backwards; }
+  .un-chip:nth-child(1) { --c: 0; } .un-chip:nth-child(2) { --c: 1; } .un-chip:nth-child(3) { --c: 2; } .un-chip:nth-child(4) { --c: 3; }
+  /* later steps are already on screen, so they start sooner than the very first one */
+  body.went .step.active > * { animation-delay: calc(0.15s + var(--n, 0) * 0.12s); }
+  body.went .step.active .un-chip { animation-delay: calc(0.6s + var(--c, 0) * 0.09s); }
 
   /* ---------- type ---------- */
   h1 { font-family: var(--font-display); font-weight: 600; font-size: clamp(32px, 6.4vw, 46px); line-height: 1.06; letter-spacing: -0.03em; margin: 0; text-wrap: balance; }
@@ -91,20 +101,11 @@
   .soft { color: var(--ink-soft); font-size: 17px; margin: 0; }
 
   /* ---------- controls ---------- */
-  .btn {
-    display: inline-flex; align-items: center; justify-content: center; height: 48px; padding: 0 28px; border-radius: 99px; border: 0; cursor: pointer;
-    font: 500 15px var(--font-display); color: #fff; transition: transform 0.25s var(--ease), box-shadow 0.25s;
-    background: linear-gradient(135deg, #8b5cf6, #c026d3 120%); box-shadow: 0 14px 40px -14px rgba(168, 85, 247, 0.9);
-  }
-  .btn:hover { transform: translateY(-2px); box-shadow: 0 18px 46px -12px rgba(192, 38, 211, 0.9); }
-  button:focus-visible { outline: 2px solid var(--cyan); outline-offset: 3px; }
 
   .foot { display: flex; flex-direction: column; align-items: center; gap: 14px; margin-top: 8px; }
   .dots { display: none; /* progress dots hidden for now: use `flex` to show them again */ gap: 8px; align-items: center; margin-bottom: 16px; }
   .dots span { width: 9px; height: 9px; border-radius: 99px; background: rgba(255, 255, 255, 0.28); transition: width 0.4s var(--ease), background 0.4s; }
   .dots span.on { width: 40px; background: linear-gradient(90deg, #8b5cf6, #d946ef); }
-  .skip { background: none; border: 0; color: var(--ink-soft); font: 400 15px var(--font-body); text-decoration: underline; text-underline-offset: 3px; cursor: pointer; padding: 4px; }
-  .skip:hover { color: var(--ink); }
 
   /* ---------- step 1: welcome ---------- */
   .s0 { gap: 24px; }   /* even spacing between the title, tagline, text and button */
@@ -112,7 +113,7 @@
   .s0 .lede { padding-bottom: 12px; }
 
   /* ---------- step 2: select assistant ---------- */
-  .s1 h1 { margin-top: 18px; padding-bottom: 20px; font-size: clamp(30px, 8vw, 58px); line-height: 58px; }
+  .s1 h1 { margin-top: 18px; padding-bottom: 20px; font-size: clamp(22px, 4.2vw, 30px); }   /* same size as the step 3 title */
   /* five-up carousel: every assistant sits at an offset from the focused one (-2..2, wrapping); the focused one is large and awake */
   .pick { --w: 190px; position: relative; width: 100%; height: calc(var(--w) * 1.05); margin-top: -30px;  /* tucks under the name pill; the robots are drawn above it */ touch-action: pan-y; cursor: grab; user-select: none; -webkit-user-select: none; }
   .pick.drag { cursor: grabbing; }
@@ -127,23 +128,20 @@
   .ast.jump { transition: none; opacity: 0; }  /* wrapping around: reappear on the far side instead of flying across */
   .ast[data-off="1"]:hover, .ast[data-off="-1"]:hover { opacity: 0.8; }
   .slot { position: absolute; inset: 0; }
-  .name-pill { display: inline-flex; align-items: baseline; gap: 8px; margin-top: 18px; padding: 12px 26px; border-radius: 99px; background: var(--glass); border: 1px solid var(--glass-line); font: 400 15px var(--font-body); color: var(--ink-soft); }
-  .name-pill b { font: 600 19px var(--font-display); color: var(--ink); }
-  .s1 .btn { margin-top: 30px; }
+  .s1 .un-btn { margin-top: 30px; }
 
   /* ---------- step 3: what to help with ---------- */
   .s2 .mini { position: relative; width: 92px; height: 92px; margin-top: -4px; }
-  .hello { margin-top: 6px; padding: 12px 26px; border-radius: 99px; background: var(--glass-strong); border: 1px solid var(--glass-line); font: 500 17px var(--font-display); }
   .s2 h1 { margin: 16px 0; padding: 24px 0; font-size: clamp(22px, 4.2vw, 30px); }   /* the step 3 title is smaller than the other step titles */
   .s2 .soft { margin-top: 0; }   /* the title's 16px bottom margin is the gap */
   .topics { display: flex; flex-wrap: wrap; justify-content: center; gap: 12px; margin-top: 18px; }
-  .topic { border: 1px solid var(--chip-line); background: transparent; color: var(--ink); font: 400 14px var(--font-chip); padding: 12px 22px; border-radius: 4px; cursor: pointer; transition: background 0.3s, border-color 0.3s, box-shadow 0.3s, color 0.3s; }
-  .topic:hover { background: rgba(166, 0, 172, 0.18); }
-  .topic[aria-pressed="true"] { background: rgba(0, 237, 197, 0.16); border-color: #00edc5; color: #eafffb; box-shadow: 0 0 22px -6px rgba(0, 237, 197, 0.65); }   /* selected: green, the same green as the live dots */
-  .s2 .btn { margin-top: 36px; }
+  .s2 .un-btn { margin-top: 36px; }
+  .name-pill { margin-top: 18px; }
+  .hello { margin-top: 6px; }
+  .eyebrow { padding: 6px 14px; font-size: 13px; }
 
   .no-gl .slot { background: radial-gradient(closest-side, rgba(196, 181, 253, 0.9), rgba(139, 92, 246, 0.2) 70%, transparent 72%); border-radius: 50%; margin: 18%; }
-  @media (max-width: 560px) { .card { padding: 28px 18px 22px; border-radius: 32px; } .pick { --w: 150px; } .ast[data-off="2"], .ast[data-off="-2"] { opacity: 0; pointer-events: none; } }
+  @media (max-width: 560px) { .card { padding: 28px 18px 22px; border-radius: 32px; } .pick { --w: 150px; margin-top: 14px; } .s1 h1 { padding-bottom: 8px; } .ast[data-off="2"], .ast[data-off="-2"] { opacity: 0; pointer-events: none; } }
   @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation-duration: 0.01ms !important; animation-iteration-count: 1 !important; transition-duration: 0.01ms !important; } }
 </style>
 
@@ -151,16 +149,17 @@
 
 <div class="app">
   <header class="top">
-    <div class="brand">
+    <div class="un-brand">
       <svg viewBox="0 0 32 32" aria-hidden="true"><path d="M16 2l3.2 9.6L29 14.8l-9.8 3.2L16 29l-3.2-11L3 14.8l9.8-3.2z" fill="#dd00ff"/></svg>
       <span>Ultranova</span>
     </div>
   </header>
 
   <main class="stage">
-    <div class="card" id="card">
+    <div class="card un-card" id="card" data-step="0">
+      <button class="back un-btn un-btn--icon un-btn--md un-btn--ghost un-btn--white" id="back" type="button" aria-label="Back"><svg class="un-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg></button>
       <div class="dots" id="dots" aria-hidden="true"><span class="on"></span><span></span><span></span></div>
-      <span class="eyebrow"><i></i><span id="eyebrow">Step 1 of 3</span></span>
+      <span class="eyebrow un-pill un-pill--small"><i class="un-dot"></i><span id="eyebrow">Step 1 of 3</span></span>
 
       <div class="steps">
         <!-- 1 · welcome -->
@@ -168,13 +167,13 @@
           <h1 id="h0" tabindex="-1">Welcome to <span class="hl">Ultranova</span></h1>
           <h2>You rest. I’ll keep things moving.</h2>
           <p class="lede">I’ll track updates, follow up on tasks, and notify you when you’re needed. No need to keep the app open.</p>
-          <button class="btn" id="next0">Let’s Get Started</button>
+          <button class="un-btn" id="next0">Let’s Get Started</button>
         </section>
 
         <!-- 2 · select assistant -->
         <section class="step s1" data-step="1" aria-labelledby="h1">
           <h1 id="h1" tabindex="-1">Select your <span class="hl">Assistant</span></h1>
-          <div class="name-pill" aria-live="polite">Hi, I’m <b id="pname">Core</b></div>
+          <div class="name-pill un-pill" aria-live="polite">Hi, I’m <b id="pname">Core</b></div>
           <div class="pick" id="pick" role="group" aria-label="Assistants. Drag, click or use the arrow keys to rotate">
             <button class="ast" data-i="0" aria-label="Core"><span class="slot" data-robot="a0"></span></button>
             <button class="ast" data-i="1" aria-label="Lumen"><span class="slot" data-robot="a1"></span></button>
@@ -182,27 +181,27 @@
             <button class="ast" data-i="3" aria-label="Volt"><span class="slot" data-robot="a3"></span></button>
             <button class="ast" data-i="4" aria-label="Pulse"><span class="slot" data-robot="a4"></span></button>
           </div>
-          <button class="btn" id="next1">Choose Core</button>
+          <button class="un-btn" id="next1">Choose Core</button>
         </section>
 
         <!-- 3 · what would you like help with -->
         <section class="step s2" data-step="2" aria-labelledby="h2">
           <div class="mini"><span class="slot" data-robot="final"></span></div>
-          <div class="hello">Nice to meet you, Leti!</div>
+          <div class="hello un-pill un-pill--strong">Nice to meet you, Leti!</div>
           <h1 id="h2" tabindex="-1">What would you like help with?</h1>
           <p class="soft">Select one or more.</p>
           <div class="topics" id="topics" role="group" aria-label="Topics">
-            <button class="topic" type="button" aria-pressed="false">Sales &amp; outreach</button>
-            <button class="topic" type="button" aria-pressed="false">Projects &amp; tasks</button>
-            <button class="topic" type="button" aria-pressed="false">Operations</button>
-            <button class="topic" type="button" aria-pressed="false">Everyday Productivity</button>
+            <button class="un-chip un-chip--lg" type="button" aria-pressed="false">Sales &amp; outreach</button>
+            <button class="un-chip un-chip--lg" type="button" aria-pressed="false">Projects &amp; tasks</button>
+            <button class="un-chip un-chip--lg" type="button" aria-pressed="false">Operations</button>
+            <button class="un-chip un-chip--lg" type="button" aria-pressed="false">Productivity</button>
           </div>
-          <button class="btn" id="finish">Start Now!</button>
+          <button class="un-btn" id="finish">Start Now!</button>
         </section>
       </div>
 
       <div class="foot">
-        <button class="skip" id="skip">Skip</button>
+        <button class="un-link" id="skip">Skip</button>
       </div>
     </div>
   </main>
@@ -234,7 +233,7 @@
   /* =====================================================================
      Onboarding flow: welcome → select assistant → topics → home.html
      ===================================================================== */
-  var ASSISTANTS = ['Core', 'Lumen', 'Mesh', 'Volt', 'Pulse'], HUES = [268, 300, 200, 240, 320];
+  var ASSISTANTS = ['Core', 'Lumen', 'Mesh', 'Volt', 'Pulse'], HUES = [268, 42, 200, 240, 320];
   var steps = [].slice.call(document.querySelectorAll('.step')), dots = [].slice.call(document.querySelectorAll('#dots span'));
   var state = { step: 0, avatar: 0 }, busy = false;
 
@@ -243,7 +242,7 @@
     var cur = steps[state.step], nxt = steps[n], card = document.getElementById('card'); cur.classList.add('out');
     card.classList.remove('moving'); void card.offsetWidth; card.classList.add('moving');
     setTimeout(function () {
-      cur.classList.remove('active', 'out'); nxt.classList.add('active'); state.step = n;
+      document.body.classList.add('went'); card.setAttribute('data-step', n); cur.classList.remove('active', 'out'); nxt.classList.add('active'); state.step = n;
       dots.forEach(function (d, i) { d.classList.toggle('on', i === n); });
       document.body.style.setProperty('--s', n);
       document.getElementById('eyebrow').textContent = 'Step ' + (n + 1) + ' of 3';
@@ -290,11 +289,12 @@
   });
 
   /* step 3: multi-select topics */
-  var topics = [].slice.call(document.querySelectorAll('.topic'));
+  var topics = [].slice.call(document.querySelectorAll('.un-chip'));
   topics.forEach(function (t) {
     t.addEventListener('click', function () { t.setAttribute('aria-pressed', String(t.getAttribute('aria-pressed') !== 'true')); if (robots) robots.hop('final'); });
   });
 
+  document.getElementById('back').addEventListener('click', function () { go(state.step - 1); });
   document.getElementById('next0').addEventListener('click', function () { go(1); });
   document.getElementById('next1').addEventListener('click', function () { go(2); if (robots) robots.wave('final'); });
 

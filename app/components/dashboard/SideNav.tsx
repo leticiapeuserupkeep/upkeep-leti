@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, type MouseEvent } from 'react'
 import Link from 'next/link'
 import Image from 'next/image'
 import { usePathname } from 'next/navigation'
@@ -132,6 +132,19 @@ function UltranovaMark({ size = 20 }: { size?: number }) {
   )
 }
 
+/** Leaving the CMS: the screen softly dims to Ultranova's dark before the page changes, so the onboarding fades in instead of cutting. */
+function enterUltranova(e: MouseEvent<HTMLAnchorElement>) {
+  if (e.metaKey || e.ctrlKey || e.shiftKey || e.button !== 0) return
+  e.preventDefault()
+  const href = e.currentTarget.href
+  const veil = document.createElement('div')
+  veil.setAttribute('aria-hidden', 'true')
+  veil.style.cssText = 'position:fixed;inset:0;z-index:9999;background:#0a0214;opacity:0;pointer-events:all;transition:opacity 600ms cubic-bezier(0.22,1,0.36,1)'
+  document.body.appendChild(veil)
+  requestAnimationFrame(() => { veil.style.opacity = '1' })
+  window.setTimeout(() => { window.location.href = href }, 620)
+}
+
 function UltranovaCard() {
   const [open, setOpen] = useState(false)
   return (
@@ -170,6 +183,7 @@ function UltranovaCard() {
             {/* purple gradient; on hover a brighter fuchsia→violet layer fades in over it (gradients can't be transitioned directly) */}
             <a
               href={ULTRANOVA_HREF}
+              onClick={enterUltranova}
               className="group/cta relative isolate mt-3 flex items-center justify-center h-10 overflow-hidden rounded-full text-white text-[length:var(--font-size-base)] font-medium bg-[linear-gradient(135deg,#8b5cf6,#c026d3_120%)] shadow-[0_12px_32px_-12px_rgba(168,85,247,0.9)] hover:shadow-[0_14px_36px_-10px_rgba(217,70,239,0.9)] transition-[color,box-shadow] duration-500 ease-[var(--ease-default)]"
             >
               <span aria-hidden="true" className="absolute inset-0 -z-10 bg-[linear-gradient(135deg,#e879f9,#8b5cf6)] opacity-0 transition-opacity duration-500 ease-[var(--ease-default)] group-hover/cta:opacity-100" />

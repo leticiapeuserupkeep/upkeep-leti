@@ -65,10 +65,10 @@
     }
     var VARIANTS = [
       null,                                   /* 0 · Core: the original blue, round (filled in below) */
-      palette(262, null, 3.4),                /* 1 · purple, cube like a notebook */
-      Object.assign(palette(128, 'cogbody', 2, 0.42, 0.6), { pantsY: -0.31, flat: true, flatZ: 0.235, btnY: -0.74 }),   /* drier, yellower green */
+      palette(40, null, 3.4, 0.38, 0.9),      /* 1 · deep amber yellow, cube like a notebook */
+      Object.assign(palette(128, 'cogbody', 2, 0.35, 0.6), { pantsY: -0.31, flat: true, flatZ: 0.235, btnY: -0.74 }),   /* drier, yellower green */
       Object.assign(palette(46, 'wrenchbody', 2, 0.54), { pantsY: -0.66, flat: true, flatZ: 0.235, btnY: -0.95, faceDY: -0.38 }),   /* 3 · butter yellow, the body is a wrench */
-      Object.assign(palette(355, 'nutbody', 2), { pantsY: -0.31, flat: true, flatZ: 0.235, btnY: -0.7 })   /* 4 · soft coral, the body is a hex nut */
+      Object.assign(palette(355, 'nutbody', 2, 0.5), { pantsY: -0.31, flat: true, flatZ: 0.235, btnY: -0.7 })   /* 4 · soft coral, the body is a hex nut */
     ];
     var CUR = 0, V = null, NN = 2;
     function useVariant(i) {
@@ -655,7 +655,13 @@
     return {
       hop: function (id) { var s = byId[id]; if (s && s.inst) s.inst.hop(); },
       wave: function (id) { var s = byId[id]; if (s && s.inst) s.inst.wave(); },
-      wake: function (id) { var s = byId[id]; if (s) s.wakeReq = true; }
+      wake: function (id) { var s = byId[id]; if (s) s.wakeReq = true; },
+      /* light page backgrounds: a lower exposure turns the white shell into a soft grey so the assistant keeps its contrast */
+      setLight: function (on, ms) {
+        var from = renderer.toneMappingExposure, to = on ? 0.74 : 1.0, t0 = performance.now(), dur = ms || 0;
+        if (!dur) { renderer.toneMappingExposure = to; return; }
+        (function step(now) { var k = Math.min(1, (now - t0) / dur), e = 1 - Math.pow(1 - k, 3.5); renderer.toneMappingExposure = from + (to - from) * e; if (k < 1) requestAnimationFrame(step); })(t0);
+      }
     };
   }
   global.UltranovaRobots = { init: init };

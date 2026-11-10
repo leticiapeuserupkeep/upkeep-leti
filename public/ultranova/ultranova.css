@@ -1,0 +1,182 @@
+/* ==========================================================================
+   Ultranova design system
+   One typeface (Outfit), one set of tokens, small reusable components.
+   Every Ultranova screen links this file first and then only adds layout.
+   Components are prefixed `un-`; modifiers use `un-name--variant`.
+   Live reference: /ultranova/design-system.html
+   ========================================================================== */
+
+/* ---------- tokens ---------- */
+:root {
+  /* typeface: Outfit for everything (display, body, chips, inputs) */
+  --font-display: "Outfit", system-ui, sans-serif;
+  --font-body: var(--font-display);
+  --font-chip: var(--font-display);
+
+  /* color */
+  --un-bg: #000;
+  --un-ink: #fff;
+  --un-ink-soft: rgba(255, 255, 255, 0.7);
+  --un-brand: #dd00ff;
+  --un-brand-line: #a600ac;
+  --un-violet: #8b5cf6;
+  --un-fuchsia: #d946ef;
+  --un-live: #00edc5;          /* "active / ready / selected" green */
+  --un-surface: #1a0b46;       /* chat bar, inputs */
+  --un-surface-raised: #2a1160;/* user bubble, toast */
+  --un-menu: #1d0f45;
+  --un-line: rgba(255, 255, 255, 0.14);
+  --un-glass: rgba(255, 255, 255, 0.06);
+  --un-glass-strong: rgba(255, 255, 255, 0.1);
+
+  /* shape + motion */
+  --un-r-sm: 4px;
+  --un-r-md: 8px;
+  --un-r-lg: 12px;
+  --un-r-pill: 99px;
+  --ease: cubic-bezier(0.2, 0.8, 0.2, 1);
+
+  color-scheme: dark;
+}
+
+/* ---------- base ---------- */
+*, *::before, *::after { box-sizing: border-box; }
+body { font-family: var(--font-body); -webkit-font-smoothing: antialiased; }
+button, input, textarea, kbd { font-family: inherit; }
+.un-icon { width: 20px; height: 20px; fill: none; stroke: currentColor; stroke-width: 1.5; stroke-linecap: round; stroke-linejoin: round; }
+
+/* shared entrance: a soft rise + unblur (use animation-delay to stagger) */
+@keyframes un-rise { from { opacity: 0; transform: translateY(22px); filter: blur(6px); } to { opacity: 1; transform: none; filter: blur(0); } }
+
+/* ---------- brand ---------- */
+.un-brand { display: inline-flex; align-items: center; gap: 10px; font-weight: 500; font-size: 20px; letter-spacing: 0.01em; }
+.un-brand svg { width: 26px; height: 26px; flex: none; }
+
+/* ---------- button ----------
+   .un-btn + size (--sm 32 · --md 40 · --lg 48, default) + style + color.
+   Style: --filled (default) · --ghost (no bg, no border) · --soft (soft border) · --hard (strong border).
+   Color: --purple (default) · --white · --gray · --black · --green.
+   --icon makes it a square-to-circle icon button. Example: <button class="un-btn un-btn--md un-btn--soft un-btn--green">Save</button> */
+.un-btn {
+  --h: 48px; --px: 28px; --fs: 15px;
+  --c: #a78bfa; --bg: linear-gradient(135deg, var(--un-violet), #c026d3 120%); --on: #fff;   /* purple */
+  display: inline-flex; align-items: center; justify-content: center; gap: 8px; height: var(--h); padding: 0 var(--px); border: 1px solid transparent; border-radius: var(--un-r-pill); cursor: pointer;
+  font: 500 var(--fs) var(--font-display); color: var(--on); background: var(--bg); box-shadow: 0 14px 40px -14px rgba(168, 85, 247, 0.9);
+  transition: transform 0.25s var(--ease), box-shadow 0.25s, background 0.25s, border-color 0.25s, color 0.25s;
+}
+.un-btn:hover { transform: translateY(-2px); box-shadow: 0 18px 46px -12px rgba(192, 38, 211, 0.9); }
+.un-btn:active { transform: scale(0.97); }
+.un-btn .un-icon { width: 1.25em; height: 1.25em; }
+/* sizes */
+.un-btn--sm { --h: 32px; --px: 16px; --fs: 14px; }
+.un-btn--md { --h: 40px; --px: 20px; --fs: 15px; }
+.un-btn--lg { --h: 48px; --px: 28px; --fs: 15px; }
+.un-btn--icon { width: var(--h); padding: 0; }
+/* colors (each sets: --c line/text color, --bg filled background, --on text on filled) */
+.un-btn--purple { --c: #a78bfa; --bg: linear-gradient(135deg, var(--un-violet), #c026d3 120%); --on: #fff; }
+.un-btn--white  { --c: #fff; --bg: #fff; --on: #0a0214; }
+.un-btn--gray   { --c: #9d94b3; --bg: #5b5470; --on: #fff; }
+.un-btn--black  { --c: #0a0214; --bg: #0a0214; --on: #fff; }
+.un-btn--green  { --c: var(--un-live); --bg: var(--un-live); --on: #04120f; }
+.un-btn--green:hover { box-shadow: 0 14px 36px -12px rgba(0, 237, 197, 0.8); }
+.un-btn--white:hover, .un-btn--gray:hover, .un-btn--black:hover { box-shadow: 0 14px 36px -14px rgba(0, 0, 0, 0.6); }
+/* styles: filled is the default above; the others drop the background and keep the color as text (+ border) */
+.un-btn--ghost, .un-btn--soft, .un-btn--hard { background: transparent; color: var(--c); box-shadow: none; }
+.un-btn--ghost:hover, .un-btn--soft:hover, .un-btn--hard:hover { transform: none; box-shadow: none; background: color-mix(in srgb, var(--c) 12%, transparent); }
+.un-btn--soft { border-color: color-mix(in srgb, var(--c) 30%, transparent); }
+.un-btn--hard { border-color: var(--c); }
+.un-btn--soft:hover { border-color: color-mix(in srgb, var(--c) 50%, transparent); }
+.un-btn:focus-visible, .un-chip:focus-visible, .un-link:focus-visible { outline: 2px solid var(--un-live); outline-offset: 3px; }
+
+/* text link-style button ("Skip") */
+.un-link { padding: 4px; border: 0; background: none; cursor: pointer; color: #b7abdc; font: 400 15px var(--font-display); text-decoration: underline; text-underline-offset: 3px; }
+.un-link:hover { color: #f5f0ff; }
+
+/* ---------- chip (suggested action, topic, reply option) ---------- */
+.un-chip {
+  height: 32px; padding: 8px 16px; border: 1px solid var(--un-brand-line); border-radius: var(--un-r-sm); background: transparent; color: var(--un-ink); cursor: pointer;
+  font: 500 14px/16px var(--font-display); transition: background 0.2s, border-color 0.2s, color 0.2s, box-shadow 0.3s, transform 0.2s var(--ease);
+}
+.un-chip:hover { background: rgba(221, 0, 255, 0.12); border-color: var(--un-brand); }
+.un-chip:active { transform: scale(0.97); }
+.un-chip--dashed { border-style: dashed; border-color: rgba(255, 255, 255, 0.35); color: var(--un-ink-soft); }
+.un-chip--dashed:hover { color: var(--un-ink); border-color: var(--un-brand); }
+.un-chip--lg { height: auto; padding: 12px 22px; font-weight: 400; }          /* roomier, for choosing topics */
+.un-chip[aria-pressed="true"] { background: rgba(0, 237, 197, 0.16); border-color: var(--un-live); color: #eafffb; box-shadow: 0 0 22px -6px rgba(0, 237, 197, 0.65); }
+
+/* ---------- pill (glass label) ---------- */
+.un-pill { display: inline-flex; align-items: center; gap: 8px; padding: 12px 26px; border-radius: var(--un-r-pill); background: var(--un-glass); border: 1px solid var(--un-line); font: 400 15px var(--font-display); color: #b7abdc; }
+.un-pill b { font: 600 19px var(--font-display); color: #f5f0ff; }
+.un-pill--strong { background: var(--un-glass-strong); font-weight: 500; font-size: 17px; color: #f5f0ff; }
+.un-pill--small { padding: 6px 14px; font-size: 13px; }
+.un-dot { width: 6px; height: 6px; border-radius: var(--un-r-pill); background: #5eead4; box-shadow: 0 0 10px #5eead4; }
+
+/* ---------- badge (status with a dot) ---------- */
+.un-badge { display: inline-flex; align-items: center; gap: 6px; padding: 2px 10px; border-radius: var(--un-r-pill); border: 1px solid rgba(0, 237, 197, 0.45); color: var(--un-live); font: 500 12px/18px var(--font-display); }
+.un-badge::before { content: ""; width: 6px; height: 6px; border-radius: 50%; background: var(--un-live); }
+
+/* ---------- glass card ---------- */
+.un-card {
+  position: relative; border-radius: 40px; background: linear-gradient(180deg, rgba(20, 2, 40, 0.92), rgba(22, 3, 44, 0.86)); border: 1px solid rgba(255, 255, 255, 0.07);
+  -webkit-backdrop-filter: blur(28px); backdrop-filter: blur(28px); box-shadow: 0 40px 90px -40px rgba(0, 0, 0, 0.8), inset 0 1px 0 rgba(255, 255, 255, 0.06);
+}
+
+/* ---------- icon button (round outline or square ghost) ---------- */
+.un-icon-btn { width: 24px; height: 24px; display: grid; place-items: center; padding: 0; border: 0; border-radius: var(--un-r-sm); background: none; color: var(--un-ink); cursor: pointer; transition: transform 0.2s var(--ease), background 0.25s, color 0.35s, box-shadow 0.35s; }
+.un-icon-btn:hover { background: rgba(255, 255, 255, 0.1); }
+.un-icon-btn .un-icon { width: 20px; height: 20px; }
+.un-icon-btn--round { border-radius: 50%; border: 1px solid rgba(255, 255, 255, 0.4); }
+.un-icon-btn--round:hover { transform: scale(1.08); background: rgba(255, 255, 255, 0.12); }
+.un-icon-btn--round .un-icon { width: 14px; height: 14px; stroke-width: 2; }
+.un-icon-btn--send { border-radius: var(--un-r-pill); }
+.un-icon-btn--send.ready { background: var(--un-live); color: #04120f; box-shadow: 0 6px 18px -6px rgba(0, 237, 197, 0.8); }
+.un-icon-btn--send.ready:hover { transform: translateY(-1px); background: #2ff5d4; }
+
+/* ---------- toggle (switch with a label) ----------
+   <button class="un-toggle un-toggle--sm" role="switch" aria-checked="true"><span class="un-toggle__track"></span><span class="un-toggle__label">Dark</span></button> */
+.un-toggle { display: inline-flex; flex-direction: row-reverse; align-items: center; gap: 8px; padding: 4px; border: 0; background: none; color: inherit; cursor: pointer; font: 500 14px/20px var(--font-display); }
+.un-toggle__track { position: relative; width: 36px; height: 20px; flex: none; border-radius: var(--un-r-pill); background: rgba(255, 255, 255, 0.25); transition: background 0.3s var(--ease); }
+.un-toggle__track::after { content: ""; position: absolute; top: 2px; left: 2px; width: 16px; height: 16px; border-radius: 50%; background: #fff; box-shadow: 0 1px 3px rgba(0, 0, 0, 0.35); transition: transform 0.3s var(--ease); }
+.un-toggle[aria-checked="true"] .un-toggle__track { background: linear-gradient(135deg, var(--un-violet), var(--un-fuchsia)); }
+.un-toggle[aria-checked="true"] .un-toggle__track::after { transform: translateX(16px); }
+.un-toggle:focus-visible { outline: 2px solid var(--un-live); outline-offset: 2px; border-radius: var(--un-r-sm); }
+.un-toggle--sm { gap: 6px; padding: 2px; font-size: 12px; line-height: 16px; }
+.un-toggle--sm .un-toggle__track { width: 28px; height: 16px; }
+.un-toggle--sm .un-toggle__track::after { top: 2px; left: 2px; width: 12px; height: 12px; }
+.un-toggle--sm[aria-checked="true"] .un-toggle__track::after { transform: translateX(12px); }
+
+/* ---------- keyboard hint ("Tab") ---------- */
+.un-kbd { display: inline-flex; align-items: center; height: 20px; padding: 0 6px; border: 1px solid rgba(255, 255, 255, 0.3); border-radius: var(--un-r-sm); font: 500 11px/1 var(--font-display); color: rgba(255, 255, 255, 0.6); }
+
+/* ---------- menu (floating list of actions) ---------- */
+.un-menu { position: fixed; z-index: 50; min-width: 168px; padding: 6px; border-radius: var(--un-r-md); background: var(--un-menu); border: 1px solid var(--un-line); box-shadow: 0 16px 40px rgba(0, 0, 0, 0.55);
+  opacity: 0; transform: translateY(-4px) scale(0.98); transform-origin: top left; pointer-events: none; transition: opacity 0.18s, transform 0.22s var(--ease); }
+.un-menu.show { opacity: 1; transform: none; pointer-events: auto; }
+.un-menu button { display: flex; align-items: center; gap: 10px; width: 100%; height: 36px; padding: 0 10px; border: 0; border-radius: var(--un-r-sm); background: none; font: 400 14px/20px var(--font-display); color: var(--un-ink); text-align: left; cursor: pointer; transition: background 0.15s; }
+.un-menu button:hover, .un-menu button:focus-visible { background: rgba(255, 255, 255, 0.1); }
+.un-menu__sep { height: 1px; margin: 6px 0; border: 0; background: var(--un-line); }
+.un-menu__end { justify-content: space-between; }
+.un-menu .un-icon { width: 16px; height: 16px; color: var(--un-ink-soft); }
+
+/* ---------- tooltip (single floating label; position it with left/top = anchor point, it centers vertically) ---------- */
+.un-tooltip { position: fixed; z-index: 60; transform: translate(-4px, -50%); opacity: 0; padding: 6px 10px; border-radius: var(--un-r-sm); background: #1d0f45; border: 1px solid var(--un-line); color: #fff; font: 500 13px/16px var(--font-display); white-space: nowrap; pointer-events: none; transition: opacity 0.18s, transform 0.22s var(--ease); }
+.un-tooltip.show { opacity: 1; transform: translate(0, -50%); }
+
+/* ---------- toast ---------- */
+.un-toast { position: fixed; left: 50%; bottom: 24px; z-index: 40; transform: translate(-50%, 20px); opacity: 0; padding: 12px 20px; border-radius: var(--un-r-pill); background: var(--un-surface-raised); border: 1px solid var(--un-line); font: 500 14px/20px var(--font-display); pointer-events: none; transition: opacity 0.3s, transform 0.3s var(--ease); }
+.un-toast.show { opacity: 1; transform: translate(-50%, 0); }
+
+/* ---------- message bubble (chat) ---------- */
+.un-msg { max-width: 82%; padding: 10px 14px; border-radius: var(--un-r-lg); font: 400 14px/20px var(--font-display); animation: un-msg-in 0.45s var(--ease) backwards; }
+.un-msg--user { align-self: flex-end; background: var(--un-surface-raised); border-bottom-right-radius: var(--un-r-sm); }
+.un-msg--ai { align-self: flex-start; background: var(--un-glass); border: 1px solid rgba(255, 255, 255, 0.08); border-bottom-left-radius: var(--un-r-sm); }
+.un-msg--ai b { display: block; margin-bottom: 2px; font: 600 12px/16px var(--font-display); color: #d9c8ff; }
+@keyframes un-msg-in { from { opacity: 0; transform: translateY(8px); } }
+
+/* ---------- typing indicator ---------- */
+.un-typing { display: inline-flex; gap: 4px; align-items: center; height: 20px; }
+.un-typing i { width: 6px; height: 6px; border-radius: 50%; background: var(--un-ink-soft); animation: un-blip 1s ease-in-out infinite; }
+.un-typing i:nth-child(2) { animation-delay: 0.15s; } .un-typing i:nth-child(3) { animation-delay: 0.3s; }
+@keyframes un-blip { 0%, 80%, 100% { opacity: 0.3; transform: translateY(0); } 40% { opacity: 1; transform: translateY(-3px); } }
+
+@media (prefers-reduced-motion: reduce) { .un-btn, .un-chip, .un-icon-btn, .un-menu, .un-toast { transition-duration: 0.01ms; } .un-msg, .un-typing i { animation: none; } }
