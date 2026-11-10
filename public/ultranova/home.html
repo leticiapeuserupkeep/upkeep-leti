@@ -37,9 +37,12 @@
   /* glass ribbon (exported from the Figma frame): black everywhere except bottom-left, so it blends into the page */
   .backdrop { position: fixed; inset: 0; z-index: 0; pointer-events: none; background: #000; }
   /* the ribbon image sits bottom-left of the content area; its top and right edges fade out so it never shows a cut */
-  .backdrop::before { content: ""; position: absolute; left: 0; bottom: 0; width: min(1240px, 82vw); aspect-ratio: 980 / 729; background: url("home-bg.png") 0 100% / 100% 100% no-repeat; 
-    -webkit-mask-image: linear-gradient(to top, #000 55%, transparent), linear-gradient(to right, #000 50%, transparent); -webkit-mask-composite: source-in;
-    mask-image: linear-gradient(to top, #000 55%, transparent), linear-gradient(to right, #000 50%, transparent); mask-composite: intersect; }
+  .backdrop { overflow: hidden; --k: 1; }
+  /* background image placed exactly like the Figma frame (CROP fill): the 4096×1229 render is 245.55vw wide, shifted 159.5vw left and anchored to the bottom, so the ribbon sits under the translucent sidebar and rises into the main area */
+  .backdrop::before { content: ""; position: absolute; left: calc(-159.5vw * var(--k)); bottom: calc(-15.4vw * var(--k)); width: calc(245.55vw * var(--k)); aspect-ratio: 4096 / 1229; background: url("home-bg-dark.jpg") 0 0 / 100% 100% no-repeat;
+    /* the render is not pure black: fade its top and right edges so no rectangle shows */
+    -webkit-mask-image: linear-gradient(to top, #000 50%, transparent), linear-gradient(to right, #000 92%, transparent); -webkit-mask-composite: source-in;
+    mask-image: linear-gradient(to top, #000 50%, transparent), linear-gradient(to right, #000 92%, transparent); mask-composite: intersect; }
 
   .app { position: relative; z-index: 1; display: grid; grid-template-columns: var(--sidebar-w) minmax(0, 1fr); min-height: 100dvh; }
 
@@ -212,8 +215,7 @@
 
   /* ---------- small screens: the sidebar becomes a drawer ---------- */
   @media (max-width: 860px) {
-    .backdrop::before { left: 0; width: 100vw; }
-    .backdrop::after { left: -10vw; width: 130vw; bottom: -20vw; }
+    .backdrop { --k: 2.4; }   /* on a phone the ribbon is scaled up so its crest stays visible */
     .app { grid-template-columns: minmax(0, 1fr); }
     .sidebar { position: fixed; z-index: 30; left: 0; top: 0; width: min(300px, 84vw); transform: translateX(-102%); transition: transform 0.3s var(--ease); background: linear-gradient(180deg, #05010d, #570a9e); }
     .menu-open .sidebar { transform: none; }
@@ -239,7 +241,7 @@
   :root[data-theme="light"] .backdrop { background: var(--bg); }
   :root[data-theme="light"] .backdrop::before { opacity: 0; }
   /* light-mode ribbon (Figma "Nova" light frame): bottom-left, mostly below the fold so only its crest shows; multiply keeps the page tint where the image is white */
-  .backdrop::after { content: ""; position: absolute; left: -40px; bottom: calc(-1 * min(1300px, 90vw) * 0.15); width: min(1300px, 90vw); aspect-ratio: 4096 / 1229; background: url("home-bg-light.jpg") 0 0 / 100% 100% no-repeat; mix-blend-mode: multiply; opacity: 0; pointer-events: none; }
+  .backdrop::after { content: ""; position: absolute; left: calc(-159.5vw * var(--k)); bottom: calc(-14vw * var(--k)); width: calc(245.55vw * var(--k)); aspect-ratio: 4096 / 1229; background: url("home-bg-light.jpg") 0 0 / 100% 100% no-repeat; mix-blend-mode: multiply; opacity: 0; pointer-events: none; }
   :root[data-theme="light"] .backdrop::after { opacity: 1; }
   :root[data-theme="light"] .sidebar { border-right-color: rgba(26, 11, 70, 0.08); }
   :root[data-theme="light"] .sidebar::before { opacity: 1; }
