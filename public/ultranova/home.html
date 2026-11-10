@@ -49,8 +49,8 @@
   /* collapsible sidebar (desktop): it shrinks to a 60px rail of icons; hovering an icon shows a tooltip with its name.
      --sidebar-w follows, so everything positioned from it (backdrop, floating assistant, blurred band) moves with it. */
   .app { transition: grid-template-columns 0.45s var(--ease); }
-  .sidebar { width: var(--sidebar-w); border-right: 1px solid transparent; transition: width 0.45s var(--ease); }
-  .sidebar::before { content: ""; position: absolute; inset: 0; z-index: 0; opacity: 0; pointer-events: none; background: linear-gradient(180deg, rgba(255, 255, 255, 0.6), rgba(236, 228, 250, 0.6)); }   /* light layer, fades in with the theme */
+  .sidebar { width: var(--sidebar-w); transition: width 0.45s var(--ease); }
+  .sidebar::before { content: ""; position: absolute; inset: 0; z-index: 0; opacity: 0; pointer-events: none; background: linear-gradient(180deg, rgba(255, 255, 255, var(--side-light-a)), rgba(236, 228, 250, var(--side-light-a))); }   /* light layer, fades in with the theme */
   .sidebar > * { position: relative; z-index: 1; }
   @media (min-width: 861px) {
     :root:has(.app.nav-closed) { --sidebar-w: 60px; }   /* on the root so the backdrop (a sibling of .app) follows too */
@@ -74,9 +74,10 @@
   /* ---------- sidebar ---------- */
   .sidebar {
     position: sticky; top: 0; height: 100dvh; display: flex; flex-direction: column;
-    background: linear-gradient(180deg, var(--sidebar-top), var(--sidebar-bottom));
     -webkit-backdrop-filter: blur(16px); backdrop-filter: blur(16px);
+    --side-light-a: 0.7;
   }
+  .sidebar::after { content: ""; position: absolute; inset: 0; z-index: 0; pointer-events: none; background: linear-gradient(180deg, var(--sidebar-top), var(--sidebar-bottom)); }   /* dark layer, fades out in light mode */
   .brand { display: flex; align-items: center; gap: 10px; padding: 20px 12px; font: 600 20px/25px var(--font-display); color: #f5f0ff; }
   .brand svg { width: 26px; height: 26px; fill: var(--brand); }
   .nav { display: flex; flex-direction: column; gap: 8px; padding: 12px 8px 0; min-height: 0; overflow-y: auto; }
@@ -217,7 +218,8 @@
   @media (max-width: 860px) {
     .backdrop { --k: 2.4; }   /* on a phone the ribbon is scaled up so its crest stays visible */
     .app { grid-template-columns: minmax(0, 1fr); }
-    .sidebar { position: fixed; z-index: 30; left: 0; top: 0; width: min(300px, 84vw); transform: translateX(-102%); transition: transform 0.3s var(--ease); background: linear-gradient(180deg, #05010d, #570a9e); }
+    .sidebar { position: fixed; z-index: 30; left: 0; top: 0; width: min(300px, 84vw); transform: translateX(-102%); transition: transform 0.3s var(--ease); --side-light-a: 1; }
+    .sidebar::after { background: linear-gradient(180deg, #05010d, #570a9e); }
     .menu-open .sidebar { transform: none; }
     .scrim { display: block; position: fixed; inset: 0; z-index: 25; background: rgba(0, 0, 0, 0.6); opacity: 0; pointer-events: none; transition: opacity 0.3s; }
     .menu-open .scrim { opacity: 1; pointer-events: auto; }
@@ -235,16 +237,15 @@
     .tabhint { display: none; }   /* no Tab key on a phone: the suggestion stays in the placeholder */
   }
   /* light mode (toggle in the sidebar footer): the main area goes light, the purple sidebar stays as is */
-  :root[data-theme="light"] { --bg: #f6f3fb; --ink: #1a0b46; --ink-soft: rgba(26, 11, 70, 0.65); --bar: #fff; --un-ink: #1a0b46; --un-ink-soft: rgba(26, 11, 70, 0.65); --un-glass: rgba(26, 11, 70, 0.05); --un-line: rgba(26, 11, 70, 0.14); color-scheme: light; }
-  .assistant::before { content: ""; position: absolute; inset: -60%; z-index: -1; border-radius: 50%; background: radial-gradient(closest-side, #fff 35%, rgba(255, 255, 255, 0.7) 60%, transparent 100%); opacity: 0; pointer-events: none; }
-  :root[data-theme="light"] .assistant::before { opacity: 1; }
+  :root[data-theme="light"] { --bg: #fff; --ink: #1a0b46; --ink-soft: rgba(26, 11, 70, 0.65); --bar: #e6dcfa; --un-ink: #1a0b46; --un-ink-soft: rgba(26, 11, 70, 0.65); --un-glass: rgba(26, 11, 70, 0.05); --un-line: rgba(26, 11, 70, 0.14); color-scheme: light; }
   :root[data-theme="light"] .backdrop { background: var(--bg); }
   :root[data-theme="light"] .backdrop::before { opacity: 0; }
   /* light-mode ribbon (Figma "Nova" light frame): bottom-left, mostly below the fold so only its crest shows; multiply keeps the page tint where the image is white */
-  .backdrop::after { content: ""; position: absolute; left: calc(-159.5vw * var(--k)); bottom: calc(-14vw * var(--k)); width: calc(245.55vw * var(--k)); aspect-ratio: 4096 / 1229; background: url("home-bg-light.jpg") 0 0 / 100% 100% no-repeat; mix-blend-mode: multiply; opacity: 0; pointer-events: none; }
+  .backdrop::after { content: ""; position: absolute; left: calc(-159.5vw * var(--k)); bottom: calc(-14vw * var(--k)); width: calc(245.55vw * var(--k)); aspect-ratio: 4096 / 1229; background: url("home-bg-light.jpg") 0 0 / 100% 100% no-repeat; mix-blend-mode: multiply;
+    -webkit-mask-image: linear-gradient(to top, #000 50%, transparent), linear-gradient(to right, #000 92%, transparent); -webkit-mask-composite: source-in; mask-image: linear-gradient(to top, #000 50%, transparent), linear-gradient(to right, #000 92%, transparent); mask-composite: intersect; opacity: 0; pointer-events: none; }
   :root[data-theme="light"] .backdrop::after { opacity: 1; }
-  :root[data-theme="light"] .sidebar { border-right-color: rgba(26, 11, 70, 0.08); }
   :root[data-theme="light"] .sidebar::before { opacity: 1; }
+  :root[data-theme="light"] .sidebar::after { opacity: 0; }
   :root[data-theme="light"] .brand { color: #1a0b46; }
   :root[data-theme="light"] .nav-item:hover, :root[data-theme="light"] .chat-item:hover { background: rgba(26, 11, 70, 0.06); }
   :root[data-theme="light"] .nav-item.active { background: #e3d7fa; }
@@ -257,7 +258,7 @@
   :root[data-theme="light"] .un-menu { --un-menu: #fff; --un-line: rgba(26, 11, 70, 0.14); box-shadow: 0 16px 40px rgba(26, 11, 70, 0.18); }
   :root[data-theme="light"] .un-menu button:hover { background: rgba(26, 11, 70, 0.07); }
   :root[data-theme="light"] .scrim { background: rgba(26, 11, 70, 0.3); }
-  :root[data-theme="light"] .chatbar { box-shadow: 0 8px 32px rgba(26, 11, 70, 0.12); border-color: rgba(26, 11, 70, 0.1); }
+  :root[data-theme="light"] .chatbar { box-shadow: none; border-color: transparent; }
   :root[data-theme="light"] .chatbar textarea::placeholder, :root[data-theme="light"] .tabhint, :root[data-theme="light"] .un-icon-btn--round { color: rgba(26, 11, 70, 0.6); border-color: rgba(26, 11, 70, 0.3); }
   :root[data-theme="light"] .un-icon-btn:hover { background: rgba(26, 11, 70, 0.08); }
   :root[data-theme="light"] .un-msg--ai { border-color: rgba(26, 11, 70, 0.1); }
@@ -273,7 +274,7 @@
   html.theming *, html.theming *::before, html.theming *::after {
     transition: background-color 0.8s var(--ease) var(--d, 0s), color 0.8s var(--ease) var(--d, 0s), border-color 0.8s var(--ease) var(--d, 0s), fill 0.8s var(--ease) var(--d, 0s), stroke 0.8s var(--ease) var(--d, 0s), box-shadow 0.8s var(--ease) var(--d, 0s);
   }
-  html.theming .sidebar::before, html.theming .backdrop::before, html.theming .backdrop::after, html.theming .assistant::before { transition: opacity 0.8s var(--ease) var(--d, 0s); }
+  html.theming .sidebar::before, html.theming .sidebar::after, html.theming .backdrop::before, html.theming .backdrop::after { transition: opacity 0.8s var(--ease) var(--d, 0s); }
     html.theming .un-toggle__track, html.theming .un-toggle__track::after { transition: transform 0.3s var(--ease), background 0.3s var(--ease); }
 </style>
 </head>
