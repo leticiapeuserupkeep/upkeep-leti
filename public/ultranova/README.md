@@ -9,3 +9,9 @@ Served by Next.js from `public/`:
 - `/ultranova/robot.js` — the shared 3D assistant renderer (one WebGL canvas, one assistant per `[data-robot]` element), used by onboarding and home.
 
 The 5 avatars currently reuse the same assistant; each will get its own design later.
+
+## Design system
+
+All Ultranova screens use **Outfit** for everything and share `ultranova.css` (tokens + `un-*` components):
+`un-btn`, `un-link`, `un-chip`, `un-pill`, `un-dot`, `un-badge`, `un-card`, `un-icon-btn`, `un-kbd`, `un-menu`, `un-toast`, `un-msg`, `un-typing`, `un-brand`.
+Live reference: `/ultranova/design-system.html`. New screens link `ultranova.css` first and only add layout; if a pattern repeats, add it there instead of in the page.

@@ -6,7 +6,8 @@
 <title>Ultranova</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500&family=Outfit:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="ultranova.css">
 <style>
   /* Home (the screen you land on after onboarding): glass sidebar, centered assistant greeting, chat bar.
      Values follow the Figma frame "Nova / Ultranova" (sidebar 260px, Outfit + Inter, #dd00ff accent). */
@@ -22,10 +23,7 @@
     --bar: #1a0b46;
     --ink: #fff;
     --ink-soft: rgba(255, 255, 255, 0.7);
-    --font-display: "Outfit", system-ui, sans-serif;
-    --font-body: "Inter", system-ui, -apple-system, "Segoe UI", sans-serif;
     --sidebar-w: 260px;
-    --ease: cubic-bezier(0.2, 0.8, 0.2, 1);
     color-scheme: dark;
   }
   * { box-sizing: border-box; }
@@ -35,7 +33,6 @@
   button { cursor: pointer; background: none; border: 0; padding: 0; }
   :focus-visible { outline: 2px solid var(--brand); outline-offset: 2px; }
   svg { display: block; flex: none; }
-  .icon { width: 20px; height: 20px; fill: none; stroke: currentColor; stroke-width: 1.5; stroke-linecap: round; stroke-linejoin: round; }
 
   /* glass ribbon (exported from the Figma frame): black everywhere except bottom-left, so it blends into the page */
   .backdrop { position: fixed; inset: 0; z-index: 0; pointer-events: none; background: #000 url("home-bg.png") var(--sidebar-w) 100% / min(980px, 68vw) auto no-repeat; }
@@ -75,12 +72,6 @@
   .history li { overflow: hidden; transition: max-height 0.4s var(--ease), opacity 0.3s; max-height: 40px; }
   .history li.gone { max-height: 0; opacity: 0; }
   /* chat options submenu: Rename / Archive */
-  .ctx-menu { position: fixed; z-index: 50; min-width: 168px; padding: 6px; border-radius: 8px; background: #1d0f45; border: 1px solid rgba(255, 255, 255, 0.14); box-shadow: 0 16px 40px rgba(0, 0, 0, 0.55);
-    opacity: 0; transform: translateY(-4px) scale(0.98); transform-origin: top left; pointer-events: none; transition: opacity 0.18s, transform 0.22s var(--ease); }
-  .ctx-menu.show { opacity: 1; transform: none; pointer-events: auto; }
-  .ctx-menu button { display: flex; align-items: center; gap: 10px; width: 100%; height: 36px; padding: 0 10px; border-radius: 4px; font: 400 14px/20px var(--font-display); color: var(--ink); text-align: left; transition: background 0.15s; }
-  .ctx-menu button:hover, .ctx-menu button:focus-visible { background: rgba(255, 255, 255, 0.1); }
-  .ctx-menu .icon { width: 16px; height: 16px; color: var(--ink-soft); }
 
   /* "Back to CMS" banner, at the bottom of the sidebar above the profile row. When the assistant creates something in the CMS it
      swaps to a live status (icon, "WO-1043 created", spinner → check) and returns to the default after a few seconds. */
@@ -111,7 +102,7 @@
   .me { width: 32px; height: 32px; border-radius: 50%; display: grid; place-items: center; background: linear-gradient(135deg, #8b5cf6, #d946ef); font: 600 14px/1 var(--font-display); }
   .gear { width: 32px; height: 32px; display: grid; place-items: center; border-radius: 50%; color: #d9c8ff; transition: background 0.2s; }
   .gear:hover { background: rgba(255, 255, 255, 0.08); }
-  .gear .icon { width: 16px; height: 16px; }
+  .gear .un-icon { width: 16px; height: 16px; }
 
   /* ---------- main ---------- */
   .main { position: relative; display: flex; flex-direction: column; min-width: 0; min-height: 100dvh; padding: 32px 60px; gap: 10px; }
@@ -124,31 +115,18 @@
   .greeting .role { font: 500 12px/16px var(--font-body); letter-spacing: 0.02em; text-transform: uppercase; }
   .greeting p { margin: 0; max-width: 640px; font: 400 14px/20px var(--font-display); }
   .chips { display: flex; flex-wrap: wrap; justify-content: center; gap: 12px; }
-  .chip { height: 32px; padding: 8px 16px; border: 1px solid var(--brand-line); border-radius: 4px; font: 500 14px/16px var(--font-body); transition: background 0.2s, border-color 0.2s, transform 0.2s var(--ease); }
-  .chip:hover { background: rgba(221, 0, 255, 0.12); border-color: var(--brand); }
-  .chip:active { transform: scale(0.97); }
 
   .chatbar { align-self: center; width: min(700px, 100%); display: flex; flex-direction: column; gap: 25px; padding: 20px; border-radius: 8px; background: var(--bar); box-shadow: 0 8px 32px rgba(8, 0, 30, 0.6); border: 1px solid transparent; transition: border-color 0.2s; }
   .chatbar:focus-within { border-color: rgba(221, 0, 255, 0.5); }
   .chatbar textarea { width: 100%; height: 20px; max-height: 160px; resize: none; padding: 0; border: 0; background: transparent; outline: 0; font: 400 14px/20px var(--font-body); }
   .chatbar .field { position: relative; }
-  .tabhint { position: absolute; right: 0; top: 0; padding: 0 6px; height: 20px; display: flex; align-items: center; border: 1px solid rgba(255, 255, 255, 0.3); border-radius: 4px; font: 500 11px/1 var(--font-body); color: rgba(255, 255, 255, 0.6); opacity: 0; transform: translateX(6px); transition: opacity 0.3s, transform 0.4s var(--ease); pointer-events: none; }
+  .tabhint { position: absolute; right: 0; top: 0; opacity: 0; transform: translateX(6px); transition: opacity 0.3s, transform 0.4s var(--ease); pointer-events: none; }
   .chatbar.has-suggest .tabhint { opacity: 1; transform: none; }
   .chatbar textarea::placeholder { color: var(--ink); opacity: 0.6; }
   .bar-row { display: flex; align-items: center; justify-content: space-between; height: 24px; }
   .bar-row .right { display: flex; align-items: center; gap: 8px; }
-  .round, .tool { width: 24px; height: 24px; display: grid; place-items: center; border-radius: 50%; transition: transform 0.2s var(--ease), background 0.2s; }
-  .round { background: transparent; border: 1px solid rgba(255, 255, 255, 0.4); color: #fff; transition: transform 0.2s var(--ease), background 0.25s; }
-  .round:hover { transform: scale(1.08); background: rgba(255, 255, 255, 0.12); }
-  .round .icon { width: 14px; height: 14px; stroke-width: 2; }
-  .tool { border-radius: 4px; color: var(--ink); }
-  .tool:hover { background: rgba(255, 255, 255, 0.1); }
-  .tool .icon { width: 20px; height: 20px; }
 
   /* send button turns green once there is something to send */
-  .tool[type="submit"] { border-radius: 99px; transition: background 0.35s var(--ease), color 0.35s, transform 0.3s var(--ease), box-shadow 0.35s; }
-  .tool[type="submit"].ready { background: var(--dot-live); color: #04120f; box-shadow: 0 6px 18px -6px rgba(0, 237, 197, 0.8); }
-  .tool[type="submit"].ready:hover { transform: translateY(-1px); background: #2ff5d4; }
 
   /* conversation: the greeting makes way for the thread once something is sent */
   .thread { display: none; flex: 1; min-height: 0; width: min(700px, 100%); align-self: center; flex-direction: column; gap: 14px; overflow-y: auto; padding: 4px 2px 12px; scroll-behavior: smooth; }
@@ -163,30 +141,17 @@
     background: rgba(0, 0, 0, 0.4); -webkit-backdrop-filter: blur(10px); backdrop-filter: blur(10px);
     -webkit-mask-image: linear-gradient(#000 72%, transparent); mask-image: linear-gradient(#000 72%, transparent); }
   .chatting .greeting, .chatting .chips { display: none; }
-  .msg { max-width: 82%; padding: 10px 14px; border-radius: 12px; font: 400 14px/20px var(--font-body); animation: msg-in 0.45s var(--ease) backwards; }
-  .msg.user { align-self: flex-end; background: #2a1160; border-bottom-right-radius: 4px; }
-  .msg.ai { align-self: flex-start; background: rgba(255, 255, 255, 0.06); border: 1px solid rgba(255, 255, 255, 0.08); border-bottom-left-radius: 4px; }
-  .msg.ai b { display: block; margin-bottom: 2px; font: 600 12px/16px var(--font-display); color: #d9c8ff; }
   /* follow-up options under the assistant's last message: it stays proactive, and "Other" is always there */
   .opts { display: flex; flex-wrap: wrap; gap: 8px; align-self: flex-start; max-width: 82%; margin-top: -4px; }
-  .opts .chip { animation: opt-in 0.5s var(--ease) backwards; animation-delay: calc(var(--i, 0) * 70ms + 120ms); }
-  .opts .chip.other { border-style: dashed; border-color: rgba(255, 255, 255, 0.35); color: var(--ink-soft); }
-  .opts .chip.other:hover { color: var(--ink); border-color: var(--brand); }
+  .opts .un-chip { animation: opt-in 0.5s var(--ease) backwards; animation-delay: calc(var(--i, 0) * 70ms + 120ms); }
   .opts.gone { opacity: 0; transform: translateY(-4px); transition: opacity 0.25s, transform 0.25s; pointer-events: none; }
   @keyframes opt-in { from { opacity: 0; transform: translateY(8px); } }
-  .typing { display: inline-flex; gap: 4px; align-items: center; height: 20px; }
-  .typing i { width: 6px; height: 6px; border-radius: 50%; background: var(--ink-soft); animation: blip 1s ease-in-out infinite; }
-  .typing i:nth-child(2) { animation-delay: 0.15s; } .typing i:nth-child(3) { animation-delay: 0.3s; }
-  @keyframes blip { 0%, 80%, 100% { opacity: 0.3; transform: translateY(0); } 40% { opacity: 1; transform: translateY(-3px); } }
-  @keyframes msg-in { from { opacity: 0; transform: translateY(8px); } }
   /* preview of the Work Order the assistant created (same field layout as the CMS detail) */
   .wo-card { display: block; margin-top: 12px; border: 1px solid rgba(255, 255, 255, 0.14); border-radius: 10px; background: rgba(255, 255, 255, 0.04); overflow: hidden; color: inherit; text-decoration: none; animation: wo-in 0.6s var(--ease) 0.15s backwards; transition: border-color 0.25s, background 0.25s; }
   .wo-card:hover { border-color: rgba(221, 0, 255, 0.5); background: rgba(255, 255, 255, 0.07); }
   @keyframes wo-in { from { opacity: 0; transform: translateY(10px) scale(0.985); } }
   .wo-head { display: flex; align-items: center; gap: 10px; padding: 12px 14px; border-bottom: 1px dashed rgba(255, 255, 255, 0.14); }
   .wo-head .id { font: 600 14px/20px var(--font-display); }
-  .wo-head .state { display: inline-flex; align-items: center; gap: 6px; padding: 2px 10px; border-radius: 99px; border: 1px solid rgba(0, 237, 197, 0.45); color: var(--dot-live); font: 500 12px/18px var(--font-body); }
-  .wo-head .state::before { content: ""; width: 6px; height: 6px; border-radius: 50%; background: var(--dot-live); }
   .wo-head .open { margin-left: auto; font: 500 12px/16px var(--font-body); color: var(--ink-soft); }
   .wo-title { padding: 12px 14px 4px; font: 600 15px/20px var(--font-display); }
   .wo-desc { padding: 0 14px 12px; color: var(--ink-soft); font: 400 13px/18px var(--font-body); }
@@ -198,12 +163,10 @@
   .wo-row .flag { width: 14px; height: 14px; fill: currentColor; }
   .snd { width: 32px; height: 32px; display: grid; place-items: center; border-radius: 50%; color: #d9c8ff; transition: background 0.2s; }
   .snd:hover { background: rgba(255, 255, 255, 0.08); }
-  .snd .icon { width: 16px; height: 16px; }
+  .snd .un-icon { width: 16px; height: 16px; }
   .snd .off { display: none; } .snd.muted .on { display: none; } .snd.muted .off { display: block; }
   .foot-right { display: flex; align-items: center; gap: 4px; }
 
-  .toast { position: fixed; left: 50%; bottom: 24px; z-index: 40; transform: translate(-50%, 20px); opacity: 0; padding: 12px 20px; border-radius: 99px; background: #2a1160; border: 1px solid rgba(255, 255, 255, 0.14); font: 500 14px/20px var(--font-display); pointer-events: none; transition: opacity 0.3s, transform 0.3s var(--ease); }
-  .toast.show { opacity: 1; transform: translate(-50%, 0); }
   #fg { position: fixed; inset: 0; width: 100%; height: 100%; pointer-events: none; display: block; z-index: 20; }
   .no-gl .assistant [data-robot] { margin: 18%; width: 64%; height: 64%; border-radius: 50%; background: radial-gradient(closest-side, #c4b5fd, rgba(139, 92, 246, 0.2) 70%, transparent 72%); }
 
@@ -249,14 +212,14 @@
     </div>
     <nav class="nav">
       <button class="nav-item" type="button">
-        <svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="4"/><path d="M10 3v18M10 12h11"/></svg>
+        <svg class="un-icon" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="4"/><path d="M10 3v18M10 12h11"/></svg>
         <span class="grow">Dashboard</span>
       </button>
       <div>
         <button class="nav-item active" type="button" id="chatToggle" aria-expanded="true" aria-controls="history">
-          <svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5.5A2.5 2.5 0 0 1 6.5 3h11A2.5 2.5 0 0 1 20 5.5v8a2.5 2.5 0 0 1-2.5 2.5H10l-4.5 4v-4A2.5 2.5 0 0 1 4 13.5z"/></svg>
+          <svg class="un-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5.5A2.5 2.5 0 0 1 6.5 3h11A2.5 2.5 0 0 1 20 5.5v8a2.5 2.5 0 0 1-2.5 2.5H10l-4.5 4v-4A2.5 2.5 0 0 1 4 13.5z"/></svg>
           <span class="grow">Chat</span>
-          <svg class="icon chev" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4v15M6 13l6 6 6-6"/></svg>
+          <svg class="un-icon chev" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4v15M6 13l6 6 6-6"/></svg>
         </button>
         <div class="history" id="history">
           <ul id="chatList">
@@ -269,11 +232,11 @@
         </div>
       </div>
       <button class="nav-item" type="button">
-        <svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M13 2 4 14h7l-1 8 9-12h-7z"/></svg>
+        <svg class="un-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M13 2 4 14h7l-1 8 9-12h-7z"/></svg>
         <span class="grow">Apps</span>
       </button>
       <button class="nav-item" type="button">
-        <svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 6l2 2 3-3.5M3 13l2 2 3-3.5M3 20l2 2 3-3.5M12 7h9M12 14h9M12 21h9"/></svg>
+        <svg class="un-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 6l2 2 3-3.5M3 13l2 2 3-3.5M3 20l2 2 3-3.5M12 7h9M12 14h9M12 21h9"/></svg>
         <span class="grow">Tasks</span>
       </button>
     </nav>
@@ -293,11 +256,11 @@
       <span class="me" aria-label="Your profile">L</span>
       <div class="foot-right">
       <button class="snd" type="button" id="sound" aria-label="Sound effects" aria-pressed="true">
-        <svg class="icon on" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9.5v5h3.5L12 18.5v-13L7.5 9.5zM15.5 9a4 4 0 0 1 0 6M18 6.5a7.5 7.5 0 0 1 0 11"/></svg>
-        <svg class="icon off" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9.5v5h3.5L12 18.5v-13L7.5 9.5zM16 9.5l5 5M21 9.5l-5 5"/></svg>
+        <svg class="un-icon on" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9.5v5h3.5L12 18.5v-13L7.5 9.5zM15.5 9a4 4 0 0 1 0 6M18 6.5a7.5 7.5 0 0 1 0 11"/></svg>
+        <svg class="un-icon off" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9.5v5h3.5L12 18.5v-13L7.5 9.5zM16 9.5l5 5M21 9.5l-5 5"/></svg>
       </button>
       <button class="gear" type="button" aria-label="Settings">
-        <svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M12 2.5l1.6 2.3 2.8-.5.9 2.7 2.7.9-.5 2.8L21.8 12l-2.3 1.6.5 2.8-2.7.9-.9 2.7-2.8-.5L12 21.8l-1.6-2.3-2.8.5-.9-2.7-2.7-.9.5-2.8L2.2 12l2.3-1.6-.5-2.8 2.7-.9.9-2.7 2.8.5z"/></svg>
+        <svg class="un-icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M12 2.5l1.6 2.3 2.8-.5.9 2.7 2.7.9-.5 2.8L21.8 12l-2.3 1.6.5 2.8-2.7.9-.9 2.7-2.8-.5L12 21.8l-1.6-2.3-2.8.5-.9-2.7-2.7-.9.5-2.8L2.2 12l2.3-1.6-.5-2.8 2.7-.9.9-2.7 2.8.5z"/></svg>
       </button>
       </div>
     </div>
@@ -306,8 +269,8 @@
 
   <main class="main">
     <div class="topbar">
-      <button class="tool" type="button" id="menuBtn" aria-label="Open menu" style="width:40px;height:40px">
-        <svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"/></svg>
+      <button class="un-icon-btn" type="button" id="menuBtn" aria-label="Open menu" style="width:40px;height:40px">
+        <svg class="un-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"/></svg>
       </button>
       <div class="brand"><svg viewBox="0 0 32 32" aria-hidden="true"><path d="M16 1l3.4 10.2L30 14.8l-10.6 3.4L16 30l-3.4-11.8L2 14.8l10.6-3.6z"/></svg>Ultranova</div>
       <span style="width:40px"></span>
@@ -325,12 +288,12 @@
     <div class="thread" id="thread" aria-live="polite" aria-label="Conversation"></div>
 
     <form class="chatbar" id="form" autocomplete="off">
-      <div class="field"><textarea id="prompt" rows="1" placeholder="Tell me what you’d like me to take care of…" aria-label="Message"></textarea><kbd class="tabhint" aria-hidden="true">Tab</kbd></div>
+      <div class="field"><textarea id="prompt" rows="1" placeholder="Tell me what you’d like me to take care of…" aria-label="Message"></textarea><kbd class="tabhint un-kbd" aria-hidden="true">Tab</kbd></div>
       <div class="bar-row">
-        <button class="round" type="button" aria-label="Add attachment"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg></button>
+        <button class="un-icon-btn un-icon-btn--round" type="button" aria-label="Add attachment"><svg class="un-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg></button>
         <div class="right">
-          <button class="tool" type="button" aria-label="Voice input"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5.5 11.5a6.5 6.5 0 0 0 13 0M12 18v3"/></svg></button>
-          <button class="tool" type="submit" aria-label="Send"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 20V5M6 11l6-6 6 6"/></svg></button>
+          <button class="un-icon-btn" type="button" aria-label="Voice input"><svg class="un-icon" viewBox="0 0 24 24" aria-hidden="true"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5.5 11.5a6.5 6.5 0 0 0 13 0M12 18v3"/></svg></button>
+          <button class="un-icon-btn un-icon-btn--send" type="submit" aria-label="Send"><svg class="un-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 20V5M6 11l6-6 6 6"/></svg></button>
         </div>
       </div>
     </form>
@@ -338,7 +301,7 @@
 </div>
 
 <canvas id="fg" aria-hidden="true"></canvas>
-<div class="toast" id="toast" role="status"></div>
+<div class="un-toast" id="toast" role="status"></div>
 
 <script src="https://cdn.jsdelivr.net/npm/three@0.152.2/build/three.min.js"></script>
 <script src="robot.js"></script>
@@ -370,7 +333,7 @@
   var actions = [];
   help.forEach(function (area) { (SUGGEST[area] || []).forEach(function (a) { if (actions.indexOf(a) < 0) actions.push(a); }); });
   if (!actions.length) actions = ['Plan my week', 'Create a work order', 'Draft an email'];
-  document.getElementById('chips').innerHTML = actions.slice(0, 4).map(function (a) { return '<button class="chip" type="button" data-sfx>' + a + '</button>'; }).join('');
+  document.getElementById('chips').innerHTML = actions.slice(0, 4).map(function (a) { return '<button class="un-chip" type="button" data-sfx>' + a + '</button>'; }).join('');
   /* the placeholder follows the conversation: a general invitation at first, then what the assistant is asking for */
   var DEFAULT_PH = 'Tell me what you’d like me to take care of…', ctx = null;
   /* while the assistant is asking: an example of a good answer, in the user's voice */
@@ -406,7 +369,7 @@
   /* ---- conversation (prototype): a suggestion runs as a prompt right away; the assistant "thinks", answers with a chime,
      and the box then asks for what it needs. ---- */
   var LONG_MS = 3000;  /* the chime is only for answers that took a while */
-  var main = document.querySelector('.main'), thread = document.getElementById('thread'), sendBtn = document.querySelector('.tool[type="submit"]'), busy = false;
+  var main = document.querySelector('.main'), thread = document.getElementById('thread'), sendBtn = document.querySelector('.un-icon-btn--send'), busy = false;
   var FOLLOW = {
     'Research a prospect': 'Sure. Who or which company should I look into?',
     'Draft an email': 'Happy to. Who’s it for, and what would you like to say?',
@@ -427,7 +390,7 @@
     'Summarize my day': 'Done. Your summary is ready.'
   };
   function addMsg(who, html) {
-    var m = document.createElement('div'); m.className = 'msg ' + who;
+    var m = document.createElement('div'); m.className = 'un-msg un-msg--' + who;
     m.innerHTML = who === 'ai' ? '<b>' + agentName + '</b>' + html : html; thread.appendChild(m);
     thread.scrollTop = thread.scrollHeight; return m;
   }
@@ -475,12 +438,12 @@
   function showOpts(list) {
     var box = document.createElement('div'); box.className = 'opts'; box.setAttribute('role', 'group'); box.setAttribute('aria-label', 'Suggested replies');
     list.slice(0, 3).concat(['Other…']).forEach(function (t, i) {
-      var b = document.createElement('button'); b.type = 'button'; b.className = 'chip' + (i === 3 || t === 'Other…' ? ' other' : ''); b.setAttribute('data-sfx', ''); b.style.setProperty('--i', i); b.textContent = t; box.appendChild(b);
+      var b = document.createElement('button'); b.type = 'button'; b.className = 'un-chip' + (i === 3 || t === 'Other…' ? ' un-chip--dashed' : ''); b.setAttribute('data-sfx', ''); b.style.setProperty('--i', i); b.textContent = t; box.appendChild(b);
     });
     thread.appendChild(box); thread.scrollTop = thread.scrollHeight;
   }
   thread.addEventListener('click', function (e) {
-    var c = e.target.closest('.opts .chip'); if (!c) return;
+    var c = e.target.closest('.opts .un-chip'); if (!c) return;
     if (c.classList.contains('other')) { prompt.placeholder = 'Tell me something else…'; suggestion = ''; hint(); prompt.focus(); return; }
     send(c.textContent);
   });
@@ -494,7 +457,7 @@
     var asset = /pump/i.test(t) ? 'Water Cooling Pump' : /hvac|a\/c|air/i.test(t) ? 'HVAC Unit 3' : /elevator|lift/i.test(t) ? 'Elevator 2' : 'Boiler #2';
     var high = /leak|urgent|fire|smoke|flood|broken|not working|isn.t working/i.test(t), prio = high ? 'High' : 'Medium';
     var a = document.createElement('a'); a.className = 'wo-card'; a.href = '/work-orders'; a.setAttribute('aria-label', label + ': ' + name + '. Open in the CMS');
-    a.innerHTML = '<div class="wo-head"><span class="id">' + esc(label) + '</span><span class="state">Open</span><span class="open">View in CMS →</span></div>'
+    a.innerHTML = '<div class="wo-head"><span class="id">' + esc(label) + '</span><span class="un-badge">Open</span><span class="open">View in CMS →</span></div>'
       + '<div class="wo-title">' + esc(name) + '</div><div class="wo-desc">' + esc(desc) + '</div>'
       + '<div class="wo-row"><span class="k">Location</span><span class="v link">' + esc(loc) + '</span></div>'
       + '<div class="wo-row"><span class="k">Asset</span><span class="v link">' + esc(asset) + '</span><span class="tag">Operational</span></div>'
@@ -507,7 +470,7 @@
     clearOpts(); busy = true; main.classList.add('chatting'); addMsg('user', esc(text));
     prompt.value = ''; setReady(); grow(); var asked = ctx; ctx = null; suggestion = ''; hint(); prompt.placeholder = DEFAULT_PH;
     if (robots) robots.hop('hero');
-    var typing = addMsg('ai', '<span class="typing" aria-label="Thinking"><i></i><i></i><i></i></span>');
+    var typing = addMsg('ai', '<span class="un-typing" aria-label="Thinking"><i></i><i></i><i></i></span>');
     var r = (ctx = asked, reply(text)); ctx = null;
     var wait = r.ask ? 1100 : 3600;  /* asking for details is quick; doing the work takes longer */
     setTimeout(function () {
@@ -533,7 +496,7 @@
 
   // a suggestion starts the conversation straight away (no second click)
   document.getElementById('chips').addEventListener('click', function (e) {
-    var c = e.target.closest('.chip'); if (c) send(c.textContent);
+    var c = e.target.closest('.un-chip'); if (c) send(c.textContent);
   });
   prompt.addEventListener('input', function () { grow(); setReady(); });
   /* Tab accepts the suggestion from anywhere on the page (not only when the box is focused): it is written into the box, ready to send */
@@ -563,9 +526,9 @@
     toggle.setAttribute('aria-expanded', String(!open)); history.hidden = open;
   });
   /* chat options: the three dots open a small submenu with Rename and Archive */
-  var menuEl = document.createElement('div'), menuFor = null; menuEl.className = 'ctx-menu'; menuEl.setAttribute('role', 'menu');
-  menuEl.innerHTML = '<button type="button" role="menuitem" data-act="rename"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20h4L19 9l-4-4L4 16zM13.5 6.5l4 4"/></svg>Rename</button>'
-    + '<button type="button" role="menuitem" data-act="archive"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4" width="18" height="4" rx="1"/><path d="M5 8v11a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V8M10 12h4"/></svg>Archive</button>';
+  var menuEl = document.createElement('div'), menuFor = null; menuEl.className = 'un-menu'; menuEl.setAttribute('role', 'menu');
+  menuEl.innerHTML = '<button type="button" role="menuitem" data-act="rename"><svg class="un-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20h4L19 9l-4-4L4 16zM13.5 6.5l4 4"/></svg>Rename</button>'
+    + '<button type="button" role="menuitem" data-act="archive"><svg class="un-icon" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4" width="18" height="4" rx="1"/><path d="M5 8v11a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V8M10 12h4"/></svg>Archive</button>';
   document.body.appendChild(menuEl);
   function closeMenu() { menuEl.classList.remove('show'); if (menuFor) menuFor.classList.remove('menu-open'); menuFor = null; }
   function openMenu(item, anchor) {
@@ -589,7 +552,7 @@
     var b = e.target.closest('button'); if (!b || !menuFor) return; var item = menuFor; closeMenu();
     if (b.getAttribute('data-act') === 'rename') startRename(item); else archive(item);
   });
-  document.addEventListener('click', function (e) { if (!e.target.closest('.ctx-menu') && !e.target.closest('.more')) closeMenu(); });
+  document.addEventListener('click', function (e) { if (!e.target.closest('.un-menu') && !e.target.closest('.more')) closeMenu(); });
   document.addEventListener('keydown', function (e) { if (e.key === 'Escape') closeMenu(); });
   document.getElementById('chatList').addEventListener('click', function (e) {
     var dots = e.target.closest('.more');
@@ -609,7 +572,7 @@
   function cmsCreated(type, label, href) {
     var k = KINDS[type] || KINDS.WO; cmsTimers.forEach(clearTimeout); cmsTimers = [];
     label = label || (type + '-' + (++k.n)); href = href || k.href;
-    document.getElementById('cmsKind').innerHTML = k.icon; document.getElementById('cmsText').textContent = label + ' created';
+    document.getElementById('cmsKind').innerHTML = k.un-icon; document.getElementById('cmsText').textContent = label + ' created';
     cms.classList.remove('done'); void cms.offsetWidth; cms.classList.add('busy');
     cms.setAttribute('href', href); cms.setAttribute('aria-label', label + ' created. Open it in the CMS'); cms.querySelector('.alt').removeAttribute('aria-hidden');
     cmsTimers.push(setTimeout(function () { cms.classList.add('done'); }, 1300));  /* spinner → check */
