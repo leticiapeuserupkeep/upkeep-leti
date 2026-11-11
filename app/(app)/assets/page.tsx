@@ -131,10 +131,8 @@ function AssetsView() {
           icon={Box}
           title="No assets created yet"
           headerLabel="Create Asset"
-          description="Create one yourself, or ask Nova to help you get started."
           createLabel="Create Manually"
           onCreate={() => setManualOpen(true)}
-          prompt={suggestions[0] ? `Add ${suggestions[0].title} to my assets` : 'Add a piece of equipment'}
           onAskNova={askNova}
           onUseTemplate={() => setTemplateOpen(true)}
           suggestions={suggestions}

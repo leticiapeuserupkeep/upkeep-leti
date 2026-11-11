@@ -1,25 +1,23 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 
 import { ChevronRight, LayoutPanelLeft, Plus, Pointer, type LucideIcon } from 'lucide-react'
 import { Button } from '@/app/components/ui/Button'
-import { NovaComposer } from '@/app/components/onboarding/nova/NovaComposer'
-import { IdeaCarousel } from '@/app/components/onboarding/nova/NovaIdeas'
-import type { ModuleSuggestion } from '@/app/lib/onboarding/nova-onboarding-data'
+import { NovaComposer, type NovaComposerHandle } from '@/app/components/onboarding/nova/NovaComposer'
+import { IdeaList } from '@/app/components/onboarding/nova/NovaIdeas'
+import { isSourceId, sourceName, type ModuleSuggestion } from '@/app/lib/onboarding/nova-onboarding-data'
+import { useSetupState } from '@/app/lib/onboarding/setup-store'
 
 interface ModuleEmptyStateProps {
   /** Icon on the illustration's badge. */
   icon: LucideIcon
   title: string
-  description: string
   createLabel: string
   /** The page header's primary action, e.g. "Create Location" — same as Create manually. */
   headerLabel: string
   onCreate: () => void
-  /** What the message box starts with — sent to Nova as-is. */
-  prompt: string
   onAskNova: (text: string) => void
   /** Start from a template; the button only shows when there's one. */
   onUseTemplate?: () => void
@@ -29,12 +27,30 @@ interface ModuleEmptyStateProps {
   onSuggest: (s: ModuleSuggestion) => void
 }
 
-/** Empty module (Work Orders, Assets, Parts…): ask Nova from the message box
- * (a prompt is ready to send), create it yourself or from a template, or start
- * from what Nova already found needs doing. */
+/** Empty module (Work Orders, Assets, Parts…): start from what Nova already
+ * found needs doing, describe it to Nova in the message box, or create it
+ * yourself or from a template. */
 export function ModuleEmptyState({
-  icon: Icon, title, description, createLabel, headerLabel, onCreate, prompt, onAskNova, onUseTemplate, suggestions, creatingId, onSuggest,
+  icon: Icon, title, createLabel, headerLabel, onCreate, onAskNova, onUseTemplate, suggestions, creatingId, onSuggest,
 }: ModuleEmptyStateProps) {
+  // Where Nova's findings come from: with a chat or email app connected the
+  // suggestions say so; otherwise they're framed as examples, with no figures.
+  const { connectedApps } = useSetupState()
+  const origin = connectedApps.find(id => isSourceId(id) && id !== 'drive')
+  const describe = (s: ModuleSuggestion) => {
+    if (!s.example) return s.reason
+    return origin && isSourceId(origin) ? `From ${sourceName(origin)} · ${s.reason.replace(' · ', ', ')}` : `Example · ${s.example}`
+  }
+  // The message box is where it starts: the cursor is already in it.
+  const composer = useRef<NovaComposerHandle>(null)
+  useEffect(() => {
+    const id = window.setTimeout(() => composer.current?.focus(), 300)
+    return () => window.clearTimeout(id)
+  }, [])
+  // Once the user prompts Nova, the other ways in step aside.
+  const [asked, setAsked] = useState(false)
+  // "Create Work Order" → "Work order", for the lead-in to the suggestions.
+  const noun = headerLabel.replace(/^Create\s+/i, '').replace(/^./, c => c.toUpperCase()).replace(/(?<=.)[A-Z]/g, c => c.toLowerCase())
   // The header's actions slot exists only after mount.
   const [actionsSlot, setActionsSlot] = useState<HTMLElement | null>(null)
   useEffect(() => {
@@ -49,11 +65,11 @@ export function ModuleEmptyState({
         actionsSlot,
       )}
       {/* Header — sizes and colors follow the Figma empty-state spec. */}
-      <div className="my-auto flex w-full max-w-[816px] flex-col items-center gap-8 py-6 nova-enter">
-        <div className="flex w-full flex-col items-center gap-3 text-center">
+      <div className="flex w-full max-w-[816px] flex-1 flex-col items-center justify-center gap-8 py-6 nova-enter">
+        <div className="flex w-full translate-y-10 flex-col items-center gap-3 text-center">
           {/* Illustration: a blank record with the module's icon badge. */}
-          <div className="relative -mt-10 h-[125px] w-[194px]" aria-hidden>
-            <div className="absolute left-1/2 top-1/2 h-[109px] w-[177px] -translate-x-1/2 -translate-y-1/2">
+          <div className="relative -mt-10 h-[95px] w-[148px]" aria-hidden>
+            <div className="absolute left-1/2 top-1/2 h-[109px] w-[177px] -translate-x-1/2 -translate-y-1/2 scale-[0.76]">
               <div className="absolute left-0 top-0 flex h-[97px] w-[160px] flex-col items-start gap-[11px] rounded-[12px] border border-[#E0E1E6] bg-white p-4">
                 <span className="h-2 w-[128px] rounded-[4px] bg-[#F9F9FB]" />
                 <span className="h-2 w-[104px] rounded-[4px] bg-[#F0F0F3]" />
@@ -65,34 +81,32 @@ export function ModuleEmptyState({
               </span>
             </div>
           </div>
-          <h2 className="text-[20px] font-bold leading-8 text-[#1C2024]">{title}</h2>
-          <p className="text-[14px] leading-5 text-[#1C2024]">{description}</p>
-        </div>
-        {/* Ask Nova first: the box comes with a prompt, ready to send. */}
-        <div className="w-full max-w-[640px]">
-          <NovaComposer initialValue={prompt} onSend={onAskNova} placeholder="Ask Nova to help you get started" sendLabel="Create with Nova" gradientBorder />
-        </div>
-        {/* Other ways in, as two option cards under the box. */}
-        <div className={`-mt-2 grid w-full max-w-[640px] gap-3 ${onUseTemplate ? 'grid-cols-2' : 'grid-cols-1'}`}>
-          <StartOption icon={Pointer} label={createLabel} onClick={onCreate} />
-          {onUseTemplate && <StartOption icon={LayoutPanelLeft} label="Create from template" onClick={onUseTemplate} />}
+          <h2 className="text-[24px] font-bold leading-8 text-[#1C2024]">{title}</h2>
         </div>
       </div>
 
-      {/* Same rotating cards as the Welcome page's ideas. */}
-      {/* Pinned to the bottom of the page, under everything else. */}
-      {suggestions.length > 0 && (
-        <div className="sticky bottom-0 flex w-full justify-center bg-[var(--surface-primary)] pb-[var(--space-xl)]">
-        <IdeaCarousel
-          eyebrow="Suggested by Nova"
-          muted
-          className="max-w-[816px]"
-          cards={suggestions.map(s => ({ id: s.id, title: s.title, description: s.reason, icon: Icon }))}
+      {/* Pinned to the bottom: the lead-in, Nova's suggestions and the message box,
+          with the other ways in right under it (until the user prompts Nova). */}
+      <div className="sticky bottom-0 mt-auto flex w-full max-w-[640px] flex-col gap-2 bg-[var(--surface-primary)] pb-[60px] pt-3">
+        <p className="px-1 pb-4 text-[length:var(--font-size-md)] text-[var(--color-neutral-11)]">
+          Create your first {noun}.<br />Describe what needs attention, or start with a Nova suggestion.
+        </p>
+        {/* What Nova would create here, from what it found during setup. */}
+        <IdeaList
+          className="pb-4"
+          cards={suggestions.map(s => ({ id: s.id, title: s.title, description: describe(s) }))}
           busyId={creatingId}
           onPick={card => { const s = suggestions.find(x => x.id === card.id); if (s) onSuggest(s) }}
         />
-        </div>
-      )}
+        {/* Ask Nova: the arrow stays disabled until something is typed. */}
+        <NovaComposer ref={composer} onSend={text => { setAsked(true); onAskNova(text) }} placeholder={`Describe the ${noun.toLowerCase()} you want to create…`} gradientBorder />
+        {!asked && (
+          <div className={`grid gap-3 ${onUseTemplate ? 'grid-cols-2' : 'grid-cols-1'}`}>
+            <StartOption icon={Pointer} label={createLabel} onClick={onCreate} />
+            {onUseTemplate && <StartOption icon={LayoutPanelLeft} label="Create from template" onClick={onUseTemplate} />}
+          </div>
+        )}
+      </div>
     </div>
   )
 }
