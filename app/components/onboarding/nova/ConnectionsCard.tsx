@@ -26,6 +26,7 @@ interface ConnectionsCardProps {
 export function ConnectionsCard({ connected, onConnect, onDisconnect, className = '' }: ConnectionsCardProps) {
   const [connecting, setConnecting] = useState<CatalogApp | null>(null)
   const [listOpen, setListOpen] = useState(false)
+  const [disconnecting, setDisconnecting] = useState<CatalogApp | null>(null)
   const tiles = CORE_APPS.map(appById).filter((app): app is CatalogApp => Boolean(app))
 
   return (
@@ -42,7 +43,7 @@ export function ConnectionsCard({ connected, onConnect, onDisconnect, className 
       <ul className="flex gap-2 px-1">
         {tiles.map(app => (
           <li key={app.id}>
-            <AppTile app={app} connected={connected.includes(app.id)} onAdd={() => setConnecting(app)} onRemove={() => onDisconnect(app.id)} />
+            <AppTile app={app} connected={connected.includes(app.id)} onAdd={() => setConnecting(app)} onRemove={() => setDisconnecting(app)} />
           </li>
         ))}
         <li>
@@ -59,6 +60,7 @@ export function ConnectionsCard({ connected, onConnect, onDisconnect, className 
       </ul>
 
       <ConnectAppModal app={connecting} onClose={() => setConnecting(null)} onConnect={onConnect} />
+      <DisconnectAppModal app={disconnecting} onClose={() => setDisconnecting(null)} onDisconnect={onDisconnect} />
       <ConnectionsListModal open={listOpen} onOpenChange={setListOpen} connected={connected} onConnect={onConnect} onDisconnect={onDisconnect} />
     </section>
   )
@@ -142,6 +144,37 @@ function ConnectAppModal({ app, onClose, onConnect }: { app: CatalogApp | null; 
   )
 }
 
+/** Confirms disconnecting one app: what Nova stops reading. Reached from the
+ * list it offers Back (left); on its own, Cancel. */
+function DisconnectAppContent({ app, onCancel, onDisconnect, back = false }: { app: CatalogApp; onCancel: () => void; onDisconnect: () => void; back?: boolean }) {
+  return (
+    <>
+      <ModalHeader title={`Disconnect ${app.name}?`} />
+      <ModalBody className="flex flex-1 flex-col gap-[var(--space-md)]">
+        <span className="flex h-12 w-12 items-center justify-center rounded-[12px] border border-[var(--border-subtle)]">
+          <Image src={app.logo} alt="" width={24} height={24} />
+        </span>
+        <p className="text-[length:var(--font-size-base)] leading-5 text-[var(--color-neutral-10)]">
+          Nova will stop reading {app.name}, so it won’t use it to find issues, requests or people. You can connect it again any time.
+        </p>
+      </ModalBody>
+      <ModalFooter className={back ? 'justify-between' : 'justify-end'}>
+        <Button variant="secondary" size="md" onClick={onCancel}>{back ? 'Back' : 'Cancel'}</Button>
+        <Button variant="danger" size="md" onClick={onDisconnect}>Disconnect</Button>
+      </ModalFooter>
+    </>
+  )
+}
+
+/** Disconnect one app from its tile, after confirming. */
+function DisconnectAppModal({ app, onClose, onDisconnect }: { app: CatalogApp | null; onClose: () => void; onDisconnect: (id: string) => void }) {
+  return (
+    <Modal open={Boolean(app)} onOpenChange={open => { if (!open) onClose() }} maxWidth="440px">
+      {app && <DisconnectAppContent app={app} onCancel={onClose} onDisconnect={() => { onDisconnect(app.id); onClose() }} />}
+    </Modal>
+  )
+}
+
 /** Every app Nova can connect to, one per row, searchable. The plus (on hover)
  * switches the modal to that app's connect step and comes back to the list
  * once connected; a connected app shows a check that turns into a red trash on
@@ -170,10 +203,11 @@ function ConnectionsListContent({ connected, onConnect, onDisconnect, close }: {
   const [query, setQuery] = useState('')
   // What's connected as of the changes made in this modal.
   const [draft, setDraft] = useState<string[]>(connected)
-  const [connecting, setConnecting] = useState<CatalogApp | null>(null)
+  // The app whose connect (or disconnect) step is open, instead of the list.
+  const [step, setStep] = useState<{ app: CatalogApp; action: 'connect' | 'disconnect' } | null>(null)
   // Each step slides in from the side it came from.
   const [direction, setDirection] = useState<'next' | 'prev'>('next')
-  const goTo = (app: CatalogApp | null) => { setDirection(app ? 'next' : 'prev'); setConnecting(app) }
+  const goTo = (next: typeof step) => { setDirection(next ? 'next' : 'prev'); setStep(next) }
 
   const apply = () => {
     draft.filter(id => !connected.includes(id)).forEach(onConnect)
@@ -185,13 +219,20 @@ function ConnectionsListContent({ connected, onConnect, onDisconnect, close }: {
   const apps = INTEGRATION_CATALOG.filter(a => !q || `${a.name} ${a.description} ${a.category}`.toLowerCase().includes(q))
   return (
     // Keyed by step so the whole content — buttons included — plays the slide.
-    <div key={connecting?.id ?? 'list'} className={`flex min-h-0 flex-1 flex-col ${direction === 'next' ? 'nova-idea-in-next' : 'nova-idea-in-prev'}`}>
-    {connecting ? (
+    <div key={step ? `${step.action}-${step.app.id}` : 'list'} className={`flex min-h-0 flex-1 flex-col ${direction === 'next' ? 'nova-idea-in-next' : 'nova-idea-in-prev'}`}>
+    {step?.action === 'connect' ? (
       <ConnectAppContent
         back
-        app={connecting}
+        app={step.app}
         onCancel={() => goTo(null)}
-        onConnect={() => { setDraft(prev => (prev.includes(connecting.id) ? prev : [...prev, connecting.id])); goTo(null) }}
+        onConnect={() => { setDraft(prev => (prev.includes(step.app.id) ? prev : [...prev, step.app.id])); goTo(null) }}
+      />
+    ) : step?.action === 'disconnect' ? (
+      <DisconnectAppContent
+        back
+        app={step.app}
+        onCancel={() => goTo(null)}
+        onDisconnect={() => { setDraft(prev => prev.filter(id => id !== step.app.id)); goTo(null) }}
       />
     ) : (
       <>
@@ -207,11 +248,11 @@ function ConnectionsListContent({ connected, onConnect, onDisconnect, close }: {
                 const isConnected = draft.includes(app.id)
                 return (
                   <li key={app.id} className="border-b border-[var(--border-subtle)] last:border-b-0">
-                    {/* The whole row is the button: connect it (the connect step) or, if it's
-                        connected, disconnect it. */}
+                    {/* The whole row is the button: the connect step or, if it's connected,
+                        the disconnect confirmation. */}
                     <button
                       type="button"
-                      onClick={() => (isConnected ? setDraft(prev => prev.filter(id => id !== app.id)) : goTo(app))}
+                      onClick={() => goTo({ app, action: isConnected ? 'disconnect' : 'connect' })}
                       aria-label={`${isConnected ? 'Disconnect' : 'Connect'} ${app.name}`}
                       className="group flex w-full items-center gap-3 rounded-[10px] py-3 text-left transition-colors duration-[var(--duration-fast)] hover:bg-[var(--color-neutral-2)] cursor-pointer"
                     >

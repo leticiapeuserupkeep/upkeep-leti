@@ -943,8 +943,9 @@ export function WelcomeScreen() {
                             nova.importGuideList(f.name, { locations: data.locations.map(i => i.name), assets: data.assets.map(i => i.name) })
                           }}
                         />
-                        {/* The message box sits at the bottom, like a chat. */}
-                        <div className="sticky bottom-0 mt-auto bg-gradient-to-t from-[var(--surface-primary)] from-70% to-transparent pb-8 pt-6">
+                        {/* The message box sits at the bottom, like a chat. No backdrop of its
+                            own: a white fade showed as a cut-off block over the tinted page. */}
+                        <div className="sticky bottom-0 mt-auto pb-8 pt-6">
                           {/* Approvals float just above the input, like the drawer's. */}
                           <div className="relative">
                             <div className="absolute inset-x-0 bottom-full z-10 mb-2">

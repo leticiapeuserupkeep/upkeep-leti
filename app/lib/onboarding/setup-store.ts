@@ -39,6 +39,8 @@ export interface SetupState {
   addedNames: { locations: string[]; assets: string[] }
   /** Where "Setup your account" leads: the onboarding version last opened. */
   welcomeHref: string
+  /** The user asked not to see the setup section again — the sidebar entry goes away. */
+  setupDismissed: boolean
 }
 
 export interface CreatedItem {
@@ -67,6 +69,7 @@ function initialState(): SetupState {
     connectedApps: [],
     setupComplete: false,
     welcomeHref: '/onboarding-v2',
+    setupDismissed: false,
   }
 }
 
@@ -127,10 +130,14 @@ export function useSetupState(): SetupState {
   return useSyncExternalStore(subscribe, setupStore.get, () => serverSnapshot)
 }
 
+/** The steps "Your workspace setup" lists. The team isn't one of them: invites
+ * come once the workspace is set up. */
+const SETUP_STEPS: (keyof SetupCounts)[] = ['locations', 'assets', 'workOrders']
+
 /** Account counts once the company is confirmed; the rest once they have
  * at least one item. Finishing the chat doesn't count — only what's set up. */
 export function setupProgress(s: SetupState): number {
-  // Same steps as the setup guide: account, locations, assets, team, work orders.
-  const done = (s.companyConfirmed ? 1 : 0) + (Object.values(s.counts) as number[]).filter(n => n > 0).length
-  return Math.round((done / 5) * 100)
+  // Same steps as the setup checklist: account, locations, assets, work orders.
+  const done = (s.companyConfirmed ? 1 : 0) + SETUP_STEPS.filter(k => s.counts[k] > 0).length
+  return Math.round((done / (SETUP_STEPS.length + 1)) * 100)
 }

@@ -79,6 +79,9 @@ export const INTRO_LINE = 'I’ll help you get your account set up.'
 /** Emulated pause between Nova's lines, so replies land like a person's. */
 const BEAT_MS = 450
 
+/** Quick replies for "what needs fixing?" in the work-order flow. */
+const WO_EXAMPLES = ['AC not cooling in the main office', 'Leaking pipe in the warehouse', 'Conveyor belt making noise']
+
 /** What the user asked about, in a few words for Nova's reply
  * ("I'll help you get started with …"). */
 function topicOf(ask: string): string {
@@ -97,7 +100,6 @@ function readyReply(ask: string): string {
   // The team isn't invited during onboarding: the first work order is where
   // Nova suggests someone, and asks for email to find the rest.
   if (/gmail|outlook|connect/.test(t)) return 'Great — once your email is connected, I’ll look at who you work with most and suggest the right people for each job. You’ll choose who gets invited.'
-  if (/work order|\bwo\b|assign/.test(t)) return `Sure — tell me what needs fixing and where, and I’ll create the work order. Who should I assign it to? I found ${SUGGESTED_TECH.name} on your company’s site — a ${SUGGESTED_TECH.role.toLowerCase()} who looks like a good fit. Want to connect Gmail or Outlook so I can give you a more accurate list of your team?`
   if (/preventive|breakdown|pm plan/.test(t)) return 'Let’s build your preventive maintenance plan. I’ll start with the equipment you confirmed and suggest weekly and monthly checks for each — the ones that tend to fail first go at the top. Want me to draft it?'
   if (/safety|inspection/.test(t)) return 'Here’s a daily safety inspection to start from: machine guards and e-stops, lockout points, fire extinguishers, walkways and PPE. I’ll turn it into a checklist your technicians can fill in from their phones. Should I create it?'
   if (/downtime/.test(t)) return 'I’ll build an app to log downtime: the asset, when it stopped and restarted, the reason and who fixed it — with a weekly view of the worst offenders. Want to see a preview first?'
@@ -619,6 +621,51 @@ export function useNovaOnboarding() {
       await askNext(say, `How often should ${asset} be serviced?`, PM_FREQUENCIES)
     })
   }, [push, run, askNext])
+  /** V2: "Create a work order" — Nova asks what needs fixing, then who should
+   * do it, and creates it (it lands in Work Orders and checks off the setup
+   * step). False when the message isn't part of it. */
+  const workOrder = useRef<{ step: 'what' | 'assign'; title?: string } | null>(null)
+  const woReply = useCallback((text: string): boolean => {
+    const answer = text.trim()
+    const w = workOrder.current
+    if (!w) {
+      if (!/work order|\bwo\b/i.test(answer)) return false
+      workOrder.current = { step: 'what' }
+      run(async ({ say, think }) => {
+        await think(['Looking at your workspace…'], 1000)
+        await askNext(say, 'Sure — what needs fixing, and where? A short description is enough, like “AC not cooling in the main office”.', WO_EXAMPLES)
+      })
+      return true
+    }
+    if (!answer) return true
+    setMessages(prev => prev.filter(m => m.kind !== 'replies'))
+    if (w.step === 'what') {
+      const title = answer.charAt(0).toUpperCase() + answer.slice(1)
+      workOrder.current = { step: 'assign', title }
+      run(async ({ say }) => {
+        await askNext(
+          say,
+          `Who should I assign it to? I found ${SUGGESTED_TECH.name} on your company’s site — a ${SUGGESTED_TECH.role.toLowerCase()} who looks like a good fit.`,
+          [SUGGESTED_TECH.name, 'Assign it to me', 'Leave unassigned'],
+        )
+      })
+      return true
+    }
+    const title = w.title ?? 'New work order'
+    const assignee = /unassigned/i.test(answer) ? null : /\bme\b/i.test(answer) ? 'you' : answer
+    workOrder.current = null
+    setupStore.update(prev => ({
+      counts: { ...prev.counts, workOrders: prev.counts.workOrders + 1 },
+      created: [...prev.created, { id: `wo-nova-${Date.now()}`, title, kind: 'work-order', detail: assignee ? `Assigned to ${assignee}` : 'Unassigned' }],
+    }))
+    run(async ({ say, think }) => {
+      await think(['Creating the work order…'], 1200)
+      push({ kind: 'nova', text: assignee ? `Work order created: ${title} · assigned to ${assignee}` : `Work order created: ${title}`, check: true })
+      await say('Done — you’ll find it in Work Orders. Need anything else?')
+    })
+    return true
+  }, [run, askNext, push])
+
   /** V2: the conversation opens with Nova's note on what it set up
    * (`opening.lines`, then `done` as checked lines, then `next`), then the user's message. */
   const startReady = useCallback((text: string, opening?: { lines: string[]; done: string[]; next?: string[] }) => {
@@ -635,12 +682,12 @@ export function useNovaOnboarding() {
       opening.next?.forEach(line => push({ kind: 'nova', text: line }))
     }
     push({ kind: 'user', text })
-    if (guideReply(text)) return
+    if (guideReply(text) || woReply(text)) return
     run(async ({ say, think }) => {
       await think(['Looking at your workspace…'], 1400)
       await say(readyReply(text))
     })
-  }, [push, release, run, guideReply])
+  }, [push, release, run, guideReply, woReply])
 
   /** Started from the filled-in Account step: Nova already has the answers,
    * so it skips the questions and goes straight to setting up the account. */
@@ -1319,7 +1366,7 @@ export function useNovaOnboarding() {
 
   const ask = useCallback((text: string) => {
     push({ kind: 'user', text })
-    if (readyMode.current && guideReply(text)) return
+    if (readyMode.current && (guideReply(text) || woReply(text))) return
     const sources = connectedRef.current
     run(async ({ say, think }) => {
       await think(['Thinking…'], 1600)
@@ -1331,7 +1378,7 @@ export function useNovaOnboarding() {
         ? `Good question. From ${sources.map(sourceName).join(' and ')}, the same few assets keep coming up — Induction Furnace #2 and Robot Cell 4 first. I’d start the Moline pilot by tracking those.`
         : 'Good question. For a pilot at Moline + East Moline I’d start with the critical line equipment — robots, CNCs and paint systems. Connect a source and I can tell you which ones are actually failing.')
     })
-  }, [push, run, guideReply])
+  }, [push, run, guideReply, woReply])
 
   /** The Slack / Teams card's answer, said as the user's reply. */
   const answerChatTools = useCallback((allowed: boolean, provider?: string) => {
