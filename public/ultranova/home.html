@@ -1,9 +1,12 @@
 <!doctype html>
-<html lang="en">
+<html lang="en" data-theme="light">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Ultranova</title>
+<script>/* theme before paint: light by default (matches UpKeep), dark if chosen before */
+  try { if (localStorage.getItem('ultranova.theme') === 'dark') document.documentElement.setAttribute('data-theme', 'dark'); } catch (e) {}
+  try { if (sessionStorage.getItem('ultranova.intro')) document.documentElement.classList.add('arriving'); } catch (e) {}</script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
@@ -80,6 +83,8 @@
   .sidebar::after { content: ""; position: absolute; inset: 0; z-index: 0; pointer-events: none; background: linear-gradient(180deg, var(--sidebar-top), var(--sidebar-bottom)); }   /* dark layer, fades out in light mode */
   .brand { display: flex; align-items: center; gap: 10px; padding: 20px 12px; font: 600 20px/25px var(--font-display); color: #f5f0ff; }
   .brand svg { width: 26px; height: 26px; fill: var(--brand); }
+  a.brand { text-decoration: none; border-radius: 8px; transition: opacity 0.2s; }   /* the logo goes back to the welcome (onboarding) */
+  a.brand:hover { opacity: 0.75; }
   .nav { display: flex; flex-direction: column; gap: 8px; padding: 12px 8px 0; min-height: 0; overflow-y: auto; }
   .nav-item { display: flex; align-items: center; gap: 12px; width: 100%; padding: 12px; border-radius: 4px; font: 500 14px/20px var(--font-display); text-align: left; transition: background 0.2s var(--ease); }
   .nav-item:hover { background: rgba(255, 255, 255, 0.06); }
@@ -109,9 +114,9 @@
   /* "Back to CMS" banner, at the bottom of the sidebar above the profile row. When the assistant creates something in the CMS it
      swaps to a live status (icon, "WO-1043 created", spinner → check) and returns to the default after a few seconds. */
   .cms { position: relative; margin: auto 16px 0; display: block; height: 44px; border-radius: 8px; overflow: hidden; color: #101113; text-decoration: none;
-    background: #f1f3f5; border: 1px solid #ced4da;  /* light gray, like the CMS sidebar */
+    background: #fff; border: 1px solid transparent;  /* white, no border (the border only shows green while it's busy) */
     transition: background 0.3s, border-color 0.4s; }
-  .cms:hover { background: #e9ecef; }
+  .cms:hover { background: #f7f7f9; }
   .cms.busy { border-color: #00b894; }
   .cms .pane { position: absolute; inset: 0; display: flex; align-items: center; gap: 10px; padding: 0 14px; font: 500 14px/20px var(--font-display);
     transition: opacity 0.45s var(--ease), transform 0.55s var(--ease); }
@@ -120,7 +125,7 @@
   .cms.busy .pane.alt { opacity: 1; transform: none; }
   .cms .grow { flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   .cms .cog { width: 20px; height: 20px; flex: none; fill: none; stroke: #ff5a52; stroke-width: 1.6; stroke-linecap: round; stroke-linejoin: round; }
-  .cms .go { width: 16px; height: 16px; color: #868e96; transition: transform 0.3s var(--ease); }
+  .cms .go { width: 16px; height: 16px; color: #868e96; fill: none; stroke: currentColor; stroke-width: 1.6; stroke-linecap: round; stroke-linejoin: round; transition: transform 0.3s var(--ease); }
   .cms:hover .go { transform: translateX(3px); }
   .cms .kind { width: 20px; height: 20px; flex: none; color: #00a384; }
   .cms .state { position: relative; width: 20px; height: 20px; flex: none; }
@@ -148,7 +153,10 @@
   .greeting h1 { margin: 0; font: 700 20px/24px var(--font-display); }
   .greeting .role { font: 500 12px/16px var(--font-body); letter-spacing: 0.02em; text-transform: uppercase; }
   .greeting p { margin: 0; max-width: 640px; font: 400 14px/20px var(--font-display); }
-  .chips { display: flex; flex-wrap: wrap; justify-content: center; gap: 12px; }
+  /* the four "wow" starters (wow.js): two by two under the greeting; one tap runs it */
+  .wows { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; width: min(760px, 100%); text-align: left; }   /* one row of four */
+  .wows .un-wow { animation: rise 0.7s var(--ease) backwards; animation-delay: calc(0.16s + var(--c, 0) * 0.07s); }
+  .wows .un-wow:nth-child(2) { --c: 1; } .wows .un-wow:nth-child(3) { --c: 2; } .wows .un-wow:nth-child(4) { --c: 3; }
 
   .chatbar { align-self: center; width: min(700px, 100%); display: flex; flex-direction: column; gap: 25px; padding: 20px; border-radius: 8px; background: var(--bar); box-shadow: 0 8px 32px rgba(8, 0, 30, 0.6); border: 1px solid transparent; transition: border-color 0.2s; }
   .chatbar:focus-within { border-color: rgba(221, 0, 255, 0.5); }
@@ -174,7 +182,29 @@
   .main.chatting::before { content: ""; position: fixed; z-index: 4; top: 0; left: var(--sidebar-w); right: 0; height: 108px; pointer-events: none;
     background: rgba(0, 0, 0, 0.4); -webkit-backdrop-filter: blur(10px); backdrop-filter: blur(10px);
     -webkit-mask-image: linear-gradient(#000 72%, transparent); mask-image: linear-gradient(#000 72%, transparent); }
-  .chatting .greeting, .chatting .chips { display: none; }
+  .chatting .greeting, .chatting .wows { display: none; }
+  .wow-text { margin: 12px 0 0; animation: un-msg-in 0.45s var(--ease) backwards; }
+  /* arriving from the welcome: the workspace slides in from the right, straight into the conversation */
+  html.arriving .greeting, html.arriving .wows { display: none; }
+  html.arriving .app { animation: arrive 0.55s var(--ease) both; }
+  @keyframes arrive { from { opacity: 0; transform: translateX(56px); } to { opacity: 1; transform: none; } }
+  /* the assistant introduces itself in the middle of the chat */
+  .meet { align-self: center; display: flex; flex-direction: column; align-items: center; gap: 2px; width: 100%; padding: 4px 0 14px; text-align: center; animation: un-rise 0.6s var(--ease) backwards; }
+  .meet-bot { width: 132px; height: 132px; }
+  .meet-bot > [data-robot] { width: 100%; height: 100%; }
+  .meet-hi { margin: 4px 0 0; font: 300 26px/32px var(--font-display); letter-spacing: -0.02em; color: var(--ink); }
+  .meet-sub { margin: 0; font: 400 15px/22px var(--font-display); color: var(--ink-soft); }
+  .meet-links { margin: 10px 0 0; font: 400 13px/18px var(--font-display); color: var(--ink-soft); }
+  .meet-change, .meet-settings { padding: 0; border: 0; background: none; color: var(--ink); font: inherit; text-decoration: underline; text-underline-offset: 3px; cursor: pointer; }
+  .meet-change:hover, .meet-settings:hover { text-decoration-thickness: 2px; }
+  .meet-pick { display: flex; flex-wrap: wrap; justify-content: center; gap: 8px; margin-top: 12px; animation: un-rise 0.4s var(--ease); }
+  .meet-pick[hidden] { display: none; }
+  :root[data-theme="light"] .meet-pick .un-chip[aria-pressed="true"] { background: #15131c; border-color: #15131c; color: #fff; box-shadow: none; }
+  .no-gl .meet-bot > [data-robot] { border-radius: 50%; background: radial-gradient(closest-side, #c4b5fd, rgba(139, 92, 246, 0.2) 70%, transparent 72%); }
+  /* "Settings" in the introduction points at the gear in the sidebar */
+  .gear.ping { animation: ping 1.4s var(--ease); }
+  @keyframes ping { 0%, 100% { box-shadow: 0 0 0 0 rgba(124, 58, 237, 0); } 30%, 60% { box-shadow: 0 0 0 4px rgba(124, 58, 237, 0.35); } }
+  @media (prefers-reduced-motion: reduce) { html.arriving .app, .meet, .meet-pick, .gear.ping { animation: none; } }
   /* follow-up options under the assistant's last message: it stays proactive, and "Other" is always there */
   .opts { display: flex; flex-wrap: wrap; gap: 8px; align-self: flex-start; max-width: 82%; margin-top: -4px; }
   .opts .un-chip { animation: opt-in 0.5s var(--ease) backwards; animation-delay: calc(var(--i, 0) * 70ms + 120ms); }
@@ -208,7 +238,6 @@
   @media (prefers-reduced-motion: no-preference) {
     .stage > * { animation: rise 0.7s var(--ease) backwards; }
     .stage > .greeting { animation-delay: 0.08s; }
-    .stage > .chips { animation-delay: 0.16s; }
     .chatbar { animation: rise 0.7s var(--ease) 0.24s backwards; }
     @keyframes rise { from { opacity: 0; transform: translateY(10px); } }
   }
@@ -233,7 +262,8 @@
     .chatting .thread { padding-top: 130px; scroll-padding-top: 130px; }
     .assistant { width: 150px; height: 150px; }
     .greeting p { max-width: 34ch; }
-    .chips { gap: 8px; }
+    .wows { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+    .wows .un-wow { min-height: 136px; padding: 14px; border-radius: 16px; }
     .tabhint { display: none; }   /* no Tab key on a phone: the suggestion stays in the placeholder */
   }
   /* light mode (toggle in the sidebar footer): the main area goes light, the purple sidebar stays as is */
@@ -262,7 +292,7 @@
   :root[data-theme="light"] .chatbar textarea::placeholder, :root[data-theme="light"] .tabhint, :root[data-theme="light"] .un-icon-btn--round { color: rgba(26, 11, 70, 0.6); border-color: rgba(26, 11, 70, 0.3); }
   :root[data-theme="light"] .un-icon-btn:hover { background: rgba(26, 11, 70, 0.08); }
   :root[data-theme="light"] .un-msg--ai { border-color: rgba(26, 11, 70, 0.1); }
-  :root[data-theme="light"] .un-msg--ai b { color: #6d28d9; }
+  :root[data-theme="light"] .un-msg--ai > b { color: #6d28d9; }
   :root[data-theme="light"] .un-msg--user { color: #fff; }
   :root[data-theme="light"] .un-chip { border-color: rgba(166, 0, 172, 0.3); }
   :root[data-theme="light"] .un-chip:hover { border-color: rgba(166, 0, 172, 0.6); }
@@ -270,6 +300,55 @@
   :root[data-theme="light"] .un-chip:hover { background: rgba(221, 0, 255, 0.08); }
   :root[data-theme="light"] .wo-card { border-color: rgba(26, 11, 70, 0.14); background: #fff; }
   :root[data-theme="light"] .main.chatting::before { background: rgba(246, 243, 251, 0.6); }
+
+  /* ---------- light = the Lifemed language (same as onboarding): white, soft neutral greys, black for what matters,
+     pill chips, light-weight titles, the white-sky glass ribbon behind. Overrides the earlier purple light theme above. ---------- */
+  :root[data-theme="light"] { --bg: #fff; --ink: #15131c; --ink-soft: #6b6976; --bar: #fff; --un-ink: #15131c; --un-ink-soft: #6b6976; --un-glass: transparent; --un-line: #e6e6eb; --un-surface-raised: #15131c; --brand: #8b5cf6; }
+  /* soft lilac glow from the bottom-left (the glass ribbon stays on onboarding) */
+  :root[data-theme="light"] .backdrop::after { left: -8%; right: -8%; top: -8%; bottom: -8%; width: auto; aspect-ratio: auto; background: url("home-bg-light-soft.webp") 0 100% / cover no-repeat; mix-blend-mode: normal; -webkit-mask-image: none; mask-image: none;
+    opacity: 0.3; animation: bg-drift 18s ease-in-out infinite; will-change: transform; }   /* 30% and drifting slowly; the extra 8% on each side keeps the edges off screen */
+  @keyframes bg-drift { 0%, 100% { transform: translate3d(0, 0, 0) scale(1); } 33% { transform: translate3d(3%, -2%, 0) scale(1.04); } 66% { transform: translate3d(-2%, 2%, 0) scale(1.02); } }
+  @media (prefers-reduced-motion: reduce) { :root[data-theme="light"] .backdrop::after { animation: none; } }
+  /* sidebar: frosted white with a hairline, neutral states */
+  :root[data-theme="light"] .sidebar::before { background: rgba(255, 255, 255, 0.78); }   /* frosted white, no border */
+  /* desktop: no sidebar background at all, the nav sits straight on the page (the phone drawer keeps its white panel) */
+  @media (min-width: 861px) {
+    :root[data-theme="light"] .sidebar { -webkit-backdrop-filter: none; backdrop-filter: none; }
+    :root[data-theme="light"] .sidebar::before { opacity: 0; }
+  }
+  :root[data-theme="light"] .brand { color: var(--ink); }
+  :root[data-theme="light"] .nav-item.active { background: #f1f1f4; }
+  :root[data-theme="light"] .nav-item:hover, :root[data-theme="light"] .chat-item:hover { background: #f4f4f6; }
+  :root[data-theme="light"] .nav-item .chev { stroke: var(--ink-soft); }
+  :root[data-theme="light"] .chat-item::before { background: #d4d4dc; }
+  :root[data-theme="light"] .chat-item.live::before { background: var(--un-ok); }
+  :root[data-theme="light"] .gear, :root[data-theme="light"] .snd { color: var(--ink-soft); }
+  :root[data-theme="light"] .gear:hover, :root[data-theme="light"] .snd:hover { background: #f1f1f4; color: var(--ink); }
+  :root[data-theme="light"] .un-toggle__track { background: #d9d9e0; }
+  /* greeting: light-weight title like the onboarding */
+  :root[data-theme="light"] .greeting h1 { font-weight: 300; font-size: 32px; line-height: 38px; letter-spacing: -0.02em; }
+  :root[data-theme="light"] .greeting p { color: var(--ink-soft); font-size: 15px; line-height: 22px; }
+  /* chat bar: white, hairline border, soft shadow; the send button turns black when ready */
+  :root[data-theme="light"] .chatbar { background: #fff; border: 1px solid #e6e6eb; border-radius: 20px; box-shadow: 0 18px 40px -24px rgba(21, 19, 28, 0.28); }
+  :root[data-theme="light"] .chatbar:focus-within { border-color: #c9c9d2; }
+  :root[data-theme="light"] .chatbar textarea::placeholder, :root[data-theme="light"] .tabhint { color: #9a98a5; }
+  :root[data-theme="light"] .un-icon-btn--round { color: var(--ink-soft); border-color: #dcdce2; }
+  :root[data-theme="light"] .un-icon-btn:hover { background: #f1f1f4; }
+  :root[data-theme="light"] .un-icon-btn--send.ready { background: #15131c; color: #fff; box-shadow: none; }
+  :root[data-theme="light"] .un-icon-btn--send.ready:hover { background: #2b2933; }
+  /* messages: the assistant writes on the page (no bubble), the user in a black pill */
+  :root[data-theme="light"] .un-msg { font-size: 15px; line-height: 22px; }
+  :root[data-theme="light"] .un-msg--ai { padding: 2px 0; background: none; border: 0; }
+  :root[data-theme="light"] .un-msg--ai > b { margin-bottom: 4px; color: var(--ink-soft); font-weight: 500; }
+  :root[data-theme="light"] .un-msg--user { padding: 10px 16px; border-radius: 20px 20px 6px 20px; background: #15131c; color: #fff; }
+  /* reply options: white pills */
+  :root[data-theme="light"] .opts { gap: 8px; }
+  :root[data-theme="light"] .un-chip { height: 36px; padding: 0 16px; border: 1px solid #e2e2e8; border-radius: 99px; background: rgba(255, 255, 255, 0.9); color: var(--ink); font-weight: 400; }
+  :root[data-theme="light"] .un-chip:hover { background: #f4f4f6; border-color: #cfcfd8; }
+  :root[data-theme="light"] .un-chip--dashed { border-style: dashed; border-color: #cfcfd8; color: var(--ink-soft); }
+  /* the band that holds the assistant at the top of the conversation */
+  :root[data-theme="light"] .main.chatting::before { background: rgba(255, 255, 255, 0.72); }
+  :root[data-theme="light"] .wo-card { border-color: #e6e6eb; }
   /* dark ↔ light: while html.theming is on, every color eases over at the same time */
   html.theming *, html.theming *::before, html.theming *::after {
     transition: background-color 0.8s var(--ease) var(--d, 0s), color 0.8s var(--ease) var(--d, 0s), border-color 0.8s var(--ease) var(--d, 0s), fill 0.8s var(--ease) var(--d, 0s), stroke 0.8s var(--ease) var(--d, 0s), box-shadow 0.8s var(--ease) var(--d, 0s);
@@ -283,10 +362,10 @@
 
 <div class="app" id="app">
   <aside class="sidebar" id="sidebar" aria-label="Main navigation">
-    <div class="brand">
+    <a class="brand" href="onboarding.html" data-tip="Back to welcome" aria-label="Ultranova: back to welcome">
       <svg viewBox="0 0 32 32" aria-hidden="true"><path d="M16 1l3.4 10.2L30 14.8l-10.6 3.4L16 30l-3.4-11.8L2 14.8l10.6-3.6z"/></svg>
       <span class="brand-text">Ultranova</span>
-    </div>
+    </a>
     <nav class="nav">
       <div>
         <button class="nav-item active" type="button" data-tip="Chat" id="chatToggle" aria-expanded="true" aria-controls="history">
@@ -347,7 +426,7 @@
       <button class="un-icon-btn" type="button" id="menuBtn" aria-label="Open menu" style="width:40px;height:40px">
         <svg class="un-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"/></svg>
       </button>
-      <div class="brand"><svg viewBox="0 0 32 32" aria-hidden="true"><path d="M16 1l3.4 10.2L30 14.8l-10.6 3.4L16 30l-3.4-11.8L2 14.8l10.6-3.6z"/></svg>Ultranova</div>
+      <a class="brand" href="onboarding.html" aria-label="Ultranova: back to welcome"><svg viewBox="0 0 32 32" aria-hidden="true"><path d="M16 1l3.4 10.2L30 14.8l-10.6 3.4L16 30l-3.4-11.8L2 14.8l10.6-3.6z"/></svg>Ultranova</a>
       <span style="width:40px"></span>
     </div>
 
@@ -355,12 +434,13 @@
       <div class="assistant"><div data-robot="hero"></div></div>
       <div class="greeting">
         <h1 id="hello">All set, Leti.</h1>
-        <p>Tell me what you need done. I’ll take it from here and let you know when I need you.</p>
+        <p>I’m keeping an eye on your work orders, assets and parts. Try one of these, or tell me what you need.</p>
       </div>
-      <div class="chips" id="chips" aria-label="Suggested actions"></div>
+      <div class="wows" id="wows" role="group" aria-label="Things I can do for you"></div>
     </section>
 
     <div class="thread" id="thread" aria-live="polite" aria-label="Conversation"></div>
+    <div hidden><div class="meet-slot" data-robot="intro" data-variant="0"></div></div>   <!-- moved into the chat when the assistant introduces itself -->
 
     <form class="chatbar" id="form" autocomplete="off">
       <div class="field"><textarea id="prompt" rows="1" placeholder="Tell me what you’d like me to take care of…" aria-label="Message"></textarea><kbd class="tabhint un-kbd" aria-hidden="true">Tab</kbd></div>
@@ -381,34 +461,33 @@
 <script src="https://cdn.jsdelivr.net/npm/three@0.152.2/build/three.min.js"></script>
 <script src="robot.js"></script>
 <script src="sfx.js"></script>
+<script src="wow.js"></script>
 <script>
 (function () {
   'use strict';
   var robots = null;
-  try { robots = UltranovaRobots.init({ canvas: document.getElementById('fg'), hi: ['hero'], greet: ['hero'] }); }
+  /* the assistant introduces itself in the middle of the chat (slot "intro"); while that one is on screen the one up top stays hidden */
+  function introOnScreen() {
+    var el = document.querySelector('.meet [data-robot="intro"]'); if (!el) return false;
+    var r = el.getBoundingClientRect(); return r.top >= 90 && r.top < window.innerHeight - 170;
+  }
+  try {
+    robots = UltranovaRobots.init({ canvas: document.getElementById('fg'), hi: ['hero', 'intro'], greet: ['hero', 'intro'],
+      opacityOf: function (el) { var on = introOnScreen(); return el.getAttribute('data-robot') === 'intro' ? (on ? 1 : 0) : (on ? 0 : 1); } });
+  }
   catch (e) { document.body.classList.add('no-gl'); }
 
   // name chosen during onboarding (falls back to the design's default)
   /* Continues the onboarding: the assistant's name and the areas picked there shape this screen. */
-  var agentName = 'Core', help = [];
+  var agentName = 'Core';
   try {
     var saved = JSON.parse(sessionStorage.getItem('ultranova.assistant') || 'null');
     if (saved && saved.name) agentName = saved.name;
-    if (saved && typeof saved.avatar === 'number') document.querySelector('[data-robot="hero"]').setAttribute('data-variant', saved.avatar);
-    if (saved && saved.help) help = saved.help;
-  } catch (e) { /* no saved onboarding: keep the default */ }
+    if (saved && typeof saved.avatar === 'number') [].forEach.call(document.querySelectorAll('[data-robot="hero"], [data-robot="intro"]'), function (r) { r.setAttribute('data-variant', saved.avatar); });
+  } catch (e) { /* no saved onboarding: keep the default (Core) */ }
 
-  /* suggested actions follow what was picked in the onboarding; nothing picked → a general set */
-  var SUGGEST = {
-    'Sales & outreach': ['Research a prospect', 'Draft an email'],
-    'Projects & tasks': ['Plan my week', 'Create a task'],
-    'Operations': ['Create a work order', 'Review overdue work orders'],
-    'Productivity': ['Plan my week', 'Summarize my day']
-  };
-  var actions = [];
-  help.forEach(function (area) { (SUGGEST[area] || []).forEach(function (a) { if (actions.indexOf(a) < 0) actions.push(a); }); });
-  if (!actions.length) actions = ['Plan my week', 'Create a work order', 'Draft an email'];
-  document.getElementById('chips').innerHTML = actions.slice(0, 4).map(function (a) { return '<button class="un-chip" type="button" data-sfx>' + a + '</button>'; }).join('');
+  /* the empty chat offers the four "wow" starters (wow.js); one tap runs it */
+  document.getElementById('wows').innerHTML = UltranovaWow.list.map(function (w) { return UltranovaWow.cardHTML(w); }).join('');
   /* the placeholder follows the conversation: a general invitation at first, then what the assistant is asking for */
   var DEFAULT_PH = 'Tell me what you’d like me to take care of…', ctx = null;
   /* while the assistant is asking: an example of a good answer, in the user's voice */
@@ -506,7 +585,7 @@
     'Review overdue work orders': ['Reassign the most urgent one', 'Notify the teams involved', 'Show me what’s blocked'],
     'Summarize my day': ['Share it with my team', 'Add it to my notes', 'Plan tomorrow']
   };
-  var GENERIC_OPTS = ['Plan my week', 'Create a work order', 'Draft an email'];
+  var GENERIC_OPTS = UltranovaWow.list.slice(0, 3).map(function (w) { return w.title; });   /* the starters, in the user's voice */
   function clearOpts() {
     [].forEach.call(thread.querySelectorAll('.opts'), function (o) { o.classList.add('gone'); setTimeout(function () { o.remove(); }, 260); });
   }
@@ -518,8 +597,8 @@
     thread.appendChild(box); thread.scrollTop = thread.scrollHeight;
   }
   thread.addEventListener('click', function (e) {
-    var c = e.target.closest('.opts .un-chip'); if (!c) return;
-    if (c.classList.contains('other')) { prompt.placeholder = 'Tell me something else…'; suggestion = ''; hint(); prompt.focus(); return; }
+    var c = e.target.closest('.opts .un-chip'); if (!c || c.hasAttribute('data-act')) return;
+    if (c.textContent === 'Other…') { clearOpts(); prompt.placeholder = 'Tell me something else…'; suggestion = ''; hint(); prompt.focus(); return; }
     send(c.textContent);
   });
 
@@ -540,9 +619,82 @@
       + '<div class="wo-row"><span class="k">Priority</span><span class="v"><svg class="flag" viewBox="0 0 24 24" aria-hidden="true" style="color:' + (high ? '#ff7a7a' : '#ffc86b') + '"><path d="M6 3h1.5v18H6zM8 4h11l-2.5 4.2L19 12H8z"/></svg>' + prio + '</span></div>';
     return a;
   }
-  function send(text) {
+  /* ---- a "wow" task, as a conversation (wow.js):
+     the request is posted as the user's message → the assistant picks it up (intro) → asks the few setup questions, one at a time,
+     with suggested replies and a matching placeholder (a typed answer works too) → shows the steps it works through
+     (spinner → check) → answers with what it prepared (a result card to approve) and the likely follow-ups. ---- */
+  var STEP_MS = 850, task = null;
+  function say(html, then, wait) {
+    var m = addMsg('ai', '<span class="un-typing" aria-label="Typing"><i></i><i></i><i></i></span>');
+    setTimeout(function () { m.innerHTML = '<b>' + agentName + '</b>' + html; thread.scrollTop = thread.scrollHeight; if (then) then(m); }, wait || 800);
+    return m;
+  }
+  function replies(list) {   /* suggested answers to a setup question (the placeholder invites a typed one instead of an "Other" chip) */
+    var box = document.createElement('div'); box.className = 'opts'; box.setAttribute('role', 'group'); box.setAttribute('aria-label', 'Suggested replies');
+    list.forEach(function (t, i) { var b = document.createElement('button'); b.type = 'button'; b.className = 'un-chip'; b.setAttribute('data-sfx', ''); b.style.setProperty('--i', i); b.textContent = t; box.appendChild(b); });
+    thread.appendChild(box); thread.scrollTop = thread.scrollHeight;
+  }
+  function startTask(w, opt) {
+    if (!w || busy) return;
+    clearOpts(); busy = true; main.classList.add('chatting');
+    if (!(opt && opt.posted)) addMsg('user', esc(w.title));
+    prompt.value = ''; setReady(); grow(); ctx = null; suggestion = ''; hint(); prompt.placeholder = DEFAULT_PH;
+    if (robots) robots.hop('hero');
+    task = { w: w, i: 0, a: {} };
+    say(w.intro, function () { setTimeout(askNext, 450); });
+  }
+  function askNext() {
+    var q = task.w.setup[task.i];
+    if (!q) { var t = task; task = null; prompt.placeholder = DEFAULT_PH; runWork(t.w, t.a); return; }
+    say(q.q, function () { replies(q.replies); prompt.placeholder = q.ph; busy = false; prompt.focus({ preventScroll: true }); });
+  }
+  function answer(text) {
+    var q = task.w.setup[task.i];
+    clearOpts(); busy = true; addMsg('user', esc(text));
+    prompt.value = ''; setReady(); grow(); prompt.placeholder = DEFAULT_PH;
+    task.a[q.id] = text; task.i++;
+    /* a connection (calendar, Slack, Teams) only when the answer asks for it: prototype, it just says it's connected */
+    var note = typeof q.connect === 'function' ? q.connect(text) : (q.connect && text === q.replies[0] ? q.connect : '');
+    if (note) { say('<span class="un-badge">' + note + '</span>', function () { setTimeout(askNext, 350); }, 700); }
+    else setTimeout(askNext, 250);
+  }
+  function runWork(w, a) {
+    busy = true;
+    var m = addMsg('ai', '<ol class="un-trace" aria-label="Working on it"></ol>'); m.classList.add('un-msg--wide');
+    var ol = m.querySelector('.un-trace'), i = 0;
+    (function step() {
+      var prev = ol.lastElementChild; if (prev) { prev.className = 'ok'; }
+      if (i < w.steps.length) {
+        var li = document.createElement('li'); li.className = 'run'; li.innerHTML = '<i aria-hidden="true"></i><span>' + w.steps[i] + '</span>'; ol.appendChild(li);
+        thread.scrollTop = thread.scrollHeight; i++; setTimeout(step, STEP_MS + Math.random() * 300); return;
+      }
+      setTimeout(function () {
+        var p = document.createElement('p'); p.className = 'wow-text'; p.innerHTML = w.text(a); m.appendChild(p);
+        m.insertAdjacentHTML('beforeend', w.card(a));
+        thread.scrollTop = thread.scrollHeight;
+        setTimeout(function () { thread.scrollTo({ top: thread.scrollHeight, behavior: 'smooth' }); }, 700);
+        if (window.UltranovaSFX) UltranovaSFX.ready();
+        if (robots) robots.wave('hero');
+        showOpts(w.next);
+        prompt.placeholder = w.next[0] + '…'; suggestion = w.next[0]; hint(); prompt.focus({ preventScroll: true });
+        busy = false;
+      }, 350);
+    })();
+  }
+  var runWow = startTask;
+  /* approving what the assistant prepared: the button confirms in place and a toast says what happened */
+  thread.addEventListener('click', function (e) {
+    var b = e.target.closest('[data-approve]'); if (!b || b.classList.contains('done')) return;
+    b.classList.add('done'); b.innerHTML = '<svg class="un-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>Done';
+    var other = b.nextElementSibling; if (other) other.hidden = true;
+    toast(b.getAttribute('data-approve')); if (robots) robots.hop('hero');
+  });
+
+  function send(text, opt) {
     text = (text || '').trim(); if (!text || busy) return;
-    clearOpts(); busy = true; main.classList.add('chatting'); addMsg('user', esc(text));
+    if (task) { answer(text); return; }
+    var w = UltranovaWow.byPrompt(text); if (w) { startTask(w, opt); return; }
+    clearOpts(); busy = true; main.classList.add('chatting'); if (!(opt && opt.posted)) addMsg('user', esc(text));
     prompt.value = ''; setReady(); grow(); var asked = ctx; ctx = null; suggestion = ''; hint(); prompt.placeholder = DEFAULT_PH;
     if (robots) robots.hop('hero');
     var typing = addMsg('ai', '<span class="un-typing" aria-label="Thinking"><i></i><i></i><i></i></span>');
@@ -570,8 +722,74 @@
   function setReady() { hint(); sendBtn.classList.toggle('ready', !!prompt.value.trim()); }
 
   // a suggestion starts the conversation straight away (no second click)
-  document.getElementById('chips').addEventListener('click', function (e) {
-    var c = e.target.closest('.un-chip'); if (c) send(c.textContent);
+  document.getElementById('wows').addEventListener('click', function (e) {
+    var c = e.target.closest('[data-wow]'); if (c) startTask(UltranovaWow.get(c.getAttribute('data-wow')));
+  });
+  /* ---- coming from the welcome: the request is the first message, the assistant introduces itself in the middle of the chat
+     (Core by default; "Change assistant" opens the choice right there; Settings is where it lives later) and then picks the
+     task up straight away, without waiting for a click. Without a request it offers the four starters. ---- */
+  var ASSISTANTS = ['Core', 'Lumen', 'Mesh', 'Volt', 'Pulse'];
+  var runKey = new URLSearchParams(location.search).get('run'), toRun = runKey && UltranovaWow.get(runKey), firstVisit = false, askText = '';
+  try {
+    firstVisit = !!sessionStorage.getItem('ultranova.intro'); sessionStorage.removeItem('ultranova.intro');
+    askText = sessionStorage.getItem('ultranova.ask') || ''; sessionStorage.removeItem('ultranova.ask');
+  } catch (e) {}
+  if (runKey) window.history.replaceState(null, '', location.pathname);
+  if (firstVisit) {
+    main.classList.add('chatting'); busy = true;
+    var request = toRun ? toRun.title : askText;
+    setTimeout(function () { if (request) addMsg('user', esc(request)); }, 500);
+    setTimeout(meet, request ? 1000 : 500);
+    setTimeout(function () {
+      busy = false;
+      if (toRun) startTask(toRun, { posted: true });
+      else if (askText) send(askText, { posted: true });
+      else say('What should we start with?', function () { choices(UltranovaWow.list.map(function (w) { return { label: w.title, act: 'wow', val: w.key }; })); });
+    }, (request ? 1000 : 500) + 2300);
+  }
+  else if (toRun) setTimeout(function () { startTask(toRun); }, 900);
+
+  function meet() {
+    var m = document.createElement('div'); m.className = 'meet'; m.setAttribute('role', 'group'); m.setAttribute('aria-label', 'Meet your assistant');
+    m.innerHTML = '<div class="meet-bot"></div>'
+      + '<p class="meet-hi">Hi Leti, I’m <span class="aname">' + agentName + '</span>.</p>'
+      + '<p class="meet-sub">I’ll be your assistant in Ultranova.</p>'
+      + '<p class="meet-links"><button type="button" class="meet-change" aria-expanded="false">Change assistant</button><span aria-hidden="true"> · </span>You can also do this later in <a href="#settings" class="meet-settings">Settings</a>.</p>'
+      + '<div class="meet-pick" role="group" aria-label="Choose your assistant" hidden>' + ASSISTANTS.map(function (n, i) {
+          return '<button type="button" class="un-chip" data-pick="' + i + '" aria-pressed="' + (n === agentName) + '">' + n + '</button>'; }).join('') + '</div>';
+    m.querySelector('.meet-bot').appendChild(document.querySelector('[data-robot="intro"]'));   /* the slot is drawn wherever it sits */
+    thread.appendChild(m); thread.scrollTop = thread.scrollHeight;
+    if (robots) setTimeout(function () { robots.wave('intro'); }, 150);
+  }
+  function useAssistant(i) {
+    agentName = ASSISTANTS[i];
+    [].forEach.call(document.querySelectorAll('[data-robot="hero"], [data-robot="intro"]'), function (r) { r.setAttribute('data-variant', i); });   /* the new one says hello */
+    [].forEach.call(document.querySelectorAll('.aname'), function (n) { n.textContent = agentName; });
+    [].forEach.call(document.querySelectorAll('.meet-pick [data-pick]'), function (b) { b.setAttribute('aria-pressed', String(+b.getAttribute('data-pick') === i)); });
+    try { sessionStorage.setItem('ultranova.assistant', JSON.stringify({ name: agentName, avatar: i })); } catch (e) {}
+  }
+  thread.addEventListener('click', function (e) {
+    var ch = e.target.closest('.meet-change'), pk = e.target.closest('[data-pick]'), st = e.target.closest('.meet-settings');
+    if (ch) { var box = ch.closest('.meet').querySelector('.meet-pick'); box.hidden = !box.hidden; ch.setAttribute('aria-expanded', String(!box.hidden)); return; }
+    if (pk) { useAssistant(+pk.getAttribute('data-pick')); toast('You’re working with ' + agentName); return; }
+    if (st) {   /* Settings lives in the sidebar footer: point at it */
+      e.preventDefault(); var g = document.querySelector('.gear[aria-label="Settings"]');
+      if (g) { g.classList.remove('ping'); void g.offsetWidth; g.classList.add('ping'); }
+      toast('You’ll find it in Settings, at the bottom of the sidebar'); return;
+    }
+  });
+  /* reply options that act (not prompts): [{ label, act, val }] */
+  function choices(list) {
+    var box = document.createElement('div'); box.className = 'opts'; box.setAttribute('role', 'group'); box.setAttribute('aria-label', 'Your reply');
+    list.forEach(function (o, i) {
+      var b = document.createElement('button'); b.type = 'button'; b.className = 'un-chip'; b.style.setProperty('--i', i);
+      b.setAttribute('data-act', o.act); if (o.val !== undefined) b.setAttribute('data-val', o.val); b.textContent = o.label; box.appendChild(b);
+    });
+    thread.appendChild(box); thread.scrollTop = thread.scrollHeight; busy = false;
+  }
+  thread.addEventListener('click', function (e) {
+    var c = e.target.closest('.opts [data-act]'); if (!c || busy) return;
+    if (c.getAttribute('data-act') === 'wow') { clearOpts(); startTask(UltranovaWow.get(c.getAttribute('data-val'))); }
   });
   prompt.addEventListener('input', function () { grow(); setReady(); });
   /* Tab accepts the suggestion from anywhere on the page (not only when the box is focused): it is written into the box, ready to send */
@@ -650,7 +868,7 @@
     try { localStorage.setItem('ultranova.theme', dark ? 'dark' : 'light'); } catch (e) {}
   }
   themeBtn.addEventListener('click', function () { setTheme(themeBtn.getAttribute('aria-checked') !== 'true', true); });
-  try { if (localStorage.getItem('ultranova.theme') === 'light') setTheme(false); } catch (e) {}
+  setTheme(document.documentElement.getAttribute('data-theme') === 'dark');   /* light unless dark was chosen (set before paint in <head>) */
   var snd = document.getElementById('sound');
   function paintSound() { var m = window.UltranovaSFX && UltranovaSFX.isMuted(); snd.classList.toggle('muted', !!m); snd.setAttribute('aria-pressed', String(!m)); snd.setAttribute('aria-label', m ? 'Turn sound on' : 'Turn sound off'); }
   snd.addEventListener('click', function () { if (window.UltranovaSFX) { UltranovaSFX.setMuted(!UltranovaSFX.isMuted()); paintSound(); } });

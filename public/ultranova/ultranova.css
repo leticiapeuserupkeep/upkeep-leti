@@ -180,3 +180,127 @@ button, input, textarea, kbd { font-family: inherit; }
 @keyframes un-blip { 0%, 80%, 100% { opacity: 0.3; transform: translateY(0); } 40% { opacity: 1; transform: translateY(-3px); } }
 
 @media (prefers-reduced-motion: reduce) { .un-btn, .un-chip, .un-icon-btn, .un-menu, .un-toast { transition-duration: 0.01ms; } .un-msg, .un-typing i { animation: none; } }
+
+/* ==========================================================================
+   Light theme + "wow" starters
+   Light is the default look (it matches the rest of UpKeep); dark stays available.
+   Pages set <html data-theme="light|dark"> before paint (see the inline script in each page's head).
+   ========================================================================== */
+
+/* surface tokens used by the cards below (dark values first, light override after) */
+:root {
+  --un-paper: rgba(255, 255, 255, 0.05);       /* card background */
+  --un-paper-line: rgba(255, 255, 255, 0.12);  /* card border */
+  --un-tile: rgba(255, 255, 255, 0.08);        /* icon tile, inset rows */
+  --un-text: #f5f0ff;
+  --un-text-soft: rgba(245, 240, 255, 0.66);
+  --un-ok: #00edc5;
+  --un-warn: #ffc86b;
+  --un-bad: #ff7a7a;
+  --un-shadow: 0 18px 40px -24px rgba(0, 0, 0, 0.8);
+}
+:root[data-theme="light"] {
+  --un-paper: #fff;
+  --un-paper-line: #e6e6eb;
+  --un-tile: #f3f3f6;
+  --un-text: #15131c;
+  --un-text-soft: #6b6976;
+  --un-ok: #00957c;
+  --un-warn: #c27c00;
+  --un-bad: #e5484d;
+  --un-shadow: 0 18px 40px -26px rgba(21, 19, 28, 0.35);
+  color-scheme: light;
+}
+
+/* primary action: black on light, white on dark (the Lifemed-style solid button) */
+.un-btn--primary { --c: #15131c; --bg: #15131c; --on: #fff; }
+.un-btn--primary:hover { box-shadow: 0 14px 30px -14px rgba(21, 19, 28, 0.55); }
+:root:not([data-theme="light"]) .un-btn--primary { --c: #fff; --bg: #fff; --on: #15131c; }
+
+/* shared components in light */
+:root[data-theme="light"] .un-card { background: #fff; border-color: #ececf0; -webkit-backdrop-filter: none; backdrop-filter: none; box-shadow: 0 40px 80px -48px rgba(21, 19, 28, 0.28), 0 1px 2px rgba(21, 19, 28, 0.04); }
+:root[data-theme="light"] .un-pill { background: var(--un-tile); border-color: transparent; color: var(--un-text-soft); }
+:root[data-theme="light"] .un-pill b { color: var(--un-text); }
+:root[data-theme="light"] .un-link { color: var(--un-text-soft); }
+:root[data-theme="light"] .un-link:hover { color: var(--un-text); }
+:root[data-theme="light"] .un-dot { background: var(--un-ok); box-shadow: 0 0 0 3px rgba(0, 149, 124, 0.15); }
+:root[data-theme="light"] .un-badge { color: var(--un-ok); border-color: rgba(0, 149, 124, 0.35); }
+:root[data-theme="light"] .un-badge::before { background: var(--un-ok); }
+:root[data-theme="light"] .un-toast { background: #15131c; color: #fff; border-color: transparent; }
+:root[data-theme="light"] .un-btn--soft.un-btn--gray { --c: #4a4855; border-color: #dcdce2; }
+:root[data-theme="light"] .un-btn--soft.un-btn--gray:hover { background: var(--un-tile); }
+:root[data-theme="light"] .un-btn:focus-visible, :root[data-theme="light"] .un-chip:focus-visible, :root[data-theme="light"] .un-link:focus-visible { outline-color: #7c3aed; }
+
+/* a wide AI message (holds a result card) */
+.un-msg--wide { max-width: 100%; width: 100%; }
+
+/* ---------- wow starter card ----------
+   <button class="un-wow"><span class="un-wow__icon">svg</span><b class="un-wow__title">…</b><svg class="un-wow__go">↗</svg></button> (vertical: icon, title, arrow)
+   The four starters live in wow.js (UltranovaWow) and are shared by onboarding and home. */
+.un-wow {
+  position: relative; display: flex; flex-direction: column; align-items: flex-start; gap: 14px; min-height: 168px; padding: 16px;   /* icon top, title middle, arrow bottom */
+  border: 1px solid var(--un-paper-line); border-radius: 20px; background: var(--un-paper); color: var(--un-text); text-align: left; cursor: pointer;
+  font-family: var(--font-display); transition: transform 0.35s var(--ease), box-shadow 0.35s var(--ease), border-color 0.25s;
+}
+.un-wow:hover { transform: translateY(-3px); border-color: color-mix(in srgb, var(--un-text) 22%, transparent); box-shadow: var(--un-shadow); }
+.un-wow:active { transform: translateY(-1px) scale(0.99); }
+.un-wow:focus-visible { outline: 2px solid #7c3aed; outline-offset: 3px; }
+.un-wow__icon { flex: none; width: 40px; height: 40px; display: grid; place-items: center; border-radius: 12px; background: var(--un-tile); color: var(--un-text); }
+.un-wow__icon .un-icon { width: 20px; height: 20px; }
+.un-wow__title { font: 400 15px/20px var(--font-display); }
+.un-wow__go { width: 16px; height: 16px; margin-top: auto; color: var(--un-text-soft); transition: transform 0.35s var(--ease), color 0.25s; }
+.un-wow:hover .un-wow__go, .un-wow:focus-visible .un-wow__go { width: 16px; height: 16px; margin-top: auto; color: var(--un-text-soft); transition: transform 0.35s var(--ease), color 0.25s; }
+
+/* ---------- agent trace: the steps the assistant is working through (spinner → check, one after another) ---------- */
+.un-trace { list-style: none; margin: 6px 0 0; padding: 0; display: grid; gap: 6px; }
+.un-trace li { display: flex; align-items: center; gap: 10px; font: 400 13px/18px var(--font-display); color: var(--un-text-soft); animation: un-msg-in 0.4s var(--ease) backwards; }
+.un-trace li i { position: relative; width: 16px; height: 16px; flex: none; border-radius: 50%; }
+.un-trace li.run { color: var(--un-text); }
+.un-trace li.run i { border: 2px solid var(--un-paper-line); border-top-color: var(--un-text); animation: un-spin 0.8s linear infinite; }
+.un-trace li.ok i { background: var(--un-ok); }
+.un-trace li.ok i::after { content: ""; position: absolute; left: 5px; top: 2px; width: 4px; height: 8px; border: solid #fff; border-width: 0 2px 2px 0; transform: rotate(45deg); }
+.un-trace li.ok i { animation: un-pop 0.35s var(--ease); }
+@keyframes un-spin { to { transform: rotate(360deg); } }
+@keyframes un-pop { 0% { transform: scale(0.4); } 70% { transform: scale(1.15); } 100% { transform: none; } }
+
+/* ---------- result card (what the assistant prepared; the user approves) ---------- */
+.un-res { margin-top: 12px; border: 1px solid var(--un-paper-line); border-radius: 16px; background: var(--un-paper); overflow: hidden; color: var(--un-text); animation: un-rise 0.7s var(--ease) 0.1s backwards; }
+.un-res__head { display: flex; align-items: center; gap: 12px; padding: 14px 16px; border-bottom: 1px solid var(--un-paper-line); }
+.un-res__head .un-wow__icon { width: 36px; height: 36px; border-radius: 10px; }
+.un-res__head b { display: block; margin: 0; font: 600 14px/20px var(--font-display); color: var(--un-text); }
+.un-res__head small { display: block; font: 400 12px/16px var(--font-display); color: var(--un-text-soft); }
+.un-res__head .un-badge { margin-left: auto; flex: none; }
+.un-res__body { padding: 14px 16px; display: grid; gap: 12px; }
+.un-res__body > * { animation: un-rise 0.6s var(--ease) backwards; animation-delay: calc(0.25s + var(--i, 0) * 0.12s); }
+.un-res__list { list-style: none; margin: 0; padding: 0; display: grid; gap: 10px; }
+.un-res__list li { display: flex; gap: 10px; font: 400 13px/18px var(--font-display); color: var(--un-text-soft); animation: un-rise 0.6s var(--ease) backwards; animation-delay: calc(0.3s + var(--i, 0) * 0.12s); }
+.un-res__list li b { display: inline; margin: 0; font-weight: 600; color: var(--un-text); }
+.un-res__list .dot { width: 8px; height: 8px; flex: none; margin-top: 5px; border-radius: 50%; background: var(--un-paper-line); }
+.un-res__list .dot.hi { background: var(--un-bad); } .un-res__list .dot.mid { background: var(--un-warn); } .un-res__list .dot.ok { background: var(--un-ok); }
+.un-res__inset { padding: 12px 14px; border-radius: 12px; background: var(--un-tile); font: 400 13px/18px var(--font-display); color: var(--un-text-soft); }
+.un-res__inset b { display: inline; margin: 0; font-weight: 600; color: var(--un-text); }
+.un-res__kv { display: grid; grid-template-columns: 96px 1fr; gap: 8px 12px; font: 400 13px/18px var(--font-display); }
+.un-res__kv dt { color: var(--un-text-soft); } .un-res__kv dd { margin: 0; color: var(--un-text); }
+.un-res__acts { display: flex; flex-wrap: wrap; gap: 8px; padding: 0 16px 16px; animation: un-rise 0.6s var(--ease) 0.8s backwards; }
+.un-res__acts .un-btn.done { pointer-events: none; }
+.un-res__note { padding: 0 16px 14px; font: 400 12px/16px var(--font-display); color: var(--un-text-soft); }
+
+@media (prefers-reduced-motion: reduce) { .un-wow, .un-trace li, .un-res, .un-res__body > *, .un-res__list li, .un-res__acts { animation: none; transition-duration: 0.01ms; } .un-trace li.run i { animation-duration: 2.4s; } }
+
+/* result details: failure timeline, progress bar */
+.un-tl { position: relative; height: 54px; margin: 2px 6px 0; }
+.un-tl::before { content: ""; position: absolute; left: 0; right: 0; top: 14px; height: 2px; border-radius: 2px; background: var(--un-paper-line); }
+.un-tl__m { position: absolute; top: 8px; transform: translateX(-50%); display: flex; flex-direction: column; align-items: center; gap: 8px; animation: un-rise 0.5s var(--ease) backwards; animation-delay: calc(0.45s + var(--k) * 0.18s); }
+.un-tl__m i { width: 14px; height: 14px; border-radius: 50%; background: var(--un-bad); box-shadow: 0 0 0 4px color-mix(in srgb, var(--un-bad) 18%, transparent); }
+.un-tl__m em { font: 500 11px/14px var(--font-display); font-style: normal; color: var(--un-text-soft); white-space: nowrap; }
+.un-tl__m.next i { background: transparent; border: 2px dashed var(--un-bad); box-shadow: none; animation: un-ping 1.6s ease-out 1.4s infinite; }
+.un-tl__m.next em { color: var(--un-bad); font-weight: 600; }
+@keyframes un-ping { 0% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--un-bad) 40%, transparent); } 100% { box-shadow: 0 0 0 10px transparent; } }
+
+@keyframes un-grow { from { opacity: 0; transform: scaleX(0.3); } }
+
+.un-bar { height: 6px; margin-top: 10px; border-radius: 6px; background: var(--un-paper-line); overflow: hidden; }
+.un-bar i { display: block; height: 100%; border-radius: inherit; background: var(--un-warn); transform-origin: left; animation: un-grow 0.9s var(--ease) 0.5s backwards; }
+
+@media (prefers-reduced-motion: reduce) { .un-tl__m, .un-tl__m.next i, .un-bar i { animation: none; } }
+:root[data-theme="light"] .un-toggle__track { background: #d9d9e0; }
