@@ -169,10 +169,8 @@ function PartsTab() {
           icon={Package}
           title="No parts created yet"
           headerLabel="Create Part"
-          description="Create one yourself, or ask Nova to help you get started."
           createLabel="Create Manually"
           onCreate={() => add('New part', 'Add details', false)}
-          prompt={suggestions[0] ? `Add ${suggestions[0].title} to my parts inventory` : 'Add a part to my inventory'}
           onAskNova={askNova}
           onUseTemplate={() => setTemplateOpen(true)}
           suggestions={suggestions}

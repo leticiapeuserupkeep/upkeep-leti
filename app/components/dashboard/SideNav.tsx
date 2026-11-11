@@ -149,15 +149,15 @@ function UltranovaCard() {
   const [open, setOpen] = useState(false)
   return (
     <div data-open={open} className="ultranova-wrap relative w-full rounded-[var(--radius-lg)]">
-    <div className="ultranova-card relative w-full rounded-[var(--radius-lg)] border-2 border-transparent text-white font-[family-name:var(--font-outfit)] font-normal">
+    <div className="relative w-full rounded-[var(--radius-lg)] border-2 border-transparent bg-[var(--surface-primary)] text-[var(--color-neutral-12)] font-[family-name:var(--font-outfit)] font-normal">
       <button
         type="button"
         onClick={() => setOpen((o) => !o)}
         aria-expanded={open}
         aria-controls="ultranova-card-body"
-        className="group flex items-center justify-between w-full h-12 px-4 rounded-[var(--radius-lg)] cursor-pointer hover:bg-white/[0.08] transition-colors duration-500 ease-[cubic-bezier(0.22,1,0.36,1)]"
+        className="group flex items-center justify-between w-full h-12 px-4 rounded-[var(--radius-lg)] cursor-pointer hover:bg-[var(--color-neutral-2)] transition-colors duration-500 ease-[cubic-bezier(0.22,1,0.36,1)]"
       >
-        <span className="text-[length:16px] font-medium leading-4 text-white">Ultranova</span>
+        <span className="text-[length:16px] font-medium leading-4 text-[var(--color-neutral-12)]">Ultranova</span>
         {/* the star gives way to a down arrow on hover (and while open) */}
         <span className="relative flex items-center justify-center w-5 h-5 shrink-0">
           <span className={`absolute transition-[opacity,transform] duration-500 ease-[cubic-bezier(0.22,1,0.36,1)] ${open ? 'opacity-0 scale-50 rotate-90' : 'group-hover:opacity-0 group-hover:scale-50 group-hover:rotate-90'}`}>
@@ -177,7 +177,7 @@ function UltranovaCard() {
       >
         <div className="overflow-hidden" inert={!open}>
           <div className="px-4 pb-4">
-            <p className="text-[length:var(--font-size-base)] leading-5 text-white/80">
+            <p className="text-[length:var(--font-size-base)] leading-5 text-[var(--color-neutral-10)]">
               Meet your AI assistant that keeps working while you’re away.
             </p>
             {/* purple gradient; on hover a brighter fuchsia→violet layer fades in over it (gradients can't be transitioned directly) */}
@@ -278,6 +278,8 @@ export function SideNav({ collapsed }: SideNavProps) {
   /** Blue while the setup screen is open; light gray anywhere else. */
   const setupPath = setup.welcomeHref.split('?')[0]
   const setupActive = pathname === setupPath || pathname.startsWith(setupPath + '/')
+  /** At 100% the banner stays, plain, with a check instead of the ring. */
+  const setupDone = setupPercent >= 100
   const [appOpen, setAppOpen] = useState(false)
 
   return (
@@ -321,35 +323,37 @@ export function SideNav({ collapsed }: SideNavProps) {
           )}
         </div>
 
-        {/* Always here: in progress it leads back into Nova's welcome; once
-            complete it stays as the place to review what was set up. */}
-        <div data-stagger style={{ '--i': 1 } as React.CSSProperties} className={`shrink-0 pt-[var(--space-sm)] ${collapsed ? 'flex justify-center' : 'px-[var(--space-xs)]'}`}>
-          {setupPercent < 100 ? (
-            <Link
-              href={setup.welcomeHref}
-              aria-label={`Setup your account, ${setupPercent}% done`}
-              className={`flex items-center rounded-[var(--radius-lg)] transition-colors duration-[var(--duration-fast)] ${
-                setupActive
-                  ? 'bg-[var(--color-accent-9)] text-white shadow-[var(--shadow-sm)] hover:bg-[var(--color-accent-10)]'
-                  : 'border border-[var(--border-default)] bg-[var(--surface-primary)] text-[var(--color-neutral-12)] hover:bg-[var(--color-neutral-2)]'
-              } ${collapsed ? 'h-9 w-9 justify-center' : 'h-11 justify-between px-3'}`}
-            >
-              {!collapsed && <span className="text-[length:var(--font-size-base)] font-medium">Setup your account</span>}
+        {/* Leads back into Nova's welcome until the user dismisses it; once setup
+            is done it stays, plain, with a check. Blue while the setup screen is open, white elsewhere. */}
+        {!setup.setupDismissed && (
+        <div
+          data-stagger
+          style={{ '--i': 1 } as React.CSSProperties}
+          className={`shrink-0 pt-[var(--space-sm)] ${collapsed ? 'flex justify-center' : 'px-[var(--space-xs)]'}`}
+        >
+          <Link
+            href={setup.welcomeHref}
+            aria-label={`Setup your account, ${setupPercent}% done`}
+            className={`flex items-center rounded-[var(--radius-lg)] border transition-[background-color,border-color,box-shadow,translate] duration-300 ease-[cubic-bezier(0.32,0.72,0,1)] hover:-translate-y-px active:translate-y-0 ${
+              // Done: no fill or border, just the label and the full ring.
+              setupDone
+                ? 'border-transparent bg-transparent text-[var(--color-neutral-12)] hover:bg-[var(--color-neutral-3)]'
+                : setupActive
+                ? 'border-[var(--color-accent-9)] bg-[var(--color-accent-9)] text-white shadow-[var(--shadow-sm)] hover:border-[var(--color-accent-10)] hover:bg-[var(--color-accent-10)] hover:shadow-[var(--shadow-md)]'
+                : 'border-[var(--border-default)] bg-[var(--surface-primary)] text-[var(--color-neutral-12)] hover:border-[var(--color-accent-7)] hover:shadow-[var(--shadow-sm)]'
+            } ${collapsed ? 'h-9 w-9 justify-center' : 'h-11 justify-between px-3'}`}
+          >
+            {!collapsed && <span className="text-[length:var(--font-size-base)] font-medium">Setup your account</span>}
+            {setupDone ? (
+              <span className={`flex shrink-0 items-center justify-center rounded-full bg-[var(--color-accent-9)] text-white nova-enter ${collapsed ? 'h-[22px] w-[22px]' : 'h-6 w-6'}`}>
+                <Check size={14} strokeWidth={3} />
+              </span>
+            ) : (
               <ProgressRing value={setupPercent} size={collapsed ? 22 : 24} strokeWidth={3} trackColor={setupActive ? 'rgba(255,255,255,0.3)' : 'var(--color-neutral-6)'} fillColor={setupActive ? 'white' : 'var(--color-accent-9)'} showLabel={false} />
-            </Link>
-          ) : (
-            <Link
-              href={setup.welcomeHref}
-              aria-label="Setup complete"
-              className={`flex items-center gap-2 rounded-[var(--radius-lg)] border border-[var(--border-default)] bg-[var(--surface-primary)] text-[var(--color-neutral-12)] transition-colors duration-[var(--duration-fast)] hover:bg-[var(--color-neutral-2)] nova-enter ${
-                collapsed ? 'h-9 w-9 justify-center' : 'h-11 px-3'
-              }`}
-            >
-              <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-[var(--color-success)] text-white"><Check size={12} strokeWidth={3} /></span>
-              {!collapsed && <span className="text-[length:var(--font-size-base)] font-medium">Setup complete</span>}
-            </Link>
-          )}
+            )}
+          </Link>
         </div>
+        )}
 
         {/* Scrollable nav */}
         <ScrollArea.Root className="flex-1 overflow-hidden">
@@ -432,7 +436,7 @@ export function SideNav({ collapsed }: SideNavProps) {
               <a
                 href={ULTRANOVA_HREF}
                 aria-label="Ultranova"
-                className="flex items-center justify-center w-9 h-9 rounded-[var(--radius-lg)] bg-[linear-gradient(135deg,#570a9e,#000)]"
+                className="flex items-center justify-center w-9 h-9 rounded-[var(--radius-lg)] bg-[var(--surface-primary)] border border-[var(--border-default)] hover:bg-[var(--color-neutral-2)] transition-colors duration-300"
               >
                 <UltranovaMark size={18} />
               </a>

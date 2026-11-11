@@ -24,6 +24,7 @@ import { CHOICE, PRIMARY_CHOICE } from '@/app/components/onboarding/nova/choiceS
 import { ProductFamilyCard, SetupCompleteCard, type SetupStep } from '@/app/components/onboarding/nova/NovaRecommendationCards'
 import { NovaIdeas } from '@/app/components/onboarding/nova/NovaIdeas'
 import { SetupChecklistPanel } from '@/app/components/onboarding/nova/SetupChecklistPanel'
+import { ConnectionsCard } from '@/app/components/onboarding/nova/ConnectionsCard'
 import { MobileAppPromo } from '@/app/components/onboarding/nova/MobileAppCard'
 import { NovaComposer, type NovaComposerHandle } from '@/app/components/onboarding/nova/NovaComposer'
 import { NovaDiscovery } from '@/app/components/onboarding/nova/discovery/NovaDiscovery'
@@ -878,9 +879,9 @@ export function WelcomeScreen() {
                                       key={goal.id}
                                       type="button"
                                       onClick={() => startWithNova(goal.label)}
-                                      className="group flex w-full items-center gap-3 rounded-[var(--radius-xl)] border border-[var(--border-default)] bg-[var(--surface-primary)] px-[var(--space-md)] py-3 text-left text-[length:var(--font-size-base)] font-medium text-[var(--color-neutral-12)] shadow-[var(--shadow-sm)] transition-colors duration-[var(--duration-fast)] hover:border-[var(--color-accent-7)] hover:bg-[var(--color-accent-1)] cursor-pointer"
+                                      className="group flex w-fit items-center gap-3 rounded-[var(--radius-xl)] border border-[var(--border-default)] bg-[var(--surface-primary)] px-[var(--space-md)] py-3 text-left text-[length:var(--font-size-base)] font-medium text-[var(--color-neutral-12)] shadow-[var(--shadow-sm)] transition-colors duration-[var(--duration-fast)] hover:border-[var(--color-accent-7)] hover:bg-[var(--color-accent-1)] cursor-pointer"
                                     >
-                                      <span className="flex-1">{goal.label}</span>
+                                      <span>{goal.label}</span>
                                       <ArrowRight size={16} className="shrink-0 text-[var(--color-accent-9)] transition-transform duration-[var(--duration-fast)] group-hover:translate-x-0.5" />
                                     </button>
                                   ))}
@@ -942,8 +943,9 @@ export function WelcomeScreen() {
                             nova.importGuideList(f.name, { locations: data.locations.map(i => i.name), assets: data.assets.map(i => i.name) })
                           }}
                         />
-                        {/* The message box sits at the bottom, like a chat. */}
-                        <div className="sticky bottom-0 mt-auto bg-gradient-to-t from-[var(--surface-primary)] from-70% to-transparent pb-8 pt-6">
+                        {/* The message box sits at the bottom, like a chat. No backdrop of its
+                            own: a white fade showed as a cut-off block over the tinted page. */}
+                        <div className="sticky bottom-0 mt-auto pb-8 pt-6">
                           {/* Approvals float just above the input, like the drawer's. */}
                           <div className="relative">
                             <div className="absolute inset-x-0 bottom-full z-10 mb-2">
@@ -964,12 +966,14 @@ export function WelcomeScreen() {
                   </div>
                 </div>
               </div>
+              {/* Ready: the setup panel and the connections card float together on
+                  the right and stay put while the chat scrolls. */}
+              <div className={ready ? 'sticky top-6 my-6 mr-6 flex max-h-[calc(100dvh-96px)] w-[360px] shrink-0 flex-col gap-[var(--space-md)] self-start overflow-y-auto' : 'contents'}>
               <SetupChecklistPanel
                 title={ready ? 'Your workspace setup' : 'Setup progress'}
-                subtitle={ready ? 'Build your workspace as you go. Add details here or let Nova guide you in the chat.' : 'Follow these steps, or ask Nova to help you along the way.'}
+                subtitle={ready ? '' : 'Follow these steps, or ask Nova to help you along the way.'}
                 className={ready
-                  // A floating card on the right that stays put while the chat scrolls.
-                  ? 'sticky top-6 my-6 mr-6 flex max-h-[calc(100dvh-96px)] w-[360px] shrink-0 flex-col gap-[var(--space-md)] self-start overflow-y-auto rounded-[20px] border border-[var(--border-subtle)] bg-[var(--surface-primary)] p-[var(--space-lg)] shadow-[var(--shadow-sm)]'
+                  ? 'flex w-full shrink-0 flex-col gap-[var(--space-md)] rounded-[20px] border border-[var(--border-subtle)] bg-[var(--surface-primary)] p-[var(--space-lg)] shadow-[var(--shadow-sm)]'
                   : 'mx-auto flex w-full max-w-[840px] flex-col gap-[var(--space-md)]'}
                 accountDone={setup.companyConfirmed}
                 // Fills in as Nova learns it: the industry first, then the company.
@@ -1014,6 +1018,8 @@ export function WelcomeScreen() {
                 />
                 <NovaRecommendations items={recommendations} onInstall={installRecommendation} onUpgrade={setUpgradeFor} />
               </SetupChecklistPanel>
+              {ready && <ConnectionsCard connected={nova.allConnected} onConnect={nova.connectApp} onDisconnect={nova.disconnectApp} />}
+              </div>
               {/* Ideas appear once the user gets to the team step. */}
               {ideasUnlocked && !ready && (
               <div className="mt-[var(--space-xl)] nova-section-in">

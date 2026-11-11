@@ -1259,12 +1259,6 @@
   animation: ultranova-glint 6s linear infinite;
 }
 .ultranova-wrap[data-open="true"]::before { animation: none; opacity: 0; transition: opacity 0.4s; }
-.ultranova-card {
-  background-image: linear-gradient(135deg, #570a9e 0%, #1b0434 55%, #000 100%);
-  background-origin: border-box;
-  background-clip: padding-box;
-  background-repeat: no-repeat;
-}
 @media (prefers-reduced-motion: reduce) {
   .ultranova-wrap::before { animation: none; opacity: 0; }
 }

@@ -1,16 +1,17 @@
 'use client'
 
 import { useState, useEffect, useCallback } from 'react'
-import { usePathname } from 'next/navigation'
+import { usePathname, useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { Plus, Pencil, LayoutGrid, MoreHorizontal, ChevronDown, FileDown, FileText, Upload } from 'lucide-react'
 import { SideNav } from '@/app/components/dashboard/SideNav'
 import { TopBar } from '@/app/components/dashboard/TopBar'
 import { Button } from '@/app/components/ui/Button'
+import { Modal, ModalHeader, ModalBody, ModalFooter } from '@/app/components/ui/Modal'
 import { IconButton } from '@/app/components/ui/IconButton'
 import { MeterConfigModal } from '@/app/components/edge/MeterConfigModal'
 import { DashboardProvider } from '@/app/lib/dashboard/dashboard-context'
-import { useSetupState } from '@/app/lib/onboarding/setup-store'
+import { setupStore, useSetupState } from '@/app/lib/onboarding/setup-store'
 import { WelcomeScreen } from '@/app/components/onboarding/nova/WelcomeScreen'
 import { PlansModal } from '@/app/components/billing/PlansModal'
 import { PlanTag } from '@/app/components/billing/PlanTag'
@@ -99,6 +100,14 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   const [welcomeOpened, setWelcomeOpened] = useState(isWelcome)
   if (isWelcome && !welcomeOpened) setWelcomeOpened(true)
   const setup = useSetupState()
+  const router = useRouter()
+  /** Opt out of setup for good, after confirming: the sidebar entry goes away and the user lands on their work. */
+  const [hideSetupOpen, setHideSetupOpen] = useState(false)
+  const dismissSetup = () => {
+    setHideSetupOpen(false)
+    setupStore.update({ setupDismissed: true })
+    router.push('/work-orders')
+  }
   const isWorkOrdersEmptyOnboarding = isWorkOrders && setup.workOrderLanding
   // Empty list: no view switcher or table toolbar, just the empty state.
   const isWorkOrdersEmpty = isWorkOrdersEmptyOnboarding || (isWorkOrders && setup.counts.workOrders === 0)
@@ -132,7 +141,20 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   }, [])
 
   function getActions() {
-    if (isWelcome) return <TrialBadge daysLeft={5} onUpgrade={openPlans} />
+    if (isWelcome) return (
+      <>
+        {/* Same height as the trial chip next to it; DS md radius; light gray, no border. */}
+        <Button
+          variant="secondary"
+          size="md"
+          className="!h-9 !border-transparent !bg-[var(--color-neutral-3)] !px-3 hover:!bg-[var(--color-neutral-4)] active:!bg-[var(--color-neutral-5)]"
+          onClick={() => setHideSetupOpen(true)}
+        >
+          Hide setup
+        </Button>
+        <TrialBadge daysLeft={5} onUpgrade={openPlans} />
+      </>
+    )
     // Pages that own their header buttons portal them in here.
     if (pathname.startsWith('/assets') || pathname.startsWith('/locations') || pathname.startsWith('/parts')) return <div id="page-header-actions" className="flex items-center gap-[var(--space-sm)]" />
     if (isEdgeSensors) {
@@ -224,6 +246,18 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
     <div className="flex min-h-screen bg-[var(--surface-canvas)]">
       <SideNav collapsed={sidebarCollapsed} />
       <PlansModal open={plansOpen} onOpenChange={setPlansOpen} />
+      <Modal open={hideSetupOpen} onOpenChange={setHideSetupOpen} maxWidth="420px">
+        <ModalHeader title="Hide setup?" />
+        <ModalBody>
+          <p className="text-[length:var(--font-size-base)] leading-5 text-[var(--color-neutral-10)]">
+            “Setup your account” will be removed from the sidebar and you won’t see this page again. You can still add locations, assets and work orders from their sections.
+          </p>
+        </ModalBody>
+        <ModalFooter className="justify-end">
+          <Button variant="secondary" size="md" onClick={() => setHideSetupOpen(false)}>Cancel</Button>
+          <Button variant="primary" size="md" onClick={dismissSetup}>Hide setup</Button>
+        </ModalFooter>
+      </Modal>
 
       <div
         // Nova's side panel sets --nova-panel-w while open, so the page makes
