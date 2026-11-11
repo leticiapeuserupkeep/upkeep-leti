@@ -155,10 +155,8 @@ export default function LocationsPage() {
           icon={MapPin}
           title="No locations created yet"
           headerLabel="Create Location"
-          description="Create one yourself, or ask Nova to help you get started."
           createLabel="Create Manually"
           onCreate={() => setManualOpen(true)}
-          prompt={suggestions[0] ? `Add ${suggestions[0].title} as a location` : 'Add a new location'}
           onAskNova={askNova}
           onUseTemplate={() => setTemplateOpen(true)}
           suggestions={suggestions}

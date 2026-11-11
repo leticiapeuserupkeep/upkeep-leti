@@ -9,7 +9,7 @@ import { SUGGESTED_TECH } from '@/app/lib/onboarding/discovery'
 import {
   MOCK_COMPANY, COMPANY_REPORT, analysisSteps, sourceName, affectedAssets,
   MAINTENANCE_PLAN, suggestedPeople, REPORT_DOC, TRIAL_SEATS, ACTION_PLAN,
-  INTEGRATION_CATALOG, EMAIL_SOURCES, hasEmail,
+  INTEGRATION_CATALOG, EMAIL_SOURCES, hasEmail, isSourceId,
   type CompanyProfile, type SourceId, type PlanItem, type PlanStepId, type ResearchStep, type SuggestedPerson, type UpkeepRole, type MaintenancePlanItem,
 } from '@/app/lib/onboarding/nova-onboarding-data'
 
@@ -183,8 +183,11 @@ export function useNovaOnboarding() {
   const focusShown = useRef(false)
   const nextStepsShown = useRef(false)
   const connectedRef = useRef<SourceId[]>([])
-  // Apps connected from the full list (SAP, Outlook…) — context for Nova too.
+  // Apps connected from the full list (SAP, Dropbox…) — context for Nova too.
   const otherConnectedRef = useRef<string[]>([])
+  const [otherConnected, setOtherConnected] = useState<string[]>([])
+  // Other screens (the empty modules) show where Nova's findings come from.
+  useEffect(() => { setupStore.update({ connectedApps: [...connected, ...otherConnected] }) }, [connected, otherConnected])
   connectedRef.current = connected
   const companyRef = useRef(company)
   companyRef.current = company
@@ -301,6 +304,7 @@ export function useNovaOnboarding() {
     setPlanStepsDone([])
     planAddedRef.current = {}
     otherConnectedRef.current = []
+    setOtherConnected([])
     setSourcesLocked(false)
     setEmailed(false)
     setUsedActions([])
@@ -572,6 +576,9 @@ export function useNovaOnboarding() {
         setChatToolsOpen(false)
         run(async ({ say, think }) => {
           if (/slack|teams/i.test(answer)) {
+            const id: SourceId = /teams/i.test(answer) ? 'teams' : 'slack'
+            connectedRef.current = connectedRef.current.includes(id) ? connectedRef.current : [...connectedRef.current, id]
+            setConnected(prev => (prev.includes(id) ? prev : [...prev, id]))
             await think([`Connecting ${answer}…`], 1200)
             push({ kind: 'nova', text: `${answer} connected — requests from your channels will show up in UpKeep`, check: true })
           }
@@ -705,6 +712,24 @@ export function useNovaOnboarding() {
   const connectSource = useCallback((id: SourceId) => {
     connectedRef.current = connectedRef.current.includes(id) ? connectedRef.current : [...connectedRef.current, id]
     setConnected(prev => (prev.includes(id) ? prev : [...prev, id]))
+  }, [])
+
+  /** Connects any app from the connections list — the core ones feed Nova's
+   * conversation, the rest are context. */
+  const connectApp = useCallback((id: string) => {
+    if (isSourceId(id)) { connectSource(id); return }
+    if (!otherConnectedRef.current.includes(id)) otherConnectedRef.current = [...otherConnectedRef.current, id]
+    setOtherConnected(prev => (prev.includes(id) ? prev : [...prev, id]))
+  }, [connectSource])
+
+  const disconnectApp = useCallback((id: string) => {
+    if (isSourceId(id)) {
+      connectedRef.current = connectedRef.current.filter(x => x !== id)
+      setConnected(prev => prev.filter(x => x !== id))
+    } else {
+      otherConnectedRef.current = otherConnectedRef.current.filter(x => x !== id)
+      setOtherConnected(prev => prev.filter(x => x !== id))
+    }
   }, [])
 
   const showFocus = useCallback(() => {
@@ -1096,6 +1121,7 @@ export function useNovaOnboarding() {
 
   const connectOther = useCallback((id: string) => {
     if (!otherConnectedRef.current.includes(id)) otherConnectedRef.current = [...otherConnectedRef.current, id]
+    setOtherConnected(prev => (prev.includes(id) ? prev : [...prev, id]))
   }, [])
 
   const continueIntegrations = useCallback(() => {
@@ -1313,7 +1339,7 @@ export function useNovaOnboarding() {
   }, [ask])
 
   return {
-    connectOther, chatToolsOpen, answerChatTools,
+    connectOther, connectApp, disconnectApp, allConnected: [...connected, ...otherConnected], chatToolsOpen, answerChatTools,
     messages, profile, answerChoice, saveAccount, started, start, busy, working: busy && awaiting === 0, stop, company, companyConfirmed, pmScheduled, generated, generating, planSkipped, integrationsLocked, mplanAdded, mplanAdding, mplanSkipped, appPromo, safetyAnswered, teamLocked, addedPeople, addingPeople, googleConsentOpen, consentScope, roles, answeredOffers, editingCompany, connected, sourcesLocked,
     emailed, reportOpen, paywallOpen, usedActions,
     planStepsDone, addPlanStep, skipPlanStep,

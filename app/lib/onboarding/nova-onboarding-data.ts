@@ -100,25 +100,27 @@ export interface CatalogApp {
   name: string
   logo: string
   category: 'Communication' | 'Documents' | 'Business systems' | 'Operations'
+  /** One line on what Nova does with it — shown in the connections list. */
+  description: string
 }
 
 export const INTEGRATION_CATALOG: CatalogApp[] = [
-  { id: 'gmail', name: 'Gmail', logo: '/images/integrations/gmail.svg', category: 'Communication' },
-  { id: 'outlook', name: 'Outlook', logo: '/images/integrations/outlook.svg', category: 'Communication' },
-  { id: 'slack', name: 'Slack', logo: '/images/integrations/slack.svg', category: 'Communication' },
-  { id: 'teams', name: 'Microsoft Teams', logo: '/images/integrations/teams.svg', category: 'Communication' },
-  { id: 'google-calendar', name: 'Google Calendar', logo: '/images/integrations/google-calendar.svg', category: 'Communication' },
-  { id: 'drive', name: 'Google Drive', logo: '/images/integrations/google-drive.svg', category: 'Documents' },
-  { id: 'google-docs', name: 'Google Docs', logo: '/images/integrations/google-docs.svg', category: 'Documents' },
-  { id: 'google-sheets', name: 'Google Sheets', logo: '/images/integrations/google-sheets.svg', category: 'Documents' },
-  { id: 'dropbox', name: 'Dropbox', logo: '/images/integrations/dropbox.svg', category: 'Documents' },
-  { id: 'confluence', name: 'Confluence', logo: '/images/integrations/confluence.svg', category: 'Documents' },
-  { id: 'sap', name: 'SAP', logo: '/images/integrations/sap.svg', category: 'Business systems' },
-  { id: 'oracle', name: 'Oracle', logo: '/images/integrations/oracle.svg', category: 'Business systems' },
-  { id: 'salesforce', name: 'Salesforce', logo: '/images/integrations/salesforce.svg', category: 'Business systems' },
-  { id: 'quickbooks', name: 'QuickBooks', logo: '/images/integrations/quickbooks.svg', category: 'Business systems' },
-  { id: 'monday', name: 'monday.com', logo: '/images/integrations/monday.svg', category: 'Operations' },
-  { id: 'ignition', name: 'Ignition SCADA', logo: '/images/integrations/ignition.svg', category: 'Operations' },
+  { id: 'gmail', name: 'Gmail', logo: '/images/integrations/gmail.svg', category: 'Communication', description: 'Find maintenance emails, requests and vendor threads' },
+  { id: 'outlook', name: 'Outlook', logo: '/images/integrations/outlook.svg', category: 'Communication', description: 'Find maintenance emails, requests and vendor threads' },
+  { id: 'slack', name: 'Slack', logo: '/images/integrations/slack.svg', category: 'Communication', description: 'Turn channel messages into maintenance requests' },
+  { id: 'teams', name: 'Microsoft Teams', logo: '/images/integrations/teams.svg', category: 'Communication', description: 'Turn team conversations into maintenance requests' },
+  { id: 'google-calendar', name: 'Google Calendar', logo: '/images/integrations/google-calendar.svg', category: 'Communication', description: 'Plan maintenance around your team’s calendar' },
+  { id: 'drive', name: 'Google Drive', logo: '/images/integrations/google-drive.svg', category: 'Documents', description: 'Find SOPs, manuals and reports' },
+  { id: 'google-docs', name: 'Google Docs', logo: '/images/integrations/google-docs.svg', category: 'Documents', description: 'Bring in procedures and checklists' },
+  { id: 'google-sheets', name: 'Google Sheets', logo: '/images/integrations/google-sheets.svg', category: 'Documents', description: 'Import asset and parts lists' },
+  { id: 'dropbox', name: 'Dropbox', logo: '/images/integrations/dropbox.svg', category: 'Documents', description: 'Find equipment documents and manuals' },
+  { id: 'confluence', name: 'Confluence', logo: '/images/integrations/confluence.svg', category: 'Documents', description: 'Bring in your maintenance knowledge base' },
+  { id: 'sap', name: 'SAP', logo: '/images/integrations/sap.svg', category: 'Business systems', description: 'Sync assets, parts and purchase orders' },
+  { id: 'oracle', name: 'Oracle', logo: '/images/integrations/oracle.svg', category: 'Business systems', description: 'Sync assets and work history' },
+  { id: 'salesforce', name: 'Salesforce', logo: '/images/integrations/salesforce.svg', category: 'Business systems', description: 'Link customer and service requests' },
+  { id: 'quickbooks', name: 'QuickBooks', logo: '/images/integrations/quickbooks.svg', category: 'Business systems', description: 'Connect costs and vendor invoices' },
+  { id: 'monday', name: 'monday.com', logo: '/images/integrations/monday.svg', category: 'Operations', description: 'Sync maintenance tasks and projects' },
+  { id: 'ignition', name: 'Ignition SCADA', logo: '/images/integrations/ignition.svg', category: 'Operations', description: 'Bring in sensor alerts from your SCADA' },
 ]
 
 export function isSourceId(id: string): id is SourceId {
@@ -530,16 +532,20 @@ export const MAINTENANCE_PLAN: MaintenancePlanItem[] = [
 export interface ModuleSuggestion {
   id: string
   title: string
-  /** Why Nova suggests it — tied to a finding. */
+  /** Why Nova suggests it — tied to a finding. Shown with its source once an
+   * app is connected. */
   reason: string
+  /** What to show instead while nothing is connected: no figures, framed as
+   * an example rather than something found. */
+  example?: string
   tag: string
   tone: 'error' | 'warning' | 'accent'
 }
 
 export const SUGGESTED_WORK_ORDER_CARDS: ModuleSuggestion[] = [
-  { id: 'wo-hydraulic', title: 'Fix hydraulic leak', reason: 'Reported 4 times · last yesterday', tag: 'High priority', tone: 'error' },
-  { id: 'wo-conveyor', title: 'Inspect Conveyor #3', reason: '3 stoppages this week', tag: 'Recurring', tone: 'warning' },
-  { id: 'wo-forklift', title: 'Replace forklift batteries', reason: 'Failing at 2 locations', tag: 'Needs attention', tone: 'accent' },
+  { id: 'wo-hydraulic', title: 'Fix hydraulic leak', reason: 'Reported 4 times · last yesterday', example: 'Common in plants like yours', tag: 'High priority', tone: 'error' },
+  { id: 'wo-conveyor', title: 'Inspect Conveyor #3', reason: '3 stoppages this week', example: 'Recurring stoppages are a typical sign', tag: 'Recurring', tone: 'warning' },
+  { id: 'wo-forklift', title: 'Replace forklift batteries', reason: 'Failing at 2 locations', example: 'Battery wear is a typical fleet issue', tag: 'Needs attention', tone: 'accent' },
 ]
 
 export const SUGGESTED_LOCATION_CARDS: ModuleSuggestion[] = [
@@ -549,15 +555,15 @@ export const SUGGESTED_LOCATION_CARDS: ModuleSuggestion[] = [
 ]
 
 export const SUGGESTED_ASSET_CARDS: ModuleSuggestion[] = [
-  { id: 'asset-press', title: 'Hydraulic press HP-2 — Moline', reason: 'Hydraulic leak continues', tag: 'High priority', tone: 'error' },
-  { id: 'asset-conveyor', title: 'Conveyor #3 — East Moline', reason: 'Stopping intermittently', tag: 'Recurring', tone: 'warning' },
-  { id: 'asset-forklifts', title: 'Forklift Fleet', reason: 'Battery failures at 2 locations', tag: 'Needs attention', tone: 'accent' },
+  { id: 'asset-press', title: 'Hydraulic press HP-2 — Moline', reason: 'Hydraulic leak continues', example: 'A typical recurring leak', tag: 'High priority', tone: 'error' },
+  { id: 'asset-conveyor', title: 'Conveyor #3 — East Moline', reason: 'Stopping intermittently', example: 'A typical intermittent stoppage', tag: 'Recurring', tone: 'warning' },
+  { id: 'asset-forklifts', title: 'Forklift Fleet', reason: 'Battery failures at 2 locations', example: 'Typical battery wear across a fleet', tag: 'Needs attention', tone: 'accent' },
 ]
 
 export const SUGGESTED_PART_CARDS: ModuleSuggestion[] = [
-  { id: 'part-seals', title: 'Hydraulic seal kit', reason: 'For the recurring leak at Moline', tag: 'Reorder soon', tone: 'error' },
-  { id: 'part-belt', title: 'Conveyor drive belt', reason: 'Likely cause of Conveyor #3 stoppages', tag: 'Recurring', tone: 'warning' },
-  { id: 'part-batteries', title: 'Forklift batteries (×2)', reason: 'Replacements for the failing units', tag: 'Needs attention', tone: 'accent' },
+  { id: 'part-seals', title: 'Hydraulic seal kit', reason: 'For the recurring leak at Moline', example: 'For a typical hydraulic leak', tag: 'Reorder soon', tone: 'error' },
+  { id: 'part-belt', title: 'Conveyor drive belt', reason: 'Likely cause of Conveyor #3 stoppages', example: 'A common cause of conveyor stoppages', tag: 'Recurring', tone: 'warning' },
+  { id: 'part-batteries', title: 'Forklift batteries (×2)', reason: 'Replacements for the failing units', example: 'For typical battery wear', tag: 'Needs attention', tone: 'accent' },
 ]
 
 /** "Jump straight in" ideas on the Welcome page — the Nova moments that land

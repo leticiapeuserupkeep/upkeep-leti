@@ -603,10 +603,8 @@ export default function WorkOrdersPage() {
             icon={FileText}
             title="No work orders created yet"
             headerLabel="Create Work Order"
-            description="Create one yourself, or ask Nova to help you get started."
             createLabel="Create Manually"
             onCreate={() => addWorkOrder('New work order', false)}
-            prompt={suggestions[0] ? `Create a work order to ${suggestions[0].title.charAt(0).toLowerCase()}${suggestions[0].title.slice(1)}` : 'Create a work order'}
             onAskNova={askNova}
             onUseTemplate={() => setTemplateOpen(true)}
             suggestions={suggestions}
