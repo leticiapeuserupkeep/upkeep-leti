@@ -123,11 +123,11 @@ const sections: NavSection[] = [
 /** Ultranova entry: a small card (name + star) that expands to a short pitch and a "Start now!" CTA into the onboarding (static page in /public, so a plain anchor). */
 const ULTRANOVA_HREF = '/ultranova/onboarding.html'
 
-/** Ultranova's four-point star mark (same glyph as the onboarding). */
+/** Ultranova's four-point star mark (same glyph and color as Ultranova's logo). */
 function UltranovaMark({ size = 20 }: { size?: number }) {
   return (
     <svg width={size} height={size} viewBox="2.5 2 27 27" aria-hidden="true" className="shrink-0">
-      <path d="M16 2l3.2 9.6L29 14.8l-9.8 3.2L16 29l-3.2-11L3 14.8l9.8-3.2z" fill="#dd00ff" />
+      <path d="M16 2l3.2 9.6L29 14.8l-9.8 3.2L16 29l-3.2-11L3 14.8l9.8-3.2z" fill="#1a1a1a" />
     </svg>
   )
 }
@@ -157,7 +157,7 @@ function UltranovaCard() {
         aria-controls="ultranova-card-body"
         className="group flex items-center justify-between w-full h-12 px-4 rounded-[var(--radius-lg)] cursor-pointer hover:bg-[var(--color-neutral-2)] transition-colors duration-500 ease-[cubic-bezier(0.22,1,0.36,1)]"
       >
-        <span className="text-[length:16px] font-medium leading-4 text-[var(--color-neutral-12)]">Ultranova</span>
+        <span className="text-[length:16px] font-semibold leading-4 bg-[linear-gradient(90deg,#1a1a1a_0%,#5a5a18_39.3%,#c3c300_94.5%)] bg-clip-text text-transparent">Ultranova</span>
         {/* the star gives way to a down arrow on hover (and while open) */}
         <span className="relative flex items-center justify-center w-5 h-5 shrink-0">
           <span className={`absolute transition-[opacity,transform] duration-500 ease-[cubic-bezier(0.22,1,0.36,1)] ${open ? 'opacity-0 scale-50 rotate-90' : 'group-hover:opacity-0 group-hover:scale-50 group-hover:rotate-90'}`}>
