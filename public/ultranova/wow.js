@@ -39,7 +39,7 @@
   var WOW = [
     {
       key: 'brief', icon: 'brief',
-      option: 'Brief you every morning on work orders, approvals, and meetings?',
+      option: 'Brief me every morning on work orders, approvals, and meetings',
       title: 'Brief me every morning on work orders, approvals, and meetings',
       intro: 'I’ll help you start each day with your work orders, pending approvals, and relevant meetings in one place.',
       setup: [
@@ -62,7 +62,7 @@
     },
     {
       key: 'cause', icon: 'cause',
-      option: 'Watch for equipment failures and prepare the next steps?',
+      option: 'Watch for equipment failures and prepare the next steps',
       title: 'Watch for equipment failures and prepare the next steps',
       intro: 'I’ll keep an eye on your assets, spot failures that keep coming back, and have the next step ready: the history, the parts and a draft work order.',
       setup: [
@@ -89,7 +89,7 @@
     },
     {
       key: 'parts', icon: 'parts',
-      option: 'Alert you when parts delays put planned work at risk?',
+      option: 'Alert me when parts delays put planned work at risk',
       title: 'Alert me when parts delays put planned work at risk',
       intro: 'I’ll match every open purchase order to the work it’s for, and tell you as soon as a delay puts that work at risk, with a way around it.',
       setup: [
@@ -113,8 +113,8 @@
     },
     {
       key: 'watch', icon: 'watch',
-      option: 'Monitor overdue inspections and draft the follow-up?',
-      title: 'Monitor overdue inspections and draft the follow-up',
+      option: 'Track overdue inspections and draft follow-ups',
+      title: 'Track overdue inspections and draft follow-ups',
       intro: 'I’ll watch your inspections, tell you when one slips, and have the follow-up drafted for you to approve.',
       setup: [
         { id: 'sites', q: 'Which sites should I watch?', replies: ['All 4 sites', 'Northland Plant', 'Only critical inspections'], ph: 'Choose a site or type your own…' }

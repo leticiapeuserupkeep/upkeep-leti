@@ -304,3 +304,12 @@ button, input, textarea, kbd { font-family: inherit; }
 
 @media (prefers-reduced-motion: reduce) { .un-tl__m, .un-tl__m.next i, .un-bar i { animation: none; } }
 :root[data-theme="light"] .un-toggle__track { background: #d9d9e0; }
+
+/* ---------- background glow (Figma "new ui" › onboarding: Ellipse 7 + 8): two very soft olive-yellow circles,
+   heavily blurred, bottom-right and top-left of the page. Light only.
+   <div class="un-glow" aria-hidden="true"><i class="a"></i><i class="b"></i></div> ---------- */
+.un-glow { position: fixed; inset: 0; z-index: 0; overflow: hidden; pointer-events: none; }
+.un-glow i { position: absolute; display: block; border-radius: 50%; background: rgb(203, 222, 0); filter: blur(187px); }
+.un-glow .a { left: 62.08vw; top: 32.33vh; width: 56.8vw; height: 90.1vh; opacity: 0.04; }   /* 818×811 at (894, 291) of 1440×900 */
+.un-glow .b { left: -12.22vw; top: -5.56vh; width: 46.46vw; height: 83.1vh; opacity: 0.04; }   /* 669×748 at (−176, −50) */
+:root[data-theme="dark"] .un-glow { display: none; }

@@ -13,7 +13,7 @@
 <link rel="stylesheet" href="ultranova.css">
 <style>
   /* Welcome: one screen that plays as a short sequence, then hands over to the workspace.
-       1 "Welcome to Ultranova" + a line about the assistant; after a few seconds that line gives way to
+       1 "Welcome to Ultranova" + a line about the assistant; then, under it (nothing is removed),
          "Let's get started. Want me to…" and the four options (wow.js) one under another, then the message box.
        2 Picking an option (or sending your own message) slides the welcome to the left and opens home, where the request
          is the user's first message, the assistant introduces itself and picks the task up (see home.html).
@@ -50,27 +50,52 @@
   /* ---------- the sequence: pieces stay hidden until the script reveals them (.in) ---------- */
   .seq { opacity: 0; transform: translateY(10px); transition: opacity var(--in) ease, transform var(--in) var(--ease); }
   .seq.in { opacity: 1; transform: none; }
-  .seq.out { opacity: 0; transform: translateY(-6px); transition-duration: 250ms; }
+
+  /* the title just fades in (no shine or unveil); then the lines are written */
+  .title h1 { opacity: 0; transform: translateY(10px); transition: opacity 0.6s ease, transform 0.6s var(--ease); }
+  .title h1.in { opacity: 1; transform: none; }
+
+  /* lines are written word by word (each word fades in, unblurring) and then stay */
+  .write .w { display: inline-block; opacity: 0; filter: blur(4px); transform: translateY(6px); transition: opacity 0.55s ease, filter 0.55s ease, transform 0.55s var(--ease); transition-delay: var(--d, 0ms); }
+  .write.in .w { opacity: 1; filter: none; transform: none; }
 
   h1 { font-family: var(--font-display); font-weight: 300; font-size: clamp(36px, 6.4vw, 60px); line-height: 1.06; letter-spacing: -0.03em; margin: 0; text-wrap: balance; }
   h1 .hl { background: linear-gradient(100deg, #ec4899 0%, #d946ef 45%, #7c3aed 100%); -webkit-background-clip: text; background-clip: text; color: transparent; }   /* pink → purple */
   :root[data-theme="dark"] h1 .hl { background-image: linear-gradient(100deg, #f9a8d4, #f0abfc 45%, #c4b5fd); }
 
-  /* the line under the title: the first one gives way to the second in the same spot (no jump) */
-  .swap { display: grid; width: 100%; margin-top: 16px; }
-  .swap > p { grid-area: 1 / 1; margin: 0; font-size: 17px; line-height: 1.5; color: var(--ink-soft); text-wrap: balance; }
-  .swap > .ask-line { color: var(--ink); }
+  /* the lines under the title: each one appears under the last and stays, so it all reads as written */
+  .swap { display: flex; flex-direction: column; gap: 6px; width: 100%; margin-top: 16px; }
+  /* the first line reads as one line on wider screens: it may run wider than the 600px column */
+  @media (min-width: 760px) { .swap { width: max-content; max-width: calc(100vw - 48px); } #line1 { white-space: nowrap; } }
+  .swap > p { margin: 0; font-size: 17px; line-height: 1.5; color: var(--ink-soft); text-wrap: balance; }
+  .swap > .ask-line { color: var(--ink); padding-top: 16px; }
 
   /* ---------- the four options, one under another ---------- */
   .options { list-style: none; width: 100%; margin: 28px 0 0; padding: 0; display: grid; gap: 8px; }
-  .option { display: flex; align-items: center; gap: 14px; width: 100%; padding: 12px 16px 12px 12px; border: 1px solid var(--un-paper-line); border-radius: 16px; background: var(--un-paper); color: var(--ink);
+  .option { position: relative; display: flex; align-items: center; gap: 14px; width: 100%; padding: 12px 16px 12px 12px; border: 1px solid var(--un-paper-line); border-radius: 16px; background: var(--un-paper); color: var(--ink);
     font: 400 15px/20px var(--font-display); text-align: left; cursor: pointer; transition: transform 0.3s var(--ease), box-shadow 0.3s var(--ease), border-color 0.25s, background 0.25s; }
   .option .un-wow__icon { width: 36px; height: 36px; border-radius: 10px; flex: none; }
   .option .t { flex: 1; min-width: 0; }
   .option .go { width: 16px; height: 16px; flex: none; color: var(--ink-soft); transition: transform 0.3s var(--ease), color 0.2s; }
-  .option:hover { transform: translateY(-2px); box-shadow: var(--un-shadow); border-color: color-mix(in srgb, var(--un-text) 18%, transparent); }
+  /* hover: no shadow — a halo of light runs around the border, and passes again every few seconds
+     (same glint as the Ultranova card in the CMS sidebar) */
+  .option::before {
+    content: ""; position: absolute; inset: -1px; border-radius: inherit; padding: 1px; pointer-events: none; opacity: 0;
+    background: linear-gradient(110deg, transparent 18%, #d946ef 36%, #ffffff 50%, #a78bfa 64%, transparent 82%) 88% 0 / 300% 100% no-repeat;
+    -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0); -webkit-mask-composite: xor;
+    mask: linear-gradient(#000 0 0) content-box exclude, linear-gradient(#000 0 0);
+    transition: opacity 0.3s ease;
+  }
+  .option:hover::before { opacity: 1; animation: option-glint 3.2s linear infinite; }
+  @keyframes option-glint {
+    0%   { background-position: 88% 0; animation-timing-function: cubic-bezier(0.3, 0, 0.7, 1); }
+    40%  { background-position: 12% 0; }
+    100% { background-position: 12% 0; }
+  }
+  .option:hover { border-color: color-mix(in srgb, #a78bfa 35%, transparent); }
   .option:hover .go { color: var(--ink); transform: translate(2px, -2px); }
   .option:active { transform: scale(0.99); }
+  @media (prefers-reduced-motion: reduce) { .option:hover::before { animation: none; background-position: 50% 0; } }
   .option:focus-visible { outline: 2px solid #7c3aed; outline-offset: 3px; }
   .option.picked { border-color: var(--ink); }
   :root[data-theme="light"] .option { background: rgba(255, 255, 255, 0.78); border-color: rgba(255, 255, 255, 0.95); -webkit-backdrop-filter: blur(18px) saturate(1.2); backdrop-filter: blur(18px) saturate(1.2); }
@@ -89,36 +114,80 @@
   .send.ready:hover { transform: translateY(-1px); }
   .send:focus-visible { outline: 2px solid #7c3aed; outline-offset: 2px; }
 
+  /* ---------- new UI (Figma "new ui" › onboarding): warm off-white page, black type, olive → yellow accent ---------- */
+  .top-right { display: flex; align-items: center; gap: 16px; }
+  .top-right .divider { width: 1px; height: 39px; background: #e0e0dc; }
+  .cms-pill { display: inline-flex; align-items: center; gap: 8px; padding: 8px 16px; border-radius: 24px; background: #e8e8e5; color: #1a1a1a; font: 400 14px/20px var(--font-display); text-decoration: none; transition: background 0.2s; }
+  .cms-pill:hover { background: #deded9; }
+  .un-brand .mark { width: 26px; height: 26px; flex: none; }
+  .un-brand .word { font: 600 20px/normal var(--font-display); letter-spacing: 0; }
+  :root[data-theme="dark"] .un-brand .mark { filter: invert(1); }
+  :root[data-theme="dark"] .top-right .divider { background: rgba(255, 255, 255, 0.14); }
+  :root[data-theme="dark"] .cms-pill { background: rgba(255, 255, 255, 0.08); color: #fff; }
+  :root[data-theme="dark"] .cms-pill:hover { background: rgba(255, 255, 255, 0.14); }
+  :root[data-theme="light"] { --bg: #f7f7f5; --ink: #1a1a1a; }
+  :root[data-theme="light"] .bgimg .light { opacity: 0; }
+  :root[data-theme="light"] .app { padding: 12px; }
+  :root[data-theme="light"] .top { max-width: none; padding-right: 16px; }
+  :root[data-theme="light"] .un-brand { padding: 20px 12px; }
+  :root[data-theme="light"] .un-brand .word { background: linear-gradient(90deg, #1a1a1a 0%, #5a5a18 39.3%, #c3c300 94.5%); -webkit-background-clip: text; background-clip: text; color: transparent; }
+  :root[data-theme="light"] .un-toggle__label { font-size: 12px; }
+  :root[data-theme="light"] h1 { color: #1a1a1a; letter-spacing: -1.8px; }
+  :root[data-theme="light"] h1 .hl { background-image: linear-gradient(90deg, #1a1a1a 0%, #5a5a18 38%, #a3a30a 70%, #c3c300 100%); }   /* the olive spreads over more of the word */
+    :root[data-theme="light"] .swap { margin-top: 12px; gap: 40px; }
+  :root[data-theme="light"] .swap > p { color: #1a1a1a; }
+  :root[data-theme="light"] .swap > .ask-line { padding-top: 0; font-weight: 600; }
+  :root[data-theme="light"] .options { margin-top: 40px; }
+  :root[data-theme="light"] .option { color: #1a1a1a; }
+  :root[data-theme="light"] .option .un-wow__icon { background: #f7f7f5; color: #1a1a1a; }
+  :root[data-theme="light"] .option::before { background-image: linear-gradient(110deg, transparent 18%, #c3c300 36%, #ffffff 50%, #8a8a2e 64%, transparent 82%); }
+  :root[data-theme="light"] .option:hover { border-color: color-mix(in srgb, #c3c300 35%, transparent); }
+  :root[data-theme="light"] .option:focus-visible, :root[data-theme="light"] .send:focus-visible { outline-color: #1a1a1a; }
+  :root[data-theme="light"] .ask { margin-top: 56px; height: 52px; padding: 8px 8px 8px 20px; border-color: #e5eacc; border-radius: 16px; box-shadow: none; }
+  :root[data-theme="light"] .ask:focus-within { border-color: #c9d08f; }
+  :root[data-theme="light"] .ask input::placeholder { color: #9f9f99; opacity: 1; }
+  :root[data-theme="light"] .send { background: #e8e8e5; color: #1a1a1a; }
+  :root[data-theme="light"] .send .un-icon { width: 16px; height: 16px; }
+  :root[data-theme="light"] .send.ready { background: #1a1a1a; color: #fff; }
   @media (max-width: 640px) {
+    .top-right .divider, .cms-pill { display: none; }
     .swap > p { font-size: 16px; }
     .options { margin-top: 22px; }
     .option { font-size: 14px; }
   }
-  @media (prefers-reduced-motion: reduce) { .seq, .welcome, .top, .ask { transition: none !important; } .bgimg i { animation: none; } }
+  @media (prefers-reduced-motion: reduce) {
+    .seq, .welcome, .top, .ask, .write .w { transition: none !important; } .bgimg i { animation: none; }
+    .title h1 { transition: none; }
+  }
 </style>
 </head>
 <body>
 <div class="bgimg" aria-hidden="true"><i class="light"></i><i class="dark"></i></div>
+<div class="un-glow" aria-hidden="true"><i class="a"></i><i class="b"></i></div>
 
 <div class="app">
   <header class="top">
     <div class="un-brand">
-      <svg viewBox="0 0 32 32" aria-hidden="true"><path d="M16 2l3.2 9.6L29 14.8l-9.8 3.2L16 29l-3.2-11L3 14.8l9.8-3.2z" fill="#dd00ff"/></svg>
-      <span>Ultranova</span>
+      <img class="mark" src="assets/logo-mark.svg" width="26" height="26" alt="">
+      <span class="word">Ultranova</span>
     </div>
-    <button class="un-toggle un-toggle--sm" type="button" id="theme" role="switch" aria-checked="false" aria-label="Dark mode"><span class="un-toggle__track"></span><span class="un-toggle__label">Dark</span></button>
+    <div class="top-right">
+      <button class="un-toggle un-toggle--sm" type="button" id="theme" role="switch" aria-checked="false" aria-label="Dark mode"><span class="un-toggle__track"></span><span class="un-toggle__label">Dark Mode</span></button>
+      <span class="divider" aria-hidden="true"></span>
+      <a class="cms-pill" href="/work-orders"><img src="assets/cms-icon.svg" width="20" height="20" alt="">Go Back to CMS</a>
+    </div>
   </header>
 
   <main class="stage">
     <section class="welcome" aria-labelledby="h0">
-      <h1 id="h0" class="seq">Welcome to <span class="hl">Ultranova</span></h1>
+      <div class="title"><h1 id="h0">Welcome to <span class="hl">Ultranova</span></h1></div>
       <div class="swap" aria-live="polite">
-        <p class="seq" id="line1">Your personal assistant, here to help while you work and keep things moving while you rest.</p>
-        <p class="seq ask-line" id="line2" hidden>Let’s get started. Want me to…</p>
+        <p class="write" id="line1">Your personal assistant, quietly working in the background and reaching out when you’re needed.</p>
+        <p class="write ask-line" id="line2">Let’s get started with some tasks...</p>
       </div>
       <ul class="options" id="options" aria-labelledby="line2"></ul>
       <form class="ask seq" id="ask" autocomplete="off">
-        <input id="askInput" type="text" placeholder="Or have something else in mind?" aria-label="Or have something else in mind?">
+        <input id="askInput" type="text" placeholder="Or tell me what you have in mind…" aria-label="Or tell me what you have in mind">
         <button class="send" id="send" type="submit" aria-label="Send"><svg class="un-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 19V5M6 11l6-6 6 6"/></svg></button>
       </form>
     </section>
@@ -148,21 +217,30 @@
   }).join('');
 
   /* ---------- the sequence ----------
-     title → first line (stays long enough to read) → it fades out → "Let's get started. Want me to…"
-     → the four options, 135ms apart → the message box as soon as the last one is in. */
+     one line at a time, and everything stays: the title fades in → the first line is
+     written word by word → "Let's get started. Want me to…" written under it → the four options, 135ms apart → the message box as soon as the last one is in. */
   var $ = function (id) { return document.getElementById(id); };
   function show(el) { el.hidden = false; void el.offsetWidth; el.classList.add('in'); }
   var items = [].slice.call(list.children);
   function at(ms, fn) { setTimeout(fn, ms); }
+  /* split a line into words so it can be written one word at a time; returns how long it takes */
+  function words(el) {
+    var parts = el.textContent.trim().split(/\s+/);
+    el.setAttribute('aria-label', el.textContent.trim());
+    el.innerHTML = parts.map(function (w, i) { return '<span class="w" aria-hidden="true" style="--d:' + (i * 75) + 'ms">' + w + '</span>'; }).join(' ');
+    return parts.length * 75 + 550;
+  }
+  var line1Ms = words($('line1')), line2Ms = words($('line2'));
   if (reduce) {
-    show($('h0')); $('line1').hidden = true; show($('line2')); items.forEach(show); show($('ask'));
+    show($('h0')); show($('line1')); show($('line2')); items.forEach(show); show($('ask'));
   } else {
+    // the title fades in first; only then are the lines written, one after the other
+    var t1 = 1150, t2 = t1 + line1Ms + 500, t3 = t2 + line2Ms + 150;
     at(150, function () { show($('h0')); });
-    at(550, function () { show($('line1')); });
-    at(3800, function () { $('line1').classList.add('out'); });
-    at(4100, function () { $('line1').hidden = true; show($('line2')); });
-    items.forEach(function (li, i) { at(4450 + i * 135, function () { show(li); }); });
-    at(4450 + items.length * 135 + 250, function () { show($('ask')); });
+    at(t1, function () { show($('line1')); });
+    at(t2, function () { show($('line2')); });
+    items.forEach(function (li, i) { at(t3 + i * 135, function () { show(li); }); });
+    at(t3 + items.length * 135 + 250, function () { show($('ask')); });
   }
 
   /* ---------- message box ---------- */
