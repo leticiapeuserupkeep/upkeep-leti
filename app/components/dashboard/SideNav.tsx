@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, type MouseEvent } from 'react'
+import { useId, useState, type MouseEvent } from 'react'
 import Link from 'next/link'
 import Image from 'next/image'
 import { usePathname } from 'next/navigation'
@@ -120,26 +120,34 @@ const sections: NavSection[] = [
   },
 ]
 
-/** Ultranova entry: a small card (name + star) that expands to a short pitch and a "Start now!" CTA into the onboarding (static page in /public, so a plain anchor). */
+/** Ultranova entry: a small card (name + star) that expands to a short pitch and a "Start now!" CTA (Ultranova's primary button) into the onboarding (static page in /public, so a plain anchor). */
 const ULTRANOVA_HREF = '/ultranova/onboarding.html'
 
 /** Ultranova's four-point star mark (same glyph and color as Ultranova's logo). */
 function UltranovaMark({ size = 20 }: { size?: number }) {
+  const gradId = `un-mark-${useId().replace(/:/g, '')}`   // one gradient per instance (card + collapsed rail)
   return (
     <svg width={size} height={size} viewBox="2.5 2 27 27" aria-hidden="true" className="shrink-0">
-      <path d="M16 2l3.2 9.6L29 14.8l-9.8 3.2L16 29l-3.2-11L3 14.8l9.8-3.2z" fill="#1a1a1a" />
+      <defs>
+        {/* same gradient as the "Ultranova" text: black → blue-purple */}
+        <linearGradient id={gradId} x1="0" y1="0" x2="1" y2="0">
+          <stop offset="0%" stopColor="#1a1a1a" />
+          <stop offset="100%" stopColor="#874bff" />
+        </linearGradient>
+      </defs>
+      <path d="M16 2l3.2 9.6L29 14.8l-9.8 3.2L16 29l-3.2-11L3 14.8l9.8-3.2z" fill={`url(#${gradId})`} />
     </svg>
   )
 }
 
-/** Leaving the CMS: the screen softly dims to Ultranova's dark before the page changes, so the onboarding fades in instead of cutting. */
+/** Leaving the CMS: the screen softly fades to Ultranova's light page (#f7f7f5) before the page changes, so the welcome follows without a cut. */
 function enterUltranova(e: MouseEvent<HTMLAnchorElement>) {
   if (e.metaKey || e.ctrlKey || e.shiftKey || e.button !== 0) return
   e.preventDefault()
   const href = e.currentTarget.href
   const veil = document.createElement('div')
   veil.setAttribute('aria-hidden', 'true')
-  veil.style.cssText = 'position:fixed;inset:0;z-index:9999;background:#0a0214;opacity:0;pointer-events:all;transition:opacity 600ms cubic-bezier(0.22,1,0.36,1)'
+  veil.style.cssText = 'position:fixed;inset:0;z-index:9999;background:#f7f7f5;opacity:0;pointer-events:all;transition:opacity 600ms cubic-bezier(0.22,1,0.36,1)'
   document.body.appendChild(veil)
   requestAnimationFrame(() => { veil.style.opacity = '1' })
   window.setTimeout(() => { window.location.href = href }, 620)
@@ -157,7 +165,7 @@ function UltranovaCard() {
         aria-controls="ultranova-card-body"
         className="group flex items-center justify-between w-full h-12 px-4 rounded-[var(--radius-lg)] cursor-pointer hover:bg-[var(--color-neutral-2)] transition-colors duration-500 ease-[cubic-bezier(0.22,1,0.36,1)]"
       >
-        <span className="text-[length:16px] font-semibold leading-4 bg-[linear-gradient(90deg,#1a1a1a_0%,#5a5a18_39.3%,#c3c300_94.5%)] bg-clip-text text-transparent">Ultranova</span>
+        <span className="text-[length:16px] font-semibold leading-4 bg-[linear-gradient(90deg,#1a1a1a_0%,#874bff_100%)] bg-clip-text text-transparent">Ultranova</span>
         {/* the star gives way to a down arrow on hover (and while open) */}
         <span className="relative flex items-center justify-center w-5 h-5 shrink-0">
           <span className={`absolute transition-[opacity,transform] duration-500 ease-[cubic-bezier(0.22,1,0.36,1)] ${open ? 'opacity-0 scale-50 rotate-90' : 'group-hover:opacity-0 group-hover:scale-50 group-hover:rotate-90'}`}>
@@ -180,18 +188,12 @@ function UltranovaCard() {
             <p className="text-[length:var(--font-size-base)] leading-5 text-[var(--color-neutral-10)]">
               Meet your AI assistant that keeps working while you’re away.
             </p>
-            {/* purple gradient; on hover a brighter fuchsia→violet layer fades in over it (gradients can't be transitioned directly) */}
+            {/* Ultranova's primary button (un-btn--primary, md): black pill, white text; lifts on hover */}
             <a
               href={ULTRANOVA_HREF}
               onClick={enterUltranova}
-              className="group/cta relative isolate mt-3 flex items-center justify-center h-10 overflow-hidden rounded-full text-white text-[length:var(--font-size-base)] font-medium bg-[linear-gradient(135deg,#8b5cf6,#c026d3_120%)] shadow-[0_12px_32px_-12px_rgba(168,85,247,0.9)] hover:shadow-[0_14px_36px_-10px_rgba(217,70,239,0.9)] transition-[color,box-shadow] duration-500 ease-[var(--ease-default)]"
+              className="mt-3 flex h-10 items-center justify-center rounded-full border border-transparent bg-[#1a1a1a] px-5 font-[family-name:var(--font-outfit)] text-[length:15px] font-medium text-white transition-[transform,box-shadow] duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] hover:-translate-y-0.5 hover:shadow-[0_14px_30px_-14px_rgba(21,19,28,0.55)] active:scale-[0.97]"
             >
-              <span aria-hidden="true" className="absolute inset-0 -z-10 bg-[linear-gradient(135deg,#e879f9,#8b5cf6)] opacity-0 transition-opacity duration-500 ease-[var(--ease-default)] group-hover/cta:opacity-100" />
-              {/* shine on the border only: a soft glint glides around the edge (resets instantly when the mouse leaves) */}
-              <span
-                aria-hidden="true"
-                className="pointer-events-none absolute inset-0 rounded-full p-[1.5px] bg-[linear-gradient(110deg,transparent_25%,rgba(255,255,255,0.7)_50%,transparent_75%)] bg-[length:300%_100%] bg-[position:88%_0] transition-[background-position] duration-0 group-hover/cta:bg-[position:12%_0] group-hover/cta:duration-[1300ms] ease-in-out [-webkit-mask-image:linear-gradient(#000_0_0),linear-gradient(#000_0_0)] [-webkit-mask-clip:content-box,border-box] [-webkit-mask-composite:xor] [mask-image:linear-gradient(#000_0_0),linear-gradient(#000_0_0)] [mask-clip:content-box,border-box] [mask-composite:exclude]"
-              />
               Start now!
             </a>
           </div>

@@ -99,11 +99,14 @@
   .option:focus-visible { outline: 2px solid #7c3aed; outline-offset: 3px; }
   .option.picked { border-color: var(--ink); }
   :root[data-theme="light"] .option { background: rgba(255, 255, 255, 0.78); border-color: rgba(255, 255, 255, 0.95); -webkit-backdrop-filter: blur(18px) saturate(1.2); backdrop-filter: blur(18px) saturate(1.2); }
+  /*dk*/ :root[data-theme="dark"] .option { background: rgba(28, 28, 27, 0.78); border-color: rgba(28, 28, 27, 0.95); -webkit-backdrop-filter: blur(18px) saturate(1.2); backdrop-filter: blur(18px) saturate(1.2); } /*/dk*/
   :root[data-theme="light"] .option:hover { background: #fff; }
+  /*dk*/ :root[data-theme="dark"] .option:hover { background: #1c1c1b; } /*/dk*/
 
   /* ---------- message box ---------- */
   .ask { display: flex; align-items: center; gap: 8px; width: 100%; margin-top: 16px; padding: 8px 8px 8px 18px; border: 1px solid var(--un-paper-line); border-radius: 18px; background: var(--un-paper); transition: border-color 0.2s, box-shadow 0.3s, opacity var(--in) ease, transform var(--in) var(--ease); }
   :root[data-theme="light"] .ask { background: #fff; box-shadow: 0 18px 40px -26px rgba(21, 19, 28, 0.3); }
+  /*dk*/ :root[data-theme="dark"] .ask { background: #1c1c1b; box-shadow: 0 18px 40px -26px rgba(0, 0, 0, 0.66); } /*/dk*/
   .ask:focus-within { border-color: color-mix(in srgb, var(--un-text) 30%, transparent); }
   .ask input { flex: 1; min-width: 0; height: 36px; border: 0; outline: 0; background: transparent; color: var(--ink); font: 400 15px var(--font-display); }
   .ask input::placeholder { color: var(--ink-soft); opacity: 0.8; }
@@ -117,8 +120,11 @@
   /* ---------- new UI (Figma "new ui" › onboarding): warm off-white page, black type, olive → yellow accent ---------- */
   .top-right { display: flex; align-items: center; gap: 16px; }
   .top-right .divider { width: 1px; height: 39px; background: #e0e0dc; }
+  /*dk*/ :root[data-theme="dark"] .top-right .divider { background: #30302d; } /*/dk*/
   .cms-pill { display: inline-flex; align-items: center; gap: 8px; padding: 8px 16px; border-radius: 24px; background: #e8e8e5; color: #1a1a1a; font: 400 14px/20px var(--font-display); text-decoration: none; transition: background 0.2s; }
+  /*dk*/ :root[data-theme="dark"] .cms-pill { background: #2c2c29; color: #f2f2ee; } /*/dk*/
   .cms-pill:hover { background: #deded9; }
+  /*dk*/ :root[data-theme="dark"] .cms-pill:hover { background: #3a3a36; } /*/dk*/
   .un-brand .mark { width: 26px; height: 26px; flex: none; }
   .un-brand .word { font: 600 20px/normal var(--font-display); letter-spacing: 0; }
   :root[data-theme="dark"] .un-brand .mark { filter: invert(1); }
@@ -126,29 +132,56 @@
   :root[data-theme="dark"] .cms-pill { background: rgba(255, 255, 255, 0.08); color: #fff; }
   :root[data-theme="dark"] .cms-pill:hover { background: rgba(255, 255, 255, 0.14); }
   :root[data-theme="light"] { --bg: #f7f7f5; --ink: #1a1a1a; }
+  /*dk*/ :root[data-theme="dark"] { --bg: #252523; --ink: #f2f2ee; } /*/dk*/
   :root[data-theme="light"] .bgimg .light { opacity: 0; }
+  /*dk*/ :root[data-theme="dark"] .bgimg .light { opacity: 0; } /*/dk*/
   :root[data-theme="light"] .app { padding: 12px; }
+  /*dk*/ :root[data-theme="dark"] .app { padding: 12px; } /*/dk*/
   :root[data-theme="light"] .top { max-width: none; padding-right: 16px; }
+  /*dk*/ :root[data-theme="dark"] .top { max-width: none; padding-right: 16px; } /*/dk*/
   :root[data-theme="light"] .un-brand { padding: 20px 12px; }
-  :root[data-theme="light"] .un-brand .word { background: linear-gradient(90deg, #1a1a1a 0%, #5a5a18 39.3%, #c3c300 94.5%); -webkit-background-clip: text; background-clip: text; color: transparent; }
+  /*dk*/ :root[data-theme="dark"] .un-brand { padding: 20px 12px; } /*/dk*/
+  :root[data-theme="light"] .un-brand .word { background: linear-gradient(90deg, #1a1a1a 0%, #874bff 100%); -webkit-background-clip: text; background-clip: text; color: transparent; }
+  /*dk*/ :root[data-theme="dark"] .un-brand .word { background: linear-gradient(90deg, #f2f2ee 0%, #874bff 100%); -webkit-background-clip: text; background-clip: text; color: transparent; } /*/dk*/
   :root[data-theme="light"] .un-toggle__label { font-size: 12px; }
+  /*dk*/ :root[data-theme="dark"] .un-toggle__label { font-size: 12px; } /*/dk*/
   :root[data-theme="light"] h1 { color: #1a1a1a; letter-spacing: -1.8px; }
-  :root[data-theme="light"] h1 .hl { background-image: linear-gradient(90deg, #1a1a1a 0%, #5a5a18 38%, #a3a30a 70%, #c3c300 100%); }   /* the olive spreads over more of the word */
+  /*dk*/ :root[data-theme="dark"] h1 { color: #f2f2ee; letter-spacing: -1.8px; } /*/dk*/
+  :root[data-theme="light"] h1 .hl { background-image: linear-gradient(90deg, #1a1a1a 0%, #874bff 100%); }
+  /*dk*/ :root[data-theme="dark"] h1 .hl { background-image: linear-gradient(90deg, #f2f2ee 0%, #874bff 100%); } /*/dk*/   /* the olive spreads over more of the word */
     :root[data-theme="light"] .swap { margin-top: 12px; gap: 40px; }
+  /*dk*/ :root[data-theme="dark"] .swap { margin-top: 12px; gap: 40px; } /*/dk*/
   :root[data-theme="light"] .swap > p { color: #1a1a1a; }
+  /*dk*/ :root[data-theme="dark"] .swap > p { color: #f2f2ee; } /*/dk*/
   :root[data-theme="light"] .swap > .ask-line { padding-top: 0; font-weight: 600; }
+  /*dk*/ :root[data-theme="dark"] .swap > .ask-line { padding-top: 0; font-weight: 600; } /*/dk*/
   :root[data-theme="light"] .options { margin-top: 40px; }
+  /*dk*/ :root[data-theme="dark"] .options { margin-top: 40px; } /*/dk*/
   :root[data-theme="light"] .option { color: #1a1a1a; }
+  /*dk*/ :root[data-theme="dark"] .option { color: #f2f2ee; } /*/dk*/
   :root[data-theme="light"] .option .un-wow__icon { background: #f7f7f5; color: #1a1a1a; }
-  :root[data-theme="light"] .option::before { background-image: linear-gradient(110deg, transparent 18%, #c3c300 36%, #ffffff 50%, #8a8a2e 64%, transparent 82%); }
-  :root[data-theme="light"] .option:hover { border-color: color-mix(in srgb, #c3c300 35%, transparent); }
+  /*dk*/ :root[data-theme="dark"] .option .un-wow__icon { background: #252523; color: #f2f2ee; } /*/dk*/
+  :root[data-theme="light"] .option::before { background-image: linear-gradient(110deg, transparent 18%, #874bff 36%, #ffffff 50%, #b9a0ff 64%, transparent 82%); }
+  /*dk*/ :root[data-theme="dark"] .option::before { background-image: linear-gradient(110deg, transparent 18%, #874bff 36%, #1c1c1b 50%, #b9a0ff 64%, transparent 82%); } /*/dk*/
+  :root[data-theme="light"] .option:hover { border-color: color-mix(in srgb, #874bff 35%, transparent); }
+  /*dk*/ :root[data-theme="dark"] .option:hover { border-color: color-mix(in srgb, #874bff 35%, transparent); } /*/dk*/
   :root[data-theme="light"] .option:focus-visible, :root[data-theme="light"] .send:focus-visible { outline-color: #1a1a1a; }
-  :root[data-theme="light"] .ask { margin-top: 56px; height: 52px; padding: 8px 8px 8px 20px; border-color: #e5eacc; border-radius: 16px; box-shadow: none; }
-  :root[data-theme="light"] .ask:focus-within { border-color: #c9d08f; }
+  /*dk*/ :root[data-theme="dark"] .option:focus-visible, :root[data-theme="dark"] .send:focus-visible { outline-color: #f2f2ee; } /*/dk*/
+  :root[data-theme="light"] .ask { margin-top: 56px; height: 52px; padding: 8px 8px 8px 20px; border-color: #e6e3ff; border-radius: 16px; box-shadow: none; }
+  /*dk*/ :root[data-theme="dark"] .ask { margin-top: 56px; height: 52px; padding: 8px 8px 8px 20px; border-color: #2e2842; border-radius: 16px; box-shadow: none; } /*/dk*/
+  :root[data-theme="light"] .ask:focus-within { border-color: #cfc5ff; }
+  /*dk*/ :root[data-theme="dark"] .ask:focus-within { border-color: #4b3d7d; } /*/dk*/
   :root[data-theme="light"] .ask input::placeholder { color: #9f9f99; opacity: 1; }
+  /*dk*/ :root[data-theme="dark"] .ask input::placeholder { color: #7d7d77; opacity: 1; } /*/dk*/
   :root[data-theme="light"] .send { background: #e8e8e5; color: #1a1a1a; }
+  /*dk*/ :root[data-theme="dark"] .send { background: #2c2c29; color: #f2f2ee; } /*/dk*/
   :root[data-theme="light"] .send .un-icon { width: 16px; height: 16px; }
+  /*dk*/ :root[data-theme="dark"] .send .un-icon { width: 16px; height: 16px; } /*/dk*/
   :root[data-theme="light"] .send.ready { background: #1a1a1a; color: #fff; }
+  /*dk*/ :root[data-theme="dark"] .send.ready { background: #f2f2ee; color: #1c1c1b; } /*/dk*/
+  /* dark (new UI): warm dark greys, no background image, the soft purple glows only */
+  :root[data-theme="dark"] { --bg: #121211; --ink: #f2f2ee; }
+  :root[data-theme="dark"] .bgimg { display: none; }
   @media (max-width: 640px) {
     .top-right .divider, .cms-pill { display: none; }
     .swap > p { font-size: 16px; }

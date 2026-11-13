@@ -16,3 +16,19 @@ The 5 avatars currently reuse the same assistant; each will get its own design l
 All Ultranova screens use **Outfit** for everything and share `ultranova.css` (tokens + `un-*` components):
 `un-btn`, `un-link`, `un-chip`, `un-pill`, `un-dot`, `un-badge`, `un-card`, `un-icon-btn`, `un-kbd`, `un-menu`, `un-toast`, `un-msg`, `un-typing`, `un-brand`, `un-wow` (starter card), `un-trace` (working steps), `un-res` (result card), `un-btn--primary` (black on light, white on dark).
 Live reference: `/ultranova/design-system.html`. New screens link `ultranova.css` first and only add layout; if a pattern repeats, add it there instead of in the page.
+
+## Conversation cards (reference for developers)
+
+Every card the assistant shows in the chat is the same component, `.un-res` (head · body · actions), documented in `cards.js` with its building blocks in `ultranova.css`:
+
+- `.un-rows`: a list of records (work orders, PMs…), title + meta on the left, `.un-prio` and `.un-status` pills on the right.
+- `.un-vtl`: a vertical timeline (date · dot by severity · what happened).
+- `.un-res__inset` (summary, `.un-bar`, `.un-res__kv`) and `.un-res__list` (findings with a colored dot).
+
+Ask the chat for "my open work orders", "the preventive maintenance due" or "what happened with Chiller #2" to get each card, or open `home.html?demo=cards` to see the three in one conversation.
+
+## Dark mode
+
+Dark mirrors the light new UI: same layout and components in warm dark greys, no background image, just the two soft purple glows (`.un-glow`). Each light rule (`:root[data-theme="light"] …`) has a dark twin right after it, between `/*dk*/` and `/*/dk*/`, generated with a fixed color map (white → `#1c1c1b`, `#f7f7f5` → `#252523`, `#1a1a1a` → `#f2f2ee`…). After changing light styles, regenerate the twins from the repo root:
+
+    python3 scripts/ultranova-gen-dark.py
