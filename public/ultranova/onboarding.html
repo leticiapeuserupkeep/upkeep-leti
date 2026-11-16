@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Ultranova Welcome</title>
+<title>Ranger by UpKeep</title>
 <meta name="claude:viewport-fit-sides" content="cover">
 <script>/* theme before paint: light by default (matches UpKeep), dark if chosen before */
   try { if (localStorage.getItem('ultranova.theme') === 'dark') document.documentElement.setAttribute('data-theme', 'dark'); } catch (e) {}</script>
@@ -34,6 +34,18 @@
   :root[data-theme="dark"] .bgimg::after { content: ""; position: absolute; inset: 0; background: radial-gradient(ellipse 56% 58% at 50% 50%, rgba(3, 1, 8, 0.78), rgba(3, 1, 8, 0.4) 60%, rgba(3, 1, 8, 0) 85%); }
   @keyframes float { 0%, 100% { transform: translate3d(0, 0, 0) scale(1); } 33% { transform: translate3d(3%, -2%, 0) scale(1.04); } 66% { transform: translate3d(-2%, 2%, 0) scale(1.02); } }
 
+  /* ---------- background (Figma 19714:14897): three wide, very soft cream glows on #f7f7f5 (light only) ---------- */
+  .ob-glow { position: fixed; inset: 0; z-index: 0; overflow: hidden; pointer-events: none; display: none; }
+  :root[data-theme="light"] .ob-glow { display: block; }
+  /*dk*/ :root[data-theme="dark"] .ob-glow { display: block; } /*/dk*/
+  :root[data-theme="light"] .un-glow { display: none; }
+  /*dk*/ :root[data-theme="dark"] .un-glow { display: none; } /*/dk*/
+  .ob-glow i { position: absolute; display: block; border-radius: 50%; filter: blur(187px); will-change: transform; }
+  .ob-glow .c { left: -61.4vw; top: -50.6vh; width: 199.7vw; height: 83.1vh; background: #f7f6ec; }   /* the wide band across the top */
+  .ob-glow .a { left: 0; top: -3.7vh; width: 35.3vw; height: 63.1vh; background: #f4f4ea; animation: un-glow-float-b 34s ease-in-out infinite alternate; }
+  .ob-glow .b { left: 72.6vw; top: 7.9vh; width: 37.7vw; height: 67.4vh; background: #f6f6ef; animation: un-glow-float-a 26s ease-in-out infinite alternate; }
+  @media (prefers-reduced-motion: reduce) { .ob-glow i { animation: none; } }
+
   /* ---------- frame ---------- */
   .app { position: relative; z-index: 10; min-height: 100dvh; display: flex; flex-direction: column; padding-block: 20px 28px;
     padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
@@ -60,7 +72,7 @@
   .write.in .w { opacity: 1; filter: none; transform: none; }
 
   h1 { font-family: var(--font-display); font-weight: 300; font-size: clamp(36px, 6.4vw, 60px); line-height: 1.06; letter-spacing: -0.03em; margin: 0; text-wrap: balance; }
-  h1 .hl { background: linear-gradient(100deg, #ec4899 0%, #d946ef 45%, #7c3aed 100%); -webkit-background-clip: text; background-clip: text; color: transparent; }   /* pink → purple */
+  h1 .hl { background: linear-gradient(100deg, #ec4899 0%, #d946ef 45%, #0a0cd6 100%); -webkit-background-clip: text; background-clip: text; color: transparent; }   /* pink → purple */
   :root[data-theme="dark"] h1 .hl { background-image: linear-gradient(100deg, #f9a8d4, #f0abfc 45%, #c4b5fd); }
 
   /* the lines under the title: each one appears under the last and stays, so it all reads as written */
@@ -96,7 +108,7 @@
   .option:hover .go { color: var(--ink); transform: translate(2px, -2px); }
   .option:active { transform: scale(0.99); }
   @media (prefers-reduced-motion: reduce) { .option:hover::before { animation: none; background-position: 50% 0; } }
-  .option:focus-visible { outline: 2px solid #7c3aed; outline-offset: 3px; }
+  .option:focus-visible { outline: 2px solid #0a0cd6; outline-offset: 3px; }
   .option.picked { border-color: var(--ink); }
   :root[data-theme="light"] .option { background: rgba(255, 255, 255, 0.78); border-color: rgba(255, 255, 255, 0.95); -webkit-backdrop-filter: blur(18px) saturate(1.2); backdrop-filter: blur(18px) saturate(1.2); }
   /*dk*/ :root[data-theme="dark"] .option { background: rgba(28, 28, 27, 0.78); border-color: rgba(28, 28, 27, 0.95); -webkit-backdrop-filter: blur(18px) saturate(1.2); backdrop-filter: blur(18px) saturate(1.2); } /*/dk*/
@@ -115,9 +127,9 @@
   .send.ready { background: #15131c; color: #fff; }
   :root[data-theme="dark"] .send.ready { background: #fff; color: #15131c; }
   .send.ready:hover { transform: translateY(-1px); }
-  .send:focus-visible { outline: 2px solid #7c3aed; outline-offset: 2px; }
+  .send:focus-visible { outline: 2px solid #0a0cd6; outline-offset: 2px; }
 
-  /* ---------- new UI (Figma "new ui" › onboarding): warm off-white page, black type, olive → yellow accent ---------- */
+  /* ---------- new UI (Figma "new ui" › onboarding): warm off-white page, black type, brand purple accent ---------- */
   .top-right { display: flex; align-items: center; gap: 16px; }
   .top-right .divider { width: 1px; height: 39px; background: #e0e0dc; }
   /*dk*/ :root[data-theme="dark"] .top-right .divider { background: #30302d; } /*/dk*/
@@ -125,14 +137,20 @@
   /*dk*/ :root[data-theme="dark"] .cms-pill { background: #2c2c29; color: #f2f2ee; } /*/dk*/
   .cms-pill:hover { background: #deded9; }
   /*dk*/ :root[data-theme="dark"] .cms-pill:hover { background: #3a3a36; } /*/dk*/
-  .un-brand .mark { width: 26px; height: 26px; flex: none; }
+  .un-brand .mark { width: 28px; height: 28px; flex: none; }
+  /* the Figma logo: gear mark + "Ranger by UpKeep" wordmark (vector, gradient baked in; a light-ink copy for dark mode) */
+  .wm { display: block; height: 19px; width: auto; flex: none; }
+  .wm-d, :root[data-theme="dark"] .wm-l { display: none; }
+  :root[data-theme="dark"] .wm-d { display: block; }
+
   .un-brand .word { font: 600 20px/normal var(--font-display); letter-spacing: 0; }
+  .un-brand .by { align-self: flex-end; margin: 0 0 4px -4px; font: 400 12px/1 var(--font-display); color: color-mix(in srgb, var(--ink) 78%, transparent); }   /* Figma: "by UpKeep" */
   :root[data-theme="dark"] .un-brand .mark { filter: invert(1); }
   :root[data-theme="dark"] .top-right .divider { background: rgba(255, 255, 255, 0.14); }
   :root[data-theme="dark"] .cms-pill { background: rgba(255, 255, 255, 0.08); color: #fff; }
   :root[data-theme="dark"] .cms-pill:hover { background: rgba(255, 255, 255, 0.14); }
   :root[data-theme="light"] { --bg: #f7f7f5; --ink: #1a1a1a; }
-  /*dk*/ :root[data-theme="dark"] { --bg: #252523; --ink: #f2f2ee; } /*/dk*/
+  /*dk*/ :root[data-theme="dark"] { --bg: #252523; --ink: #f2f2ee; } /*/dk*/   /* Figma onboarding (19714:14897): #f7f7f5 with three soft cream glows */
   :root[data-theme="light"] .bgimg .light { opacity: 0; }
   /*dk*/ :root[data-theme="dark"] .bgimg .light { opacity: 0; } /*/dk*/
   :root[data-theme="light"] .app { padding: 12px; }
@@ -141,14 +159,14 @@
   /*dk*/ :root[data-theme="dark"] .top { max-width: none; padding-right: 16px; } /*/dk*/
   :root[data-theme="light"] .un-brand { padding: 20px 12px; }
   /*dk*/ :root[data-theme="dark"] .un-brand { padding: 20px 12px; } /*/dk*/
-  :root[data-theme="light"] .un-brand .word { background: linear-gradient(90deg, #1a1a1a 0%, #874bff 100%); -webkit-background-clip: text; background-clip: text; color: transparent; }
-  /*dk*/ :root[data-theme="dark"] .un-brand .word { background: linear-gradient(90deg, #f2f2ee 0%, #874bff 100%); -webkit-background-clip: text; background-clip: text; color: transparent; } /*/dk*/
+  :root[data-theme="light"] .un-brand .word { background: linear-gradient(90deg, #1a1a1a 0%, var(--un-brand) 100%); -webkit-background-clip: text; background-clip: text; color: transparent; }
+  /*dk*/ :root[data-theme="dark"] .un-brand .word { background: linear-gradient(90deg, #f2f2ee 0%, var(--un-brand) 100%); -webkit-background-clip: text; background-clip: text; color: transparent; } /*/dk*/
   :root[data-theme="light"] .un-toggle__label { font-size: 12px; }
   /*dk*/ :root[data-theme="dark"] .un-toggle__label { font-size: 12px; } /*/dk*/
   :root[data-theme="light"] h1 { color: #1a1a1a; letter-spacing: -1.8px; }
   /*dk*/ :root[data-theme="dark"] h1 { color: #f2f2ee; letter-spacing: -1.8px; } /*/dk*/
-  :root[data-theme="light"] h1 .hl { background-image: linear-gradient(90deg, #1a1a1a 0%, #874bff 100%); }
-  /*dk*/ :root[data-theme="dark"] h1 .hl { background-image: linear-gradient(90deg, #f2f2ee 0%, #874bff 100%); } /*/dk*/   /* the olive spreads over more of the word */
+  :root[data-theme="light"] h1 .hl { font-weight: 600; background-image: linear-gradient(90deg, #1a1a1a 0%, var(--un-brand) 100%); }
+  /*dk*/ :root[data-theme="dark"] h1 .hl { font-weight: 600; background-image: linear-gradient(90deg, #f2f2ee 0%, var(--un-brand) 100%); } /*/dk*/   /* the olive spreads over more of the word */
     :root[data-theme="light"] .swap { margin-top: 12px; gap: 40px; }
   /*dk*/ :root[data-theme="dark"] .swap { margin-top: 12px; gap: 40px; } /*/dk*/
   :root[data-theme="light"] .swap > p { color: #1a1a1a; }
@@ -159,18 +177,18 @@
   /*dk*/ :root[data-theme="dark"] .options { margin-top: 40px; } /*/dk*/
   :root[data-theme="light"] .option { color: #1a1a1a; }
   /*dk*/ :root[data-theme="dark"] .option { color: #f2f2ee; } /*/dk*/
-  :root[data-theme="light"] .option .un-wow__icon { background: #f7f7f5; color: #1a1a1a; }
-  /*dk*/ :root[data-theme="dark"] .option .un-wow__icon { background: #252523; color: #f2f2ee; } /*/dk*/
-  :root[data-theme="light"] .option::before { background-image: linear-gradient(110deg, transparent 18%, #874bff 36%, #ffffff 50%, #b9a0ff 64%, transparent 82%); }
-  /*dk*/ :root[data-theme="dark"] .option::before { background-image: linear-gradient(110deg, transparent 18%, #874bff 36%, #1c1c1b 50%, #b9a0ff 64%, transparent 82%); } /*/dk*/
-  :root[data-theme="light"] .option:hover { border-color: color-mix(in srgb, #874bff 35%, transparent); }
-  /*dk*/ :root[data-theme="dark"] .option:hover { border-color: color-mix(in srgb, #874bff 35%, transparent); } /*/dk*/
+  :root[data-theme="light"] .option .un-wow__icon { background: #ececea; color: #1a1a1a; }
+  /*dk*/ :root[data-theme="dark"] .option .un-wow__icon { background: #30302d; color: #f2f2ee; } /*/dk*/
+  :root[data-theme="light"] .option::before { background-image: linear-gradient(110deg, transparent 18%, var(--un-brand) 36%, #ffffff 50%, #9fa2ff 64%, transparent 82%); }
+  /*dk*/ :root[data-theme="dark"] .option::before { background-image: linear-gradient(110deg, transparent 18%, var(--un-brand) 36%, #1c1c1b 50%, #9fa2ff 64%, transparent 82%); } /*/dk*/
+  :root[data-theme="light"] .option:hover { border-color: color-mix(in srgb, var(--un-brand) 35%, transparent); }
+  /*dk*/ :root[data-theme="dark"] .option:hover { border-color: color-mix(in srgb, var(--un-brand) 35%, transparent); } /*/dk*/
   :root[data-theme="light"] .option:focus-visible, :root[data-theme="light"] .send:focus-visible { outline-color: #1a1a1a; }
   /*dk*/ :root[data-theme="dark"] .option:focus-visible, :root[data-theme="dark"] .send:focus-visible { outline-color: #f2f2ee; } /*/dk*/
-  :root[data-theme="light"] .ask { margin-top: 56px; height: 52px; padding: 8px 8px 8px 20px; border-color: #e6e3ff; border-radius: 16px; box-shadow: none; }
-  /*dk*/ :root[data-theme="dark"] .ask { margin-top: 56px; height: 52px; padding: 8px 8px 8px 20px; border-color: #2e2842; border-radius: 16px; box-shadow: none; } /*/dk*/
-  :root[data-theme="light"] .ask:focus-within { border-color: #cfc5ff; }
-  /*dk*/ :root[data-theme="dark"] .ask:focus-within { border-color: #4b3d7d; } /*/dk*/
+  :root[data-theme="light"] .ask { margin-top: 56px; height: 52px; padding: 8px 8px 8px 20px; border-color: #e3e4ff; border-radius: 16px; box-shadow: none; }
+  /*dk*/ :root[data-theme="dark"] .ask { margin-top: 56px; height: 52px; padding: 8px 8px 8px 20px; border-color: #1e1f45; border-radius: 16px; box-shadow: none; } /*/dk*/
+  :root[data-theme="light"] .ask:focus-within { border-color: var(--un-brand); box-shadow: 0 0 0 6px color-mix(in srgb, var(--un-brand) 9%, transparent); }
+  /*dk*/ :root[data-theme="dark"] .ask:focus-within { border-color: var(--un-brand); box-shadow: 0 0 0 6px color-mix(in srgb, var(--un-brand) 9%, transparent); } /*/dk*/   /* Figma: brand border + soft halo */
   :root[data-theme="light"] .ask input::placeholder { color: #9f9f99; opacity: 1; }
   /*dk*/ :root[data-theme="dark"] .ask input::placeholder { color: #7d7d77; opacity: 1; } /*/dk*/
   :root[data-theme="light"] .send { background: #e8e8e5; color: #1a1a1a; }
@@ -197,12 +215,13 @@
 <body>
 <div class="bgimg" aria-hidden="true"><i class="light"></i><i class="dark"></i></div>
 <div class="un-glow" aria-hidden="true"><i class="a"></i><i class="b"></i></div>
+<div class="ob-glow" aria-hidden="true"><i class="c"></i><i class="a"></i><i class="b"></i></div>
 
 <div class="app">
   <header class="top">
     <div class="un-brand">
-      <img class="mark" src="assets/logo-mark.svg" width="26" height="26" alt="">
-      <span class="word">Ultranova</span>
+      <img class="mark" src="assets/logo-mark.svg" width="28" height="28" alt="">
+      <img class="wm wm-l" src="assets/wordmark.svg" width="128" height="19" alt="Ranger by UpKeep"><img class="wm wm-d" src="assets/wordmark-dark.svg" width="128" height="19" alt="">
     </div>
     <div class="top-right">
       <button class="un-toggle un-toggle--sm" type="button" id="theme" role="switch" aria-checked="false" aria-label="Dark mode"><span class="un-toggle__track"></span><span class="un-toggle__label">Dark Mode</span></button>
@@ -213,7 +232,7 @@
 
   <main class="stage">
     <section class="welcome" aria-labelledby="h0">
-      <div class="title"><h1 id="h0">Welcome to <span class="hl">Ultranova</span></h1></div>
+      <div class="title"><h1 id="h0">Welcome to <span class="hl">Ranger</span></h1></div>
       <div class="swap" aria-live="polite">
         <p class="write" id="line1">Your personal assistant, quietly working in the background and reaching out when you’re needed.</p>
         <p class="write ask-line" id="line2">Let’s get started with some tasks...</p>
@@ -268,7 +287,7 @@
     show($('h0')); show($('line1')); show($('line2')); items.forEach(show); show($('ask'));
   } else {
     // the title fades in first; only then are the lines written, one after the other
-    var t1 = 1150, t2 = t1 + line1Ms + 500, t3 = t2 + line2Ms + 150;
+    var t1 = 1150, t2 = t1 + 300, t3 = t2 + 120;   /* both lines start almost together; the first task comes in with "Let's get started" */
     at(150, function () { show($('h0')); });
     at(t1, function () { show($('line1')); });
     at(t2, function () { show($('line2')); });

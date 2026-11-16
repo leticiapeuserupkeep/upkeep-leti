@@ -1,0 +1,20 @@
+<!doctype html>
+<html lang="en" data-theme="light">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Ranger · glass shape</title>
+<link rel="stylesheet" href="ultranova.css">
+<style>
+  /* Preview of the morphing glass ring (glass.js, shape: 'ring') on Ranger's page background. */
+  body { margin: 0; min-height: 100vh; display: grid; place-items: center; background: #e8e8e0; }
+  .un-glass { --s: min(560px, 80vw); }
+</style>
+</head>
+<body>
+  <canvas class="un-glass" id="glass"></canvas>
+<script src="https://cdn.jsdelivr.net/npm/three@0.152.2/build/three.min.js"></script>
+<script src="glass.js"></script>
+<script>UltranovaGlass.mount(document.getElementById('glass'), { shape: 'ring' });</script>
+</body>
+</html>

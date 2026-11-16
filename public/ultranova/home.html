@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Ultranova</title>
+<title>Ranger by UpKeep</title>
 <script>/* theme before paint: light by default (matches UpKeep), dark if chosen before */
   try { if (localStorage.getItem('ultranova.theme') === 'dark') document.documentElement.setAttribute('data-theme', 'dark'); } catch (e) {}
   try { if (sessionStorage.getItem('ultranova.intro')) document.documentElement.classList.add('arriving'); } catch (e) {}</script>
@@ -13,16 +13,16 @@
 <link rel="stylesheet" href="ultranova.css">
 <style>
   /* Home (the screen you land on after onboarding): glass sidebar, centered assistant greeting, chat bar.
-     Values follow the Figma frame "Nova / Ultranova" (sidebar 260px, Outfit + Inter, #dd00ff accent). */
+     Values follow the Figma frame "Nova / Ultranova" (sidebar 260px, Outfit, brand --un-brand). */
   :root {
     --bg: #000;
-    --brand: #dd00ff;
-    --brand-line: #a600ac;
+    --brand: var(--un-brand);
+    --brand-line: var(--un-brand-line);
     --sidebar-top: rgba(0, 0, 0, 0.6);         /* the sidebar is 60% opaque over a 16px blur, so the ribbon shows through (Figma) */
     --sidebar-bottom: rgba(87, 10, 158, 0.6);
     --nav-active: #461f5c;
     --dot: #5e016c;
-    --dot-live: #00edc5;
+    --dot-live: var(--un-ok);
     --bar: #1a0b46;
     --ink: #fff;
     --ink-soft: rgba(255, 255, 255, 0.7);
@@ -51,8 +51,8 @@
 
   /* collapsible sidebar (desktop): it shrinks to a 60px rail of icons; hovering an icon shows a tooltip with its name.
      --sidebar-w follows, so everything positioned from it (backdrop, floating assistant, blurred band) moves with it. */
-  .app { transition: grid-template-columns 0.45s var(--ease); }
-  .sidebar { width: var(--sidebar-w); transition: width 0.45s var(--ease); }
+  .app { transition: grid-template-columns 0.3s var(--ease); }
+  .sidebar { width: var(--sidebar-w); transition: width 0.3s var(--ease); }
   .sidebar::before { content: ""; position: absolute; inset: 0; z-index: 0; opacity: 0; pointer-events: none; background: linear-gradient(180deg, rgba(255, 255, 255, var(--side-light-a)), rgba(236, 228, 250, var(--side-light-a))); }   /* light layer, fades in with the theme */
   .sidebar > * { position: relative; z-index: 1; }
   @media (min-width: 861px) {
@@ -71,7 +71,7 @@
   @media (max-width: 860px) { .sidebar .nav-close { display: none; } }   /* the drawer has its own close (scrim / menu button) */
   body:has(.menu-open) #fg { opacity: 0; }   /* the assistant is a canvas above the page: hide it while the drawer is open */
   #fg { transition: opacity 0.3s; }
-  .nav-close .un-icon { transition: transform 0.4s var(--ease); }
+  .nav-close .un-icon { transition: transform 0.3s var(--ease); }
   .nav-closed .nav-close .un-icon { transform: scaleX(-1); }
 
   /* ---------- sidebar ---------- */
@@ -90,7 +90,7 @@
   .nav-item:hover { background: rgba(255, 255, 255, 0.06); }
   .nav-item.active { background: var(--nav-active); }
   .nav-item .grow { flex: 1; }
-  .nav-item .chev { width: 18px; height: 18px; stroke: var(--brand); transition: transform 0.25s var(--ease); }
+  .nav-item .chev { width: 18px; height: 18px; stroke: var(--brand); transition: transform 0.2s var(--ease); }
   .nav-item[aria-expanded="false"] .chev { transform: rotate(-90deg); }
   .history { display: grid; grid-template-rows: 1fr; transition: grid-template-rows 0.3s var(--ease); }
   .history[hidden] { display: grid; grid-template-rows: 0fr; visibility: hidden; }
@@ -108,7 +108,7 @@
   .chat-item .more:hover, .chat-item.menu-open .more { background: rgba(255, 255, 255, 0.12); }
   .chat-item.menu-open .more { display: flex; }
   .chat-item input.rename { flex: 1; min-width: 0; height: 24px; padding: 0 6px; border: 1px solid var(--brand-line); border-radius: 4px; background: rgba(0, 0, 0, 0.35); color: var(--ink); font: 400 14px/20px var(--font-display); outline: 0; }
-  .history li { overflow: hidden; transition: max-height 0.4s var(--ease), opacity 0.3s; max-height: 40px; }
+  .history li { overflow: hidden; transition: max-height 0.3s var(--ease), opacity 0.3s; max-height: 40px; }
   .history li.gone { max-height: 0; opacity: 0; }
   /* chat options submenu: Rename / Archive */
 
@@ -116,11 +116,11 @@
      swaps to a live status (icon, "WO-1043 created", spinner → check) and returns to the default after a few seconds. */
   .cms { position: relative; margin: auto 16px 0; display: block; height: 44px; border-radius: 8px; overflow: hidden; color: #101113; text-decoration: none;
     background: #fff; border: 1px solid transparent;  /* white, no border (the border only shows green while it's busy) */
-    transition: background 0.3s, border-color 0.4s; }
+    transition: background 0.3s, border-color 0.3s; }
   .cms:hover { background: #f7f7f9; }
-  .cms.busy { border-color: #00b894; }
+  .cms.busy { border-color: var(--un-brand-line); }
   .cms .pane { position: absolute; inset: 0; display: flex; align-items: center; gap: 10px; padding: 0 14px; font: 500 14px/20px var(--font-display);
-    transition: opacity 0.45s var(--ease), transform 0.55s var(--ease); }
+    transition: opacity 0.3s var(--ease), transform 0.3s var(--ease); }
   .cms .pane.alt { opacity: 0; transform: translateY(14px); }
   .cms.busy .pane.def { opacity: 0; transform: translateY(-14px); }
   .cms.busy .pane.alt { opacity: 1; transform: none; }
@@ -130,7 +130,7 @@
   .cms:hover .go { transform: translateX(3px); }
   .cms .kind { width: 20px; height: 20px; flex: none; color: #00a384; }
   .cms .state { position: relative; width: 20px; height: 20px; flex: none; }
-  .cms .state svg { position: absolute; inset: 0; width: 20px; height: 20px; fill: none; stroke-linecap: round; stroke-linejoin: round; transition: opacity 0.35s, transform 0.5s var(--ease); }
+  .cms .state svg { position: absolute; inset: 0; width: 20px; height: 20px; fill: none; stroke-linecap: round; stroke-linejoin: round; transition: opacity 0.3s, transform 0.3s var(--ease); }
   .cms .spin { stroke: #868e96; stroke-width: 2; animation: cms-spin 0.9s linear infinite; }
   .cms .tick { stroke: #00a384; stroke-width: 2.4; opacity: 0; transform: scale(0.5); }
   .cms.done .spin { opacity: 0; }
@@ -139,7 +139,7 @@
   @media (prefers-reduced-motion: reduce) { .cms .spin { animation-duration: 2.4s; } }
   .side-foot { display: flex; align-items: center; justify-content: space-between; padding: 16px; }
   .me:hover { transform: scale(1.06); box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.18); }
-  .me { cursor: pointer; color: #fff; transition: transform 0.2s var(--ease), box-shadow 0.25s; width: 32px; height: 32px; border-radius: 50%; display: grid; place-items: center; background: linear-gradient(135deg, #8b5cf6, #d946ef); font: 600 14px/1 var(--font-display); }
+  .me { cursor: pointer; color: #fff; transition: transform 0.2s var(--ease), box-shadow 0.2s; width: 32px; height: 32px; border-radius: 50%; display: grid; place-items: center; background: var(--un-brand); font: 600 14px/1 var(--font-display); }
   .gear { width: 32px; height: 32px; display: grid; place-items: center; border-radius: 50%; color: #d9c8ff; transition: background 0.2s; }
   .gear:hover { background: rgba(255, 255, 255, 0.08); }
   .gear .un-icon { width: 20px; height: 20px; }
@@ -156,14 +156,14 @@
   .greeting p { margin: 0; max-width: 640px; font: 400 14px/20px var(--font-display); }
   /* the four "wow" starters (wow.js): two by two under the greeting; one tap runs it */
   .wows { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; width: min(760px, 100%); text-align: left; }   /* one row of four */
-  .wows .un-wow { animation: rise 0.7s var(--ease) backwards; animation-delay: calc(0.16s + var(--c, 0) * 0.07s); }
+  .wows .un-wow { animation: rise 0.3s var(--ease-out) backwards; animation-delay: calc(0.16s + var(--c, 0) * 0.07s); }
   .wows .un-wow:nth-child(2) { --c: 1; } .wows .un-wow:nth-child(3) { --c: 2; } .wows .un-wow:nth-child(4) { --c: 3; }
 
   .chatbar { align-self: center; width: min(700px, 100%); display: flex; flex-direction: column; gap: 25px; padding: 20px; border-radius: 8px; background: var(--bar); box-shadow: 0 8px 32px rgba(8, 0, 30, 0.6); border: 1px solid transparent; transition: border-color 0.2s; }
   .chatbar:focus-within { border-color: rgba(221, 0, 255, 0.5); }
   .chatbar textarea { width: 100%; height: 20px; max-height: 160px; resize: none; padding: 0; border: 0; background: transparent; outline: 0; font: 400 14px/20px var(--font-body); }
   .chatbar .field { position: relative; }
-  .tabhint { position: absolute; right: 0; top: 0; opacity: 0; transform: translateX(6px); transition: opacity 0.3s, transform 0.4s var(--ease); pointer-events: none; }
+  .tabhint { position: absolute; right: 0; top: 0; opacity: 0; transform: translateX(6px); transition: opacity 0.3s, transform 0.3s var(--ease); pointer-events: none; }
   .chatbar.has-suggest .tabhint { opacity: 1; transform: none; }
   .chatbar textarea::placeholder { color: var(--ink); opacity: 0.6; }
   .bar-row { display: flex; align-items: center; justify-content: space-between; height: 24px; }
@@ -184,13 +184,13 @@
     background: rgba(0, 0, 0, 0.4); -webkit-backdrop-filter: blur(10px); backdrop-filter: blur(10px);
     -webkit-mask-image: linear-gradient(#000 72%, transparent); mask-image: linear-gradient(#000 72%, transparent); }
   .chatting .greeting, .chatting .wows { display: none; }
-  .wow-text { margin: 12px 0 0; animation: un-msg-in 0.45s var(--ease) backwards; }
+  .wow-text { margin: 12px 0 0; animation: un-msg-in 0.2s var(--ease-out) backwards; }
   /* arriving from the welcome: the workspace slides in from the right, straight into the conversation */
   html.arriving .greeting, html.arriving .wows { display: none; }
-  html.arriving .app { animation: arrive 0.55s var(--ease) both; }
-  @keyframes arrive { from { opacity: 0; transform: translateX(56px); } to { opacity: 1; transform: none; } }
+  html.arriving .app { animation: arrive 0.3s var(--ease-out) both; }
+  @keyframes arrive { from { opacity: 0; transform: translateX(8px); } to { opacity: 1; transform: none; } }
   /* the assistant introduces itself in the middle of the chat */
-  .meet { align-self: center; display: flex; flex-direction: column; align-items: center; gap: 2px; width: 100%; padding: 4px 0 14px; text-align: center; animation: un-rise 0.6s var(--ease) backwards; }
+  .meet { align-self: center; display: flex; flex-direction: column; align-items: center; gap: 2px; width: 100%; padding: 4px 0 14px; text-align: center; animation: un-rise 0.3s var(--ease-out) backwards; }
   .meet-bot { width: 132px; height: 132px; }
   .meet-bot > [data-robot] { width: 100%; height: 100%; }
   .meet-hi { margin: 4px 0 0; font: 300 26px/32px var(--font-display); letter-spacing: -0.02em; color: var(--ink); }
@@ -198,24 +198,24 @@
   .meet-links { margin: 10px 0 0; font: 400 13px/18px var(--font-display); color: var(--ink-soft); }
   .meet-change, .meet-settings { padding: 0; border: 0; background: none; color: var(--ink); font: inherit; text-decoration: underline; text-underline-offset: 3px; cursor: pointer; }
   .meet-change:hover, .meet-settings:hover { text-decoration-thickness: 2px; }
-  .meet-pick { display: flex; flex-wrap: wrap; justify-content: center; gap: 8px; margin-top: 12px; animation: un-rise 0.4s var(--ease); }
+  .meet-pick { display: flex; flex-wrap: wrap; justify-content: center; gap: 8px; margin-top: 12px; animation: un-rise 0.3s var(--ease-out); }
   .meet-pick[hidden] { display: none; }
   :root[data-theme="light"] .meet-pick .un-chip[aria-pressed="true"] { background: #1a1a1a; border-color: #1a1a1a; color: #fff; box-shadow: none; }
   /*dk*/ :root[data-theme="dark"] .meet-pick .un-chip[aria-pressed="true"] { background: #f2f2ee; border-color: #f2f2ee; color: #1c1c1b; box-shadow: none; } /*/dk*/
   .no-gl .meet-bot > [data-robot] { border-radius: 50%; background: radial-gradient(closest-side, #c4b5fd, rgba(139, 92, 246, 0.2) 70%, transparent 72%); }
   /* "Settings" in the introduction points at the gear in the sidebar */
-  .gear.ping { animation: ping 1.4s var(--ease); }
+  .gear.ping { animation: ping 0.2s var(--ease-out); }
   @keyframes ping { 0%, 100% { box-shadow: 0 0 0 0 rgba(124, 58, 237, 0); } 30%, 60% { box-shadow: 0 0 0 4px rgba(124, 58, 237, 0.35); } }
   @media (prefers-reduced-motion: reduce) { html.arriving .app, .meet, .meet-pick, .gear.ping { animation: none; } }
   /* follow-up options under the assistant's last message: it stays proactive, and "Other" is always there */
   .opts { display: flex; flex-wrap: wrap; gap: 8px; align-self: flex-start; max-width: 82%; margin-top: -4px; }
-  .opts .un-chip { animation: opt-in 0.5s var(--ease) backwards; animation-delay: calc(var(--i, 0) * 70ms + 120ms); }
-  .opts.gone { opacity: 0; transform: translateY(-4px); transition: opacity 0.25s, transform 0.25s; pointer-events: none; }
+  .opts .un-chip { animation: opt-in 0.2s var(--ease-out) backwards; animation-delay: calc(var(--i, 0) * 70ms + 120ms); }
+  .opts.gone { opacity: 0; transform: translateY(-4px); transition: opacity 0.15s var(--ease-in, ease-in), transform 0.15s var(--ease-in, ease-in); pointer-events: none; }
   @keyframes opt-in { from { opacity: 0; transform: translateY(8px); } }
   /* preview of the Work Order the assistant created (same field layout as the CMS detail) */
-  .wo-card { display: block; margin-top: 12px; border: 1px solid rgba(255, 255, 255, 0.14); border-radius: 10px; background: rgba(255, 255, 255, 0.04); overflow: hidden; color: inherit; text-decoration: none; animation: wo-in 0.6s var(--ease) 0.15s backwards; transition: border-color 0.25s, background 0.25s; }
+  .wo-card { display: block; margin-top: 12px; border: 1px solid rgba(255, 255, 255, 0.14); border-radius: 10px; background: rgba(255, 255, 255, 0.04); overflow: hidden; color: inherit; text-decoration: none; animation: wo-in 0.3s var(--ease-out) 0.06s backwards; transition: border-color 0.2s, background 0.2s; }
   .wo-card:hover { border-color: rgba(221, 0, 255, 0.5); background: rgba(255, 255, 255, 0.07); }
-  @keyframes wo-in { from { opacity: 0; transform: translateY(10px) scale(0.985); } }
+  @keyframes wo-in { from { opacity: 0; transform: translateY(8px); } }
   .wo-head { display: flex; align-items: center; gap: 10px; padding: 12px 14px; border-bottom: 1px dashed rgba(255, 255, 255, 0.14); }
   .wo-head .id { font: 600 14px/20px var(--font-display); }
   .wo-head .open { margin-left: auto; font: 500 12px/16px var(--font-body); color: var(--ink-soft); }
@@ -238,9 +238,9 @@
   .no-gl .assistant [data-robot] { margin: 18%; width: 64%; height: 64%; border-radius: 50%; background: radial-gradient(closest-side, #c4b5fd, rgba(139, 92, 246, 0.2) 70%, transparent 72%); }
 
   @media (prefers-reduced-motion: no-preference) {
-    .stage > * { animation: rise 0.7s var(--ease) backwards; }
+    .stage > * { animation: rise 0.3s var(--ease-out) backwards; }
     .stage > .greeting { animation-delay: 0.08s; }
-    .chatbar { animation: rise 0.7s var(--ease) 0.24s backwards; }
+    .chatbar { animation: rise 0.3s var(--ease-out) 0.1s backwards; }
     @keyframes rise { from { opacity: 0; transform: translateY(10px); } }
   }
   @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation: none !important; transition-duration: 0.01ms !important; } }
@@ -292,8 +292,8 @@
   /*dk*/ :root[data-theme="dark"] .nav-item.active { background: #e3d7fa; } /*/dk*/
   :root[data-theme="light"] .chat-item::before { background: #c9b6ee; }
   /*dk*/ :root[data-theme="dark"] .chat-item::before { background: #c9b6ee; } /*/dk*/
-  :root[data-theme="light"] .chat-item.live::before { background: #00b894; }
-  /*dk*/ :root[data-theme="dark"] .chat-item.live::before { background: #f2f2ee; } /*/dk*/
+  :root[data-theme="light"] .chat-item.live::before { background: var(--un-ok); }
+  /*dk*/ :root[data-theme="dark"] .chat-item.live::before { background: var(--un-ok); } /*/dk*/
   :root[data-theme="light"] .chat-item .more:hover, :root[data-theme="light"] .chat-item.menu-open .more { background: rgba(26, 11, 70, 0.1); }
   /*dk*/ :root[data-theme="dark"] .chat-item .more:hover, :root[data-theme="dark"] .chat-item.menu-open .more { background: rgba(242, 242, 238, 0.1); } /*/dk*/
   :root[data-theme="light"] .gear, :root[data-theme="light"] .snd { color: #6d28d9; }
@@ -335,8 +335,8 @@
 
   /* ---------- light = the Lifemed language (same as onboarding): white, soft neutral greys, black for what matters,
      pill chips, light-weight titles, the white-sky glass ribbon behind. Overrides the earlier purple light theme above. ---------- */
-  :root[data-theme="light"] { --bg: #fff; --ink: #15131c; --ink-soft: #6b6976; --bar: #fff; --un-ink: #15131c; --un-ink-soft: #6b6976; --un-glass: transparent; --un-line: #e6e6eb; --un-surface-raised: #15131c; --brand: #8b5cf6; }
-  /*dk*/ :root[data-theme="dark"] { --bg: #1c1c1b; --ink: #f2f2ee; --ink-soft: #a5a59f; --bar: #1c1c1b; --un-ink: #f2f2ee; --un-ink-soft: #a5a59f; --un-glass: transparent; --un-line: #30302d; --un-surface-raised: #f2f2ee; --brand: #8b5cf6; } /*/dk*/
+  :root[data-theme="light"] { --bg: #fff; --ink: #15131c; --ink-soft: #6b6976; --bar: #fff; --un-ink: #15131c; --un-ink-soft: #6b6976; --un-glass: transparent; --un-line: #e6e6eb; --un-surface-raised: #15131c; --brand: var(--un-brand); }
+  /*dk*/ :root[data-theme="dark"] { --bg: #1c1c1b; --ink: #f2f2ee; --ink-soft: #a5a59f; --bar: #1c1c1b; --un-ink: #f2f2ee; --un-ink-soft: #a5a59f; --un-glass: transparent; --un-line: #30302d; --un-surface-raised: #f2f2ee; --brand: var(--un-brand); } /*/dk*/
   /* soft lilac glow from the bottom-left (the glass ribbon stays on onboarding) */
   :root[data-theme="light"] .backdrop::after { left: -8%; right: -8%; top: -8%; bottom: -8%; width: auto; aspect-ratio: auto; background: url("home-bg-light-soft.webp") 0 100% / cover no-repeat; mix-blend-mode: normal; -webkit-mask-image: none; mask-image: none;
     opacity: 0.3; animation: bg-drift 18s ease-in-out infinite; will-change: transform; }
@@ -367,10 +367,10 @@
   :root[data-theme="light"] .chat-item.live::before { background: var(--un-ok); }
   /*dk*/ :root[data-theme="dark"] .chat-item.live::before { background: var(--un-ok); } /*/dk*/
   /* CMS bridge in light: busy / created in black and the brand purple, not green (color rule in ultranova.css) */
-  :root[data-theme="light"] .cms.busy { border-color: #cfc5ff; }
-  /*dk*/ :root[data-theme="dark"] .cms.busy { border-color: #4b3d7d; } /*/dk*/
-  :root[data-theme="light"] .cms .kind { color: #874bff; }
-  /*dk*/ :root[data-theme="dark"] .cms .kind { color: #874bff; } /*/dk*/
+  :root[data-theme="light"] .cms.busy { border-color: #c5c7ff; }
+  /*dk*/ :root[data-theme="dark"] .cms.busy { border-color: #2b2d7d; } /*/dk*/
+  :root[data-theme="light"] .cms .kind { color: var(--un-brand); }
+  /*dk*/ :root[data-theme="dark"] .cms .kind { color: var(--un-brand); } /*/dk*/
   :root[data-theme="light"] .cms .tick { stroke: #1a1a1a; }
   /*dk*/ :root[data-theme="dark"] .cms .tick { stroke: #f2f2ee; } /*/dk*/
   :root[data-theme="light"] .gear, :root[data-theme="light"] .snd { color: var(--ink-soft); }
@@ -423,18 +423,27 @@
   :root[data-theme="light"] .wo-card { border-color: #ececea; }
   /*dk*/ :root[data-theme="dark"] .wo-card { border-color: #30302d; } /*/dk*/
   /* ---------- new UI (Figma "new ui" › first screen / skip): warm off-white page, white cards (sidebar, chat, right panel),
-     black for what's selected, olive → yellow accent. Light only; the dark look stays as it was. ---------- */
-  .brand .mark { width: 26px; height: 26px; flex: none; }
+     black for what's selected, brand purple accent. Light and dark share the same tokens. ---------- */
+  .brand .mark { width: 28px; height: 28px; flex: none; }
+  :root:not([data-theme="dark"]) .un-glow { display: none; }   /* light app: a plain #ecece5 page, no gradients (dark keeps its glows) */
+  /* the Figma logo: gear mark + "Ranger by UpKeep" wordmark (vector, gradient baked in; a light-ink copy for dark mode) */
+  .wm { display: block; height: 19px; width: auto; flex: none; }
+  .wm-d, :root[data-theme="dark"] .wm-l { display: none; }
+  :root[data-theme="dark"] .wm-d { display: block; }
+  .nav-closed .brand .wm { display: none; }
+
+  .brand-by { align-self: flex-end; margin: 0 0 4px -4px; font: 400 12px/1 var(--font-display); color: color-mix(in srgb, var(--ink) 78%, transparent); white-space: nowrap; }   /* Figma: "by UpKeep", 12px, ink at 78% */
+  .nav-closed .brand-by { display: none; }
   :root[data-theme="dark"] .brand .mark { filter: invert(1); }
   .me { overflow: hidden; }
   .me img { width: 100%; height: 100%; object-fit: cover; }
   .panel { display: none; }
-  :root[data-theme="light"] { --bg: #f7f7f5; --ink: #1a1a1a; --ink-soft: #7b7b79; --un-ink: #1a1a1a; --un-ink-soft: #7b7b79; --accent: #874bff; }
-  /*dk*/ :root[data-theme="dark"] { --bg: #252523; --ink: #f2f2ee; --ink-soft: #a5a59f; --un-ink: #f2f2ee; --un-ink-soft: #a5a59f; --accent: #874bff; } /*/dk*/
+  :root[data-theme="light"] { --bg: #ecece5; --ink: #1a1a1a; --ink-soft: #7b7b79; --un-ink: #1a1a1a; --un-ink-soft: #7b7b79; --accent: var(--un-brand); --brand: var(--un-brand); --brand-line: var(--un-brand-line); }
+  /*dk*/ :root[data-theme="dark"] { --bg: #121211; --ink: #f2f2ee; --ink-soft: #a5a59f; --un-ink: #f2f2ee; --un-ink-soft: #a5a59f; --accent: var(--un-brand); --brand: var(--un-brand); --brand-line: var(--un-brand-line); } /*/dk*/
   :root[data-theme="light"] .backdrop::after { display: none; }
   /*dk*/ :root[data-theme="dark"] .backdrop::after { display: none; } /*/dk*/
-  :root[data-theme="light"] .brand-text { background: linear-gradient(90deg, #1a1a1a 0%, #874bff 100%); -webkit-background-clip: text; background-clip: text; color: transparent; }
-  /*dk*/ :root[data-theme="dark"] .brand-text { background: linear-gradient(90deg, #f2f2ee 0%, #874bff 100%); -webkit-background-clip: text; background-clip: text; color: transparent; } /*/dk*/
+  :root[data-theme="light"] .brand-text { background: linear-gradient(90deg, #1a1a1a 0%, var(--un-brand) 100%); -webkit-background-clip: text; background-clip: text; color: transparent; }
+  /*dk*/ :root[data-theme="dark"] .brand-text { background: linear-gradient(90deg, #f2f2ee 0%, var(--un-brand) 100%); -webkit-background-clip: text; background-clip: text; color: transparent; } /*/dk*/
   :root[data-theme="light"] .sidebar::before { background: #fff; opacity: 1; }
   /*dk*/ :root[data-theme="dark"] .sidebar::before { background: #1c1c1b; opacity: 1; } /*/dk*/
   :root[data-theme="light"] .sidebar::after { opacity: 0; }
@@ -444,8 +453,8 @@
   /*dk*/ :root[data-theme="dark"] .nav-item { height: 52px; padding: 16px; border-radius: 28px; color: #f2f2ee; } /*/dk*/
   :root[data-theme="light"] .nav-item:hover { background: #f7f7f5; }
   /*dk*/ :root[data-theme="dark"] .nav-item:hover { background: #252523; } /*/dk*/
-  :root[data-theme="light"] .nav-item.active { background: transparent; }
-  /*dk*/ :root[data-theme="dark"] .nav-item.active { background: transparent; } /*/dk*/   /* section headers (Chat, Apps) never look selected: only the item inside is */
+  :root[data-theme="light"] .nav-item.active { background: #f7f7f5; }
+  /*dk*/ :root[data-theme="dark"] .nav-item.active { background: #252523; } /*/dk*/   /* the section you are in (Chat or Apps) reads selected, as in Figma */
   :root[data-theme="light"] .nav-item.active:hover { background: #f7f7f5; }
   /*dk*/ :root[data-theme="dark"] .nav-item.active:hover { background: #252523; } /*/dk*/
   :root[data-theme="light"] .nav-item .chev { stroke: #1a1a1a; }
@@ -465,7 +474,7 @@
   /*dk*/ :root[data-theme="dark"] .list-more { color: #a5a59f; } /*/dk*/
   :root[data-theme="light"] .list-more:hover { background: #f4f4f1; color: #1a1a1a; }
   /*dk*/ :root[data-theme="dark"] .list-more:hover { background: #2a2a28; color: #f2f2ee; } /*/dk*/
-  .chat-item.titled span { animation: chat-title-in 0.6s var(--ease); }   /* the new title fades in where "New conversation" was */
+  .chat-item.titled span { animation: chat-title-in 0.2s var(--ease-out); }   /* the new title fades in where "New conversation" was */
   @keyframes chat-title-in { from { opacity: 0; transform: translateY(4px); } }
   /* New ▾: dark button, always at the top of the menu */
   .new-wrap { padding: 12px 8px 0; flex: none; }
@@ -481,29 +490,31 @@
   .new-btn .grow { flex: 1; text-align: left; }
   .side-search { display: flex; align-items: center; gap: 12px; height: 40px; margin-top: 12px; padding: 0 16px; border-radius: 24px; background: rgba(255, 255, 255, 0.06); color: var(--ink-soft); cursor: text; transition: box-shadow 0.2s, background 0.2s; }
   /*dk*/ :root[data-theme="dark"] .side-search { background: rgba(28, 28, 27, 0.06); } /*/dk*/
+  #newBtn, .new-menu { display: none !important; }   /* hidden: "New" lives in the app bar (Create) for now */
+  .new-wrap .side-search { margin-top: 0; }
   .side-search .un-icon { width: 18px; height: 18px; flex: none; }
   .side-search input { flex: 1; min-width: 0; height: 100%; border: 0; outline: 0; background: transparent; color: var(--ink); font: 400 14px/20px var(--font-display); }
   .side-search input::-webkit-search-cancel-button { cursor: pointer; }
-  :root[data-theme="light"] .side-search { background: transparent; box-shadow: inset 0 0 0 1px #ececea; color: #9f9f99; }
-  /*dk*/ :root[data-theme="dark"] .side-search { background: transparent; box-shadow: inset 0 0 0 1px #30302d; color: #7d7d77; } /*/dk*/   /* outlined, no fill */
+  :root[data-theme="light"] .side-search { background: transparent; box-shadow: inset 0 0 0 1px #deded5; color: #1a1a1a; }
+  /*dk*/ :root[data-theme="dark"] .side-search { background: transparent; box-shadow: inset 0 0 0 1px #2c2c29; color: #f2f2ee; } /*/dk*/   /* warm grey outline */   /* Figma: light brand outline, ink icon */   /* outlined, no fill */
   :root[data-theme="light"] .side-search input::placeholder { color: #9f9f99; }
   /*dk*/ :root[data-theme="dark"] .side-search input::placeholder { color: #7d7d77; } /*/dk*/
-  :root[data-theme="light"] .side-search:focus-within { box-shadow: inset 0 0 0 1px #cfc5ff; background: transparent; }
-  /*dk*/ :root[data-theme="dark"] .side-search:focus-within { box-shadow: inset 0 0 0 1px #4b3d7d; background: transparent; } /*/dk*/
+  :root[data-theme="light"] .side-search:focus-within { box-shadow: inset 0 0 0 1px var(--un-brand), 0 0 0 4px color-mix(in srgb, var(--un-brand) 9%, transparent); background: transparent; }
+  /*dk*/ :root[data-theme="dark"] .side-search:focus-within { box-shadow: inset 0 0 0 1px var(--un-brand), 0 0 0 4px color-mix(in srgb, var(--un-brand) 9%, transparent); background: transparent; } /*/dk*/
   .history li[hidden] { display: none; }
   .history li { flex: none; }   /* rows keep their height so the list scrolls instead of squeezing */
   /* collapsed: Search is a 44px circle with the magnifier; clicking it opens the sidebar with the field focused */
   .nav-closed .side-search { width: 44px; height: 44px; margin-inline: auto; padding: 0; justify-content: center; border-radius: 50%; cursor: pointer; }
   .nav-closed .side-search input { display: none; }
-  .new-btn .chev { width: 16px; height: 16px; transition: transform 0.25s var(--ease); }
+  .new-btn .chev { width: 16px; height: 16px; transition: transform 0.2s var(--ease); }
   .new-btn[aria-expanded="true"] .chev { transform: rotate(180deg); }
   .new-btn:active { transform: scale(0.98); }
-  :root[data-theme="light"] .new-btn { background: #e8e8e5; color: #1a1a1a; font-weight: 500; }
-  /*dk*/ :root[data-theme="dark"] .new-btn { background: #2c2c29; color: #f2f2ee; font-weight: 500; } /*/dk*/   /* soft grey (Figma) */
-  :root[data-theme="light"] .new-btn:hover { background: #deded9; }
-  /*dk*/ :root[data-theme="dark"] .new-btn:hover { background: #3a3a36; } /*/dk*/
-  :root[data-theme="light"] .nav-item.active { font-weight: 500; }
-  /*dk*/ :root[data-theme="dark"] .nav-item.active { font-weight: 500; } /*/dk*/   /* whatever is selected reads bold */
+  :root[data-theme="light"] .new-btn { background: var(--un-brand); color: #fff; font-weight: 500; }
+  /*dk*/ :root[data-theme="dark"] .new-btn { background: var(--un-brand); color: #1c1c1b; font-weight: 500; } /*/dk*/   /* Figma: brand blue */   /* soft grey (Figma) */
+  :root[data-theme="light"] .new-btn:hover { background: color-mix(in srgb, var(--un-brand) 86%, #000); }
+  /*dk*/ :root[data-theme="dark"] .new-btn:hover { background: color-mix(in srgb, var(--un-brand) 86%, #f2f2ee); } /*/dk*/
+  :root[data-theme="light"] .nav-item.active { font-weight: 600; }
+  /*dk*/ :root[data-theme="dark"] .nav-item.active { font-weight: 600; } /*/dk*/   /* whatever is selected reads bold */
   :root[data-theme="light"] .new-menu { --un-menu: #fff; --un-line: #ececea; --un-ink: #1a1a1a; --un-ink-soft: #7b7b79; border-radius: 16px; box-shadow: 0 16px 40px -12px rgba(26, 26, 26, 0.22); }
   /*dk*/ :root[data-theme="dark"] .new-menu { --un-menu: #1c1c1b; --un-line: #30302d; --un-ink: #f2f2ee; --un-ink-soft: #a5a59f; border-radius: 16px; box-shadow: 0 16px 40px -12px rgba(0, 0, 0, 0.48); } /*/dk*/
   :root[data-theme="light"] .new-menu button { border-radius: 10px; }
@@ -524,11 +535,13 @@
   :root[data-theme="light"] .chat-item::before { display: none; }
   /*dk*/ :root[data-theme="dark"] .chat-item::before { display: none; } /*/dk*/
   /* the assistant is working in this conversation: a pulsing yellow dot at the right (it takes the place of "···" until hover) */
-  .chat-item::after { content: ""; display: none; order: 3; width: 8px; height: 8px; flex: none; margin-left: 4px; border-radius: 50%; background: #874bff; animation: run-dot 1.4s ease-in-out infinite; }
-  .chat-item.running::after { display: block; }
+  .chat-item::after { content: ""; display: none; order: 3; width: 8px; height: 8px; flex: none; margin-left: 4px; border-radius: 50%; background: var(--un-brand); animation: run-dot 1.4s ease-in-out infinite; }
+  .chat-item.running::after, #chatToggle.running::after { display: block; }
+  #chatToggle::after { content: ""; display: none; width: 8px; height: 8px; flex: none; border-radius: 50%; background: var(--un-brand); animation: run-dot 1.4s ease-in-out infinite; }
+  .nav-closed #chatToggle.running::after { display: none; }
   .chat-item.running:not(:hover):not(.menu-open) .more, :root[data-theme="light"] .chat-item.live.running:not(:hover):not(.menu-open) .more { display: none; }
   /*dk*/ :root[data-theme="dark"] .chat-item.live.running:not(:hover):not(.menu-open) .more { display: none; } /*/dk*/
-  @keyframes run-dot { 0%, 100% { box-shadow: 0 0 0 0 rgba(135, 75, 255, 0.55); transform: scale(1); } 50% { box-shadow: 0 0 0 5px rgba(135, 75, 255, 0); transform: scale(0.8); } }
+  @keyframes run-dot { 0%, 100% { box-shadow: 0 0 0 0 rgba(11, 15, 255, 0.55); transform: scale(1); } 50% { box-shadow: 0 0 0 5px rgba(11, 15, 255, 0); transform: scale(0.8); } }
   :root[data-theme="light"] .chat-item:hover { background: #f7f7f5; color: #1a1a1a; }
   /*dk*/ :root[data-theme="dark"] .chat-item:hover { background: #252523; color: #f2f2ee; } /*/dk*/
   :root[data-theme="light"] .chat-item.live { background: #f7f7f5; color: #1a1a1a; font-weight: 600; }
@@ -567,7 +580,7 @@
   /*dk*/ :root[data-theme="dark"] .assistant { width: 120px; height: 120px; } /*/dk*/
   .swap-bot { position: fixed; z-index: 21; left: 0; top: 0; width: 24px; height: 24px; display: grid; place-items: center; border-radius: 50%;
     background: transparent; border: 1px solid #d3d4d0; color: #1a1a1a;   /* outline only, no fill */
-    opacity: 0; transform: translate(-50%, -50%) scale(0.8); pointer-events: none; transition: opacity 0.3s ease, transform 0.35s cubic-bezier(0.22, 1, 0.36, 1), border-color 0.2s; }
+    opacity: 0; transform: translate(-50%, -50%) scale(0.8); pointer-events: none; transition: opacity 0.3s ease, transform 0.3s cubic-bezier(0.22, 1, 0.36, 1), border-color 0.2s; }
   /*dk*/ :root[data-theme="dark"] .swap-bot { border: 1px solid #3a3a36; color: #f2f2ee; } /*/dk*/
   .swap-bot .un-icon { width: 14px; height: 14px; }
   .swap-bot.on, .swap-bot:focus-visible { opacity: 1; transform: translate(-50%, -50%); pointer-events: auto; }
@@ -584,8 +597,8 @@
   /*dk*/ :root[data-theme="dark"] .wows { display: grid; grid-template-columns: minmax(0, 1fr); gap: 8px; width: min(600px, 100%); margin-top: 16px; } /*/dk*/
   :root[data-theme="light"] .wows .un-wow { position: relative; min-height: 0; flex-direction: row; align-items: center; gap: 14px; padding: 12px 16px 12px 12px; border: 1px solid #ececea; border-radius: 16px; background: #fff; box-shadow: none; text-align: left; }
   /*dk*/ :root[data-theme="dark"] .wows .un-wow { position: relative; min-height: 0; flex-direction: row; align-items: center; gap: 14px; padding: 12px 16px 12px 12px; border: 1px solid #30302d; border-radius: 16px; background: #1c1c1b; box-shadow: none; text-align: left; } /*/dk*/
-  :root[data-theme="light"] .wows .un-wow:hover { transform: none; box-shadow: none; border-color: color-mix(in srgb, #874bff 35%, transparent); }
-  /*dk*/ :root[data-theme="dark"] .wows .un-wow:hover { transform: none; box-shadow: none; border-color: color-mix(in srgb, #874bff 35%, transparent); } /*/dk*/
+  :root[data-theme="light"] .wows .un-wow:hover { transform: none; box-shadow: none; border-color: color-mix(in srgb, var(--un-brand) 35%, transparent); }
+  /*dk*/ :root[data-theme="dark"] .wows .un-wow:hover { transform: none; box-shadow: none; border-color: color-mix(in srgb, var(--un-brand) 35%, transparent); } /*/dk*/
   :root[data-theme="light"] .wows .un-wow__icon { display: grid; width: 36px; height: 36px; border-radius: 10px; background: #f7f7f5; color: #1a1a1a; }
   /*dk*/ :root[data-theme="dark"] .wows .un-wow__icon { display: grid; width: 36px; height: 36px; border-radius: 10px; background: #252523; color: #f2f2ee; } /*/dk*/
   :root[data-theme="light"] .wows .un-wow__icon .un-icon { width: 18px; height: 18px; }
@@ -598,12 +611,12 @@
   /*dk*/ :root[data-theme="dark"] .wows .un-wow:hover .un-wow__go { color: #f2f2ee; transform: translate(2px, -2px); } /*/dk*/
   :root[data-theme="light"] .wows .un-wow::before {
     content: ""; position: absolute; inset: -1px; border-radius: inherit; padding: 1px; pointer-events: none; opacity: 0;
-    background: linear-gradient(110deg, transparent 18%, #874bff 36%, #ffffff 50%, #b9a0ff 64%, transparent 82%) 88% 0 / 300% 100% no-repeat;
+    background: linear-gradient(110deg, transparent 18%, var(--un-brand) 36%, #ffffff 50%, #9fa2ff 64%, transparent 82%) 88% 0 / 300% 100% no-repeat;
     -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0); -webkit-mask-composite: xor;
     mask: linear-gradient(#000 0 0) content-box exclude, linear-gradient(#000 0 0);
     transition: opacity 0.3s ease;
   }
-  /*dk*/ :root[data-theme="dark"] .wows .un-wow::before { content: ""; position: absolute; inset: -1px; border-radius: inherit; padding: 1px; pointer-events: none; opacity: 0; background: linear-gradient(110deg, transparent 18%, #874bff 36%, #1c1c1b 50%, #b9a0ff 64%, transparent 82%) 88% 0 / 300% 100% no-repeat; -webkit-mask: linear-gradient(#f2f2ee 0 0) content-box, linear-gradient(#f2f2ee 0 0); -webkit-mask-composite: xor; mask: linear-gradient(#f2f2ee 0 0) content-box exclude, linear-gradient(#f2f2ee 0 0); transition: opacity 0.3s ease; } /*/dk*/
+  /*dk*/ :root[data-theme="dark"] .wows .un-wow::before { content: ""; position: absolute; inset: -1px; border-radius: inherit; padding: 1px; pointer-events: none; opacity: 0; background: linear-gradient(110deg, transparent 18%, var(--un-brand) 36%, #1c1c1b 50%, #9fa2ff 64%, transparent 82%) 88% 0 / 300% 100% no-repeat; -webkit-mask: linear-gradient(#f2f2ee 0 0) content-box, linear-gradient(#f2f2ee 0 0); -webkit-mask-composite: xor; mask: linear-gradient(#f2f2ee 0 0) content-box exclude, linear-gradient(#f2f2ee 0 0); transition: opacity 0.3s ease; } /*/dk*/
   :root[data-theme="light"] .wows .un-wow:hover::before { opacity: 1; animation: wow-glint 3.2s linear infinite; }
   /*dk*/ :root[data-theme="dark"] .wows .un-wow:hover::before { opacity: 1; animation: wow-glint 3.2s linear infinite; } /*/dk*/
   @keyframes wow-glint { 0% { background-position: 88% 0; animation-timing-function: cubic-bezier(0.3, 0, 0.7, 1); } 40%, 100% { background-position: 12% 0; } }
@@ -621,12 +634,12 @@
   :root[data-theme="light"] .chatting .assistant { display: block; position: relative; left: auto; top: auto; width: 72px; height: 72px; margin: 0 auto; }
   /*dk*/ :root[data-theme="dark"] .chatting .assistant { display: block; position: relative; left: auto; top: auto; width: 72px; height: 72px; margin: 0 auto; } /*/dk*/
   /* hovering the assistant: it grows a little (softly, from the top so nothing is cut) and waves, to see it in detail */
-  .assistant { transform-origin: 50% 0; transition: transform 0.5s cubic-bezier(0.22, 1, 0.36, 1); }
+  .assistant { transform-origin: 50% 0; transition: transform 0.3s cubic-bezier(0.22, 1, 0.36, 1); }
   .assistant.grow { transform: scale(1.12); }
   .stage { position: relative; }
   .bot-hi { display: none; }
   .chatting .bot-hi { display: block; position: absolute; z-index: 7; left: 50%; top: 122px; margin: 0; padding: 4px 12px; border-radius: 99px; background: #f7f7f5; color: #1a1a1a; font: 500 12px/18px var(--font-display); white-space: nowrap;
-    opacity: 0; transform: translate(-50%, -4px); pointer-events: none; transition: opacity 0.35s ease, transform 0.45s cubic-bezier(0.22, 1, 0.36, 1); }
+    opacity: 0; transform: translate(-50%, -4px); pointer-events: none; transition: opacity 0.3s ease, transform 0.3s cubic-bezier(0.22, 1, 0.36, 1); }
   /*dk*/ :root[data-theme="dark"] .chatting .bot-hi { background: #252523; color: #f2f2ee; } /*/dk*/
   .chatting .bot-hi.show { opacity: 1; transform: translate(-50%, 0); }
   :root[data-theme="dark"] .chatting .bot-hi { background: rgba(255, 255, 255, 0.1); color: #fff; }
@@ -644,15 +657,15 @@
   .un-msg .greet { font-weight: 600; }
   :root[data-theme="light"] .un-msg--user { background: #e8e8e5; color: #1a1a1a; border-radius: 22px; }
   /*dk*/ :root[data-theme="dark"] .un-msg--user { background: #2c2c29; color: #f2f2ee; border-radius: 22px; } /*/dk*/   /* softer than black: the panel's grey, dark text */
-  :root[data-theme="light"] .un-chip { border-color: #e0e1e6; background: #fff; color: #1a1a1a; }
-  /*dk*/ :root[data-theme="dark"] .un-chip { border-color: #30302d; background: #1c1c1b; color: #f2f2ee; } /*/dk*/
-  :root[data-theme="light"] .un-chip:hover { background: #f7f7f5; border-color: #d3d4d9; }
-  /*dk*/ :root[data-theme="dark"] .un-chip:hover { background: #252523; border-color: #3a3a36; } /*/dk*/
+  :root[data-theme="light"] .un-chip { border-color: #1a1a1a; background: transparent; color: #1a1a1a; }
+  /*dk*/ :root[data-theme="dark"] .un-chip { border-color: #f2f2ee; background: transparent; color: #f2f2ee; } /*/dk*/   /* Figma: suggested replies are outlined in ink */
+  :root[data-theme="light"] .un-chip:hover { background: #f7f7f5; border-color: #1a1a1a; }
+  /*dk*/ :root[data-theme="dark"] .un-chip:hover { background: #252523; border-color: #f2f2ee; } /*/dk*/
   /* chat bar: soft grey, no border or shadow; 24px round buttons */
   :root[data-theme="light"] .chatbar { width: 100%; background: #f7f7f5; border: 0; border-radius: 16px; box-shadow: none; }
   /*dk*/ :root[data-theme="dark"] .chatbar { width: 100%; background: #252523; border: 0; border-radius: 16px; box-shadow: none; } /*/dk*/
-  :root[data-theme="light"] .chatbar:focus-within { box-shadow: inset 0 0 0 1px #cfc5ff; }
-  /*dk*/ :root[data-theme="dark"] .chatbar:focus-within { box-shadow: inset 0 0 0 1px #4b3d7d; } /*/dk*/
+  :root[data-theme="light"] .chatbar:focus-within { box-shadow: inset 0 0 0 1px var(--un-brand), 0 0 0 6px color-mix(in srgb, var(--un-brand) 9%, transparent); }
+  /*dk*/ :root[data-theme="dark"] .chatbar:focus-within { box-shadow: inset 0 0 0 1px var(--un-brand), 0 0 0 6px color-mix(in srgb, var(--un-brand) 9%, transparent); } /*/dk*/   /* Figma: brand border + soft halo */
   :root[data-theme="light"] .chatbar textarea::placeholder { color: #9f9f99; opacity: 1; }
   /*dk*/ :root[data-theme="dark"] .chatbar textarea::placeholder { color: #7d7d77; opacity: 1; } /*/dk*/
   .tabhint { display: none; }   /* the "Tab" hint is hidden: Tab still accepts the suggestion in the placeholder */
@@ -667,14 +680,14 @@
   :root[data-theme="light"] .un-icon-btn--send.ready:hover { background: #33332f; }
   /*dk*/ :root[data-theme="dark"] .un-icon-btn--send.ready:hover { background: #e0e0da; } /*/dk*/
   /* right panel: Progress (dots on a line; black = done, yellow = now), Outputs, Context */
-  :root[data-theme="light"] .panel { display: flex; flex-direction: column; gap: 8px; padding: 12px 16px 16px; border-radius: 16px; background: #e8e8e5; overflow: hidden; }
-  /*dk*/ :root[data-theme="dark"] .panel { display: flex; flex-direction: column; gap: 8px; padding: 12px 16px 16px; border-radius: 16px; background: #2c2c29; overflow: hidden; } /*/dk*/
+  :root[data-theme="light"] .panel { display: flex; flex-direction: column; gap: 8px; padding: 12px 16px 16px; border-radius: 16px; background: linear-gradient(180deg, #deded5 0%, rgba(222, 222, 213, 0) 100%); overflow: hidden; }
+  /*dk*/ :root[data-theme="dark"] .panel { display: flex; flex-direction: column; gap: 8px; padding: 12px 16px 16px; border-radius: 16px; background: linear-gradient(180deg, #2c2c29 0%, rgba(222, 222, 213, 0) 100%); overflow: hidden; } /*/dk*/   /* fades out toward the bottom */
   .phead { display: flex; justify-content: flex-end; }
   .pcollapse { width: 32px; height: 32px; display: grid; place-items: center; border-radius: 8px; color: #1a1a1a; transition: background 0.2s; }
   /*dk*/ :root[data-theme="dark"] .pcollapse { color: #f2f2ee; } /*/dk*/
   .pcollapse:hover { background: rgba(255, 255, 255, 0.6); }
   /*dk*/ :root[data-theme="dark"] .pcollapse:hover { background: rgba(28, 28, 27, 0.6); } /*/dk*/
-  .pcollapse .un-icon { width: 18px; height: 18px; transition: transform 0.4s var(--ease); }
+  .pcollapse .un-icon { width: 18px; height: 18px; transition: transform 0.3s var(--ease); }
   .prow .picon { display: none; stroke: #1a1a1a; }
   /*dk*/ :root[data-theme="dark"] .prow .picon { stroke: #f2f2ee; } /*/dk*/
   /* collapsed: not a second sidebar — the panel tucks away to a thin strip with only the toggle (no section icons) */
@@ -696,8 +709,8 @@
   /* little tags: outline only, no fill */
   .ptag { flex: none; min-width: 20px; height: 20px; padding: 0 12px; display: inline-grid; place-items: center; border: 1px solid #d3d4d0; border-radius: 99px; background: transparent; color: #7b7b79; font: 500 12px/18px var(--font-display); transition: border-color 0.3s, color 0.3s; }
   /*dk*/ :root[data-theme="dark"] .ptag { border: 1px solid #3a3a36; color: #a5a59f; } /*/dk*/
-  .ptag.live { border-color: #cfc5ff; color: #5b2fc9; }
-  /*dk*/ :root[data-theme="dark"] .ptag.live { border-color: #4b3d7d; color: #b9a0ff; } /*/dk*/   /* setting up / working: the accent */
+  .ptag.live { border-color: #c5c7ff; color: #0809a8; }
+  /*dk*/ :root[data-theme="dark"] .ptag.live { border-color: #2b2d7d; color: #9fa2ff; } /*/dk*/   /* setting up / working: the accent */
   .ptag.done { border-color: #1a1a1a; color: #1a1a1a; }
   /*dk*/ :root[data-theme="dark"] .ptag.done { border-color: #f2f2ee; color: #f2f2ee; } /*/dk*/
   /* the Progress status reads as a soft grey pill (the counts stay outlined) */
@@ -708,30 +721,29 @@
   .panel > .prow:hover { background: rgba(255, 255, 255, 0.55); }
   /*dk*/ :root[data-theme="dark"] .panel > .prow:hover { background: rgba(28, 28, 27, 0.55); } /*/dk*/
   .prow .grow { flex: 1; }
-  .prow .un-icon { width: 18px; height: 18px; stroke: #1a1a1a; transition: transform 0.25s var(--ease); }
+  .prow .un-icon { width: 18px; height: 18px; stroke: #1a1a1a; transition: transform 0.2s var(--ease); }
   /*dk*/ :root[data-theme="dark"] .prow .un-icon { stroke: #f2f2ee; } /*/dk*/
   .prow .go { stroke: #7b7b79; }
   /*dk*/ :root[data-theme="dark"] .prow .go { stroke: #a5a59f; } /*/dk*/
   .panel > .prow:hover .go { transform: translateX(2px); }
   .prow[aria-expanded="false"] .chev { transform: rotate(-90deg); }
   .steps { position: relative; display: flex; align-items: center; justify-content: space-between; padding: 20px 12px; }
-  .steps { max-height: 50px; overflow: hidden; transition: max-height 0.4s var(--ease), padding 0.4s var(--ease), opacity 0.3s ease; }
+  .steps { max-height: 50px; overflow: hidden; transition: max-height 0.3s var(--ease), padding 0.3s var(--ease), opacity 0.3s ease; }
   .steps.closed { max-height: 0; padding-block: 0; opacity: 0; }
   .steps::before, .steps::after { content: ""; position: absolute; left: 17px; top: 50%; height: 1px; }
   .steps::before { right: 17px; background: #e8e8e5; }
   /*dk*/ :root[data-theme="dark"] .steps::before { background: #2c2c29; } /*/dk*/
-  .steps::after { width: calc((100% - 34px) * var(--step) / 3); background: #1a1a1a; transition: width 0.6s var(--ease); }
+  .steps::after { width: calc((100% - 34px) * var(--step) / 3); background: #1a1a1a; transition: width 0.3s var(--ease); }
   /*dk*/ :root[data-theme="dark"] .steps::after { background: #f2f2ee; } /*/dk*/
-  .steps .dot { position: relative; z-index: 1; width: 10px; height: 10px; border-radius: 50%; background: #e8e8e5; transition: background 0.4s var(--ease), box-shadow 0.4s var(--ease); }
+  .steps .dot { position: relative; z-index: 1; width: 10px; height: 10px; border-radius: 50%; background: #e8e8e5; transition: background 0.3s var(--ease), box-shadow 0.3s var(--ease); }
   /*dk*/ :root[data-theme="dark"] .steps .dot { background: #2c2c29; } /*/dk*/
   .steps .dot.done { background: #1a1a1a; }
   /*dk*/ :root[data-theme="dark"] .steps .dot.done { background: #f2f2ee; } /*/dk*/
-  .steps .dot.now { background: #874bff; box-shadow: 0 0 0 3px rgba(135, 75, 255, 0.22), 0 0 10px rgba(135, 75, 255, 0.6); animation: dot-glow 1.6s ease-in-out infinite; }
-  /* the current step glows on and off: its halo fades in and out like a light */
-  @keyframes dot-glow {
-    0%, 100% { box-shadow: 0 0 0 3px rgba(135, 75, 255, 0.28), 0 0 12px rgba(135, 75, 255, 0.75); }
-    50%      { box-shadow: 0 0 0 3px rgba(135, 75, 255, 0), 0 0 12px rgba(135, 75, 255, 0); }
-  }
+  /* the current step is a small brand gear that turns (Figma), on a soft brand halo */
+  .steps .dot.now { background: color-mix(in srgb, var(--un-brand) 20%, transparent); box-shadow: 0 0 0 3px color-mix(in srgb, var(--un-brand) 20%, transparent); }
+  .steps .dot.now::after { content: ""; position: absolute; inset: -1.5px; background: var(--un-brand); -webkit-mask: url(assets/gear.svg) center / contain no-repeat; mask: url(assets/gear.svg) center / contain no-repeat; animation: gear-turn 3s linear infinite; }
+  @keyframes gear-turn { to { transform: rotate(360deg); } }
+  @media (prefers-reduced-motion: reduce) { .steps .dot.now::after { animation: none; } }
   /* desktop layout: three white cards on the warm page, 12px from the edges */
   @media (min-width: 861px) {
     :root[data-theme="light"] .app { grid-template-columns: var(--sidebar-w) minmax(0, 1fr) 281px; column-gap: 12px; padding: 12px; height: 100dvh; min-height: 0; }
@@ -744,8 +756,8 @@
   /*dk*/ :root[data-theme="dark"] .main.chatting { height: calc(100dvh - 24px); padding-top: 0; } /*/dk*/
     :root[data-theme="light"] .panel { height: calc(100dvh - 24px); }
   /*dk*/ :root[data-theme="dark"] .panel { height: calc(100dvh - 24px); } /*/dk*/
-    :root[data-theme="light"] .chatting .thread, :root[data-theme="light"] .thread { width: min(700px, 100%); }
-  /*dk*/ :root[data-theme="dark"] .chatting .thread, :root[data-theme="dark"] .thread { width: min(700px, 100%); } /*/dk*/
+    :root[data-theme="light"] .chatting .thread, :root[data-theme="light"] .thread { width: min(796px, calc(100% + 80px)); margin-inline: -40px; padding-inline: 48px; padding-bottom: 48px; }
+  /*dk*/ :root[data-theme="dark"] .chatting .thread, :root[data-theme="dark"] .thread { width: min(796px, calc(100% + 80px)); margin-inline: -40px; padding-inline: 48px; padding-bottom: 48px; } /*/dk*/   /* room for the cards' shadow (the thread scrolls, so it would clip it); the text column stays 700px */
   }
   @media (max-width: 1100px) and (min-width: 861px) { :root[data-theme="light"] .app { grid-template-columns: var(--sidebar-w) minmax(0, 1fr); }
   /*dk*/ :root[data-theme="dark"] .app { grid-template-columns: var(--sidebar-w) minmax(0, 1fr); } /*/dk*/ :root[data-theme="light"] .panel { display: none; }
@@ -761,7 +773,7 @@
   .app-list { padding-top: 0 !important; }
   .app-item .un-icon { width: 16px; height: 16px; flex: none; stroke: currentColor; }
   .app-item .fav-mark { display: grid; place-items: center; width: 16px; height: 16px; flex: none; }
-  .app-item .fav-mark .un-icon { width: 14px; height: 14px; fill: #874bff; stroke: #874bff; }
+  .app-item .fav-mark .un-icon { width: 14px; height: 14px; fill: var(--un-brand); stroke: var(--un-brand); }
   .app-item:hover .fav-mark, .app-item.menu-open .fav-mark { display: none; }
   :root[data-theme="light"] .chat-item.app-item.live .fav-mark .un-icon { fill: #fff; stroke: #fff; }
   /*dk*/ :root[data-theme="dark"] .chat-item.app-item.live .fav-mark .un-icon { fill: #1c1c1b; stroke: #1c1c1b; } /*/dk*/
@@ -785,15 +797,15 @@
   .list-head[hidden] { display: none; }
   .list-head > span:first-child { flex: 1; }
   .list-head .ptag { letter-spacing: 0; text-transform: none; }
-  #recentCount { display: none; }   /* Recent shows no count (Favorites keeps its tag) */   /* the counts reuse the panel's tag (.ptag): same size, padding and outline */
-  .list-head .lchev { width: 14px; height: 14px; flex: none; transition: transform 0.25s var(--ease); }
+  #recentCount, #favCount { display: none; }   /* the app lists show no counts */   /* the counts reuse the panel's tag (.ptag): same size, padding and outline */
+  .list-head .lchev { width: 14px; height: 14px; flex: none; transition: transform 0.2s var(--ease); }
   .list-head { cursor: pointer; }   /* no hover background: it just folds / unfolds its group */
   /* a hairline separates Favorites from Recent */
   #recentLabel { position: relative; margin-top: 29px; }   /* the divider: 8px above the line + 1px line + 20px below it */
   #recentLabel::before { content: ""; position: absolute; left: 8px; right: 8px; top: -21px; height: 1px; background: var(--un-line, rgba(255, 255, 255, 0.12)); }
   /*dk*/ :root[data-theme="dark"] #recentLabel::before { background: var(--un-line, rgba(28, 28, 27, 0.12)); } /*/dk*/
-  :root[data-theme="light"] #recentLabel::before { background: #ececea; }
-  /*dk*/ :root[data-theme="dark"] #recentLabel::before { background: #30302d; } /*/dk*/
+  :root[data-theme="light"] #recentLabel::before { background: #ececea; display: none; }
+  /*dk*/ :root[data-theme="dark"] #recentLabel::before { background: #30302d; display: none; } /*/dk*/   /* no divider between Favorites and Recent */
   #favBox[hidden] + #recentLabel::before { display: none; }
   .list-head[aria-expanded="false"] .lchev { transform: rotate(-90deg); }
   .history ul.app-list[hidden] { display: none !important; }   /* a folded group */
@@ -809,33 +821,51 @@
   /* ---------- an open app: in the middle; the chat becomes a drawer on the right ---------- */
   .appview { display: none; }
   .drawer-head { display: none; }
-  .app.app-mode .appview { display: flex; flex-direction: column; gap: 24px; min-width: 0; min-height: 0; padding: 40px; border-radius: 16px; background: #fff; overflow: auto; animation: un-rise 0.45s var(--ease) both; }
-  /*dk*/ :root[data-theme="dark"] .app.app-mode .appview { background: #1c1c1b; } /*/dk*/
+  /* the app view is two stacked cards: a bar (Apps / name · Create) and the app itself */
+  .app.app-mode .appview { display: flex; flex-direction: column; gap: 12px; min-width: 0; min-height: 0; overflow: hidden; animation: un-rise 0.3s var(--ease-out) both; }
+  .ap-bar { flex: none; display: flex; align-items: center; gap: 12px; min-height: 60px; padding: 10px 12px 10px 24px; border-radius: 16px; }
+  .ap-crumb { flex: 1; min-width: 0; display: flex; align-items: center; gap: 8px; font: 500 14px/20px var(--font-display); white-space: nowrap; overflow: hidden; }
+  .ap-crumb b { overflow: hidden; text-overflow: ellipsis; font-weight: 600; }
+  .ap-crumb .un-icon { width: 16px; height: 16px; flex: none; }
+  .ap-create { flex: none; gap: 6px; }
+  .ap-create .un-icon { width: 16px; height: 16px; }
+  .ap-card { flex: 1; min-height: 0; display: flex; flex-direction: column; gap: 24px; padding: 40px; border-radius: 16px; overflow: auto; }
+  :root[data-theme="light"] .ap-bar, :root[data-theme="light"] .ap-card { background: #fff; }
+  /*dk*/ :root[data-theme="dark"] .ap-bar, :root[data-theme="dark"] .ap-card { background: #1c1c1b; } /*/dk*/
+  :root[data-theme="light"] .ap-crumb { color: #7b7b79; }
+  /*dk*/ :root[data-theme="dark"] .ap-crumb { color: #a5a59f; } /*/dk*/
+  :root[data-theme="light"] .ap-crumb b { color: #1a1a1a; }
+  /*dk*/ :root[data-theme="dark"] .ap-crumb b { color: #f2f2ee; } /*/dk*/
+  :root[data-theme="light"] .ap-crumb .sep { color: #c9c9c4; }
+  /*dk*/ :root[data-theme="dark"] .ap-crumb .sep { color: #4a4a45; } /*/dk*/
   .app.app-mode .panel { display: none !important; }
   .app.app-mode .drawer-head { display: flex; align-items: center; gap: 8px; padding: 0 0 4px; font: 600 14px/20px var(--font-display); }
   .drawer-head .grow { flex: 1; }   /* title left, minimize arrow right */
   /* minimized chat: the assistant floating bottom-right (102px) on a soft white glow so it never sits on content */
   .bot-fab { position: fixed; z-index: 19; right: 28px; bottom: 28px; width: 102px; height: 102px; padding: 0; border-radius: 50%; cursor: pointer;
-    background: radial-gradient(closest-side, #fff 62%, rgba(255, 255, 255, 0.85) 80%, rgba(255, 255, 255, 0) 100%);
-    animation: fab-in 0.7s cubic-bezier(0.34, 1.56, 0.64, 1) both; transition: transform 0.3s var(--ease); }
-  /*dk*/ :root[data-theme="dark"] .bot-fab { background: radial-gradient(closest-side, #1c1c1b 62%, rgba(28, 28, 27, 0.85) 80%, rgba(28, 28, 27, 0.0) 100%); } /*/dk*/
-  .app.app-mode .main.drawer-out { animation: drawer-out 0.38s cubic-bezier(0.4, 0, 1, 1) forwards; }
-  @keyframes drawer-out { to { opacity: 0; transform: translateX(32px); } }
+    background: none; animation: fab-in 0.3s var(--ease-out) both; transition: transform 0.3s var(--ease); }
+  /* the soft white halo behind the robot: 20px wider than the button, fading out gently */
+  .bot-fab::before { content: ""; position: absolute; inset: -10px; z-index: -1; border-radius: 50%; pointer-events: none;
+    background: radial-gradient(closest-side, #fff 30%, rgba(255, 255, 255, 0.7) 55%, rgba(255, 255, 255, 0.25) 80%, rgba(255, 255, 255, 0) 100%); }
+  /*dk*/ :root[data-theme="dark"] .bot-fab::before { background: radial-gradient(closest-side, #1c1c1b 30%, rgba(28, 28, 27, 0.7) 55%, rgba(28, 28, 27, 0.25) 80%, rgba(28, 28, 27, 0.0) 100%); } /*/dk*/
+  :root[data-theme="dark"] .bot-fab::before { background: radial-gradient(closest-side, #1c1c1b 30%, rgba(28, 28, 27, 0.7) 55%, rgba(28, 28, 27, 0.25) 80%, rgba(28, 28, 27, 0) 100%); }
+  .app.app-mode .main.drawer-out { animation: drawer-out 0.15s var(--ease-in) forwards; }
+  @keyframes drawer-out { to { opacity: 0; transform: translateX(8px); } }   /* exit: short, ease-in */
   .bot-fab[hidden] { display: none; }
   .bot-fab:hover { transform: scale(1.06); }
   .bot-fab [data-robot] { width: 100%; height: 100%; }
   /* its little message, to the left of the assistant; it fades after a few seconds */
   .fab-say { position: absolute; right: calc(100% + 6px); top: 50%; padding: 10px 14px; border-radius: 16px 16px 4px 16px; background: #fff; color: #1a1a1a; font: 400 14px/20px var(--font-display); white-space: nowrap;
-    box-shadow: 0 10px 30px -12px rgba(26, 26, 26, 0.3), 0 0 0 1px #ececea; opacity: 0; transform: translate(8px, -50%) scale(0.96); transform-origin: right center; pointer-events: none; transition: opacity 0.35s ease, transform 0.45s cubic-bezier(0.22, 1, 0.36, 1); }
+    box-shadow: 0 10px 30px -12px rgba(26, 26, 26, 0.3), 0 0 0 1px #ececea; opacity: 0; transform: translate(8px, -50%) scale(0.96); transform-origin: right center; pointer-events: none; transition: opacity 0.3s ease, transform 0.3s cubic-bezier(0.22, 1, 0.36, 1); }
   /*dk*/ :root[data-theme="dark"] .fab-say { background: #1c1c1b; color: #f2f2ee; box-shadow: 0 10px 30px -12px rgba(0, 0, 0, 0.66), 0 0 0 1px #30302d; } /*/dk*/
   .fab-say.show { opacity: 1; transform: translate(0, -50%); }
-  @keyframes fab-in { 0% { opacity: 0; transform: translateY(40px) scale(0.7); } 55% { opacity: 1; transform: translateY(-14px) scale(1.04); } 80% { transform: translateY(4px) scale(0.98); } 100% { transform: none; } }   /* jumps in */
+  @keyframes fab-in { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }   /* the floating assistant: a calm rise (its wave says hi) */   /* jumps in */
   .app-mode .ap-ask { display: none !important; }   /* the floating assistant replaces "Ask …" */
-  .app.app-mode .main { padding: 16px 20px 20px; animation: drawer-in 0.45s var(--ease) both; }
+  .app.app-mode .main { padding: 16px 20px 20px; animation: drawer-in 0.3s var(--ease-out) both; }
   .app.app-mode .chatbar { width: 100%; }
   .app.app-mode .thread { width: 100%; }
   .app.app-mode.drawer-closed .main { display: none; }
-  @keyframes drawer-in { from { opacity: 0; transform: translateX(24px); } }
+  @keyframes drawer-in { from { opacity: 0; transform: translateX(8px); } }
   @media (min-width: 861px) {
     :root[data-theme="light"] .app.app-mode { grid-template-columns: var(--sidebar-w) minmax(0, 1fr) 400px; }
   /*dk*/ :root[data-theme="dark"] .app.app-mode { grid-template-columns: var(--sidebar-w) minmax(0, 1fr) 400px; } /*/dk*/
@@ -863,7 +893,7 @@
   .ap-btn:hover { background: #f7f7f5; }
   /*dk*/ :root[data-theme="dark"] .ap-btn:hover { background: #252523; } /*/dk*/
   .ap-btn .un-icon { width: 16px; height: 16px; }
-  .ap-btn.on .un-icon { fill: #874bff; stroke: #874bff; }
+  .ap-btn.on .un-icon { fill: var(--un-brand); stroke: var(--un-brand); }
   .ap-more { width: 36px; height: 36px; flex: none; display: grid; place-items: center; border: 1px solid #e0e1e6; border-radius: 50%; background: #fff; color: #1a1a1a; transition: background 0.2s; }
   /*dk*/ :root[data-theme="dark"] .ap-more { border: 1px solid #30302d; background: #1c1c1b; color: #f2f2ee; } /*/dk*/
   .ap-more:hover { background: #f7f7f5; }
@@ -871,7 +901,7 @@
   .ap-more svg { width: 18px; height: 18px; fill: currentColor; }
   .ap-title h2 { display: flex; align-items: center; gap: 8px; }
   .ap-fav { display: inline-grid; }
-  .ap-fav .un-icon { width: 16px; height: 16px; fill: #874bff; stroke: #874bff; }   /* a favorite shows a small star by its name */
+  .ap-fav .un-icon { width: 16px; height: 16px; fill: var(--un-brand); stroke: var(--un-brand); }   /* a favorite shows a small star by its name */
   :root[data-theme="light"] .ap-menu { --un-menu: #fff; --un-line: #ececea; --un-ink: #1a1a1a; --un-ink-soft: #7b7b79; border-radius: 16px; box-shadow: 0 16px 40px -12px rgba(26, 26, 26, 0.22); }
   /*dk*/ :root[data-theme="dark"] .ap-menu { --un-menu: #1c1c1b; --un-line: #30302d; --un-ink: #f2f2ee; --un-ink-soft: #a5a59f; border-radius: 16px; box-shadow: 0 16px 40px -12px rgba(0, 0, 0, 0.48); } /*/dk*/
   :root[data-theme="light"] .ap-menu button { border-radius: 10px; }
@@ -891,8 +921,8 @@
   .ap-row { display: grid; grid-template-columns: var(--gtc, 1.4fr 1fr 1fr 1.2fr 1fr); gap: 12px; padding: 12px 16px; border-top: 1px solid #ececea; font: 400 14px/20px var(--font-display); color: #1a1a1a; }
   /*dk*/ :root[data-theme="dark"] .ap-row { border-top: 1px solid #30302d; color: #f2f2ee; } /*/dk*/
   .ap-row:first-child { border-top: 0; }
-  .ap-th { background: #f7f7f5; font-weight: 500; color: #7b7b79; font-size: 13px; }
-  /*dk*/ :root[data-theme="dark"] .ap-th { background: #252523; color: #a5a59f; } /*/dk*/
+  .ap-th { background: none; font-weight: 500; color: #7b7b79; font-size: 13px; }
+  /*dk*/ :root[data-theme="dark"] .ap-th { color: #a5a59f; } /*/dk*/   /* column names sit on the panel, no band */
   .ap-row span { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .ap-row .un-status, .ap-row .un-prio { overflow: visible; justify-self: start; }
   /* app types: dashboard · export tool · builder (same warm greys and type scale as the cards) */
@@ -921,7 +951,7 @@
   .ap-panel .ap-table { border-radius: 10px; }
   .ap-vbars { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 10px; align-items: end; height: 170px; padding-top: 8px; }
   .ap-vbar { display: flex; flex-direction: column; align-items: center; gap: 6px; height: 100%; justify-content: flex-end; }
-  .ap-vbar i { width: 100%; max-width: 44px; height: var(--h); min-height: 4px; border-radius: 8px 8px 4px 4px; background: #1a1a1a; transform-origin: bottom; animation: un-grow-y 0.8s var(--ease) both; }
+  .ap-vbar i { width: 100%; max-width: 44px; height: var(--h); min-height: 4px; border-radius: 8px 8px 4px 4px; background: #1a1a1a; transform-origin: bottom; animation: un-grow-y 0.3s var(--ease-out) both; }
   /*dk*/ :root[data-theme="dark"] .ap-vbar i { background: #f2f2ee; } /*/dk*/
   .ap-vbar.bad i { background: var(--un-bad, #e03131); }
   /*dk*/ :root[data-theme="dark"] .ap-vbar.bad i { background: var(--un-bad, #ff6b6b); } /*/dk*/
@@ -933,9 +963,348 @@
   .ap-hbars { display: grid; gap: 10px; }
   .ap-hbar { display: grid; grid-template-columns: 80px 1fr 24px; align-items: center; gap: 10px; font: 400 13px/18px var(--font-display); color: #1a1a1a; }
   /*dk*/ :root[data-theme="dark"] .ap-hbar { color: #f2f2ee; } /*/dk*/
-  .ap-hbar i { height: 8px; width: var(--w); border-radius: 8px; background: #1a1a1a; transform-origin: left; animation: un-grow 0.8s var(--ease) both; }
+  .ap-hbar i { height: 8px; width: var(--w); border-radius: 8px; background: #1a1a1a; transform-origin: left; animation: un-grow 0.3s var(--ease-out) both; }
   /*dk*/ :root[data-theme="dark"] .ap-hbar i { background: #f2f2ee; } /*/dk*/
   .ap-hbar b { font-weight: 600; text-align: right; }
+  /* app bar: "Apps" goes to the marketplace */
+  .ap-crumb__link { padding: 0; border: 0; background: none; font: inherit; color: inherit; cursor: pointer; border-radius: 4px; transition: color 0.2s; }
+  :root[data-theme="light"] .ap-crumb__link:hover { color: #1a1a1a; }
+  /*dk*/ :root[data-theme="dark"] .ap-crumb__link:hover { color: #f2f2ee; } /*/dk*/
+  /* marketplace */
+  .mk-head { display: flex; align-items: flex-end; justify-content: space-between; gap: 16px; }
+  .mk-head h2 { margin: 0; font: 600 24px/30px var(--font-display); }
+  .mk-head p { margin: 4px 0 0; font: 400 14px/20px var(--font-display); }
+  .mk-count { font: 500 13px/18px var(--font-display); white-space: nowrap; }
+  .mk-tools { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; }
+  .mk-search { flex: 1 1 260px; max-width: 360px; display: flex; align-items: center; gap: 10px; height: 40px; padding: 0 14px; border-radius: 99px; }
+  .mk-search .un-icon { width: 18px; height: 18px; flex: none; }
+  .mk-search input { flex: 1; min-width: 0; height: 100%; border: 0; outline: 0; background: transparent; font: 400 14px/20px var(--font-display); color: inherit; }
+  .mk-chips { display: flex; flex-wrap: wrap; gap: 6px; }
+  .mk-chip { height: 32px; padding: 0 14px; border-radius: 99px; font: 500 13px/18px var(--font-display); cursor: pointer; transition: background 0.2s, color 0.2s, border-color 0.2s; }
+  .mk-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 16px; }
+  .mk-app { display: flex; flex-direction: column; min-width: 0; padding: 0; overflow: hidden; border-radius: 16px; text-align: left; cursor: pointer; font: inherit; color: inherit;
+    transition: transform 0.2s var(--ease), box-shadow 0.2s var(--ease); animation: un-rise 0.3s var(--ease-out) backwards; animation-delay: calc(0.06s + var(--i, 0) * 0.04s); }
+  .mk-thumb { display: block; aspect-ratio: 2 / 1; padding: 0; }
+  .mk-thumb svg { display: block; width: 100%; height: 100%; }
+  .mk-meta { display: grid; gap: 4px; padding: 14px 16px 16px; }
+  .mk-meta b { display: flex; align-items: center; gap: 6px; font: 600 15px/20px var(--font-display); }
+  .mk-meta small { font: 400 13px/18px var(--font-display); display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+  .mk-kind { justify-self: start; margin-top: 6px; height: 22px; padding: 0 10px; display: inline-flex; align-items: center; border-radius: 99px; font: 500 12px/16px var(--font-display); }
+  .mk-empty { grid-column: 1 / -1; margin: 24px 0; text-align: center; font: 400 14px/20px var(--font-display); }
+  .mk-app:focus-visible, .mk-chip:focus-visible, .ap-crumb__link:focus-visible { outline: 2px solid var(--un-focus); outline-offset: 2px; }
+  :root[data-theme="light"] .mk-head h2, :root[data-theme="light"] .mk-meta b { color: #1a1a1a; }
+  /*dk*/ :root[data-theme="dark"] .mk-head h2, :root[data-theme="dark"] .mk-meta b { color: #f2f2ee; } /*/dk*/
+  :root[data-theme="light"] .mk-head p, :root[data-theme="light"] .mk-count, :root[data-theme="light"] .mk-meta small, :root[data-theme="light"] .mk-empty { color: #7b7b79; }
+  /*dk*/ :root[data-theme="dark"] .mk-head p, :root[data-theme="dark"] .mk-count, :root[data-theme="dark"] .mk-meta small, :root[data-theme="dark"] .mk-empty { color: #a5a59f; } /*/dk*/
+  :root[data-theme="light"] .mk-search { box-shadow: inset 0 0 0 1px #deded5; color: #1a1a1a; background: #fff; }
+  /*dk*/ :root[data-theme="dark"] .mk-search { box-shadow: inset 0 0 0 1px #2c2c29; color: #f2f2ee; background: #1c1c1b; } /*/dk*/
+  :root[data-theme="light"] .mk-search:focus-within { box-shadow: inset 0 0 0 1px var(--un-brand), 0 0 0 4px color-mix(in srgb, var(--un-brand) 9%, transparent); }
+  /*dk*/ :root[data-theme="dark"] .mk-search:focus-within { box-shadow: inset 0 0 0 1px var(--un-brand), 0 0 0 4px color-mix(in srgb, var(--un-brand) 9%, transparent); } /*/dk*/
+  :root[data-theme="light"] .mk-chip { border: 1px solid #deded5; background: #fff; color: #1a1a1a; }
+  /*dk*/ :root[data-theme="dark"] .mk-chip { border: 1px solid #2c2c29; background: #1c1c1b; color: #f2f2ee; } /*/dk*/
+  :root[data-theme="light"] .mk-chip:hover { background: #f6f6f3; }
+  /*dk*/ :root[data-theme="dark"] .mk-chip:hover { background: #222220; } /*/dk*/
+  :root[data-theme="light"] .mk-chip[aria-pressed="true"] { border-color: #1a1a1a; background: #1a1a1a; color: #fff; }
+  /*dk*/ :root[data-theme="dark"] .mk-chip[aria-pressed="true"] { border-color: #f2f2ee; background: #f2f2ee; color: #1c1c1b; } /*/dk*/
+  :root[data-theme="light"] .mk-app { border: 1px solid #ececea; background: #fff; box-shadow: -10px 9px 34px rgba(0, 0, 0, 0.06); }
+  /*dk*/ :root[data-theme="dark"] .mk-app { border: 1px solid #30302d; background: #1c1c1b; box-shadow: -10px 9px 34px rgba(0, 0, 0, 0.13); } /*/dk*/
+  :root[data-theme="light"] .mk-app:hover { transform: translateY(-2px); box-shadow: -10px 14px 34px rgba(0, 0, 0, 0.12); }
+  /*dk*/ :root[data-theme="dark"] .mk-app:hover { transform: translateY(-2px); box-shadow: -10px 14px 34px rgba(0, 0, 0, 0.26); } /*/dk*/
+  :root[data-theme="light"] .mk-thumb { background: #f6f6f3; border-bottom: 1px solid #ececea; }
+  /*dk*/ :root[data-theme="dark"] .mk-thumb { background: #222220; border-bottom: 1px solid #30302d; } /*/dk*/
+  :root[data-theme="light"] .mk-kind { background: #f6f6f3; color: #7b7b79; }
+  /*dk*/ :root[data-theme="dark"] .mk-kind { background: #222220; color: #a5a59f; } /*/dk*/
+  @media (prefers-reduced-motion: reduce) { .mk-app { animation: none; transition: none; } }
+  /* key numbers: hero + deltas */
+  .ap-kpis { grid-template-columns: minmax(0, 1.5fr) repeat(auto-fit, minmax(150px, 1fr)); align-items: stretch; }
+  .ap-kpi { justify-content: space-between; gap: 10px; padding: 18px; border-radius: 16px; }
+  .ap-kpi b { font: 600 30px/34px var(--font-display); letter-spacing: -0.01em; }
+  .ap-kpi > small { font: 400 12px/16px var(--font-display); }
+  .ap-kpi__row { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+  .ap-delta { display: inline-flex; align-items: center; gap: 3px; height: 22px; padding: 0 8px; border-radius: 99px; font: 600 12px/16px var(--font-display); font-style: normal; white-space: nowrap; }
+  .ap-delta svg { width: 11px; height: 11px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+  :root[data-theme="light"] .ap-delta { background: #e3e4ff; color: #0809a8; }
+  /*dk*/ :root[data-theme="dark"] .ap-delta { background: #1e1f45; color: #9fa2ff; } /*/dk*/   /* good change: soft brand */
+  :root[data-theme="light"] .ap-delta.bad { background: #fff0f0; color: #e03131; }
+  /*dk*/ :root[data-theme="dark"] .ap-delta.bad { background: #fff0f0; color: #ff6b6b; } /*/dk*/
+  .ap-kpi--hero { position: relative; overflow: hidden; display: grid; grid-template-columns: 1fr auto; align-items: start; gap: 12px 16px; padding: 20px 22px; color: #fff;
+    background: linear-gradient(135deg, #0b0fff 0%, #0809a8 100%); box-shadow: -10px 14px 34px -12px rgba(11, 15, 255, 0.45); }
+  /*dk*/ :root[data-theme="dark"] .ap-kpi--hero { color: #1c1c1b; background: linear-gradient(135deg, #0b0fff 0%, #9fa2ff 100%); } /*/dk*/
+  .ap-kpi--hero::after { content: ""; position: absolute; right: -60px; top: -80px; width: 220px; height: 220px; border-radius: 50%; background: radial-gradient(closest-side, rgba(255, 255, 255, 0.18), transparent); pointer-events: none; }
+  /*dk*/ :root[data-theme="dark"] .ap-kpi--hero::after { background: radial-gradient(closest-side, rgba(28, 28, 27, 0.18), transparent); } /*/dk*/
+  .ap-kpi__main { display: grid; gap: 4px; min-width: 0; }
+  .ap-kpi--hero b { color: #fff; font-size: 40px; line-height: 44px; }
+  /*dk*/ :root[data-theme="dark"] .ap-kpi--hero b { color: #1c1c1b; } /*/dk*/
+  .ap-kpi--hero span { color: rgba(255, 255, 255, 0.78); font: 500 14px/20px var(--font-display); }
+  /*dk*/ :root[data-theme="dark"] .ap-kpi--hero span { color: rgba(28, 28, 27, 0.78); } /*/dk*/
+  .ap-kpi--hero p { display: flex; align-items: center; gap: 8px; margin: 6px 0 0; font: 400 12px/16px var(--font-display); color: rgba(255, 255, 255, 0.72); }
+  /*dk*/ :root[data-theme="dark"] .ap-kpi--hero p { color: rgba(28, 28, 27, 0.72); } /*/dk*/
+  :root[data-theme] .ap-kpi--hero .ap-delta { background: rgba(255, 255, 255, 0.16); color: #fff; }
+  :root[data-theme] .ap-kpi--hero .ap-delta.bad { background: #fff; color: #e03131; }
+  .ap-kpi__bar { grid-column: 1 / -1; display: grid; gap: 6px; }
+  .ap-kpi__bar small { font: 500 12px/16px var(--font-display); color: rgba(255, 255, 255, 0.78); }
+  /*dk*/ :root[data-theme="dark"] .ap-kpi__bar small { color: rgba(28, 28, 27, 0.78); } /*/dk*/
+  .ap-kpi__bar i { display: block; height: 6px; border-radius: 6px; background: linear-gradient(90deg, #fff var(--w), rgba(255, 255, 255, 0.22) var(--w)); transform-origin: left; animation: un-grow 0.3s var(--ease-out) 0.12s both; }
+  /*dk*/ :root[data-theme="dark"] .ap-kpi__bar i { background: linear-gradient(90deg, #1c1c1b var(--w), rgba(28, 28, 27, 0.22) var(--w)); } /*/dk*/
+  .ap-ring { width: 72px; height: 72px; }
+  .ap-ring circle { fill: none; stroke: rgba(255, 255, 255, 0.22); stroke-width: 6; }
+  /*dk*/ :root[data-theme="dark"] .ap-ring circle { stroke: rgba(28, 28, 27, 0.22); } /*/dk*/
+  .ap-ring .v { stroke: #fff; stroke-linecap: round; transform: rotate(-90deg); transform-origin: center; stroke-dasharray: var(--c); stroke-dashoffset: var(--o); animation: ap-ring 0.3s var(--ease-out) 0.12s backwards; }
+  /*dk*/ :root[data-theme="dark"] .ap-ring .v { stroke: #1c1c1b; } /*/dk*/
+  .ap-ring text { fill: #fff; font: 600 13px var(--font-display); }
+  /*dk*/ :root[data-theme="dark"] .ap-ring text { fill: #1c1c1b; } /*/dk*/
+  @keyframes ap-ring { from { stroke-dashoffset: var(--c); } }
+  /* the hero keeps its own colors in both themes; numbers inherit the <b> style */
+  :root[data-theme] .ap-kpi.ap-kpi--hero { background: linear-gradient(135deg, #0b0fff 0%, #0809a8 100%); }
+  :root[data-theme] .ap-kpi--hero > .ap-kpi__main > span { color: rgba(255, 255, 255, 0.78); }
+  :root[data-theme] .ap-kpi--hero b { color: #fff; }
+  :root[data-theme] .appview .ap-num { font: inherit; color: inherit; letter-spacing: inherit; font-variant-numeric: tabular-nums; }
+  /* app bar: favorite bookmark (filled brand blue when saved, grey outline when not) */
+  .ap-mark { flex: none; width: 36px; height: 36px; display: grid; place-items: center; padding: 0; border: 0; border-radius: 50%; background: transparent; cursor: pointer; transition: background 0.2s, transform 0.15s; }
+  .ap-mark svg { width: 20px; height: 20px; fill: none; stroke: currentColor; stroke-width: 1.6; stroke-linejoin: round; transition: fill 0.2s, transform 0.3s var(--ease); }
+  .ap-mark.on svg { fill: currentColor; transform: scale(1.04); }
+  .ap-mark:active { transform: scale(0.92); }
+  .ap-mark:focus-visible { outline: 2px solid var(--un-focus); outline-offset: 2px; }
+  :root[data-theme="light"] .ap-mark { color: #9f9f99; }
+  /*dk*/ :root[data-theme="dark"] .ap-mark { color: #7d7d77; } /*/dk*/
+  :root[data-theme="light"] .ap-mark:hover { background: #f6f6f3; }
+  /*dk*/ :root[data-theme="dark"] .ap-mark:hover { background: #222220; } /*/dk*/
+  :root[data-theme="light"] .ap-mark.on { color: #0b0fff; }
+  /*dk*/ :root[data-theme="dark"] .ap-mark.on { color: #0b0fff; } /*/dk*/
+  /* --- per-app blocks --- */
+  /* a bit more of the brand in the apps: the main series of each chart is brand blue (red still marks the bad one) */
+  :root[data-theme="light"] .ap-vbar:not(.bad) i { background: linear-gradient(180deg, #0b0fff, #0809a8); }
+  /*dk*/ :root[data-theme="dark"] .ap-vbar:not(.bad) i { background: linear-gradient(180deg, #0b0fff, #9fa2ff); } /*/dk*/
+  :root[data-theme="light"] .ap-hbar:not(.bad) > i { background: #0b0fff; }
+  /*dk*/ :root[data-theme="dark"] .ap-hbar:not(.bad) > i { background: #0b0fff; } /*/dk*/   /* the bar, not the avatar inside the name */
+  .ap-metas { display: flex; flex-wrap: wrap; gap: 10px; }
+  .ap-meta { display: grid; gap: 2px; min-width: 128px; padding: 10px 14px; border-radius: 12px; border: 1px dashed transparent; }
+  .ap-meta b { display: flex; align-items: center; gap: 6px; font: 600 18px/24px var(--font-display); }
+  .ap-meta b .ap-delta { order: 2; height: 20px; padding: 0 6px; font-size: 11px; }
+  .ap-meta span { font: 400 12px/16px var(--font-display); }
+  :root[data-theme="light"] .ap-meta { border-color: #d9d9d3; }
+  /*dk*/ :root[data-theme="dark"] .ap-meta { border-color: #d9d9d3; } /*/dk*/
+  :root[data-theme="light"] .ap-meta b { color: #1a1a1a; }
+  /*dk*/ :root[data-theme="dark"] .ap-meta b { color: #f2f2ee; } /*/dk*/
+  :root[data-theme="light"] .ap-meta.bad b { color: #e03131; }
+  :root[data-theme] .ap-meta.ink { background: #1a1a1a; border: 1px solid #1a1a1a; }   /* the one to look at: black */
+  :root[data-theme] .ap-meta.ink b { color: #fff; }
+  :root[data-theme] .ap-meta.ink span { color: rgba(255, 255, 255, 0.65); }
+  /*dk*/ :root[data-theme="dark"] .ap-meta.bad b { color: #ff6b6b; } /*/dk*/
+  :root[data-theme="light"] .ap-meta span { color: #7b7b79; }
+  /*dk*/ :root[data-theme="dark"] .ap-meta span { color: #a5a59f; } /*/dk*/
+  .ap-grid2--wide { grid-template-columns: minmax(0, 1.6fr) minmax(0, 1fr); }
+  .ap-grid2--side { grid-template-columns: minmax(0, 1fr) minmax(0, 1.4fr); }
+  @media (max-width: 1100px) { .ap-grid2--wide, .ap-grid2--side { grid-template-columns: 1fr; } }
+  .ap-donut { display: flex; align-items: center; gap: 24px; }
+  .ap-donut__fig { position: relative; width: 160px; height: 160px; flex: none; }
+  .ap-donut__fig svg { width: 100%; height: 100%; transform: rotate(-90deg); }
+  .ap-donut__fig > div { position: absolute; inset: 0; display: grid; place-content: center; text-align: center; }
+  .ap-donut__fig b { font: 600 32px/36px var(--font-display); }
+  .ap-donut__fig span { font: 400 12px/16px var(--font-display); }
+  .ap-donut circle { fill: none; stroke-width: 6; }
+  .ap-donut .seg { stroke-linecap: round; stroke-dasharray: var(--len) var(--c); stroke-dashoffset: var(--off); animation: ap-seg 0.3s var(--ease-out) 0.12s backwards; }
+  @keyframes ap-seg { from { stroke-dasharray: 0 var(--c); } }
+  .ap-legend { flex: 1; margin: 0; padding: 0; list-style: none; display: grid; gap: 10px; }
+  .ap-legend li { display: grid; grid-template-columns: 10px 1fr auto; align-items: center; gap: 10px; font: 400 13px/18px var(--font-display); }
+  .ap-legend i { width: 10px; height: 4px; border-radius: 4px; }
+  .ap-legend b { font-weight: 600; font-variant-numeric: tabular-nums; }
+  :root[data-theme="light"] .ap-donut .track { stroke: #f0f0ec; }
+  /*dk*/ :root[data-theme="dark"] .ap-donut .track { stroke: #f0f0ec; } /*/dk*/
+  :root[data-theme="light"] .ap-donut .seg, :root[data-theme="light"] .ap-legend i { stroke: #0b0fff; background: #0b0fff; }
+  /*dk*/ :root[data-theme="dark"] .ap-donut .seg, :root[data-theme="dark"] .ap-legend i { stroke: #0b0fff; background: #0b0fff; } /*/dk*/
+  :root[data-theme="light"] .ap-donut .seg.warn, :root[data-theme="light"] .ap-legend i.warn { stroke: #ffb800; background: #ffb800; }
+  /*dk*/ :root[data-theme="dark"] .ap-donut .seg.warn, :root[data-theme="dark"] .ap-legend i.warn { stroke: #ffb800; background: #ffb800; } /*/dk*/   /* a bright, shiny yellow (not brown) */
+  :root[data-theme="light"] .ap-donut .seg.bad, :root[data-theme="light"] .ap-legend i.bad { stroke: #e03131; background: #e03131; }
+  /*dk*/ :root[data-theme="dark"] .ap-donut .seg.bad, :root[data-theme="dark"] .ap-legend i.bad { stroke: #ff6b6b; background: #ff6b6b; } /*/dk*/
+  :root[data-theme="light"] .ap-donut .seg.muted, :root[data-theme="light"] .ap-legend i.muted { stroke: #d9d9d3; background: #d9d9d3; }
+  /*dk*/ :root[data-theme="dark"] .ap-donut .seg.muted, :root[data-theme="dark"] .ap-legend i.muted { stroke: #d9d9d3; background: #d9d9d3; } /*/dk*/
+  :root[data-theme="light"] .ap-donut__fig b, :root[data-theme="light"] .ap-legend b { color: #1a1a1a; }
+  /*dk*/ :root[data-theme="dark"] .ap-donut__fig b, :root[data-theme="dark"] .ap-legend b { color: #f2f2ee; } /*/dk*/
+  :root[data-theme="light"] .ap-donut__fig span, :root[data-theme="light"] .ap-legend span { color: #7b7b79; }
+  /*dk*/ :root[data-theme="dark"] .ap-donut__fig span, :root[data-theme="dark"] .ap-legend span { color: #a5a59f; } /*/dk*/
+  .ap-area { position: relative; padding-bottom: 22px; }
+  .ap-area svg { display: block; width: 100%; height: 170px; overflow: visible; }
+  .ap-area line { stroke-width: 1; stroke-dasharray: 3 4; }
+  .ap-area .fill { opacity: 0.08; animation: ap-fade 0.3s var(--ease-out) 0.15s backwards; }
+  .ap-area .line { fill: none; stroke-width: 2.4; stroke-linecap: round; vector-effect: non-scaling-stroke; stroke-dasharray: 1400; stroke-dashoffset: 0; animation: un-draw-in 0.3s var(--ease-out) 0.08s backwards; }
+  @keyframes un-draw-in { from { stroke-dashoffset: 1400; } }
+  @keyframes ap-fade { from { opacity: 0; } }
+  .ap-area__pin { position: absolute; transform: translate(-50%, -8px); margin-bottom: 22px; pointer-events: none; animation: un-rise 0.3s var(--ease-out) 0.15s backwards; }
+  .ap-area__pin b { display: block; padding: 3px 8px; border-radius: 8px; font: 600 12px/16px var(--font-display); white-space: nowrap; transform: translateY(-100%); }
+  .ap-area__x { position: absolute; left: 0; right: 0; bottom: 0; display: flex; justify-content: space-between; font: 400 12px/16px var(--font-display); }
+  :root[data-theme="light"] .ap-area line { stroke: #e3e3de; }
+  /*dk*/ :root[data-theme="dark"] .ap-area line { stroke: #e3e3de; } /*/dk*/
+  :root[data-theme="light"] .ap-area .fill { fill: #0b0fff; }
+  /*dk*/ :root[data-theme="dark"] .ap-area .fill { fill: #0b0fff; } /*/dk*/
+  :root[data-theme="light"] .ap-area .line { stroke: #0b0fff; }
+  /*dk*/ :root[data-theme="dark"] .ap-area .line { stroke: #0b0fff; } /*/dk*/
+  :root[data-theme="light"] .ap-area__pin b { background: #1a1a1a; color: #fff; }
+  /*dk*/ :root[data-theme="dark"] .ap-area__pin b { background: #f2f2ee; color: #1c1c1b; } /*/dk*/
+  :root[data-theme="light"] .ap-area__x { color: #9f9f99; }
+  /*dk*/ :root[data-theme="dark"] .ap-area__x { color: #7d7d77; } /*/dk*/
+  .ap-agenda { margin: 0; padding: 0; list-style: none; display: grid; gap: 14px; }
+  .ap-agenda li { position: relative; padding-left: 16px; animation: un-rise 0.3s var(--ease-out) backwards; }
+  .ap-agenda li::before { content: ""; position: absolute; left: 0; top: 2px; bottom: 2px; width: 3px; border-radius: 3px; }
+  .ap-agenda time { display: block; font: 600 16px/22px var(--font-display); }
+  .ap-agenda b { display: block; font: 500 14px/20px var(--font-display); }
+  .ap-agenda small { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; font: 400 12px/16px var(--font-display); margin-top: 2px; }
+  .ap-agenda small .ap-person i { width: 18px; height: 18px; font-size: 9px; }
+  :root[data-theme="light"] .ap-agenda li::before { background: #0b0fff; }
+  /*dk*/ :root[data-theme="dark"] .ap-agenda li::before { background: #0b0fff; } /*/dk*/
+  :root[data-theme="light"] .ap-agenda li.bad::before { background: #e03131; }
+  /*dk*/ :root[data-theme="dark"] .ap-agenda li.bad::before { background: #ff6b6b; } /*/dk*/
+  :root[data-theme="light"] .ap-agenda time, :root[data-theme="light"] .ap-agenda b { color: #1a1a1a; }
+  /*dk*/ :root[data-theme="dark"] .ap-agenda time, :root[data-theme="dark"] .ap-agenda b { color: #f2f2ee; } /*/dk*/
+  :root[data-theme="light"] .ap-agenda small { color: #7b7b79; }
+  /*dk*/ :root[data-theme="dark"] .ap-agenda small { color: #a5a59f; } /*/dk*/
+  .ap-days { display: grid; grid-template-columns: repeat(10, minmax(0, 1fr)); gap: 8px; }
+  .ap-day { display: grid; justify-items: center; align-content: start; gap: 4px; min-height: 96px; padding: 10px 4px; border-radius: 14px; text-align: center; animation: un-rise 0.3s var(--ease-out) backwards; }
+  .ap-day span { font: 500 11px/14px var(--font-display); text-transform: uppercase; letter-spacing: 0.04em; }
+  .ap-day b { font: 600 18px/22px var(--font-display); }
+  .ap-day i { margin-top: 4px; padding: 2px 6px; border-radius: 6px; font: 500 11px/14px var(--font-display); font-style: normal; }
+  :root[data-theme="light"] .ap-day span { color: #9f9f99; }
+  /*dk*/ :root[data-theme="dark"] .ap-day span { color: #7d7d77; } /*/dk*/
+  :root[data-theme="light"] .ap-day b { color: #1a1a1a; }
+  /*dk*/ :root[data-theme="dark"] .ap-day b { color: #f2f2ee; } /*/dk*/
+  :root[data-theme="light"] .ap-day.has { background: #f6f6f3; }
+  /*dk*/ :root[data-theme="dark"] .ap-day.has { background: #222220; } /*/dk*/
+  :root[data-theme="light"] .ap-day.has i { background: #fff; color: #1a1a1a; }
+  /*dk*/ :root[data-theme="dark"] .ap-day.has i { background: #1c1c1b; color: #f2f2ee; } /*/dk*/
+  :root[data-theme="light"] .ap-day.today { background: #0b0fff; box-shadow: 0 10px 22px -10px rgba(11, 15, 255, 0.6); }
+  /*dk*/ :root[data-theme="dark"] .ap-day.today { background: #0b0fff; box-shadow: 0 10px 22px -10px rgba(11, 15, 255, 0.6); } /*/dk*/
+  :root[data-theme="light"] .ap-day.today span { color: rgba(255, 255, 255, 0.75); }
+  /*dk*/ :root[data-theme="dark"] .ap-day.today span { color: rgba(28, 28, 27, 0.75); } /*/dk*/
+  :root[data-theme="light"] .ap-day.today b { color: #fff; }
+  /*dk*/ :root[data-theme="dark"] .ap-day.today b { color: #1c1c1b; } /*/dk*/
+  .ap-todo { margin: 0; padding: 0; list-style: none; display: grid; }
+  .ap-todo li { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 10px 0 10px 12px; border-left: 3px solid transparent; }
+  .ap-todo li + li { border-top: 1px solid transparent; }
+  .ap-todo label { display: flex; align-items: center; gap: 12px; min-width: 0; cursor: pointer; }
+  .ap-todo input { width: 18px; height: 18px; margin: 0; flex: none; }
+  .ap-todo b { display: block; font: 500 14px/20px var(--font-display); }
+  .ap-todo small { display: block; font: 400 12px/16px var(--font-display); }
+  .ap-todo input:checked + span b { text-decoration: line-through; opacity: 0.5; }
+  :root[data-theme="light"] .ap-todo li { border-left-color: #ececea; }
+  /*dk*/ :root[data-theme="dark"] .ap-todo li { border-left-color: #30302d; } /*/dk*/
+  :root[data-theme="light"] .ap-todo li.bad { border-left-color: #e03131; }
+  /*dk*/ :root[data-theme="dark"] .ap-todo li.bad { border-left-color: #ff6b6b; } /*/dk*/
+  :root[data-theme="light"] .ap-todo li + li { border-top-color: #f0f0ec; }
+  /*dk*/ :root[data-theme="dark"] .ap-todo li + li { border-top-color: #f0f0ec; } /*/dk*/
+  :root[data-theme="light"] .ap-todo input { accent-color: #1a1a1a; }
+  /*dk*/ :root[data-theme="dark"] .ap-todo input { accent-color: #f2f2ee; } /*/dk*/
+  :root[data-theme="light"] .ap-todo b { color: #1a1a1a; }
+  /*dk*/ :root[data-theme="dark"] .ap-todo b { color: #f2f2ee; } /*/dk*/
+  :root[data-theme="light"] .ap-todo small { color: #7b7b79; }
+  /*dk*/ :root[data-theme="dark"] .ap-todo small { color: #a5a59f; } /*/dk*/
+  @media (prefers-reduced-motion: reduce) { .ap-donut .seg, .ap-area .line, .ap-area .fill, .ap-area__pin, .ap-agenda li, .ap-day { animation: none; } }
+  /* an outline panel: no fill and no tinted header, just the border (lighter than the regular panels) */
+  :root[data-theme] .ap-panel.ap-panel--outline { background: transparent; box-shadow: none; }
+  :root[data-theme] .ap-panel.ap-panel--outline > header { background: transparent; }
+  /* sidebar: an app moving in or out of Favorites slides in and glows for a moment */
+  .app-item.moved { animation: app-moved 0.2s var(--ease-out); }
+  @keyframes app-moved { 0% { opacity: 0; transform: translateY(-6px) scale(0.98); background: #e3e4ff; } 45% { opacity: 1; transform: none; background: #e3e4ff; } }
+  @media (prefers-reduced-motion: reduce) { .app-item.moved { animation: none; } }
+  /* bookmark: a tiny pop with a soft ring when it's saved, and its own tooltip */
+  .ap-mark { position: relative; }
+  .ap-mark.pop svg { animation: ap-mark-pop 0.2s var(--ease-out); }
+  .ap-mark.pop::before { content: ""; position: absolute; inset: 4px; border-radius: 50%; border: 2px solid #0b0fff; opacity: 0; animation: ap-mark-ring 0.2s var(--ease-out); pointer-events: none; }
+  @keyframes ap-mark-pop { from { transform: scale(0.85); } to { transform: none; } }
+  @keyframes ap-mark-ring { 0% { opacity: 0.5; transform: scale(0.6); } 100% { opacity: 0; transform: scale(1.35); } }
+  .ap-mark::after { content: attr(data-hint); position: absolute; top: calc(100% + 8px); left: 50%; transform: translate(-50%, -4px); padding: 6px 10px; border-radius: 8px; background: #1a1a1a; color: #fff; font: 500 12px/16px var(--font-display); white-space: nowrap; opacity: 0; pointer-events: none; transition: opacity 0.2s ease, transform 0.2s ease; z-index: 30; }
+  /*dk*/ :root[data-theme="dark"] .ap-mark::after { background: #f2f2ee; color: #1c1c1b; } /*/dk*/
+  .ap-mark:hover::after, .ap-mark:focus-visible::after { opacity: 1; transform: translate(-50%, 0); transition-delay: 0.25s; }
+  @media (prefers-reduced-motion: reduce) { .ap-mark.pop svg, .ap-mark.pop::before { animation: none; } }
+  .ap-grid2 > .ap-span { grid-column: 1 / -1; }
+  /* key numbers that lead to a section: hover lifts them and shows an arrow; the section flashes when you land on it */
+  .ap-kpi[data-goto] { position: relative; cursor: pointer; transition: transform var(--motion-150) var(--ease-out), box-shadow var(--motion-200) var(--ease-out), background-color var(--motion-150) ease; }
+  .ap-kpi[data-goto]::after { content: ""; position: absolute; top: 16px; right: 16px; width: 18px; height: 18px; opacity: 0; transform: translate(-4px, 4px);
+    background: currentColor; -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M7 17L17 7M9 7h8v8'/%3E%3C/svg%3E") center / contain no-repeat;
+    mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M7 17L17 7M9 7h8v8'/%3E%3C/svg%3E") center / contain no-repeat;
+    transition: opacity var(--motion-150) var(--ease-out), transform var(--motion-200) var(--ease-out); }
+  .ap-kpi[data-goto]:hover, .ap-kpi[data-goto]:focus-visible { transform: translateY(-2px); }
+  .ap-kpi[data-goto]:hover::after, .ap-kpi[data-goto]:focus-visible::after { opacity: 0.7; transform: none; }
+  .ap-kpi[data-goto]:active { transform: scale(0.99); }
+  .ap-kpi[data-goto]:focus-visible { outline: 2px solid var(--un-focus); outline-offset: 2px; }
+  :root[data-theme="light"] .ap-kpi[data-goto]:not(.ap-kpi--hero):hover { background: #efefea; box-shadow: 0 10px 24px -16px rgba(0, 0, 0, 0.25); }
+  :root[data-theme] .ap-kpi--hero[data-goto]::after { color: #fff; }
+  .ap-panel.flash { animation: ap-flash 1.2s var(--ease-out); }
+  @keyframes ap-flash { 0%, 30% { box-shadow: 0 0 0 3px color-mix(in srgb, var(--un-brand) 35%, transparent); } 100% { box-shadow: 0 0 0 3px transparent; } }
+  @media (prefers-reduced-motion: reduce) { .ap-kpi[data-goto], .ap-kpi[data-goto]::after { transition: none; } .ap-panel.flash { animation: none; } }
+  /* sidebar: a section that opens lets its items arrive one after another; closing fades them out first */
+  .history > .history-in { transition: opacity var(--motion-200) var(--ease-out); }
+  .history[hidden] > .history-in { opacity: 0; transition: opacity var(--motion-150) var(--ease-in); }
+  .history:not([hidden]) .chat-item { animation: un-rise var(--motion-200) var(--ease-out) backwards; }
+  .history:not([hidden]) li:nth-child(2) .chat-item { animation-delay: 30ms; } .history:not([hidden]) li:nth-child(3) .chat-item { animation-delay: 60ms; }
+  .history:not([hidden]) li:nth-child(4) .chat-item { animation-delay: 90ms; } .history:not([hidden]) li:nth-child(n+5) .chat-item { animation-delay: 120ms; }
+  .chat-item span { transition: transform var(--motion-150) var(--ease-out); }
+  .chat-item:hover span { transform: translateX(2px); }   /* a tiny nudge on hover */
+  .history { transition: grid-template-rows var(--motion-200) var(--ease-out); }
+  /* a soft panel: light grey band, no border, no divider under the title (the white cards on it stand out) */
+  :root[data-theme] .ap-panel.ap-panel--soft { border-color: transparent; box-shadow: none; }
+  :root[data-theme] .ap-panel--soft > header { background: transparent; border-bottom-color: transparent; padding-bottom: 0; }
+  :root[data-theme="light"] .ap-panel.ap-panel--soft { background: #f6f6f3; }
+  :root[data-theme="dark"] .ap-panel.ap-panel--soft { background: #222220; }
+  /* the "Coming up" carousel sits on its own light grey band */
+  .ap-card > .un-cf { padding: 22px 0 14px; border-radius: 16px; }
+  :root[data-theme="light"] .ap-card > .un-cf { background: #f6f6f3; }
+  :root[data-theme="dark"] .ap-card > .un-cf { background: #222220; }   /* a section that takes the whole row */
+  .ap-panel .un-cf { padding-block: 6px 2px; -webkit-mask-image: linear-gradient(90deg, transparent 0, #000 64px, #000 calc(100% - 64px), transparent 100%); mask-image: linear-gradient(90deg, transparent 0, #000 64px, #000 calc(100% - 64px), transparent 100%); }
+  /* people */
+  .ap-person { display: inline-flex; align-items: center; gap: 8px; min-width: 0; }
+  .ap-person i { flex: none; width: 24px; height: 24px; display: grid; place-items: center; border-radius: 50%; font: 600 10px/1 var(--font-display); font-style: normal; }
+  :root[data-theme="light"] .ap-person i { background: #e3e4ff; color: #0809a8; }
+  /*dk*/ :root[data-theme="dark"] .ap-person i { background: #1e1f45; color: #9fa2ff; } /*/dk*/
+  .ap-hbar { grid-template-columns: 120px 1fr 44px; }
+  @media (prefers-reduced-motion: reduce) { .ap-ring .v, .ap-kpi__bar i { animation: none; } }
+  /* app panels use the chat result-card look: lifted, tinted header, body padded below (flush for tables, grids, carousels) */
+  .ap-panel { padding: 0; gap: 0; overflow: hidden; }
+  .ap-card > * { flex-shrink: 0; }
+  .ap-head h2 { display: none; }   /* the app's name already reads in the bar above; only its description stays */
+  .ap-head .ap-title p { margin-top: 0; }   /* the card scrolls; its sections keep their height */
+  .ap-panel > header { padding: 14px 16px; border-bottom: 1px solid transparent; }
+  .ap-panel__body { display: flex; flex-direction: column; gap: 14px; min-width: 0; padding: 16px; }
+  .ap-panel--flush .ap-panel__body > .ap-table { margin: -16px; border: 0; border-radius: 0; }
+  .ap-panel--flush .ap-panel__body > .ap-table .ap-th { border-top: 0; }
+  .ap-panel .un-car { margin-block: -4px -6px; }
+  :root[data-theme="light"] .ap-panel { box-shadow: none; }
+  /*dk*/ :root[data-theme="dark"] .ap-panel { box-shadow: none; } /*/dk*/   /* in apps only the hero metric is lifted; the shadowed card is the chat's */
+  :root[data-theme="light"] .ap-panel > header { background: #f6f6f3; border-bottom-color: #ececea; }
+  /*dk*/ :root[data-theme="dark"] .ap-panel > header { background: #222220; border-bottom-color: #30302d; } /*/dk*/
+  :root[data-theme="light"] .ap-kpi { background: #f6f6f3; }
+  /*dk*/ :root[data-theme="dark"] .ap-kpi { background: #222220; } /*/dk*/
+  /* sections come in one after another when the app opens (once; nothing loops) */
+  .ap-card > *, .ap-grid2 > * { animation: un-rise 0.3s var(--ease-out) backwards; animation-delay: calc(0.08s + var(--i, 0) * 0.04s); }
+  .ap-kpi b { font-variant-numeric: tabular-nums; }
+  /* parts: stock against minimum */
+  .ap-stock { display: grid; gap: 12px; }
+  .ap-stock__row { display: grid; grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr) 48px; align-items: center; gap: 14px; }
+  .ap-stock__row b { display: block; font: 600 14px/20px var(--font-display); }
+  .ap-stock__row small { display: block; font: 400 12px/16px var(--font-display); }
+  .ap-stock__row > span { text-align: right; font: 600 13px/18px var(--font-display); font-variant-numeric: tabular-nums; }
+  .ap-meter { height: 8px; border-radius: 8px; overflow: hidden; }
+  .ap-meter i { display: block; width: var(--w); height: 100%; border-radius: inherit; transform-origin: left; animation: un-grow 0.3s var(--ease-out) 0.12s both; }
+  :root[data-theme="light"] .ap-stock__row b { color: #1a1a1a; }
+  /*dk*/ :root[data-theme="dark"] .ap-stock__row b { color: #f2f2ee; } /*/dk*/
+  :root[data-theme="light"] .ap-stock__row small { color: #7b7b79; }
+  /*dk*/ :root[data-theme="dark"] .ap-stock__row small { color: #a5a59f; } /*/dk*/
+  :root[data-theme="light"] .ap-stock__row > span { color: #1a1a1a; }
+  /*dk*/ :root[data-theme="dark"] .ap-stock__row > span { color: #f2f2ee; } /*/dk*/
+  :root[data-theme="light"] .ap-meter { background: #ececea; }
+  /*dk*/ :root[data-theme="dark"] .ap-meter { background: #30302d; } /*/dk*/
+  :root[data-theme="light"] .ap-meter i { background: #0b0fff; }
+  /*dk*/ :root[data-theme="dark"] .ap-meter i { background: #0b0fff; } /*/dk*/   /* low but coming: brand; out of stock: red */
+  :root[data-theme="light"] .ap-stock__row.out .ap-meter i { background: #e03131; }
+  /*dk*/ :root[data-theme="dark"] .ap-stock__row.out .ap-meter i { background: #ff6b6b; } /*/dk*/
+  :root[data-theme="light"] .ap-stock__row.out > span { color: #e03131; }
+  /*dk*/ :root[data-theme="dark"] .ap-stock__row.out > span { color: #ff6b6b; } /*/dk*/
+  .ap-hbar.bad i { background: var(--un-bad, #e03131); }
+  /*dk*/ :root[data-theme="dark"] .ap-hbar.bad i { background: var(--un-bad, #ff6b6b); } /*/dk*/
+  .ap-hbar { grid-template-columns: 96px 1fr 44px; }
+  /* with an app open, the app in the list is the selected item, not the Apps header */
+  :root[data-theme="light"] .app-mode #appsToggle.active { background: transparent; font-weight: 500; }
+  /*dk*/ :root[data-theme="dark"] .app-mode #appsToggle.active { background: transparent; font-weight: 500; } /*/dk*/
+  @media (prefers-reduced-motion: reduce) { .ap-card > *, .ap-grid2 > *, .ap-meter i { animation: none; } }
   .ap-panel--hero { gap: 12px; }
   .ap-tabs { display: grid; grid-auto-flow: column; grid-auto-columns: 1fr; padding: 4px; border-radius: 12px; background: #f7f7f5; }
   /*dk*/ :root[data-theme="dark"] .ap-tabs { background: #252523; } /*/dk*/
@@ -967,8 +1336,8 @@
   .ap-field--wide { grid-column: 1 / -1; }
   .ap-input { width: 100%; min-width: 0; padding: 8px 12px; border: 1px solid #ececea; border-radius: 10px; background: #fff; color: #1a1a1a; font: 400 14px/20px var(--font-display); resize: vertical; outline: 0; }
   /*dk*/ :root[data-theme="dark"] .ap-input { border: 1px solid #30302d; background: #1c1c1b; color: #f2f2ee; } /*/dk*/
-  .ap-input:focus { border-color: #cfc5ff; }
-  /*dk*/ :root[data-theme="dark"] .ap-input:focus { border-color: #4b3d7d; } /*/dk*/
+  .ap-input:focus { border-color: #c5c7ff; }
+  /*dk*/ :root[data-theme="dark"] .ap-input:focus { border-color: #2b2d7d; } /*/dk*/
   .ap-steps { margin: 0; padding: 0; list-style: none; counter-reset: step; display: grid; gap: 10px; }
   .ap-steps li { position: relative; display: grid; gap: 2px; padding: 12px 14px 12px 48px; border-radius: 12px; background: #f7f7f5; counter-increment: step; }
   /*dk*/ :root[data-theme="dark"] .ap-steps li { background: #252523; } /*/dk*/
@@ -986,9 +1355,9 @@
   :root[data-theme="dark"] .brand .mark { filter: invert(1); }
   /* dark ↔ light: while html.theming is on, every color eases over at the same time */
   html.theming *, html.theming *::before, html.theming *::after {
-    transition: background-color 0.8s var(--ease) var(--d, 0s), color 0.8s var(--ease) var(--d, 0s), border-color 0.8s var(--ease) var(--d, 0s), fill 0.8s var(--ease) var(--d, 0s), stroke 0.8s var(--ease) var(--d, 0s), box-shadow 0.8s var(--ease) var(--d, 0s);
+    transition: background-color 0.3s var(--ease) var(--d, 0.1s), color 0.3s var(--ease) var(--d, 0.1s), border-color 0.3s var(--ease) var(--d, 0.1s), fill 0.3s var(--ease) var(--d, 0.1s), stroke 0.3s var(--ease) var(--d, 0.1s), box-shadow 0.3s var(--ease) var(--d, 0.1s);
   }
-  html.theming .sidebar::before, html.theming .sidebar::after, html.theming .backdrop::before, html.theming .backdrop::after { transition: opacity 0.8s var(--ease) var(--d, 0s); }
+  html.theming .sidebar::before, html.theming .sidebar::after, html.theming .backdrop::before, html.theming .backdrop::after { transition: opacity 0.3s var(--ease) var(--d, 0.1s); }
     html.theming .un-toggle__track, html.theming .un-toggle__track::after { transition: transform 0.3s var(--ease), background 0.3s var(--ease); }
 </style>
 </head>
@@ -998,9 +1367,9 @@
 
 <div class="app" id="app">
   <aside class="sidebar" id="sidebar" aria-label="Main navigation">
-    <a class="brand" href="onboarding.html" data-tip="Back to welcome" aria-label="Ultranova: back to welcome">
-      <img class="mark" src="assets/logo-mark.svg" width="26" height="26" alt="">
-      <span class="brand-text">Ultranova</span>
+    <a class="brand" href="onboarding.html" data-tip="Back to welcome" aria-label="Ranger: back to welcome">
+      <img class="mark" src="assets/logo-mark.svg" width="28" height="28" alt="">
+      <img class="wm wm-l" src="assets/wordmark.svg" width="128" height="19" alt="Ranger by UpKeep"><img class="wm wm-d" src="assets/wordmark-dark.svg" width="128" height="19" alt="">
     </a>
     <!-- New ▾ (always at the top of the menu): start a new chat, app or task -->
     <div class="new-wrap">
@@ -1016,16 +1385,10 @@
     </div>
     <nav class="nav">
       <div>
-        <button class="nav-item active" type="button" data-tip="Chat" id="chatToggle" aria-expanded="true" aria-controls="history">
+        <button class="nav-item active" type="button" data-tip="Chat" id="chatToggle">
           <svg class="un-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5.5A2.5 2.5 0 0 1 6.5 3h11A2.5 2.5 0 0 1 20 5.5v8a2.5 2.5 0 0 1-2.5 2.5H10l-4.5 4v-4A2.5 2.5 0 0 1 4 13.5z"/></svg>
           <span class="grow">Chat</span>
-          <svg class="un-icon chev" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4v15M6 13l6 6 6-6"/></svg>
         </button>
-        <div class="history" id="history">
-          <div class="history-in">
-          <ul id="chatList"><li><button class="chat-item live untitled" type="button"><span>New conversation</span><i class="more" aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="5" cy="12" r="1.8"/><circle cx="12" cy="12" r="1.8"/><circle cx="19" cy="12" r="1.8"/></svg></i></button></li></ul>   <!-- the conversation in progress: "New conversation" until its first message gives it a title -->
-          </div>
-        </div>
       </div>
       <div>
         <button class="nav-item" type="button" data-tip="Apps" id="appsToggle" aria-expanded="false" aria-controls="appsHistory">
@@ -1091,7 +1454,7 @@
       <button class="un-icon-btn" type="button" id="menuBtn" aria-label="Open menu" style="width:40px;height:40px">
         <svg class="un-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"/></svg>
       </button>
-      <a class="brand" href="onboarding.html" aria-label="Ultranova: back to welcome"><img class="mark" src="assets/logo-mark.svg" width="26" height="26" alt=""><span class="brand-text">Ultranova</span></a>
+      <a class="brand" href="onboarding.html" aria-label="Ranger: back to welcome"><img class="mark" src="assets/logo-mark.svg" width="28" height="28" alt=""><img class="wm wm-l" src="assets/wordmark.svg" width="128" height="19" alt="Ranger by UpKeep"><img class="wm wm-d" src="assets/wordmark-dark.svg" width="128" height="19" alt=""></a>
       <span style="width:40px"></span>
     </div>
 
@@ -1181,7 +1544,9 @@
 
   [].forEach.call(document.querySelectorAll('.aname'), function (n) { n.textContent = agentName; });
   /* the empty chat offers the four "wow" starters (wow.js); one tap runs it */
-  document.getElementById('wows').innerHTML = UltranovaWow.list.map(function (w) { return UltranovaWow.cardHTML(w); }).join('');
+  document.getElementById('wows').innerHTML = UltranovaWow.list.map(function (w) { return UltranovaWow.cardHTML(w); }).join('')
+    /* for testing: shows every card design in one conversation */
+    + '<button type="button" class="un-wow un-wow--test" data-demo-cards><span class="un-wow__icon"><svg class="un-icon" viewBox="0 0 24 24" aria-hidden="true"><rect x="3.5" y="3.5" width="7" height="7" rx="1.5"/><rect x="13.5" y="3.5" width="7" height="7" rx="1.5"/><rect x="3.5" y="13.5" width="7" height="7" rx="1.5"/><rect x="13.5" y="13.5" width="7" height="7" rx="1.5"/></svg></span><b class="un-wow__title">Show me all cards</b>' + UltranovaWow.icon('go', 'un-wow__go') + '</button>';
   /* the placeholder follows the conversation: a general invitation at first, then what the assistant is asking for */
   var DEFAULT_PH = 'Ask anything', ctx = null;
   /* while the assistant is asking: an example of a good answer, in the user's voice */
@@ -1364,7 +1729,7 @@
       greetFirst = false; thread.removeChild(m);
       var g = addMsg('ai', '<span class="un-typing" aria-label="Typing"><i></i><i></i><i></i></span>');
       setTimeout(function () {
-        g.innerHTML = '<b>' + agentName + '</b><span class="greet">Hi Leti, I’m <span class="aname">' + agentName + '</span>. I’ll be your assistant in Ultranova.</span>';
+        g.innerHTML = '<b>' + agentName + '</b><span class="greet">Hi Leti, I’m <span class="aname">' + agentName + '</span>. I’ll be your assistant in Ranger.</span>';
         thread.scrollTop = thread.scrollHeight;
         setTimeout(function () { say(html, then, wait); }, 650);
       }, 700);
@@ -1427,28 +1792,16 @@
     })();
   }
   var runWow = startTask, pendingNext = null, changing = false;
-  /* sidebar history: just the conversation in progress, named after its first message; New chat starts over */
-  var chatList = document.getElementById('chatList');
-  /* earlier conversations (this session) stay in the list under the current one, newest first */
-  var CHAT_DOTS = '<i class="more" aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="5" cy="12" r="1.8"/><circle cx="12" cy="12" r="1.8"/><circle cx="19" cy="12" r="1.8"/></svg></i>';
-  var pastChats = [];
-  try { pastChats = JSON.parse(sessionStorage.getItem('ultranova.chats') || '[]'); } catch (e) {}
-  /* Search (under New): filters the conversations as you type */
+  /* one chat only: the sidebar item is the conversation, not a list */
   var chatSearch = document.getElementById('chatSearch');
   chatSearch.parentNode.addEventListener('click', function (e) {
     if (!document.getElementById('app').classList.contains('nav-closed')) return;
     e.preventDefault(); setNav(false); setTimeout(function () { chatSearch.focus(); }, 300);
   });
-  chatSearch.addEventListener('input', function () {
-    var q = chatSearch.value.trim().toLowerCase();
-    if (q && document.getElementById('history').hidden) document.getElementById('chatToggle').click();   /* open the list to show results */
-    chatList.classList.toggle('searching', !!q);
-    [].forEach.call(chatList.children, function (li) { if (!li.classList.contains('more-row')) li.hidden = !!q && li.textContent.toLowerCase().indexOf(q) === -1; });
-  });
-  /* running = the assistant is typing or working through steps in the current conversation */
-  var currentChat = chatList.querySelector('.chat-item');
+  /* running = the assistant is typing or working through steps */
+  var chatNav = document.getElementById('chatToggle');
   new MutationObserver(function () {
-    currentChat.classList.toggle('running', !!thread.querySelector('.un-typing, .un-trace li.run'));
+    chatNav.classList.toggle('running', !!thread.querySelector('.un-typing, .un-trace li.run'));
   }).observe(thread, { childList: true, subtree: true, attributes: true, attributeFilter: ['class'] });
   /* show the first `limit` items of a list (10 by default) and a centered ··· that reveals 10 more each time */
   function limitList(ul) {
@@ -1461,19 +1814,7 @@
     var b = e.target.closest('.list-more'); if (!b) return; e.stopPropagation();
     var ul = b.closest('ul'); ul.setAttribute('data-limit', (+(ul.getAttribute('data-limit') || 10)) + 10); limitList(ul);
   }, true);
-  pastChats.forEach(function (t) { chatList.insertAdjacentHTML('beforeend', '<li><button class="chat-item" type="button"><span>' + esc(t) + '</span>' + CHAT_DOTS + '</button></li>'); });
-  limitList(chatList);
-  /* "New conversation" gets a title from what was asked: the task's name, or the first words of the message */
-  function setCurrentChat(title) {
-    var item = chatList.querySelector('.chat-item.untitled'); if (!item) return;
-    var t = title.replace(/\s+/g, ' ').trim().replace(/[?.!]+$/, ''), words = t.split(' ');
-    if (words.length > 7) t = words.slice(0, 7).join(' ') + '…';
-    t = t.charAt(0).toUpperCase() + t.slice(1);
-    item.classList.remove('untitled'); item.querySelector('span').textContent = t;
-    pastChats.unshift(t); try { sessionStorage.setItem('ultranova.chats', JSON.stringify(pastChats.slice(0, 50))); } catch (e) {}
-    limitList(chatList);
-    item.classList.add('titled'); setTimeout(function () { item.classList.remove('titled'); }, 700);
-  }
+  function setCurrentChat() { /* one conversation: nothing to rename in the sidebar */ }
   /* New ▾: Chat starts over on the empty chat; App and Task aren't built in the prototype yet */
   var newBtn = document.getElementById('newBtn'), newMenu = document.createElement('div');
   newMenu.className = 'un-menu new-menu'; newMenu.setAttribute('role', 'menu'); newMenu.style.transformOrigin = 'top left';
@@ -1572,19 +1913,23 @@
       pendingNext = c.next; busy = false; prompt.focus({ preventScroll: true });
     }, 1200);
   }
-  /* home.html?demo=cards: the three reference cards in one conversation, for developers */
-  if (/[?&]demo=cards/.test(location.search) && window.UltranovaCards) {
+  /* every reference card in one conversation, for testing: home.html?demo=cards, or "Show me all cards" in the starters */
+  var demoOn = false;
+  function runCardsDemo() {
+    if (!window.UltranovaCards || demoOn) return; demoOn = true;   /* one run at a time */
     (function run(i) {
-      if (i >= UltranovaCards.list.length) return;
+      if (i >= UltranovaCards.list.length) { demoOn = false; return; }
       var k = UltranovaCards.list[i];
       setTimeout(function () { if (busy) { run(i); return; } showCard(k, UltranovaCards.get(k).ask); setTimeout(function () { run(i + 1); }, 2200); }, i ? 0 : 600);
     })(0);
   }
+  if (/[?&]demo=cards/.test(location.search)) runCardsDemo();
   function hint() { document.getElementById('form').classList.toggle('has-suggest', !!suggestion && !prompt.value); }
   function setReady() { hint(); sendBtn.classList.toggle('ready', !!prompt.value.trim()); }
 
   // a suggestion starts the conversation straight away (no second click)
   document.getElementById('wows').addEventListener('click', function (e) {
+    if (e.target.closest('[data-demo-cards]')) { runCardsDemo(); return; }
     var c = e.target.closest('[data-wow]'); if (c) startTask(UltranovaWow.get(c.getAttribute('data-wow')));
   });
   /* ---- coming from the welcome: the request is the first message, the assistant introduces itself in the middle of the chat
@@ -1638,7 +1983,7 @@
       busy = false;
       if (toRun) startTask(toRun, { posted: true });
       else if (askText) send(askText, { posted: true });
-      else say('What should we start with?', function () { choices(UltranovaWow.list.map(function (w) { return { label: w.title, act: 'wow', val: w.key }; })); });
+      else say('What should we start with?', function () { choices(UltranovaWow.list.map(function (w) { return { label: w.title, act: 'wow', val: w.key }; }).concat([{ label: 'Show me all cards', act: 'demo' }])); });
     }, (request ? 1000 : 500) + 400);
   }
   else if (toRun) setTimeout(function () { startTask(toRun); }, 900);
@@ -1647,7 +1992,7 @@
     var m = document.createElement('div'); m.className = 'meet'; m.setAttribute('role', 'group'); m.setAttribute('aria-label', 'Meet your assistant');
     m.innerHTML = '<div class="meet-bot"></div>'
       + '<p class="meet-hi">Hi Leti, I’m <span class="aname">' + agentName + '</span>.</p>'
-      + '<p class="meet-sub">I’ll be your assistant in Ultranova.</p>'
+      + '<p class="meet-sub">I’ll be your assistant in Ranger.</p>'
       + '<p class="meet-links"><button type="button" class="meet-change" aria-expanded="false">Change assistant</button><span aria-hidden="true"> · </span>You can also do this later in <a href="#settings" class="meet-settings">Settings</a>.</p>'
       + '<div class="meet-pick" role="group" aria-label="Choose your assistant" hidden>' + ASSISTANTS.map(function (n, i) {
           return '<button type="button" class="un-chip" data-pick="' + i + '" aria-pressed="' + (n === agentName) + '">' + n + '</button>'; }).join('') + '</div>';
@@ -1684,6 +2029,7 @@
   thread.addEventListener('click', function (e) {
     var c = e.target.closest('.opts [data-act]'); if (!c || busy) return;
     if (c.getAttribute('data-act') === 'wow') { clearOpts(); startTask(UltranovaWow.get(c.getAttribute('data-val'))); }
+    if (c.getAttribute('data-act') === 'demo') { clearOpts(); runCardsDemo(); }
   });
   prompt.addEventListener('input', function () { grow(); setReady(); });
   /* Tab accepts the suggestion from anywhere on the page (not only when the box is focused): it is written into the box, ready to send */
@@ -1737,7 +2083,7 @@
   var tip = document.createElement('div'); tip.className = 'un-tooltip'; tip.setAttribute('role', 'tooltip'); document.body.appendChild(tip);
   function tipFor(e) {
     var t = e.target.closest && e.target.closest('#sidebar [data-tip]');
-    if (t && (t.id === 'appsToggle' || t.id === 'chatToggle')) t = null;   /* these two show their list as a flyout instead */
+    if (t && t.id === 'appsToggle') t = null;   /* Apps shows its list as a flyout; Chat is the one conversation */
     if (!t || !document.getElementById('app').classList.contains('nav-closed') || matchMedia('(max-width: 860px)').matches) { tip.classList.remove('show'); return; }
     var r = t.getBoundingClientRect(); tip.textContent = t.id === 'theme' ? t.getAttribute('aria-label') : t.getAttribute('data-tip');
     tip.style.left = (r.right + 12) + 'px'; tip.style.top = (r.top + r.height / 2) + 'px'; tip.classList.add('show');
@@ -1771,15 +2117,12 @@
   if (snd.hidden && window.UltranovaSFX) UltranovaSFX.setMuted(false);
   paintSound();
 
-  // chat history: collapse the list, mark the open conversation
-  var toggle = document.getElementById('chatToggle'), history = document.getElementById('history');
-  /* Chat and Apps work as an accordion: opening one section folds the other */
-  function setSection(btn, open) { var list = document.getElementById(btn.getAttribute('aria-controls')); btn.setAttribute('aria-expanded', String(open)); list.hidden = !open; }
-  function toggleSection(btn) {
-    var open = btn.getAttribute('aria-expanded') !== 'true'; setSection(btn, open);
-    if (open) ['chatToggle', 'appsToggle'].forEach(function (id) { if (id !== btn.id) setSection(document.getElementById(id), false); });
+  /* Apps opens its submenu. Chat is the one conversation, so it has no list. */
+  function setSection(btn, open) {
+    var list = document.getElementById(btn.getAttribute('aria-controls')); if (!list) return;
+    btn.setAttribute('aria-expanded', String(open)); list.hidden = !open;
   }
-  toggle.addEventListener('click', function () { toggleSection(toggle); });
+  function toggleSection(btn) { setSection(btn, btn.getAttribute('aria-expanded') !== 'true'); }
   /* chat options: the three dots open a small submenu with Rename and Archive */
   var menuEl = document.createElement('div'), menuFor = null; menuEl.className = 'un-menu'; menuEl.setAttribute('role', 'menu');
   menuEl.innerHTML = '<button type="button" role="menuitem" data-act="rename"><svg class="un-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20h4L19 9l-4-4L4 16zM13.5 6.5l4 4"/></svg>Rename</button>'
@@ -1809,12 +2152,6 @@
   });
   document.addEventListener('click', function (e) { if (!e.target.closest('.un-menu') && !e.target.closest('.more')) closeMenu(); });
   document.addEventListener('keydown', function (e) { if (e.key === 'Escape') closeMenu(); });
-  document.getElementById('chatList').addEventListener('click', function (e) {
-    var dots = e.target.closest('.more');
-    if (dots) { e.stopPropagation(); var it = dots.closest('.chat-item'); if (menuFor === it) closeMenu(); else openMenu(it, dots); return; }
-    var b = e.target.closest('.chat-item'); if (!b) return;
-    [].forEach.call(document.querySelectorAll('.chat-item'), function (x) { x.classList.toggle('live', x === b); });
-  });
 
 
   /* ---------- Apps: the ones you use live in the sidebar (favorites first). An app opens in the middle and the chat
@@ -1831,28 +2168,28 @@
   };
   var APPS = [
     { id: 'downtime', name: 'Downtime Log', desc: 'Every stop, why it happened and how long it took to restart.', blurb: 'It logs each stop with the asset, the reason and the time to restart, and ranks the worst offenders of the week.',
-      kpis: [['Downtime this week', '14.5 h'], ['Stops', '9'], ['Worst asset', 'Conveyor #3']],
+      kpis: [['Downtime this week', '14.5 h', '', { d: '+3.2 h', t: 'bad', note: 'vs last week', pct: 62, of: 'of the 23.5 h budget' }], ['Stops', '9', '', { d: '+2', t: 'bad' }], ['Worst asset', 'Conveyor #3', 'ink', { note: '2 stops · 3.3 h' }]],
       cols: ['Asset', 'Stopped', 'Restarted', 'Reason', 'Fixed by'],
       rows: [['Conveyor #3', 'Nov 12, 08:10', '09:45', 'Belt misalignment', 'Dave R.'], ['Chiller #2', 'Nov 11, 14:20', '17:05', 'Contactor failure', 'James C.'], ['Press 4', 'Nov 11, 06:30', '07:00', 'Sensor fault', 'Maria L.'], ['Conveyor #3', 'Nov 10, 11:00', '12:40', 'Motor overheating', 'Dave R.']] },
     { id: 'pm', name: 'PM Compliance', desc: 'Preventive maintenance done on time, by site and by team.', blurb: 'It tracks preventive maintenance done on time by site and team, and flags what’s about to slip.',
-      kpis: [['On time', '87%'], ['Overdue', '6'], ['Due this week', '23']],
+      kpis: [['On time', '87%', '', { d: '+4%', t: 'good', note: 'vs last month', ring: 87 }], ['Overdue', '6', 'bad', { d: '+1', t: 'bad' }], ['Due this week', '23', '', { d: '−3', t: 'good' }]],
       cols: ['PM', 'Asset', 'Due', 'Assignee', 'Status'],
       rows: [['Monthly lubrication', 'Press 4', 'Nov 12', 'Maria L.', 'Overdue'], ['Filter change', 'HVAC Unit 3', 'Nov 14', 'James C.', 'Due'], ['Belt inspection', 'Conveyor #3', 'Nov 15', 'Dave R.', 'Due'], ['Quarterly calibration', 'Scale B', 'Nov 18', 'Ana P.', 'Scheduled']] },
     { id: 'parts', name: 'Parts Reorder Board', desc: 'Parts below minimum and what’s on the way.', blurb: 'It lists parts below their minimum and what’s already on order, so nothing blocks planned work.',
-      kpis: [['Below minimum', '7'], ['On order', '12'], ['Blocking work', '1']],
+      kpis: [['Below minimum', '7', '', { d: '+2', t: 'bad', note: 'this week', pct: 18, of: '7 of 40 tracked parts' }], ['On order', '12', '', { d: '+5', t: 'good' }], ['Blocking work', '1', 'bad', { note: 'Seal kit SK-220' }]],
       cols: ['Part', 'On hand', 'Min', 'On order', 'ETA'],
       rows: [['Compressor contactor', '0', '1', '1', 'Nov 22'], ['Air filter 20x25', '3', '10', '20', 'Nov 15'], ['Drive belt B-62', '1', '2', '2', 'Nov 16'], ['Seal kit SK-220', '0', '1', '—', '—']] },
     { id: 'safety', name: 'Safety Walkthrough', desc: 'Daily safety checklist your technicians fill in from their phones.', blurb: 'It’s the daily safety checklist: guards and e-stops, lockout points, extinguishers, walkways and PPE.',
-      kpis: [['Done today', '3 of 4'], ['Issues found', '2'], ['Open actions', '5']],
+      kpis: [['Done today', '3 of 4', '', { note: 'Boiler room is pending', ring: 75 }], ['Issues found', '2', 'bad', { d: '+1', t: 'bad' }], ['Open actions', '5', '', { d: '−2', t: 'good' }]],
       cols: ['Area', 'Inspector', 'Done', 'Issues', 'Status'],
       rows: [['Line 1', 'Dave R.', '07:40', '0', 'Passed'], ['Line 2', 'Maria L.', '07:55', '1', 'Action needed'], ['Warehouse', 'Ana P.', '08:10', '1', 'Action needed'], ['Boiler room', '—', '—', '—', 'Pending']] },
     { id: 'health', name: 'Asset Health', desc: 'Condition of your critical assets and what to look at first.', blurb: 'It scores the condition of your critical assets from work orders and readings, and tells you what to look at first.',
-      kpis: [['Critical assets', '24'], ['At risk', '3'], ['Healthy', '19']],
+      kpis: [['Critical assets', '24', '', { note: '19 healthy', pct: 79, of: '79% healthy' }], ['At risk', '3', 'bad', { d: '+1', t: 'bad' }], ['Healthy', '19', '', { d: '−1', t: 'bad' }]],
       cols: ['Asset', 'Health', 'Last WO', 'Trend', 'Next step'],
       rows: [['Chiller #2', '58', 'Nov 11', 'Falling', 'Replace contactor'], ['Conveyor #3', '64', 'Nov 12', 'Falling', 'Align belt'], ['Boiler #2', '81', 'Oct 30', 'Stable', '—'], ['Press 4', '73', 'Nov 11', 'Stable', 'Check sensor']] }
 ,
     { id: 'backlog', type: 'dashboard', name: 'Backlog Health', desc: 'A live snapshot of open work orders: how old they are, what’s overdue and who’s carrying the load.', blurb: 'It shows how old your open work orders are, the overdue PMs, what’s unassigned and each technician’s load, with filters by date, site and team.',
-      kpis: [['Open backlog', '18'], ['Overdue PMs', '3', 'bad'], ['Unassigned', '4']],
+      kpis: [['Open backlog', '18', '', { d: '−2', t: 'good', note: 'vs last week', pct: 72, of: '13 of 18 assigned', go: 'Work order age' }], ['Overdue PMs', '3', 'bad', { d: '+1', t: 'bad', go: 'Overdue PMs' }], ['Unassigned', '4', '', { d: '−1', t: 'good', go: 'Unassigned work orders' }]],
       data: { filters: ['Oct 15 – Nov 13', 'All locations', 'All priorities', 'All technicians', 'All teams'],
         age: [['0–3 d', 9], ['4–7 d', 4], ['8–14 d', 3], ['15–30 d', 1], ['30+ d', 1, 'bad']],
         overdue: [['WO-1062', 'Monthly lubrication', 'Press 4', '<span class="un-status un-status--late">2 days</span>'], ['WO-1058', 'Belt inspection', 'Conveyor #3', '<span class="un-status un-status--late">1 day</span>'], ['WO-1055', 'Filter change', 'HVAC Unit 3', '<span class="un-status un-status--due">Today</span>']],
@@ -1861,7 +2198,7 @@
     { id: 'pdf', type: 'export', name: 'PDF Export Studio', desc: 'Pick work orders, choose the details and export a clean PDF report.', blurb: 'It turns the work orders you pick into a PDF report, with your header, photos and checklist detail.',
       data: { tabs: ['Work order PDF', 'Report format'], selection: 'WO-1051, WO-1049 and 3 more' } },
     { id: 'pmbuilder', type: 'builder', name: 'PM Test Builder', desc: 'Draft detailed preventive maintenance with step-by-step tasks, acceptance criteria and safety notes.', blurb: 'It drafts a detailed PM from a few fields: steps, acceptance criteria, safety notes and tools, ready to review and export.',
-      kpis: [['Steps', '5'], ['Task time', '35 min'], ['Schedule', 'Monthly'], ['Priority', 'Medium']],
+      kpis: [['Steps', '5', '', { note: 'Acceptance criteria included', pct: 100, of: 'Ready to review' }], ['Task time', '35 min'], ['Schedule', 'Monthly'], ['Priority', 'Medium']],
       data: { fields: [['PM title', 'Conveyor system PM test'], ['Asset', 'Packaging Conveyor Line 2'], ['Category', 'Inspection', 'select'], ['Frequency', 'Monthly', 'select'], ['Trigger', 'Every 30 days'], ['Priority', 'Medium', 'select'],
           ['Objective', 'Make sure technicians can safely inspect, service and document the conveyor without ambiguity.', 'wide'], ['Safety requirements', 'Lockout/tagout, cut-resistant gloves and safety glasses; guards back in place before startup.', 'wide'], ['Tools required', 'Flashlight, infrared thermometer, grease gun, basic hand tools, inspection mirror.', 'wide']],
         steps: [['Lock out the conveyor', 'Isolate power and verify zero energy before touching the belt.'], ['Inspect the belt', 'No tears, fraying or misalignment over the full length.'], ['Check bearings', 'Temperature under 70 °C with the infrared thermometer; no noise.'], ['Lubricate', 'Grease every fitting until fresh grease shows.'], ['Restart and test', 'Guards in place; run 5 minutes with no slipping or noise.']] } }
@@ -1872,6 +2209,7 @@
   function saveApps() { try { localStorage.setItem('ultranova.favApps.v2', JSON.stringify(favApps)); localStorage.setItem('ultranova.recentApps.v2', JSON.stringify(recentApps)); } catch (e) {} }
   var appIcon = function (a) { return '<svg class="un-icon" viewBox="0 0 24 24" aria-hidden="true">' + IC[a.id] + '</svg>'; };
   var STAR = '<svg class="un-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3.5l2.6 5.3 5.9.9-4.3 4.1 1 5.8L12 16.9l-5.2 2.7 1-5.8L3.5 9.7l5.9-.9z"/></svg>';
+  var CHAT_DOTS = '<i class="more" aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="5" cy="12" r="1.8"/><circle cx="12" cy="12" r="1.8"/><circle cx="19" cy="12" r="1.8"/></svg></i>';
   function appItem(a) {
     return '<li><button class="chat-item app-item' + (a.id === openAppId ? ' live' : '') + '" type="button" data-app="' + a.id + '"><span>' + esc(a.name) + '</span>' + CHAT_DOTS + '</button></li>';   /* favorites are told apart by their section, no star */
   }
@@ -1882,7 +2220,12 @@
     document.getElementById('favBox').hidden = !favApps.length; document.getElementById('recentLabel').hidden = !recent.length;
     document.getElementById('favCount').textContent = favApps.length; document.getElementById('recentCount').textContent = recent.length;
     limitList(document.getElementById('favApps')); limitList(document.getElementById('recentApps'));
+    if (movedApp) {   /* the app that just moved in or out of Favorites slides in softly where it lands */
+      var it = document.querySelector('#appsHistory [data-app="' + movedApp + '"]'); movedApp = null;
+      if (it) { it.classList.remove('moved'); void it.offsetWidth; it.classList.add('moved'); }
+    }
   }
+  var movedApp = null;
   renderApps();
   /* Favorites and Recent fold on their own (chevron in each title) */
   ['favLabel', 'recentLabel'].forEach(function (id) {
@@ -1926,51 +2269,186 @@
     var i = favApps.indexOf(id), a = appById(id);
     if (i > -1) { favApps.splice(i, 1); if (recentApps.indexOf(id) === -1) recentApps.unshift(id); toast(a.name + ' removed from favorites.'); }
     else { favApps.push(id); toast(a.name + ' added to favorites.'); }
-    saveApps(); renderApps(); if (openAppId === id) renderAppView();
+    saveApps(); movedApp = id; renderApps();
+    if (openAppId === id) {   /* update the bookmark in place (no re-render, so the app doesn't replay its entrance) */
+      var mk = appView.querySelector('.ap-mark'), on = favApps.indexOf(id) > -1;
+      if (mk) { mk.classList.toggle('on', on); mk.setAttribute('aria-pressed', String(on)); mk.setAttribute('aria-label', on ? 'Remove from favorites' : 'Add to favorites'); mk.setAttribute('data-hint', on ? 'Remove from favorites' : 'Add to favorites');
+        mk.classList.remove('pop'); void mk.offsetWidth; if (on) mk.classList.add('pop'); }
+      else renderAppView();
+    }
   }
   /* opening an app: it takes the middle, the chat becomes a drawer on the right, the assistant checks it's the right one */
   var appView = document.getElementById('appView'), appEl2 = document.getElementById('app');
   function renderAppView() {
     var a = appById(openAppId); if (!a) return; var fav = favApps.indexOf(a.id) > -1;
-    appView.innerHTML = '<header class="ap-head"><span class="ap-icon">' + appIcon(a) + '</span><div class="ap-title"><h2>' + esc(a.name) + (fav ? '<i class="ap-fav" aria-label="Favorite">' + STAR + '</i>' : '') + '</h2><p>' + esc(a.desc) + '</p></div>'
-      + '<button class="ap-more" type="button" data-ap="menu" aria-label="App options" aria-haspopup="menu"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="5" cy="12" r="1.8"/><circle cx="12" cy="12" r="1.8"/><circle cx="19" cy="12" r="1.8"/></svg></button>'
+    appView.innerHTML = '<div class="ap-bar"><div class="ap-crumb"><button type="button" class="ap-crumb__link" data-ap="market">Apps</button><span class="sep">/</span><b>' + esc(a.name) + '</b></div>'
+      + '<button class="ap-mark' + (fav ? ' on' : '') + '" type="button" data-ap="fav" aria-pressed="' + fav + '" aria-label="' + (fav ? 'Remove from favorites' : 'Add to favorites') + '" data-hint="' + (fav ? 'Remove from favorites' : 'Add to favorites') + '"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6.5 3.5h11a1 1 0 0 1 1 1v16l-6.5-4-6.5 4v-16a1 1 0 0 1 1-1z"/></svg></button>'
+      + '<button class="un-btn un-btn--sm un-btn--primary ap-create" type="button" data-ap="edit">Edit</button></div>'
+      + '<div class="ap-card"><header class="ap-head"><div class="ap-title"><h2>' + esc(a.name) + '</h2><p>' + esc(a.desc) + '</p></div>'
       + '<button class="ap-btn ap-ask" type="button" data-ap="ask"><svg class="un-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5.5A2.5 2.5 0 0 1 6.5 3h11A2.5 2.5 0 0 1 20 5.5v8a2.5 2.5 0 0 1-2.5 2.5H10l-4.5 4v-4A2.5 2.5 0 0 1 4 13.5z"/></svg>Ask ' + esc(agentName) + '</button></header>'
-      + (a.type === 'dashboard' ? apDashboard(a) : a.type === 'export' ? apExport(a) : a.type === 'builder' ? apBuilder(a) : apTable(a));
+      + (a.type === 'dashboard' ? apDashboard(a) : a.type === 'export' ? apExport(a) : a.type === 'builder' ? apBuilder(a) : apTable(a)) + '</div>';
+    var n = 0; [].forEach.call(appView.querySelectorAll('.ap-card > *, .ap-grid2 > *'), function (el) { if (!el.classList.contains('ap-grid2')) el.style.setProperty('--i', n++); });   /* entrance order */
+    countUp(appView);
   }
   /* ---- app types (references: UpKeep Intelligence custom apps). Same building blocks, different layouts:
      table · dashboard (filters, KPIs, charts and tables) · export tool (tabs, one main action, settings) · builder (a form that generates content) ---- */
   var CHEV_S = '<svg class="un-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg>';
-  function kpis(list) { return '<div class="ap-kpis">' + list.map(function (k) { return '<div class="ap-kpi' + (k[2] ? ' ' + k[2] : '') + '"><span>' + esc(k[0]) + '</span><b>' + esc(k[1]) + '</b></div>'; }).join('') + '</div>'; }
+  /* key numbers: the first one is the hero (brand fill, a ring or a bar); the rest show their change. Numbers count up when the app opens. */
+  var UP = '<svg viewBox="0 0 12 12" aria-hidden="true"><path d="M6 9.5V2.5M3 5.5l3-3 3 3"/></svg>', DOWN = '<svg viewBox="0 0 12 12" aria-hidden="true"><path d="M6 2.5v7M3 6.5l3 3 3-3"/></svg>';
+  function delta(x) { if (!x || !x.d) return ''; return '<em class="ap-delta ' + (x.t || '') + '">' + (/^[-−]/.test(x.d) ? DOWN : UP) + esc(x.d.replace(/^[+−-]/, '')) + '</em>'; }
+  function num(v) { var m = String(v).match(/^([$€£]?)(\d+(?:\.\d+)?)(.*)$/); return m ? '<span class="ap-num" data-to="' + m[2] + '" data-pre="' + esc(m[1]) + '" data-post="' + esc(m[3]) + '">' + esc(v) + '</span>' : esc(v); }
+  function ring(p) { var r = 26, c = 2 * Math.PI * r; return '<svg class="ap-ring" viewBox="0 0 64 64" aria-hidden="true"><circle cx="32" cy="32" r="' + r + '"/><circle class="v" cx="32" cy="32" r="' + r + '" style="--c:' + c.toFixed(1) + ';--o:' + (c * (1 - p / 100)).toFixed(1) + '"/><text x="32" y="36" text-anchor="middle">' + p + '%</text></svg>'; }
+  function kpis(list) {
+    return '<div class="ap-kpis">' + list.map(function (k, i) {
+      var x = k[3] || {};
+      var go = x.go ? ' data-goto="' + esc(x.go) + '" role="button" tabindex="0" aria-label="' + esc(k[0]) + ': go to ' + esc(x.go) + '"' : '';
+      if (i === 0) return '<div class="ap-kpi ap-kpi--hero"' + go + '><div class="ap-kpi__main"><b>' + num(k[1]) + '</b><span>' + esc(k[0]) + '</span>'
+        + (x.d || x.note ? '<p>' + delta(x) + (x.note ? esc(x.note) : '') + '</p>' : '') + '</div>'
+        + (x.ring != null ? ring(x.ring) : '') + (x.pct != null ? '<div class="ap-kpi__bar"><small>' + esc(x.of || '') + '</small><i style="--w:' + x.pct + '%"></i></div>' : '') + '</div>';
+      return '<div class="ap-kpi' + (k[2] ? ' ' + k[2] : '') + '"' + go + '><span>' + esc(k[0]) + '</span><div class="ap-kpi__row"><b>' + num(k[1]) + '</b>' + delta(x) + '</div>' + (x.note && !x.d ? '<small>' + esc(x.note) + '</small>' : '') + '</div>';
+    }).join('') + '</div>';
+  }
+  function countUp(root) {
+    if (matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+    [].forEach.call(root.querySelectorAll('.ap-num'), function (el) {
+      var to = parseFloat(el.getAttribute('data-to')), dec = (el.getAttribute('data-to').split('.')[1] || '').length, pre = el.getAttribute('data-pre'), post = el.getAttribute('data-post'), t0 = performance.now(), dur = 900;
+      (function tick(now) { var k = Math.min(1, (now - t0) / dur), e = 1 - Math.pow(1 - k, 3); el.textContent = pre + (to * e).toFixed(dec) + post; if (k < 1) requestAnimationFrame(tick); })(t0);
+    });
+  }
+  /* people read as a face (initials), not just a name */
+  function person(n) { if (!n || n === '—') return esc(n || ''); var ini = n.replace(/\.$/, '').split(' ').map(function (w) { return w[0]; }).join('').slice(0, 2); return '<span class="ap-person"><i>' + esc(ini) + '</i>' + esc(n) + '</span>'; }
   function table(cols, rows) {
     return '<div class="ap-table" role="table" style="--gtc:minmax(0,1.5fr) repeat(' + (cols.length - 1) + ', minmax(0,1fr))"><div class="ap-row ap-th" role="row">' + cols.map(function (c) { return '<span role="columnheader">' + esc(c) + '</span>'; }).join('') + '</div>'
       + rows.map(function (r) { return '<div class="ap-row" role="row">' + r.map(function (c) { return '<span role="cell">' + c + '</span>'; }).join('') + '</div>'; }).join('') + '</div>';
   }
-  function apTable(a) { return kpis(a.kpis) + table(a.cols, a.rows.map(function (r) { return r.map(esc); })); }
-  function panel(title, sub, body, side) { return '<section class="ap-panel"><header><div><h3>' + title + '</h3>' + (sub ? '<p>' + sub + '</p>' : '') + '</div>' + (side || '') + '</header>' + body + '</section>'; }
+  /* a status column reads as the same pills as the chat cards */
+  var STATUS_PILL = { 'Overdue': 'late', 'Due': 'due', 'Scheduled': 'sched', 'Passed': 'done', 'Action needed': 'late', 'Pending': 'due', 'Falling': 'late', 'Stable': 'done' };
+  function cellHTML(col, v) { if (/assignee|fixed by|inspector/i.test(col)) return person(v); var k = /status|trend/i.test(col) && STATUS_PILL[v]; return k ? '<span class="un-status un-status--' + k + '">' + esc(v) + '</span>' : esc(v); }
+  function panel(title, sub, body, side, cls) { return '<section class="ap-panel' + (cls ? ' ' + cls : '') + '"><header><div><h3>' + title + '</h3>' + (sub ? '<p>' + sub + '</p>' : '') + '</div>' + (side || '') + '</header><div class="ap-panel__body">' + body + '</div></section>'; }
+  /* each list app leads with a visual summary of what matters (a grid, a carousel or bars), then the full list */
+  function apFeature(a) {
+    var B = window.UltranovaCards && UltranovaCards.blocks; if (!B) return '';
+    if (a.id === 'health') return panel('What to look at first', 'Health score, last 10 weeks', B.grid(a.rows.map(function (r) {
+      var h = Number(r[1]), falling = r[3] === 'Falling', base = falling ? h + 18 : h;
+      return { title: r[0], sub: r[4] === '—' ? 'No action needed' : r[4], value: r[1], unit: '%', status: h < 65 ? 'risk' : h < 75 ? 'watch' : 'ok', tone: h < 65 ? 'bad' : h < 75 ? 'warn' : '',
+        spark: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9].map(function (i) { return Math.round(base - (falling ? i * 2 : (i % 3) - 1)); }) };
+    }), { best: true }), '', 'ap-panel--flush');
+    if (a.id === 'pm') return panel('Coming up', 'Next 14 days · hover to pause', B.carousel(a.rows.map(function (r) {
+      return { icon: 'gear', status: r[4] === 'Overdue' ? 'late' : r[4] === 'Due' ? 'due' : 'sched', title: r[0], sub: r[1], date: r[2], every: r[4], who: r[3], late: r[4] === 'Overdue' };
+    }), { auto: true }));
+    if (a.id === 'safety') return panel('Today’s walkthrough', 'One tile per area', B.grid(a.rows.map(function (r) {
+      return { title: r[0], sub: r[1] === '—' ? 'Not started' : r[1] + ' · ' + r[2], value: r[3] === '—' ? '–' : r[3], unit: r[3] === '—' ? '' : r[3] === '1' ? ' issue' : ' issues', status: r[4] === 'Passed' ? 'ok' : r[4] === 'Pending' ? 'watch' : 'risk', tone: r[4] === 'Action needed' ? 'bad' : '', spark: [] };
+    })), '', 'ap-panel--flush');
+    if (a.id === 'parts') return panel('Stock against minimum', 'What’s low and what’s already coming', '<div class="ap-stock">' + a.rows.map(function (r) {
+      var on = Number(r[1]), min = Number(r[2]), pct = Math.min(100, Math.round(on / min * 100));
+      return '<div class="ap-stock__row' + (on === 0 ? ' out' : '') + '"><div><b>' + esc(r[0]) + '</b><small>' + (r[3] === '—' ? 'Nothing on order' : r[3] + ' on order · ETA ' + esc(r[4])) + '</small></div>'
+        + '<div class="ap-meter"><i style="--w:' + pct + '%"></i></div><span>' + on + ' / ' + min + '</span></div>';
+    }).join('') + '</div>');
+    if (a.id === 'downtime') {
+      var by = {}; a.rows.forEach(function (r) { var t = r[1].split(', ')[1].split(':'), e = r[2].split(':'); by[r[0]] = (by[r[0]] || 0) + ((+e[0] * 60 + +e[1]) - (+t[0] * 60 + +t[1])) / 60; });
+      var list = Object.keys(by).map(function (k) { return [k, by[k]]; }).sort(function (x, y) { return y[1] - x[1]; }), mx = list[0][1];
+      return panel('Downtime by asset', 'This week, worst first', '<div class="ap-hbars">' + list.map(function (x, i) { return '<div class="ap-hbar' + (i === 0 ? ' bad' : '') + '"><span>' + esc(x[0]) + '</span><i style="--w:' + Math.round(x[1] / mx * 100) + '%"></i><b>' + (Math.round(x[1] * 10) / 10) + ' h</b></div>'; }).join('') + '</div>');
+    }
+    return '';
+  }
+  /* ---- more building blocks, so each app gets the layout that fits its data ---- */
+  /* small outlined facts next to the title (instead of a row of big numbers) */
+  function metas(list) {
+    return '<div class="ap-metas">' + list.map(function (k) { var x = k[3] || {};
+      return '<div class="ap-meta' + (k[2] ? ' ' + k[2] : '') + '"><b>' + delta(x) + num(k[1]) + '</b><span>' + esc(k[0]) + '</span></div>'; }).join('') + '</div>';
+  }
+  /* donut + legend: [label, value, tone ('' ink | 'warn' | 'bad' | 'muted')] */
+  function donut(segs, big, small) {
+    var tot = segs.reduce(function (n, x) { return n + x[1]; }, 0), r = 46, c = 2 * Math.PI * r, off = 0;
+    /* round ends with a 2px gap between sectors: the round caps add half the stroke (3) on each side, so the dash is shortened by 6 + 2 and shifted by 4 */
+    var arcs = segs.map(function (x) { var len = c * x[1] / tot, el = '<circle class="seg ' + (x[2] || '') + '" cx="60" cy="60" r="' + r + '" style="--len:' + Math.max(0.1, len - 8).toFixed(1) + ';--c:' + c.toFixed(1) + ';--off:' + (-(off + 4)).toFixed(1) + '"/>'; off += len; return el; }).join('');
+    return '<div class="ap-donut"><div class="ap-donut__fig"><svg viewBox="0 0 120 120" aria-hidden="true"><circle class="track" cx="60" cy="60" r="' + r + '"/>' + arcs + '</svg><div><b>' + num(big) + '</b><span>' + esc(small) + '</span></div></div>'
+      + '<ul class="ap-legend">' + segs.map(function (x) { return '<li><i class="' + (x[2] || '') + '"></i><span>' + esc(x[0]) + '</span><b>' + x[1] + '</b></li>'; }).join('') + '</ul></div>';
+  }
+  /* area chart over days: values + labels; the worst point is marked */
+  function area(vals, labels, unit) {
+    var w = 520, h = 160, mx = Math.max.apply(null, vals) * 1.15, step = w / (vals.length - 1), worst = vals.indexOf(Math.max.apply(null, vals));
+    var pts = vals.map(function (v, i) { return [i * step, h - v / mx * h]; });
+    var d = pts.map(function (p, i) { if (!i) return 'M' + p[0] + ',' + p[1]; var q = pts[i - 1], cx = (q[0] + p[0]) / 2; return 'C' + cx + ',' + q[1] + ' ' + cx + ',' + p[1] + ' ' + p[0] + ',' + p[1]; }).join(' ');
+    return '<div class="ap-area"><svg viewBox="0 0 ' + w + ' ' + (h + 2) + '" preserveAspectRatio="none" aria-hidden="true">'
+      + [0.25, 0.5, 0.75].map(function (f) { return '<line x1="0" x2="' + w + '" y1="' + (h * f) + '" y2="' + (h * f) + '"/>'; }).join('')
+      + '<path class="fill" d="' + d + ' L' + w + ',' + h + ' L0,' + h + 'Z"/><path class="line" d="' + d + '"/></svg>'
+      + '<span class="ap-area__pin" style="left:' + (worst / (vals.length - 1) * 100) + '%;bottom:' + (vals[worst] / mx * 100) + '%"><b>' + vals[worst] + ' ' + unit + '</b></span>'
+      + '<div class="ap-area__x">' + labels.map(function (l) { return '<span>' + esc(l) + '</span>'; }).join('') + '</div></div>';
+  }
+  /* agenda: [from, to, title, sub, tone] with a rule on the left */
+  function agenda(items) {
+    return '<ol class="ap-agenda">' + items.map(function (x) { return '<li class="' + (x[4] || '') + '"><div><time>' + esc(x[0]) + ' – ' + esc(x[1]) + '</time><b>' + esc(x[2]) + '</b><small>' + x[3] + '</small></div></li>'; }).join('') + '</ol>';
+  }
+  /* a strip of days; the ones with something on them are marked, one is today */
+  function days(list) {
+    return '<div class="ap-days">' + list.map(function (d) { return '<div class="ap-day' + (d[2] ? ' has' : '') + (d[3] ? ' today' : '') + '"><span>' + d[0] + '</span><b>' + d[1] + '</b>' + (d[2] ? '<i>' + d[2] + '</i>' : '') + '</div>'; }).join('') + '</div>';
+  }
+  /* to-dos with a check, owner and when */
+  function todo(items) {
+    return '<ul class="ap-todo">' + items.map(function (x) { return '<li class="' + (x[4] || '') + '"><label><input type="checkbox"><span><b>' + esc(x[0]) + '</b><small>' + esc(x[1]) + ' · due ' + esc(x[3]) + '</small></span></label>' + person(x[2]) + '</li>'; }).join('') + '</ul>';
+  }
+  function listPanel(a) {
+    return panel({ downtime: 'All stops', pm: 'All PMs', parts: 'All parts', safety: 'All areas', health: 'All critical assets' }[a.id] || 'All rows', a.rows.length + ' shown',
+      table(a.cols, a.rows.map(function (r) { return r.map(function (v, i) { return cellHTML(a.cols[i], v); }); })), '', 'ap-panel--flush');
+  }
+  /* each list app has its own layout, chosen for what it needs to show first */
+  function apTable(a) {
+    var B = window.UltranovaCards && UltranovaCards.blocks;
+    if (a.id === 'downtime') return metas(a.kpis)
+      + '<div class="ap-grid2 ap-grid2--wide">' + panel('Downtime per day', 'Hours stopped, this week', area([1.2, 0.5, 2.8, 3.1, 4.9, 1.5, 0.5], ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'], 'h'))
+      + apFeature(a) + '</div>'
+      + panel('Stops this week', 'Most recent first', B.focusList(a.rows.map(function (r, i) {
+          var t = r[1].split(', ')[1].split(':'), e = r[2].split(':'), m = (+e[0] * 60 + +e[1]) - (+t[0] * 60 + +t[1]), dur = (m >= 60 ? Math.floor(m / 60) + ' h ' : '') + (m % 60 ? (m % 60) + ' min' : '');
+          return [esc(r[1].split(', ')[1]) + ' – ' + esc(r[2]) + ' · ' + esc(r[0]), esc(r[3]) + ' · fixed by ' + esc(r[4]) + ' · ' + esc(r[1].split(',')[0]),
+            '<span class="un-status un-status--' + (i === 0 ? 'late' : 'done') + '">' + dur.trim() + ' down</span>', ''];
+        })), '', 'ap-panel--soft');   /* stops as stacked cards on a light grey band: the latest in focus */
+    if (a.id === 'pm') return B.focusCar(a.rows.map(function (r) {
+        return { icon: 'gear', status: r[4] === 'Overdue' ? 'late' : r[4] === 'Due' ? 'due' : 'sched', title: r[0], sub: r[1], date: r[2], every: r[4], who: r[3], late: r[4] === 'Overdue' };
+      }).concat([{ icon: 'gear', status: 'sched', title: 'Pressure test', sub: 'Boiler #2', date: 'Nov 21', every: 'Scheduled', who: 'James C.' }]), 'Coming up', 'Next 14 days', 1)
+      + '<div class="ap-grid2 ap-grid2--side">'
+      + panel('This month', '100 PMs across all sites', donut([['Done on time', 41], ['Due this week', 23, 'warn'], ['Overdue', 6, 'bad'], ['Scheduled later', 30, 'muted']], '87%', 'on time'), '', 'ap-panel--outline')
+      + listPanel(a) + '</div>';
+    if (a.id === 'parts') return metas(a.kpis)
+      + panel('On the way', 'Deliveries in the next 10 days', days([['Th', 13, '', true], ['Fr', 14], ['Sa', 15, 'Air filters'], ['Su', 16, 'Drive belt'], ['Mo', 17], ['Tu', 18], ['We', 19], ['Th', 20], ['Fr', 21], ['Sa', 22, 'Contactor']]))
+      + '<div class="ap-grid2">' + apFeature(a) + listPanel(a) + '</div>';
+    if (a.id === 'safety') return apFeature(a)
+      + '<div class="ap-grid2 ap-grid2--side">' + panel('Open actions', '5 to close · found in today’s walkthroughs', todo([
+          ['Replace the missing guard on Press 2', 'Line 2', 'Maria L.', 'today', 'bad'], ['Clear the walkway by dock 3', 'Warehouse', 'Ana P.', 'today', 'bad'],
+          ['Recharge extinguisher B-4', 'Warehouse', 'Ana P.', 'tomorrow'], ['Relabel the e-stop on Line 2', 'Line 2', 'Dave R.', 'in 2 days'], ['Walk the boiler room', 'Boiler room', '—', 'today']]))
+        + panel('Today', '3 of 4 areas done', donut([['Passed', 1], ['Action needed', 2, 'bad'], ['Pending', 1, 'muted']], '3/4', 'areas done')) + '</div>' + listPanel(a);
+    return kpis(a.kpis) + apFeature(a) + listPanel(a);   /* asset health: hero + grid */
+  }
+
   function apDashboard(a) {
     var d = a.data, max = Math.max.apply(null, d.age.map(function (x) { return x[1]; }));
     var filters = '<div class="ap-filters">' + d.filters.map(function (f) { return '<button type="button" class="ap-select"><span>' + esc(f) + '</span>' + CHEV_S + '</button>'; }).join('') + '</div>';
     var bars = '<div class="ap-vbars">' + d.age.map(function (x) { return '<div class="ap-vbar' + (x[2] ? ' ' + x[2] : '') + '"><b>' + x[1] + '</b><i style="--h:' + Math.round(x[1] / max * 100) + '%"></i><span>' + esc(x[0]) + '</span></div>'; }).join('') + '</div>';
     var hmax = Math.max.apply(null, d.techs.map(function (x) { return x[1]; }));
-    var hbars = '<div class="ap-hbars">' + d.techs.map(function (x) { return '<div class="ap-hbar"><span>' + esc(x[0]) + '</span><i style="--w:' + Math.round(x[1] / hmax * 100) + '%"></i><b>' + x[1] + '</b></div>'; }).join('') + '</div>';
+    var hbars = '<div class="ap-hbars">' + d.techs.map(function (x) { return '<div class="ap-hbar"><span>' + person(x[0]) + '</span><i style="--w:' + Math.round(x[1] / hmax * 100) + '%"></i><b>' + x[1] + '</b></div>'; }).join('') + '</div>';
     return filters + kpis(a.kpis) + '<div class="ap-grid2">'
       + panel('Work order age', 'Open work orders by how long they’ve been waiting', bars)
-      + panel('Overdue PMs', 'Generated from PMs and past due, most urgent first', table(['WO', 'PM', 'Asset', 'Overdue'], d.overdue), '<span class="ptag">' + d.overdue.length + '</span>')
-      + panel('Unassigned work orders', 'High priority first', table(['WO', 'Title', 'Priority', 'Age'], d.unassigned), '<span class="ptag">' + d.unassigned.length + '</span>')
-      + panel('Technician load', 'Open work orders per technician', hbars) + '</div>';
+      + panel('Technician load', 'Open work orders per technician', hbars)   /* charts side by side, then the two lists */
+      + panel('Overdue PMs', '', table(['WO', 'PM', 'Asset', 'Assignee', 'Overdue'], d.overdue.map(function (r, k) { return [r[0], r[1], r[2], person(['Maria L.', 'Dave R.', 'James C.'][k % 3]), r[3]]; })),
+          '<span class="ptag">' + d.overdue.length + '</span>', 'ap-span ap-panel--outline ap-panel--flush')   /* a plain list: one carousel per app is enough */
+      + panel('Unassigned work orders', 'High priority first', (window.UltranovaCards ? UltranovaCards.blocks.focusCar(d.unassigned.map(function (r) {
+          var pr = r[2].replace(/<[^>]+>/g, ''), high = /High/.test(pr);
+          return { icon: 'gear', status: 'open', title: r[1], sub: r[0] + ' · ' + pr + ' priority', date: r[3], every: 'waiting', who: 'Unassigned', late: high };
+        }), '', '', 0) : ''), '<span class="ptag">' + d.unassigned.length + '</span>', 'ap-span ap-panel--outline')   /* a full row: the looping carousel */
+      + '</div>';
   }
   function apExport(a) {
     var d = a.data;
     var tabs = '<div class="ap-tabs" role="tablist">' + d.tabs.map(function (t, i) { return '<button type="button" role="tab" aria-selected="' + (i === 0) + '">' + esc(t) + '</button>'; }).join('') + '</div>';
     var check = function (label, on) { return '<label class="ap-check"><input type="checkbox"' + (on ? ' checked' : '') + '><span>' + esc(label) + '</span></label>'; };
     var select = function (label, value) { return '<div class="ap-field"><label>' + esc(label) + '</label><button type="button" class="ap-select ap-select--full"><span>' + esc(value) + '</span>' + CHEV_S + '</button></div>'; };
-    return '<section class="ap-panel ap-panel--hero">' + tabs
+    return '<section class="ap-panel ap-panel--hero"><div class="ap-panel__body">' + tabs
       + '<div class="ap-field"><label>Work orders</label><button type="button" class="ap-select ap-select--full"><span>' + esc(d.selection) + '</span>' + CHEV_S + '</button></div>'
       + '<button type="button" class="ap-primary" data-ap-act="print"><svg class="un-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M7 9V3h10v6M7 17H5a2 2 0 0 1-2-2v-4a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v4a2 2 0 0 1-2 2h-2M7 14h10v7H7z"/></svg>Print report</button>'
-      + '<p class="ap-note">Opens your browser’s print dialog. Only the report is printed.</p></section>'
+      + '<p class="ap-note">Opens your browser’s print dialog. Only the report is printed.</p></div></section>'
       + panel('Report quality', 'Shared look, content and level of detail for every PDF',
           '<div class="ap-stack">' + check('Include a header on every page', false) + check('Include a footer on every page', true)
-          + '<div class="ap-field"><label>Accent color</label><div class="ap-swatches">' + ['#1a1a1a', '#874bff', '#e03131', '#7b7b79'].map(function (c, i) { return '<button type="button" class="ap-swatch' + (i === 0 ? ' on' : '') + '" style="--c:' + c + '" aria-label="Accent ' + c + '"></button>'; }).join('') + '</div></div>'
+          + '<div class="ap-field"><label>Accent color</label><div class="ap-swatches">' + ['#1a1a1a', '#0b0fff', '#e03131', '#7b7b79'].map(function (c, i) { return '<button type="button" class="ap-swatch' + (i === 0 ? ' on' : '') + '" style="--c:' + c + '" aria-label="Accent ' + c + '"></button>'; }).join('') + '</div></div>'
           + '<h4>Content</h4>' + check('Hide sections with no recorded content', true) + check('Add custom content', false)
           + '<h4>Photos</h4>' + select('Photos per row', 'Balanced evidence layout')
           + '<h4>Detail and print</h4>' + select('Checklist detail', 'Standard: task, result and evidence') + '</div>');
@@ -1989,6 +2467,13 @@
       + panel('Steps', d.steps.length + ' steps · acceptance criteria included', steps);
   }
   appView.addEventListener('click', function (e) {
+    if (e.target.closest('[data-ap="create"]')) { toast('New apps are coming soon.'); return; }
+    if (e.target.closest('[data-ap="market"]')) { openMarket(); return; }
+    var gt = e.target.closest('[data-goto]'); if (gt) { goToSection(gt.getAttribute('data-goto')); return; }
+    if (e.target.closest('[data-ap="fav"]')) { toggleFav(openAppId); return; }
+    if (e.target.closest('[data-ap="edit"]')) { editApp(openAppId); return; }
+    var mk = e.target.closest('[data-mk-open]'); if (mk) { openApp(mk.getAttribute('data-mk-open')); return; }
+    var mf = e.target.closest('[data-mk-filter]'); if (mf) { mkFilter = mf.getAttribute('data-mk-filter'); renderMarketGrid(); return; }
     var t = e.target.closest('.ap-tabs [role="tab"]');
     if (t) { [].forEach.call(t.parentNode.children, function (x) { x.setAttribute('aria-selected', String(x === t)); }); return; }
     var sw = e.target.closest('.ap-swatch');
@@ -2043,13 +2528,94 @@
   /* closing the chat: it slides out softly to the right, then the app takes the space */
   document.getElementById('drawerClose').addEventListener('click', function () {
     main.classList.add('drawer-out');
-    setTimeout(function () { appEl2.classList.add('drawer-closed'); main.classList.remove('drawer-out'); }, 380);
+    setTimeout(function () { appEl2.classList.add('drawer-closed'); main.classList.remove('drawer-out'); }, 150);   /* matches the 150ms exit */
   });
   botFab.addEventListener('click', function () { appEl2.classList.remove('drawer-closed'); if (robots) robots.wave('hero'); prompt.focus({ preventScroll: true }); });
+  /* ---- Apps marketplace: every app with a thumbnail, search and filters (opens from "Apps" in the app bar) ---- */
+  var mkFilter = 'all', mkQuery = '';
+  var KIND = { dashboard: 'Dashboard', export: 'Export tool', builder: 'Builder' };
+  function kindOf(a) { return a.type ? a.type : 'list'; }
+  function kindLabel(a) { return KIND[a.type] || 'List'; }
+  /* small drawings of each app's layout (warm greys; red only where the app itself flags something) */
+  function thumb(a) {
+    var k = kindOf(a), g = '#d9d9d3', l = '#ececea', d = '#1a1a1a', svg = '<svg viewBox="0 0 240 120" aria-hidden="true">';
+    if (k === 'dashboard') {
+      svg += [0, 1, 2].map(function (i) { return '<rect x="' + (14 + i * 72) + '" y="12" width="64" height="22" rx="5" fill="' + l + '"/>'; }).join('');
+      svg += [44, 30, 22, 10, 8].map(function (h, i) { return '<rect x="' + (18 + i * 20) + '" y="' + (106 - h * 1.3) + '" width="13" height="' + (h * 1.3) + '" rx="3" fill="' + (i === 4 ? '#e03131' : d) + '"/>'; }).join('');
+      svg += [0, 1, 2, 3].map(function (i) { return '<rect x="130" y="' + (48 + i * 15) + '" width="' + [92, 74, 60, 30][i] + '" height="6" rx="3" fill="' + d + '" opacity="' + (0.9 - i * 0.15) + '"/>'; }).join('');
+    } else if (k === 'export') {
+      svg += '<rect x="78" y="10" width="84" height="104" rx="6" fill="#fff" stroke="' + g + '"/><rect x="90" y="22" width="40" height="6" rx="3" fill="' + d + '"/>'
+        + [0, 1, 2, 3, 4].map(function (i) { return '<rect x="90" y="' + (38 + i * 11) + '" width="' + [60, 52, 60, 44, 56][i] + '" height="4" rx="2" fill="' + g + '"/>'; }).join('')
+        + '<rect x="90" y="96" width="60" height="10" rx="5" fill="' + d + '"/>';
+    } else if (k === 'builder') {
+      svg += [0, 1].map(function (i) { return '<rect x="' + (16 + i * 106) + '" y="14" width="98" height="16" rx="5" fill="#fff" stroke="' + g + '"/>'; }).join('')
+        + [0, 1, 2].map(function (i) { return '<circle cx="24" cy="' + (52 + i * 22) + '" r="7" fill="' + d + '"/><rect x="38" y="' + (46 + i * 22) + '" width="' + [150, 120, 170][i] + '" height="12" rx="4" fill="' + l + '"/>'; }).join('');
+    } else if (a.id === 'health' || a.id === 'safety') {   /* a grid of tiles */
+      svg += [0, 1, 2, 3].map(function (i) { var x = 14 + (i % 2) * 108, y = 10 + Math.floor(i / 2) * 54, bad = i === 0;
+        return '<rect x="' + x + '" y="' + y + '" width="100" height="46" rx="7" fill="#fff" stroke="' + l + '"/><rect x="' + (x + 8) + '" y="' + (y + 8) + '" width="34" height="4" rx="2" fill="' + d + '"/>'
+          + '<rect x="' + (x + 8) + '" y="' + (y + 18) + '" width="18" height="9" rx="2" fill="' + (bad ? '#e03131' : d) + '"/>'
+          + (a.id === 'health' ? '<polyline points="' + (x + 40) + ',' + (y + (bad ? 26 : 34)) + ' ' + (x + 60) + ',' + (y + (bad ? 30 : 32)) + ' ' + (x + 76) + ',' + (y + (bad ? 36 : 34)) + ' ' + (x + 92) + ',' + (y + (bad ? 40 : 31)) + '" fill="none" stroke="' + (bad ? '#e03131' : g) + '" stroke-width="2" stroke-linecap="round"/>'
+            : '<rect x="' + (x + 62) + '" y="' + (y + 8) + '" width="30" height="8" rx="4" fill="' + (bad ? '#fdecec' : l) + '"/>'); }).join('');
+    } else if (a.id === 'pm') {   /* a carousel */
+      svg += [0, 1, 2].map(function (i) { var x = 14 + i * 84;
+        return '<rect x="' + x + '" y="14" width="76" height="92" rx="8" fill="#fff" stroke="' + (i === 0 ? '#f3b5b5' : l) + '"/><rect x="' + (x + 8) + '" y="24" width="14" height="14" rx="4" fill="' + l + '"/>'
+          + '<rect x="' + (x + 8) + '" y="48" width="44" height="5" rx="2.5" fill="' + d + '"/><rect x="' + (x + 8) + '" y="58" width="30" height="4" rx="2" fill="' + g + '"/>'
+          + '<rect x="' + (x + 8) + '" y="84" width="28" height="8" rx="3" fill="' + (i === 0 ? '#e03131' : d) + '"/>'; }).join('');
+    } else if (a.id === 'parts' || a.id === 'downtime') {   /* meters / bars */
+      svg += [0, 1, 2, 3].map(function (i) { var y = 18 + i * 24, w = a.id === 'parts' ? [6, 54, 88, 4][i] : [150, 118, 40, 22][i], bad = a.id === 'parts' ? (i === 0 || i === 3) : i === 0;
+        return '<rect x="14" y="' + y + '" width="56" height="5" rx="2.5" fill="' + d + '"/><rect x="82" y="' + (y - 1) + '" width="' + (a.id === 'parts' ? 120 : 150) + '" height="8" rx="4" fill="' + l + '"/>'
+          + '<rect x="82" y="' + (y - 1) + '" width="' + w + '" height="8" rx="4" fill="' + (bad ? '#e03131' : a.id === 'parts' ? '#c27c00' : d) + '"/>'; }).join('');
+    } else {
+      svg += [0, 1, 2].map(function (i) { return '<rect x="' + (14 + i * 72) + '" y="12" width="64" height="20" rx="5" fill="' + l + '"/>'; }).join('')
+        + [0, 1, 2, 3].map(function (i) { return '<rect x="14" y="' + (44 + i * 18) + '" width="212" height="13" rx="4" fill="' + (i === 0 ? l : '#fff') + '" stroke="' + l + '"/>'
+          + '<rect x="22" y="' + (49 + i * 18) + '" width="' + [70, 56, 80, 48][i] + '" height="3" rx="1.5" fill="' + (i === 0 ? g : d) + '"/>'
+          + (i === 1 && /pm|safety|health/.test(a.id) ? '<rect x="186" y="' + (47 + i * 18) + '" width="30" height="7" rx="3.5" fill="#fdecec"/>' : ''); }).join('');
+    }
+    return svg + '</svg>';
+  }
+  function mkMatches(a) {
+    var q = mkQuery.trim().toLowerCase();
+    var okQ = !q || (a.name + ' ' + a.desc).toLowerCase().indexOf(q) > -1;
+    var okF = mkFilter === 'all' || (mkFilter === 'fav' ? favApps.indexOf(a.id) > -1 : kindOf(a) === mkFilter);
+    return okQ && okF;
+  }
+  function renderMarketGrid() {
+    var grid = document.getElementById('mkGrid'); if (!grid) return;
+    [].forEach.call(appView.querySelectorAll('[data-mk-filter]'), function (b) { b.setAttribute('aria-pressed', String(b.getAttribute('data-mk-filter') === mkFilter)); });
+    var list = APPS.filter(mkMatches);
+    document.getElementById('mkCount').textContent = list.length + (list.length === 1 ? ' app' : ' apps');
+    grid.innerHTML = list.length ? list.map(function (a, i) {
+      var fav = favApps.indexOf(a.id) > -1;
+      return '<button type="button" class="mk-app" data-mk-open="' + a.id + '" style="--i:' + i + '"><span class="mk-thumb">' + thumb(a) + '</span>'
+        + '<span class="mk-meta"><b>' + esc(a.name) + (fav ? '<i class="ap-fav" aria-label="Favorite">' + STAR + '</i>' : '') + '</b><small>' + esc(a.desc) + '</small>'
+        + '<span class="mk-kind">' + kindLabel(a) + '</span></span></button>';
+    }).join('') : '<p class="mk-empty">No apps match “' + esc(mkQuery) + '”. Try another word, or ask ' + esc(agentName) + ' to build it.</p>';
+  }
+  /* a key number that leads somewhere: scroll its section into view and give it a short highlight */
+  function goToSection(title) {
+    var sec = [].filter.call(appView.querySelectorAll('.ap-panel'), function (p) { var h = p.querySelector('h3'); return h && h.textContent === title; })[0]; if (!sec) return;
+    sec.scrollIntoView({ behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth', block: 'start' });
+    sec.classList.remove('flash'); void sec.offsetWidth; sec.classList.add('flash');
+  }
+  appView.addEventListener('keydown', function (e) { var gt = e.target.closest && e.target.closest('[data-goto]'); if (gt && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); goToSection(gt.getAttribute('data-goto')); } });
+  function openMarket() {
+    openAppId = 'market';
+    document.getElementById('chatToggle').classList.remove('active'); appsToggle.classList.add('active');
+    renderApps(); appEl2.classList.add('app-mode', 'drawer-closed', 'market-mode');
+    var chips = [['all', 'All'], ['dashboard', 'Dashboards'], ['list', 'Lists'], ['export', 'Export tools'], ['builder', 'Builders'], ['fav', 'Favorites']];
+    appView.innerHTML = '<div class="ap-bar"><div class="ap-crumb"><b>Apps</b></div>'
+      + '<button class="un-btn un-btn--sm un-btn--primary ap-create" type="button" data-ap="create">Create</button></div>'
+      + '<div class="ap-card mk"><header class="mk-head"><div><h2>Apps</h2><p>Everything your team built with ' + esc(agentName) + '. Open one, or ask for a new one.</p></div><span class="mk-count" id="mkCount"></span></header>'
+      + '<div class="mk-tools"><label class="mk-search"><svg class="un-icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="6.5"/><path d="M16 16l4.5 4.5"/></svg><input type="search" id="mkSearch" placeholder="Search apps" aria-label="Search apps" autocomplete="off" value="' + esc(mkQuery) + '"></label>'
+      + '<div class="mk-chips" role="group" aria-label="Filter apps">' + chips.map(function (c) { return '<button type="button" class="mk-chip" data-mk-filter="' + c[0] + '" aria-pressed="false">' + c[1] + '</button>'; }).join('') + '</div></div>'
+      + '<div class="mk-grid" id="mkGrid"></div></div>';
+    document.getElementById('mkSearch').addEventListener('input', function (e) { mkQuery = e.target.value; renderMarketGrid(); });
+    renderMarketGrid();
+  }
   function openApp(id) {
+    appEl2.classList.remove('market-mode');
     var a = appById(id); if (!a) return;
     openAppId = id; recentApps = [id].concat(recentApps.filter(function (x) { return x !== id; })).slice(0, 40); saveApps();
-    [].forEach.call(document.querySelectorAll('#chatList .chat-item'), function (x) { x.classList.remove('live'); });
     document.getElementById('chatToggle').classList.remove('active'); appsToggle.classList.add('active');
     renderApps(); renderAppView();
     if (appsToggle.getAttribute('aria-expanded') !== 'true') toggleSection(appsToggle);   /* show where the open app lives */
@@ -2062,44 +2628,38 @@
     else if (v === 'col') say('Sure, which column should I add? For example the cost of each stop, or the shift.', function () { prompt.placeholder = 'e.g. Add the cost of each stop…'; prompt.focus({ preventScroll: true }); });
     else say('Tell me how you’d like it laid out: a chart first, cards instead of a table, grouped by site…', function () { prompt.placeholder = 'e.g. Show a chart of downtime by asset first…'; prompt.focus({ preventScroll: true }); });
   });
-  /* collapsed sidebar: hovering Chat or Apps shows its list floating to the right (pick from it without opening the sidebar) */
+  /* collapsed sidebar: hovering Apps shows its list. Chat is the one conversation, so it only shows its name. */
   var fly = document.createElement('div'), flyFor = null, flyTimer = null; fly.className = 'un-menu flyout'; fly.setAttribute('role', 'menu'); document.body.appendChild(fly);
   function flyItem(attr, val, label, active, icon) { return '<button type="button" role="menuitem" ' + attr + '="' + val + '"' + (active ? ' class="on"' : '') + '>' + (icon || '') + '<span>' + esc(label) + '</span></button>'; }
   function showFly(btn) {
     if (!appEl2.classList.contains('nav-closed') || matchMedia('(max-width: 860px)').matches) return;
     clearTimeout(flyTimer); flyFor = btn; var html;
-    if (btn.id === 'appsToggle') {
-      var rest = recentApps.filter(function (id) { return favApps.indexOf(id) === -1; });
-      html = '<p class="fly-title">Apps</p>'
-        + (favApps.length ? '<p class="list-label">Favorites</p>' + favApps.map(appById).filter(Boolean).map(function (a) { return flyItem('data-fly-app', a.id, a.name, a.id === openAppId); }).join('') : '')
-        + (rest.length ? '<hr class="un-menu__sep">' + rest.map(appById).filter(Boolean).map(function (a) { return flyItem('data-fly-app', a.id, a.name, a.id === openAppId); }).join('') : '');
-    } else {
-      html = '<p class="fly-title">Chats</p>' + [].map.call(chatList.querySelectorAll('.chat-item'), function (c, i) { return flyItem('data-fly-chat', i, c.querySelector('span').textContent, c.classList.contains('live') && !openAppId); }).join('');
-    }
+    var rest = recentApps.filter(function (id) { return favApps.indexOf(id) === -1; });
+    html = '<p class="fly-title">Apps</p>'
+      + (favApps.length ? '<p class="list-label">Favorites</p>' + favApps.map(appById).filter(Boolean).map(function (a) { return flyItem('data-fly-app', a.id, a.name, a.id === openAppId); }).join('') : '')
+      + (rest.length ? '<hr class="un-menu__sep">' + rest.map(appById).filter(Boolean).map(function (a) { return flyItem('data-fly-app', a.id, a.name, a.id === openAppId); }).join('') : '');
     fly.innerHTML = html;
     var r = btn.getBoundingClientRect(); fly.style.left = (r.right + 14) + 'px'; fly.style.top = Math.max(8, Math.min(r.top - 6, innerHeight - fly.offsetHeight - 8)) + 'px';
     requestAnimationFrame(function () { fly.classList.add('show'); });
   }
   function hideFlySoon() { clearTimeout(flyTimer); flyTimer = setTimeout(function () { fly.classList.remove('show'); flyFor = null; }, 180); }
-  ['appsToggle', 'chatToggle'].forEach(function (id) {
-    var b = document.getElementById(id);
-    b.addEventListener('mouseenter', function () { showFly(b); });
-    b.addEventListener('mouseleave', hideFlySoon);
-  });
+  appsToggle.addEventListener('mouseenter', function () { showFly(appsToggle); });
+  appsToggle.addEventListener('mouseleave', hideFlySoon);
   fly.addEventListener('mouseenter', function () { clearTimeout(flyTimer); });
   fly.addEventListener('mouseleave', hideFlySoon);
   fly.addEventListener('click', function (e) {
     var b = e.target.closest('button'); if (!b) return; fly.classList.remove('show');
-    if (b.hasAttribute('data-fly-app')) { openApp(b.getAttribute('data-fly-app')); return; }
-    var c = chatList.querySelectorAll('.chat-item')[+b.getAttribute('data-fly-chat')]; if (c) c.click();
+    if (b.hasAttribute('data-fly-app')) openApp(b.getAttribute('data-fly-app'));
   });
   /* back to the chat: picking a conversation (or Chat) leaves the app */
   function closeApp() {
-    if (!openAppId) return; openAppId = null; appEl2.classList.remove('app-mode', 'drawer-closed');
+    if (!openAppId) return; openAppId = null; appEl2.classList.remove('app-mode', 'drawer-closed', 'market-mode');
     appsToggle.classList.remove('active'); document.getElementById('chatToggle').classList.add('active'); renderApps();
   }
-  document.getElementById('chatList').addEventListener('click', function (e) { if (e.target.closest('.chat-item') && !e.target.closest('.more')) closeApp(); });
-  document.getElementById('chatToggle').addEventListener('click', closeApp);
+  document.getElementById('chatToggle').addEventListener('click', function () {
+    closeApp();
+    if (appsToggle.getAttribute('aria-expanded') === 'true') toggleSection(appsToggle);   /* going to Chat folds Apps */
+  });
 
   // CMS bridge: when the assistant creates something in the CMS, the banner shows it live, then goes back to "Back to CMS".
   var KINDS = {

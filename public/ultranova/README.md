@@ -13,9 +13,9 @@ The 5 avatars currently reuse the same assistant; each will get its own design l
 
 ## Design system
 
-All Ultranova screens use **Outfit** for everything and share `ultranova.css` (tokens + `un-*` components):
-`un-btn`, `un-link`, `un-chip`, `un-pill`, `un-dot`, `un-badge`, `un-card`, `un-icon-btn`, `un-kbd`, `un-menu`, `un-toast`, `un-msg`, `un-typing`, `un-brand`, `un-wow` (starter card), `un-trace` (working steps), `un-res` (result card), `un-btn--primary` (black on light, white on dark).
-Live reference: `/ultranova/design-system.html`. New screens link `ultranova.css` first and only add layout; if a pattern repeats, add it there instead of in the page.
+All Ultranova screens use **Outfit** for everything and share `ultranova.css`. One brand purple (`--un-brand`, `#874bff`), warm greys, and attention colors only: red (`--un-bad`) when something is wrong, yellow (`--un-warn`) when it is at risk, ink (`--un-ok`) for success. Never a second green.
+Components: `un-btn`, `un-link`, `un-chip`, `un-pill`, `un-dot`, `un-badge`, `un-card`, `un-icon-btn`, `un-kbd`, `un-menu`, `un-toast`, `un-msg`, `un-typing`, `un-brand`, `un-wow` (starter card), `un-trace` (working steps), `un-res` (result card), `un-rows`, `un-vtl`, `un-status`, `un-prio`, `un-btn--primary` (black on light, white on dark).
+Live reference: `/ultranova/design-system.html` (light and dark, every component and card). New screens link `ultranova.css` first and only add layout; if a pattern repeats, add it there instead of in the page.
 
 ## Conversation cards (reference for developers)
 

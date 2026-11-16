@@ -123,19 +123,20 @@ const sections: NavSection[] = [
 /** Ultranova entry: a small card (name + star) that expands to a short pitch and a "Start now!" CTA (Ultranova's primary button) into the onboarding (static page in /public, so a plain anchor). */
 const ULTRANOVA_HREF = '/ultranova/onboarding.html'
 
-/** Ultranova's four-point star mark (same glyph and color as Ultranova's logo). */
+/** Ranger's gear mark (same glyph as the logo in /public/ultranova/assets/logo-mark.svg). */
+const RANGER_GEAR = 'M15.9717 0C16.2598 0 16.5029 0.214738 16.5371 0.5L16.8877 3.30371C18.0401 3.57757 19.1358 4.03155 20.1484 4.65625L22.3818 2.91895C22.61 2.74208 22.9322 2.76231 23.1348 2.96484L25.5566 5.38672C25.7589 5.58927 25.7793 5.91438 25.6025 6.13965L23.8652 8.37305C24.4899 9.38568 24.9401 10.4814 25.2168 11.6338L28.0215 11.9844C28.3065 12.0187 28.5203 12.2638 28.5205 12.5488V15.9727C28.5203 16.2606 28.3065 16.5028 28.0215 16.5371L25.2168 16.8877C24.9401 18.0401 24.4871 19.1358 23.8652 20.1484L25.6025 22.3818C25.7793 22.61 25.7589 22.9322 25.5566 23.1348L23.1348 25.5566C22.9322 25.7592 22.6072 25.7794 22.3818 25.6025L20.1484 23.8652C19.1358 24.4899 18.0401 24.9411 16.8877 25.2178L16.5371 28.0215C16.5029 28.3067 16.2569 28.5215 15.9717 28.5215H12.5488C12.2607 28.5215 12.0176 28.3067 11.9834 28.0215L11.6328 25.2178C10.4804 24.9411 9.38471 24.4899 8.37207 23.8652L6.13867 25.6025C5.91046 25.7794 5.58828 25.7592 5.38574 25.5566L2.96387 23.1348C2.76156 22.9322 2.74118 22.6071 2.91797 22.3818L4.65527 20.1484C4.03061 19.1358 3.5804 18.0401 3.30371 16.8877L0.499023 16.5371C0.213968 16.5028 0.000171138 16.2577 0 15.9727V12.5488C0.000168101 12.2609 0.213966 12.0187 0.499023 11.9844L3.30371 11.6338C3.5804 10.4814 4.03061 9.38568 4.65527 8.37305L2.91797 6.13965C2.74118 5.91153 2.76156 5.58927 2.96387 5.38672L5.38574 2.96484C5.58828 2.76231 5.91331 2.73923 6.13867 2.91895L8.37207 4.65625C9.38471 4.03155 10.4804 3.58042 11.6328 3.30371L11.9834 0.5C12.0205 0.214738 12.2636 0 12.5488 0H15.9717ZM14.8301 8.02441C14.6473 7.49538 13.875 7.49525 13.6924 8.02441L12.291 12.0938C12.2307 12.2684 12.0878 12.4049 11.9072 12.4619L7.61719 13.8174C7.06521 13.9917 7.06521 14.7485 7.61719 14.9229L11.8936 16.2734C12.082 16.333 12.2277 16.4795 12.2832 16.6641L13.6855 21.3262C13.8534 21.8844 14.6689 21.8843 14.8369 21.3262L16.2393 16.6641C16.2947 16.4796 16.4406 16.333 16.6289 16.2734L20.9062 14.9229C21.458 14.7484 21.458 13.9918 20.9062 13.8174L16.6152 12.4619C16.4348 12.4049 16.2927 12.2683 16.2324 12.0938L14.8301 8.02441Z'
 function UltranovaMark({ size = 20 }: { size?: number }) {
   const gradId = `un-mark-${useId().replace(/:/g, '')}`   // one gradient per instance (card + collapsed rail)
   return (
-    <svg width={size} height={size} viewBox="2.5 2 27 27" aria-hidden="true" className="shrink-0">
+    <svg width={size} height={size} viewBox="0 0 29 29" aria-hidden="true" className="shrink-0">
       <defs>
         {/* same gradient as the "Ultranova" text: black → blue-purple */}
         <linearGradient id={gradId} x1="0" y1="0" x2="1" y2="0">
           <stop offset="0%" stopColor="#1a1a1a" />
-          <stop offset="100%" stopColor="#874bff" />
+          <stop offset="100%" stopColor="#0b0fff" />
         </linearGradient>
       </defs>
-      <path d="M16 2l3.2 9.6L29 14.8l-9.8 3.2L16 29l-3.2-11L3 14.8l9.8-3.2z" fill={`url(#${gradId})`} />
+      <path fillRule="evenodd" d={RANGER_GEAR} fill={`url(#${gradId})`} />
     </svg>
   )
 }
@@ -165,7 +166,7 @@ function UltranovaCard() {
         aria-controls="ultranova-card-body"
         className="group flex items-center justify-between w-full h-12 px-4 rounded-[var(--radius-lg)] cursor-pointer hover:bg-[var(--color-neutral-2)] transition-colors duration-500 ease-[cubic-bezier(0.22,1,0.36,1)]"
       >
-        <span className="text-[length:16px] font-semibold leading-4 bg-[linear-gradient(90deg,#1a1a1a_0%,#874bff_100%)] bg-clip-text text-transparent">Ultranova</span>
+        <span className="text-[length:16px] font-semibold leading-4 bg-[linear-gradient(90deg,#1a1a1a_0%,#0b0fff_100%)] bg-clip-text text-transparent">Ranger</span>
         {/* the star gives way to a down arrow on hover (and while open) */}
         <span className="relative flex items-center justify-center w-5 h-5 shrink-0">
           <span className={`absolute transition-[opacity,transform] duration-500 ease-[cubic-bezier(0.22,1,0.36,1)] ${open ? 'opacity-0 scale-50 rotate-90' : 'group-hover:opacity-0 group-hover:scale-50 group-hover:rotate-90'}`}>
