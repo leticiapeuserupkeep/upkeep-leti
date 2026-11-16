@@ -2489,7 +2489,7 @@
       requestAnimationFrame(function () { apMenu.classList.add('show'); });
       return;
     }
-    appEl2.classList.remove('drawer-closed'); prompt.focus({ preventScroll: true });
+    editApp(openAppId);
   });
   var apMenu = document.createElement('div'); apMenu.className = 'un-menu ap-menu'; apMenu.setAttribute('role', 'menu'); apMenu.style.minWidth = '200px'; document.body.appendChild(apMenu);
   apMenu.addEventListener('click', function (e) {
@@ -2497,14 +2497,37 @@
     if (b.getAttribute('data-act') === 'fav') { toggleFav(openAppId); return; }
     editApp(openAppId);
   });
-  /* Edit: the chat opens as a drawer on the right and the assistant checks it's the right app and what to change */
+  /* Edit: the chat drawer opens on the latest message, the assistant types for a second, then asks what to change with 3 app-specific ideas; the box is focused right away */
+  var EDITS = {
+    downtime: ['Group the stops by line', 'Add the cost of each stop', 'Show only the last 7 days'],
+    pm: ['Break compliance down by technician', 'Flag PMs due in the next 3 days', 'Add a monthly trend'],
+    parts: ['Add the supplier lead time', 'Sort by what blocks work first', 'Order the low parts automatically'],
+    safety: ['Add a photo to each check', 'Notify me when a check fails', 'Add a forklift section'],
+    health: ['Add the next PM to each asset', 'Show only the critical assets', 'Compare with last month'],
+    backlog: ['Group the backlog by site', 'Add a chart for priority', 'Hide work orders on hold'],
+    pdf: ['Add our logo to the cover', 'Include the photos', 'Schedule it every Monday'],
+    pmbuilder: ['Add a parts list to each PM', 'Add estimated time per step', 'Use our safety template']
+  };
+  /* the drawer was display:none, so its scroll is back at the top: jump to the end instantly (the thread scrolls smoothly by default) */
+  function jumpToEnd() {
+    var sb = thread.style.scrollBehavior; thread.style.scrollBehavior = 'auto';
+    thread.scrollTop = thread.scrollHeight; thread.style.scrollBehavior = sb;
+  }
   function editApp(id) {
     if (openAppId !== id) openApp(id);
-    var a = appById(id); appEl2.classList.remove('drawer-closed'); main.classList.add('chatting'); clearOpts();
-    say('This is <strong>' + esc(a.name) + '</strong>. ' + esc(a.blurb) + ' Is this the app you need, or should I change something?', function () {
-      choices([{ label: 'It’s what I need', act: 'app', val: 'ok' }, { label: 'Add a column', act: 'app', val: 'col' }, { label: 'Change the layout', act: 'app', val: 'layout' }]);
-      prompt.placeholder = 'e.g. Group the rows by site…'; prompt.focus({ preventScroll: true });
-    }, 600);
+    var a = appById(id); appEl2.classList.remove('drawer-closed'); main.classList.add('chatting');
+    prompt.placeholder = 'Tell me what to change in ' + a.name + '…'; suggestion = ''; hint();
+    jumpToEnd(); prompt.focus({ preventScroll: true });
+    requestAnimationFrame(function () { jumpToEnd(); prompt.focus({ preventScroll: true }); });
+    /* already asking about this app (options still up): just bring it back, don't ask twice */
+    var last = thread.lastElementChild;
+    if (last && last.classList.contains('opts') && last.getAttribute('data-edit') === id) return;
+    clearOpts(); ctx = null; greetFirst = false;   /* straight to the point: no greeting first */
+    say('What changes would you like to make to <strong>' + esc(a.name) + '</strong>?', function () {
+      replies(EDITS[id] || ['Add a column', 'Change the layout', 'Add a filter']);
+      thread.lastElementChild.setAttribute('data-edit', id);
+      if (document.activeElement !== prompt) prompt.focus({ preventScroll: true });
+    }, 1000);
   }
   document.addEventListener('click', function (e) { if (!e.target.closest('.ap-menu') && !e.target.closest('[data-ap="menu"]')) apMenu.classList.remove('show'); });
   /* minimizing the drawer: the assistant (its 3D slot is moved, so the same robot keeps drawing) floats bottom-right */
@@ -2530,7 +2553,7 @@
     main.classList.add('drawer-out');
     setTimeout(function () { appEl2.classList.add('drawer-closed'); main.classList.remove('drawer-out'); }, 150);   /* matches the 150ms exit */
   });
-  botFab.addEventListener('click', function () { appEl2.classList.remove('drawer-closed'); if (robots) robots.wave('hero'); prompt.focus({ preventScroll: true }); });
+  botFab.addEventListener('click', function () { if (robots) robots.wave('hero'); if (openAppId) editApp(openAppId); else { appEl2.classList.remove('drawer-closed'); jumpToEnd(); prompt.focus({ preventScroll: true }); } });
   /* ---- Apps marketplace: every app with a thumbnail, search and filters (opens from "Apps" in the app bar) ---- */
   var mkFilter = 'all', mkQuery = '';
   var KIND = { dashboard: 'Dashboard', export: 'Export tool', builder: 'Builder' };
