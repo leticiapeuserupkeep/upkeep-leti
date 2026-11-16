@@ -1,0 +1,171 @@
+/* Ranger — phone layout (≤600px). Loaded after home.html's styles; `html:root[data-theme]` outranks its `:root[data-theme]` rules.
+   Structure: a top bar (logo · Back to CMS · avatar menu), the screen in the middle, and bottom tabs (Apps · Chat · Tasks).
+   An app takes the whole screen; Edit opens the chat as a full-screen sheet with a back button to the app.
+   Preview on desktop: mobile.html (the sidebar's phone button). Touch targets are at least 44px. */
+
+.m-top, .m-tabs, .m-back { display: none; }
+
+@media (max-width: 600px) {
+  html:root[data-theme] { --m-top: 56px; --m-tabs: calc(88px + env(safe-area-inset-bottom, 0px)); }   /* room kept for the floating bar: 64px + 12px gap + 12px margin */
+  html:root[data-theme] body { overflow: hidden; }
+  html:root[data-theme="light"], html:root[data-theme="light"] body, html:root[data-theme="light"] .backdrop, html:root[data-theme="light"] .app { background: #fff; }   /* behind the floating bar: the same white as the screen */
+  html:root[data-theme="dark"], html:root[data-theme="dark"] body, html:root[data-theme="dark"] .backdrop, html:root[data-theme="dark"] .app { background: #1c1c1b; }
+  html:root[data-theme] .un-glow { display: none; }
+
+  /* the desktop chrome goes away: no sidebar, no drawer topbar, no task panel */
+  html:root[data-theme] .sidebar, html:root[data-theme] .scrim, html:root[data-theme] .topbar, html:root[data-theme] .panel { display: none !important; }
+  html:root[data-theme] .app, html:root[data-theme] .app.app-mode, html:root[data-theme] .app.app-mode.drawer-closed { display: block; padding: 0; height: 100dvh; }
+
+  /* ---------- top bar ---------- */
+  html:root[data-theme] .m-top { position: fixed; z-index: 40; top: 0; left: 0; right: 0; display: flex; align-items: center; gap: 8px; height: var(--m-top); padding: 0 12px 0 16px;
+    background: #fff; border-bottom: 1px solid #ececea; }
+  html:root[data-theme="dark"] .m-top { background: #1c1c1b; border-color: #30302d; }
+  .m-top .grow { flex: 1; }
+  .m-logo { display: grid; place-items: center; width: 44px; height: 44px; margin-left: -10px; border-radius: 12px; }
+  .m-logo img { width: 24px; height: 24px; }
+  html:root[data-theme="dark"] .m-logo img { filter: invert(1); }
+  .m-cms { display: inline-flex; align-items: center; gap: 4px; height: 36px; padding: 0 12px 0 8px; border: 1px solid #e2e2dd; border-radius: 99px; color: #1a1a1a; text-decoration: none; font: 500 13px/16px var(--font-display); }
+  html:root[data-theme="dark"] .m-cms { border-color: #3a3a36; color: #f2f2ee; }
+  .m-cms .un-icon { width: 16px; height: 16px; }
+  .m-cms:active { background: #f4f4f1; }
+  .m-me { display: grid; place-items: center; width: 44px; height: 44px; padding: 0; border: 0; background: none; cursor: pointer; }
+  .m-me img { width: 32px; height: 32px; border-radius: 50%; object-fit: cover; }
+  .m-me[aria-expanded="true"] img { box-shadow: 0 0 0 2px #fff, 0 0 0 4px var(--un-brand); }
+
+  /* the avatar menu: View profile · Settings · Dark mode · Desktop view · Log out */
+  html:root[data-theme] .m-menu { position: fixed; min-width: 232px; padding: 6px; }
+  html:root[data-theme="light"] .m-menu { background: #fff; border-color: #ececea; color: #1a1a1a; }
+  html:root[data-theme="dark"] .m-menu { background: #1c1c1b; border-color: #30302d; color: #f2f2ee; }
+  html:root[data-theme] .m-menu button { color: inherit; }
+  html:root[data-theme="dark"] .m-menu button:hover { background: #2a2a28; }
+  .m-menu button { display: flex; align-items: center; gap: 12px; width: 100%; min-height: 44px; padding: 0 12px; font: 400 15px/20px var(--font-display); }
+  .m-menu .un-icon { width: 18px; height: 18px; flex: none; }
+  .m-menu .grow { flex: 1; text-align: left; }
+  .m-switch { position: relative; width: 34px; height: 20px; border-radius: 99px; background: #d9d9d4; transition: background var(--motion-150) ease; }
+  .m-switch::after { content: ""; position: absolute; top: 2px; left: 2px; width: 16px; height: 16px; border-radius: 50%; background: #fff; transition: transform var(--motion-200) var(--ease-out); }
+  .m-menu [aria-checked="true"] .m-switch { background: #1a1a1a; }
+  .m-menu [aria-checked="true"] .m-switch::after { transform: translateX(14px); }
+  html:root[data-theme="dark"] .m-menu [aria-checked="true"] .m-switch { background: var(--un-brand); }
+
+  /* ---------- bottom tabs: a floating white bar, icons only — Apps · Chat (center, bigger) · Tasks ---------- */
+  html:root[data-theme] .m-tabs { position: fixed; z-index: 40; left: 50%; bottom: calc(12px + env(safe-area-inset-bottom, 0px)); transform: translateX(-50%);
+    display: flex; align-items: center; gap: 28px; height: 64px; padding: 0 20px; border-radius: 99px; background: #fff;
+    box-shadow: 0 12px 32px -10px rgba(26, 26, 26, 0.28), 0 0 0 1px rgba(26, 26, 26, 0.06); }
+  html:root[data-theme="dark"] .m-tabs { background: #252523; box-shadow: 0 12px 32px -10px rgba(0, 0, 0, 0.6), 0 0 0 1px #30302d; }
+  .m-tabs button { display: grid; place-items: center; width: 48px; height: 48px; padding: 0; border: 0; border-radius: 50%; background: none; color: #9a9a96; cursor: pointer;
+    -webkit-tap-highlight-color: transparent; transition: color var(--motion-150) ease, background-color var(--motion-150) ease; }
+  .m-tabs button span { display: none; }   /* icons only; each tab has an aria-label */
+  .m-tabs button .un-icon { width: 24px; height: 24px; transition: transform var(--motion-150) var(--ease-out); }
+  .m-tabs button:active .un-icon, .m-tabs button:active i { transform: scale(0.92); }
+  .m-tabs button[aria-current="page"] { color: #1a1a1a; }
+  html:root[data-theme="dark"] .m-tabs button[aria-current="page"] { color: #f2f2ee; }
+  /* Chat, the center tab: a bigger round button, filled black when it's the current screen */
+  .m-tabs .m-chat { width: 56px; height: 56px; }
+  .m-tabs .m-chat i { display: grid; place-items: center; width: 56px; height: 56px; border-radius: 50%; background: #f1f1ee; color: #1a1a1a;
+    transition: background var(--motion-150) ease, color var(--motion-150) ease, transform var(--motion-150) var(--ease-out); }
+  .m-tabs .m-chat[aria-current="page"] i { background: #1a1a1a; color: #fff; }
+  html:root[data-theme="dark"] .m-tabs .m-chat i { background: #30302d; color: #f2f2ee; }
+  html:root[data-theme="dark"] .m-tabs .m-chat[aria-current="page"] i { background: #f2f2ee; color: #1a1a1a; }
+  .m-tabs .m-chat .un-icon { width: 24px; height: 24px; }
+
+  /* ---------- chat (the main screen) ---------- */
+  html:root[data-theme] .main, html:root[data-theme] .main.chatting { position: fixed; top: var(--m-top); bottom: var(--m-tabs); left: 0; right: 0; height: auto; min-height: 0; margin: 0;
+    padding: 0 16px 12px; border-radius: 0; overflow: hidden; }
+  html:root[data-theme] .main:not(.chatting) { overflow-y: auto; padding-top: 16px; }
+  html:root[data-theme] .chatting .thread, html:root[data-theme] .thread { width: 100%; padding: 12px 0 16px; margin: 0; }
+  html:root[data-theme] .chatbar { width: 100%; padding: 12px 14px; gap: 12px; }
+  html:root[data-theme] .chatbar textarea { font-size: 16px; line-height: 22px; }   /* 16px: iOS doesn't zoom into the field */
+  html:root[data-theme] .chatbar .un-icon-btn { width: 36px; height: 36px; }
+  /* the two sides of the conversation: on a phone only our bubbles keep a gap (48px) on the left */
+  html:root[data-theme] .app:not(.app-mode) .thread > .un-msg--ai, html:root[data-theme] .app:not(.app-mode) .thread > .opts { margin-right: 0; max-width: 100%; }
+  html:root[data-theme] .thread > .un-msg--user, html:root[data-theme] .app:not(.app-mode) .thread > .un-msg--user { margin-left: 48px; max-width: calc(100% - 48px); }
+  html:root[data-theme] .un-msg { font-size: 15px; line-height: 22px; }
+  /* suggested replies: a column of full-width, thumb-sized options */
+  html:root[data-theme] .opts { flex-direction: column; align-items: stretch; }
+  html:root[data-theme] .opts .un-chip { width: 100%; justify-content: flex-start; min-height: 44px; height: auto; padding: 10px 14px; text-align: left; white-space: normal; }
+  /* the welcome: one column of starters */
+  html:root[data-theme] .wows { grid-template-columns: minmax(0, 1fr); }
+  html:root[data-theme] .wows .un-wow { min-height: 0; }
+  html:root[data-theme] .greeting h1 { font-size: 28px; line-height: 34px; }
+
+  /* the assistant above the conversation: smaller, so the thread gets the room */
+  html:root[data-theme] .chatting .stage { padding-top: 8px; }
+  html:root[data-theme] .chatting .assistant { width: 48px; height: 48px; }
+  html:root[data-theme] .chatting .bot-hi { top: 64px; }
+
+  /* ---------- chat cards ---------- */
+  html:root[data-theme] .un-res__head { padding: 12px 14px; }
+  html:root[data-theme] .un-res__body { padding: 14px; }
+  html:root[data-theme] .un-stats { grid-auto-flow: row; grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  html:root[data-theme] .un-stats:has(> :nth-child(3):last-child), html:root[data-theme] .un-stats:has(> :nth-child(2):last-child) { grid-template-columns: repeat(auto-fit, minmax(0, 1fr)); grid-auto-flow: column; }   /* 2 or 3 numbers fit one row */
+  html:root[data-theme] button.un-stat { min-height: 56px; }
+  html:root[data-theme] .un-grid, html:root[data-theme] .un-grid--4 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  html:root[data-theme] .un-res .un-btn, html:root[data-theme] .un-res .un-chip { min-height: 40px; }
+  .un-cf__stage { touch-action: pan-y; }   /* sideways swipes move the carousel, vertical ones scroll */
+  .un-fl__stage { touch-action: pan-x; }   /* vertical swipes move the list (cards.js scrolls the page at its ends) */
+  html:root[data-theme] .un-fl__item { padding: 12px 14px; }
+  html:root[data-theme] .un-fl__item .un-rows__side { display: none; }   /* phone: the focused card shows its tags below */
+  html:root[data-theme] .un-fl__item[aria-current="true"] .un-rows__side { display: flex; }
+  html:root[data-theme] .un-fl__item[aria-current="true"] { flex-wrap: wrap; }
+  html:root[data-theme] .un-strip__day { flex-basis: 44px; min-height: 56px; }
+  html:root[data-theme] .un-res [class*="actions"] { flex-wrap: wrap; }
+
+  /* ---------- apps: full screen, the bar reads "‹ Apps" with Edit on the right ---------- */
+  html:root[data-theme] .app.app-mode .appview { position: fixed; top: var(--m-top); bottom: var(--m-tabs); left: 0; right: 0; height: auto; gap: 0; display: flex; }
+  html:root[data-theme] .ap-bar { min-height: 52px; padding: 6px 8px 6px 4px; border-radius: 0; border-bottom: 1px solid #ececea; }
+  html:root[data-theme="dark"] .ap-bar { border-color: #30302d; }
+  html:root[data-theme] .ap-crumb .sep, html:root[data-theme] .ap-crumb b:not(:only-child) { display: none; }
+  html:root[data-theme] .ap-crumb__link { display: inline-flex; align-items: center; gap: 2px; min-height: 44px; padding: 0 8px; font-weight: 500; }
+  html:root[data-theme] .ap-crumb__link::before { content: ""; width: 18px; height: 18px; background: currentColor;
+    -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M15 6l-6 6 6 6'/%3E%3C/svg%3E") center / contain no-repeat;
+    mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M15 6l-6 6 6 6'/%3E%3C/svg%3E") center / contain no-repeat; }
+  html:root[data-theme] .ap-crumb > b:only-child { padding-left: 12px; font-size: 17px; }   /* the Apps list itself: just its title */
+  html:root[data-theme] .ap-mark { width: 44px; height: 44px; }
+  html:root[data-theme] .ap-create { min-height: 36px; }
+  html:root[data-theme] .ap-card { padding: 16px; gap: 16px; border-radius: 0; -webkit-overflow-scrolling: touch; }
+  html:root[data-theme] .ap-head h2 { display: block; font-size: 22px; line-height: 28px; }   /* the app's name, since the bar only says "‹ Apps" */
+  html:root[data-theme] .ap-head p { font-size: 14px; line-height: 20px; }
+  html:root[data-theme] .ap-grid2, html:root[data-theme] .ap-grid2--wide, html:root[data-theme] .ap-grid2--side, html:root[data-theme] .ap-form { grid-template-columns: minmax(0, 1fr); }
+  html:root[data-theme] .ap-kpis { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+  html:root[data-theme] .ap-kpis > :first-child { grid-column: 1 / -1; }   /* the hero metric spans the row */
+  html:root[data-theme] .ap-kpi[data-goto]:hover { transform: none; }
+  html:root[data-theme] .ap-filters { flex-wrap: nowrap; overflow-x: auto; margin-inline: -16px; padding: 0 16px 2px; scrollbar-width: none; }   /* filters: one swipeable row */
+  html:root[data-theme] .ap-filters::-webkit-scrollbar { display: none; }
+  html:root[data-theme] .ap-filters > * { flex: none; }
+  /* tables scroll sideways inside their frame instead of squeezing the columns */
+  html:root[data-theme] .ap-table { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+  html:root[data-theme] .ap-table .ap-row { min-width: 560px; }
+  html:root[data-theme] .ap-days { grid-template-columns: repeat(5, minmax(0, 1fr)); }
+  html:root[data-theme] .ap-hbar { grid-template-columns: 84px 1fr 32px; }
+  html:root[data-theme] .ap-panel { min-width: 0; }
+  /* the marketplace */
+  html:root[data-theme] .mk-head h2 { display: none; }   /* the bar already says "Apps" */
+  html:root[data-theme] .mk-chips { flex-wrap: nowrap; overflow-x: auto; margin-inline: -16px; padding: 0 16px 2px; scrollbar-width: none; }   /* filters: one swipeable row */
+  html:root[data-theme] .mk-chips::-webkit-scrollbar { display: none; }
+  html:root[data-theme] .mk-chips > * { flex: none; min-height: 36px; }
+  html:root[data-theme] .mk-thumb { aspect-ratio: 3 / 1; }
+  html:root[data-theme] .mk-grid { grid-template-columns: minmax(0, 1fr); gap: 12px; }
+  html:root[data-theme] .mk-tools { flex-wrap: wrap; }
+  html:root[data-theme] .mk-tools > * { min-width: 0; }
+  html:root[data-theme] .mk-search { flex: 1 1 100%; min-height: 44px; }
+  html:root[data-theme] .mk-search input { font-size: 16px; }
+
+  /* ---------- Edit: the chat opens as a full-screen sheet over the app, with "‹ App name" to go back ---------- */
+  html:root[data-theme] .app.app-mode:not(.drawer-closed) .main { position: fixed; z-index: 45; top: 0; bottom: 0; padding: 0 16px max(12px, env(safe-area-inset-bottom, 0px));
+    animation: m-sheet-in var(--motion-300) var(--ease-out) both; }
+  html:root[data-theme] .app.app-mode .main.drawer-out { animation: m-sheet-out var(--motion-200) var(--ease-in) forwards; }
+  @keyframes m-sheet-in { from { transform: translateY(24px); opacity: 0; } }
+  @keyframes m-sheet-out { to { transform: translateY(24px); opacity: 0; } }
+  html:root[data-theme] .app.app-mode .drawer-head { min-height: var(--m-top); margin: 0 -16px; padding: 0 12px 0 4px; border-bottom: 1px solid #ececea; }
+  html:root[data-theme="dark"] .app.app-mode .drawer-head { border-color: #30302d; }
+  html:root[data-theme] .app.app-mode .drawer-head .aname, html:root[data-theme] .app.app-mode #drawerClose { display: none; }
+  html:root[data-theme] .app.app-mode .m-back { display: inline-flex; align-items: center; gap: 2px; min-height: 44px; padding: 0 8px; border: 0; background: none; color: inherit; font: 600 16px/20px var(--font-display); cursor: pointer; }
+  .m-back .un-icon { width: 20px; height: 20px; }
+  .m-back span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 260px; }
+  html:root[data-theme] .app.app-mode .chatting .assistant, html:root[data-theme] .app.app-mode .stage { display: none; }
+  /* the floating assistant sits above the tabs */
+  html:root[data-theme] .bot-fab { right: 12px; bottom: calc(var(--m-tabs) + 8px); width: 72px; height: 72px; }
+  html:root[data-theme] .fab-say { display: none; }
+  /* menus and toasts clear the bars */
+  html:root[data-theme] .un-toast, html:root[data-theme] #toast { bottom: calc(var(--m-tabs) + 12px); }
+}

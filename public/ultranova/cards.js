@@ -228,6 +228,26 @@
     if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); cfGo(cf, i); }
     else if (e.key === 'ArrowRight' || e.key === 'ArrowLeft') { e.preventDefault(); var n = (at + (e.key === 'ArrowRight' ? 1 : -1) + all.length) % all.length; cfGo(cf, n); all[n].focus(); }
   });
+  /* touch: swipe the focus carousel sideways and the focus list up/down, one card per swipe.
+     The list keeps vertical gestures (touch-action: pan-x); at its ends the swipe scrolls the conversation instead. */
+  var sw = null;
+  function scroller(el) { while (el && el !== document.body) { var o = getComputedStyle(el).overflowY; if ((o === 'auto' || o === 'scroll') && el.scrollHeight > el.clientHeight) return el; el = el.parentElement; } return document.scrollingElement; }
+  document.addEventListener('touchstart', function (e) {
+    var t = e.touches[0], cf = e.target.closest && e.target.closest('.un-cf__stage'), fl = e.target.closest && e.target.closest('.un-fl__stage');
+    sw = (cf || fl) && e.touches.length === 1 ? { x: t.clientX, y: t.clientY, lx: t.clientX, ly: t.clientY, cf: cf && cf.closest('.un-cf'), fl: fl && fl.parentNode, done: false } : null;
+  }, { passive: true });
+  document.addEventListener('touchmove', function (e) {
+    if (!sw || sw.done) return; var t = e.touches[0], dx = t.clientX - sw.x, dy = t.clientY - sw.y;
+    if (sw.fl) {
+      var at = Number(sw.fl.getAttribute('data-at')), n = sw.fl.querySelectorAll('.un-fl__item:not(.out)').length, dir = dy < 0 ? 1 : -1;
+      if (Math.abs(dy) > 36 && Math.abs(dy) > Math.abs(dx) && !((dir > 0 && at >= n - 1) || (dir < 0 && at <= 0))) { flGo(sw.fl, at + dir); sw.done = true; return; }
+      if ((dir > 0 && at >= n - 1) || (dir < 0 && at <= 0)) { var sc = scroller(sw.fl); if (sc) sc.scrollTop -= t.clientY - sw.ly; }   /* past the ends: scroll the page */
+      sw.lx = t.clientX; sw.ly = t.clientY;
+    } else if (sw.cf && Math.abs(dx) > 36 && Math.abs(dx) > Math.abs(dy)) {
+      cfGo(sw.cf, Number(sw.cf.getAttribute('data-at')) + (dx < 0 ? 1 : -1)); sw.done = true;
+    }
+  }, { passive: true });
+  document.addEventListener('touchend', function () { sw = null; }, { passive: true });
   function tileHTML(t, i) {
     return '<article class="un-car__item' + (t.late ? ' late' : '') + '" style="--k:' + i + '">'
         + '<div class="un-car__top"><span class="un-car__ic">' + icon(t.icon || 'gear') + '</span>' + pill(t.status) + '</div>'

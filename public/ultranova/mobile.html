@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Ranger by UpKeep · Mobile</title>
+<link rel="icon" href="assets/logo-mark.svg">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  /* Mobile preview: the real home.html inside a 390×844 phone, so its phone layout (mobile.css, ≤600px) applies.
+     Back to desktop: "Desktop view" in the avatar menu inside the phone, or the link above it. */
+  :root { color-scheme: light; }
+  * { box-sizing: border-box; }
+  html, body { height: 100%; margin: 0; }
+  body { display: grid; place-items: center; gap: 16px; padding: 24px; background: #ecece5; font: 400 13px/18px "Outfit", system-ui, sans-serif; color: #7b7b79; }
+  .stack { display: grid; justify-items: center; gap: 14px; }
+  .phone { position: relative; width: 390px; height: min(844px, calc(100dvh - 90px)); border-radius: 48px; padding: 12px; background: #1a1a1a;
+    box-shadow: 0 30px 80px -30px rgba(26, 26, 26, 0.45), inset 0 0 0 2px #333; }
+  iframe { display: block; width: 100%; height: 100%; border: 0; border-radius: 36px; background: #fff; }
+  a { color: #1a1a1a; font-weight: 500; text-decoration: none; }
+  a:hover { text-decoration: underline; }
+  @media (max-width: 600px) { body { padding: 0; } .phone { width: 100vw; height: 100dvh; border-radius: 0; padding: 0; box-shadow: none; } .top { display: none; } iframe { border-radius: 0; } }
+</style>
+</head>
+<body>
+  <div class="stack">
+    <p class="top" style="margin:0">Mobile preview · <a href="home.html">Back to desktop</a></p>
+    <div class="phone"><iframe src="home.html" title="Ranger mobile"></iframe></div>
+  </div>
+</body>
+</html>

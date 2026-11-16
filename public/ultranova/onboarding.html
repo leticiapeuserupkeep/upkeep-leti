@@ -40,7 +40,7 @@
   /*dk*/ :root[data-theme="dark"] .ob-glow { display: block; } /*/dk*/
   :root[data-theme="light"] .un-glow { display: none; }
   /*dk*/ :root[data-theme="dark"] .un-glow { display: none; } /*/dk*/
-  .ob-glow i { position: absolute; display: block; border-radius: 4px; filter: blur(187px); will-change: transform; }
+  .ob-glow i { position: absolute; display: block; border-radius: 50%; filter: blur(187px); will-change: transform; }
   .ob-glow .c { left: -61.4vw; top: -50.6vh; width: 199.7vw; height: 83.1vh; background: #f7f6ec; }   /* the wide band across the top */
   .ob-glow .a { left: 0; top: -3.7vh; width: 35.3vw; height: 63.1vh; background: #f4f4ea; animation: un-glow-float-b 34s ease-in-out infinite alternate; }
   .ob-glow .b { left: 72.6vw; top: 7.9vh; width: 37.7vw; height: 67.4vh; background: #f6f6ef; animation: un-glow-float-a 26s ease-in-out infinite alternate; }
@@ -84,9 +84,9 @@
 
   /* ---------- the four options, one under another ---------- */
   .options { list-style: none; width: 100%; margin: 28px 0 0; padding: 0; display: grid; gap: 8px; }
-  .option { position: relative; display: flex; align-items: center; gap: 14px; width: 100%; padding: 12px 16px 12px 12px; border: 1px solid var(--un-paper-line); border-radius: 4px; background: var(--un-paper); color: var(--ink);
+  .option { position: relative; display: flex; align-items: center; gap: 14px; width: 100%; padding: 12px 16px 12px 12px; border: 1px solid var(--un-paper-line); border-radius: 16px; background: var(--un-paper); color: var(--ink);
     font: 400 15px/20px var(--font-display); text-align: left; cursor: pointer; transition: transform 0.3s var(--ease), box-shadow 0.3s var(--ease), border-color 0.25s, background 0.25s; }
-  .option .un-wow__icon { width: 36px; height: 36px; border-radius: 4px; flex: none; }
+  .option .un-wow__icon { width: 36px; height: 36px; border-radius: 10px; flex: none; }
   .option .t { flex: 1; min-width: 0; }
   .option .go { width: 16px; height: 16px; flex: none; color: var(--ink-soft); transition: transform 0.3s var(--ease), color 0.2s; }
   /* hover: no shadow — a halo of light runs around the border, and passes again every few seconds
@@ -116,13 +116,13 @@
   /*dk*/ :root[data-theme="dark"] .option:hover { background: #1c1c1b; } /*/dk*/
 
   /* ---------- message box ---------- */
-  .ask { display: flex; align-items: center; gap: 8px; width: 100%; margin-top: 16px; padding: 8px 8px 8px 18px; border: 1px solid var(--un-paper-line); border-radius: 4px; background: var(--un-paper); transition: border-color 0.2s, box-shadow 0.3s, opacity var(--in) ease, transform var(--in) var(--ease); }
+  .ask { display: flex; align-items: center; gap: 8px; width: 100%; margin-top: 16px; padding: 8px 8px 8px 18px; border: 1px solid var(--un-paper-line); border-radius: 18px; background: var(--un-paper); transition: border-color 0.2s, box-shadow 0.3s, opacity var(--in) ease, transform var(--in) var(--ease); }
   :root[data-theme="light"] .ask { background: #fff; box-shadow: 0 18px 40px -26px rgba(21, 19, 28, 0.3); }
   /*dk*/ :root[data-theme="dark"] .ask { background: #1c1c1b; box-shadow: 0 18px 40px -26px rgba(0, 0, 0, 0.66); } /*/dk*/
   .ask:focus-within { border-color: color-mix(in srgb, var(--un-text) 30%, transparent); }
   .ask input { flex: 1; min-width: 0; height: 36px; border: 0; outline: 0; background: transparent; color: var(--ink); font: 400 15px var(--font-display); }
   .ask input::placeholder { color: var(--ink-soft); opacity: 0.8; }
-  .send { width: 36px; height: 36px; flex: none; display: grid; place-items: center; border: 0; border-radius: 4px; background: var(--un-tile); color: var(--ink-soft); cursor: pointer; transition: background 0.2s, color 0.2s, transform 0.2s var(--ease); }
+  .send { width: 36px; height: 36px; flex: none; display: grid; place-items: center; border: 0; border-radius: 50%; background: var(--un-tile); color: var(--ink-soft); cursor: pointer; transition: background 0.2s, color 0.2s, transform 0.2s var(--ease); }
   .send .un-icon { width: 18px; height: 18px; }
   .send.ready { background: #15131c; color: #fff; }
   :root[data-theme="dark"] .send.ready { background: #fff; color: #15131c; }
@@ -133,7 +133,7 @@
   .top-right { display: flex; align-items: center; gap: 16px; }
   .top-right .divider { width: 1px; height: 39px; background: #e0e0dc; }
   /*dk*/ :root[data-theme="dark"] .top-right .divider { background: #30302d; } /*/dk*/
-  .cms-pill { display: inline-flex; align-items: center; gap: 8px; padding: 8px 16px; border-radius: 4px; background: #e8e8e5; color: #1a1a1a; font: 400 14px/20px var(--font-display); text-decoration: none; transition: background 0.2s; }
+  .cms-pill { display: inline-flex; align-items: center; gap: 8px; padding: 8px 16px; border-radius: 24px; background: #e8e8e5; color: #1a1a1a; font: 400 14px/20px var(--font-display); text-decoration: none; transition: background 0.2s; }
   /*dk*/ :root[data-theme="dark"] .cms-pill { background: #2c2c29; color: #f2f2ee; } /*/dk*/
   .cms-pill:hover { background: #deded9; }
   /*dk*/ :root[data-theme="dark"] .cms-pill:hover { background: #3a3a36; } /*/dk*/
@@ -186,8 +186,8 @@
   /*dk*/ :root[data-theme="dark"] .option:hover { border-color: color-mix(in srgb, var(--un-brand) 35%, transparent); } /*/dk*/
   :root[data-theme="light"] .option:focus-visible, :root[data-theme="light"] .send:focus-visible { outline-color: #1a1a1a; }
   /*dk*/ :root[data-theme="dark"] .option:focus-visible, :root[data-theme="dark"] .send:focus-visible { outline-color: #f2f2ee; } /*/dk*/
-  :root[data-theme="light"] .ask { margin-top: 56px; height: 52px; padding: 8px 8px 8px 20px; border-color: #ece0ff; border-radius: 4px; box-shadow: none; }
-  /*dk*/ :root[data-theme="dark"] .ask { margin-top: 56px; height: 52px; padding: 8px 8px 8px 20px; border-color: #261d45; border-radius: 4px; box-shadow: none; } /*/dk*/
+  :root[data-theme="light"] .ask { margin-top: 56px; height: 52px; padding: 8px 8px 8px 20px; border-color: #ece0ff; border-radius: 16px; box-shadow: none; }
+  /*dk*/ :root[data-theme="dark"] .ask { margin-top: 56px; height: 52px; padding: 8px 8px 8px 20px; border-color: #261d45; border-radius: 16px; box-shadow: none; } /*/dk*/
   :root[data-theme="light"] .ask:focus-within { border-color: var(--un-brand); box-shadow: 0 0 0 6px color-mix(in srgb, var(--un-brand) 9%, transparent); }
   /*dk*/ :root[data-theme="dark"] .ask:focus-within { border-color: var(--un-brand); box-shadow: 0 0 0 6px color-mix(in srgb, var(--un-brand) 9%, transparent); } /*/dk*/   /* Figma: brand border + soft halo */
   :root[data-theme="light"] .ask input::placeholder { color: #9f9f99; opacity: 1; }
