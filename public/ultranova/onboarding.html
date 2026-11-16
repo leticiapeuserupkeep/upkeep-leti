@@ -266,7 +266,10 @@
   list.innerHTML = UltranovaWow.list.map(function (w) {
     return '<li class="seq"><button type="button" class="option" data-wow="' + w.key + '"><span class="un-wow__icon">' + UltranovaWow.icon(w.icon) + '</span>'
       + '<span class="t">' + w.option + '</span>' + UltranovaWow.icon('go', 'go') + '</button></li>';
-  }).join('');
+  }).join('')
+    /* for testing: opens the chat with every card design */
+    + '<li class="seq"><button type="button" class="option" data-demo-cards><span class="un-wow__icon"><svg class="un-icon" viewBox="0 0 24 24" aria-hidden="true"><rect x="3.5" y="3.5" width="7" height="7" rx="1.5"/><rect x="13.5" y="3.5" width="7" height="7" rx="1.5"/><rect x="3.5" y="13.5" width="7" height="7" rx="1.5"/><rect x="13.5" y="13.5" width="7" height="7" rx="1.5"/></svg></span>'
+    + '<span class="t">Show me all cards</span>' + UltranovaWow.icon('go', 'go') + '</button></li>';
 
   /* ---------- the sequence ----------
      one line at a time, and everything stays: the title fades in → the first line is
@@ -311,6 +314,12 @@
     setTimeout(function () { location.href = 'home.html' + (run ? '?run=' + encodeURIComponent(run) : ''); }, reduce ? 0 : 420);
   }
   list.addEventListener('click', function (e) {
+    var d = e.target.closest('[data-demo-cards]');
+    if (d) {
+      if (leaving) return; leaving = true; d.classList.add('picked'); document.body.classList.add('leaving');
+      try { sessionStorage.removeItem('ultranova.intro'); sessionStorage.removeItem('ultranova.ask'); } catch (err) {}
+      setTimeout(function () { location.href = 'home.html?demo=cards'; }, reduce ? 0 : 420); return;
+    }
     var b = e.target.closest('[data-wow]'); if (!b) return;
     b.classList.add('picked'); go(b.getAttribute('data-wow'));
   });
