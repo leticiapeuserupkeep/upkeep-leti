@@ -962,3 +962,5 @@ html:root[data-theme] .un-res .un-tile, html:root[data-theme] .un-res .un-tile.u
 /* carousel and focus-list cards: grey border for all (in focus, overdue or not) */
 html:root[data-theme] .un-res .un-cf__item, html:root[data-theme] .un-res .un-cf__item[aria-current="true"], html:root[data-theme] .un-res .un-cf__item.late,
 html:root[data-theme] .un-res .un-fl__item, html:root[data-theme] .un-res .un-fl__item[aria-current="true"] { border-color: var(--un-paper-line); }
+
+.un-cf__dots2 { display: none; }   /* shown on phones only (mobile.css) */

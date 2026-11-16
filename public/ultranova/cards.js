@@ -189,13 +189,14 @@
     if (real >= 3) while (tiles.length < 7) tiles = tiles.concat(tiles.slice(0, real));   /* a few items: repeat them so both sides stay full (one or two just sit in the middle) */
     var n = tiles.length;
     return tiles.map(function (t, i) {
-      return tileHTML(t, i).replace('<article class="un-car__item', '<article tabindex="0" role="button" aria-current="' + (i === at) + '" aria-label="' + t.title + ', ' + t.date + '" style="--pos:' + cfPos(i, at, n) + '" class="un-cf__item un-car__item').replace(' style="--k:' + i + '"', '');
+      return tileHTML(t, i).replace('<article class="un-car__item', '<article tabindex="0" role="button" aria-current="' + (i === at) + '" aria-label="' + t.title + ', ' + t.date + '" style="--pos:' + cfPos(i, at, n) + '" class="un-cf__item un-car__item' + (i >= real ? ' un-cf__dup' : '')).replace(' style="--k:' + i + '"', '');
     }).join('');
   }
   function focusCar(tiles, title, sub, start) {
     var at = start || 0;
     return '<section class="un-cf" data-at="' + at + '">' + (title ? '<header class="un-cf__title"><h3>' + title + '</h3>' + (sub ? '<p>' + sub + '</p>' : '') + '</header>' : '')
       + '<div class="un-cf__stage">' + cfStage(tiles.slice(), at) + '</div>'
+      + (tiles.length > 1 ? '<div class="un-cf__dots2" role="group" aria-label="Cards">' + tiles.map(function (t, i) { return '<button type="button" data-cf-dot="' + i + '" aria-label="' + t.title + '"' + (i === 0 ? ' aria-current="true"' : '') + '></button>'; }).join('') + '</div>' : '')   /* phone only (mobile.css): the slider's dots */
       + '<script type="application/json" class="un-cf__data">' + JSON.stringify(tiles).replace(/</g, '\\u003c') + '</' + 'script>'
       + '</section>';
   }
@@ -209,11 +210,24 @@
       el.setAttribute('aria-current', String(i === at));
     });
     [].forEach.call(cf.querySelectorAll('.un-cf__dots i'), function (d, i) { d.classList.toggle('on', i === at); });
+
   }
   document.addEventListener('click', function (e) {
     var it = e.target.closest('.un-cf__item'); if (!it) return;
     var cf = it.closest('.un-cf'); cfGo(cf, [].indexOf.call(cf.querySelectorAll('.un-cf__item'), it));
   });
+  /* phone slider (mobile.css turns the stage into a scroll-snap row): the dots follow the scroll, and a tap on a dot scrolls there */
+  function cfSlideTo(st, i) { var it = st.querySelectorAll('.un-cf__item')[i]; if (it) st.scrollTo({ left: it.offsetLeft - st.firstElementChild.offsetLeft, behavior: 'smooth' }); }
+  document.addEventListener('click', function (e) {
+    var b = e.target.closest('[data-cf-dot]'); if (!b) return; cfSlideTo(b.closest('.un-cf').querySelector('.un-cf__stage'), Number(b.getAttribute('data-cf-dot')));
+  });
+  document.addEventListener('scroll', function (e) {
+    var st = e.target; if (!st.classList || !st.classList.contains('un-cf__stage')) return;
+    var items = st.querySelectorAll('.un-cf__item:not(.un-cf__dup)'); if (!items.length) return;
+    var step = items.length > 1 ? items[1].offsetLeft - items[0].offsetLeft : 1, i = Math.max(0, Math.min(items.length - 1, Math.round(st.scrollLeft / step)));
+    if (st.scrollLeft + st.clientWidth >= st.scrollWidth - 2) i = items.length - 1;   /* at the end: the last dot */
+    [].forEach.call(st.closest('.un-cf').querySelectorAll('[data-cf-dot]'), function (d, k) { if (k === i) d.setAttribute('aria-current', 'true'); else d.removeAttribute('aria-current'); });
+  }, true);
   /* scroll (wheel or trackpad, either direction) over the carousel moves it, endlessly */
   var cfLock = 0;
   document.addEventListener('wheel', function (e) {
@@ -243,11 +257,19 @@
       if (Math.abs(dy) > 36 && Math.abs(dy) > Math.abs(dx) && !((dir > 0 && at >= n - 1) || (dir < 0 && at <= 0))) { flGo(sw.fl, at + dir); sw.done = true; return; }
       if ((dir > 0 && at >= n - 1) || (dir < 0 && at <= 0)) { var sc = scroller(sw.fl); if (sc) sc.scrollTop -= t.clientY - sw.ly; }   /* past the ends: scroll the page */
       sw.lx = t.clientX; sw.ly = t.clientY;
-    } else if (sw.cf && Math.abs(dx) > 36 && Math.abs(dx) > Math.abs(dy)) {
-      cfGo(sw.cf, Number(sw.cf.getAttribute('data-at')) + (dx < 0 ? 1 : -1)); sw.done = true;
+    } else if (sw.cf && sw.cf.querySelector('.un-cf__stage').scrollWidth > sw.cf.querySelector('.un-cf__stage').clientWidth + 2) {   /* a native scroll slider (phone): let it scroll */
+      sw.done = true;
+    } else if (sw.cf && (sw.drag || (Math.abs(dx) > 8 && Math.abs(dx) > Math.abs(dy)))) {   /* the cards follow the finger, then settle */
+      sw.drag = true; sw.dx = dx; var st = sw.cf.querySelector('.un-cf__stage'); st.style.transition = 'none'; st.style.transform = 'translateX(' + (dx * 0.6) + 'px)';
     }
   }, { passive: true });
-  document.addEventListener('touchend', function () { sw = null; }, { passive: true });
+  document.addEventListener('touchend', function () {
+    if (sw && sw.cf && sw.drag) {
+      var st = sw.cf.querySelector('.un-cf__stage'); st.style.transition = ''; st.style.transform = '';
+      if (Math.abs(sw.dx) > 40) cfGo(sw.cf, Number(sw.cf.getAttribute('data-at')) + (sw.dx < 0 ? 1 : -1));
+    }
+    sw = null;
+  }, { passive: true });
   function tileHTML(t, i) {
     return '<article class="un-car__item' + (t.late ? ' late' : '') + '" style="--k:' + i + '">'
         + '<div class="un-car__top"><span class="un-car__ic">' + icon(t.icon || 'gear') + '</span>' + pill(t.status) + '</div>'

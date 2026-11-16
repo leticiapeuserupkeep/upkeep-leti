@@ -988,6 +988,21 @@
   .mk-thumb { display: block; aspect-ratio: 2 / 1; padding: 0; }
   .mk-thumb svg { display: block; width: 100%; height: 100%; }
   .mk-meta { display: grid; gap: 4px; padding: 14px 16px 16px; }
+  /* each app card carries its bookmark as a real button, top right over the thumbnail */
+  .mk-item { position: relative; display: flex; min-width: 0; animation: un-rise 0.3s var(--ease-out) backwards; animation-delay: calc(var(--i, 0) * 40ms); }
+  .mk-item > .mk-app { flex: 1; }
+  .mk-mark { position: absolute; top: 10px; right: 10px; display: grid; place-items: center; width: 36px; height: 36px; padding: 0; border: 1px solid #e2e2dd; border-radius: 50%;
+    background: #fff; color: #7b7b79; cursor: pointer; transition: background-color var(--motion-150) ease, color var(--motion-150) ease, border-color var(--motion-150) ease, transform var(--motion-100) var(--ease-out); }
+  .mk-mark svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linejoin: round; }
+  .mk-mark:hover { color: #1a1a1a; border-color: #cfcfca; }
+  .mk-mark:active { transform: scale(0.92); }
+  .mk-mark.on { background: var(--un-brand); border-color: var(--un-brand); color: #fff; }
+  .mk-mark.on svg { fill: currentColor; }
+  .mk-mark.pop { animation: mk-pop 0.3s var(--ease-out); }
+  @keyframes mk-pop { 40% { transform: scale(1.15); } }
+  .mk-mark:focus-visible { outline: 2px solid var(--un-focus); outline-offset: 2px; }
+  :root[data-theme="dark"] .mk-mark { background: #252523; border-color: #3a3a36; color: #a5a59f; }
+  :root[data-theme="dark"] .mk-mark.on { background: var(--un-brand); border-color: var(--un-brand); color: #fff; }
   .mk-meta b { display: flex; align-items: center; gap: 6px; font: 600 15px/20px var(--font-display); }
   .mk-meta small { font: 400 13px/18px var(--font-display); display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
   .mk-kind { justify-self: start; margin-top: 6px; height: 22px; padding: 0 10px; display: inline-flex; align-items: center; border-radius: 99px; font: 500 12px/16px var(--font-display); }
@@ -1373,8 +1388,20 @@
     <a class="m-logo" href="onboarding.html" aria-label="Ranger: back to welcome"><img src="assets/logo-mark.svg" width="24" height="24" alt=""></a>
     <span class="grow"></span>
     <a class="m-cms" href="/work-orders" target="_top"><svg class="un-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M15 6l-6 6 6 6"/></svg>Back to CMS</a>
+    <button class="m-search" type="button" id="mSearchBtn" aria-label="Search apps"><svg class="un-icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="6.5"/><path d="M16 16l4.5 4.5"/></svg></button>
     <button class="m-me" type="button" id="mMe" aria-label="Your profile" aria-haspopup="menu" aria-expanded="false"><img src="assets/avatar-leti.jpg" alt=""></button>
   </header>
+  <!-- phone search: a page of its own over everything — back arrow, the field in the middle, results below -->
+  <section class="m-sp" id="mSp" role="dialog" aria-label="Search" hidden>
+    <header class="m-sp__bar">
+      <button type="button" class="m-sp__back" id="mSpBack" aria-label="Back"><svg class="un-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M15 6l-6 6 6 6"/></svg></button>
+      <b class="m-sp__title">Search</b>
+    </header>
+    <div class="m-sp__body" id="mSpBody"></div>
+    <div class="m-sp__foot">   <!-- the field sits at the bottom, in reach of the thumb, like the chat box -->
+        <label class="m-sp__field"><svg class="un-icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="6.5"/><path d="M16 16l4.5 4.5"/></svg><input type="search" id="mSpInput" placeholder="Search apps" aria-label="Search apps" autocomplete="off" enterkeyhint="search"></label>
+    </div>
+  </section>
   <nav class="m-tabs" aria-label="Main">
     <button type="button" data-tab="apps" aria-label="Apps"><svg class="un-icon" viewBox="0 0 24 24" aria-hidden="true"><rect x="3.5" y="3.5" width="7" height="7" rx="1.5"/><rect x="13.5" y="3.5" width="7" height="7" rx="1.5"/><rect x="3.5" y="13.5" width="7" height="7" rx="1.5"/><rect x="13.5" y="13.5" width="7" height="7" rx="1.5"/></svg><span>Apps</span></button>
     <button type="button" data-tab="chat" aria-label="Chat" class="m-chat" aria-current="page"><i><svg class="un-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5.5A2.5 2.5 0 0 1 6.5 3h11A2.5 2.5 0 0 1 20 5.5v8a2.5 2.5 0 0 1-2.5 2.5H10l-4.5 4v-4A2.5 2.5 0 0 1 4 13.5z"/></svg></i><span>Chat</span></button>
@@ -1461,6 +1488,13 @@
   <section class="appview" id="appView" aria-live="polite"></section>
 
   <main class="main">
+    <!-- phone, in a conversation: its own header instead of the top bar and tabs — back · assistant name · search · more (Connectors, Settings) -->
+    <header class="m-chathead">
+      <button type="button" class="m-ch-btn" id="mChatBack" aria-label="Back to home"><svg class="un-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M15 6l-6 6 6 6"/></svg></button>
+      <b class="m-ch-title">Chat</b>
+      <button type="button" class="m-ch-btn" id="mChatSearch" aria-label="Search"><svg class="un-icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="6.5"/><path d="M16 16l4.5 4.5"/></svg></button>
+      <button type="button" class="m-ch-btn" id="mChatMore" aria-label="More options" aria-haspopup="menu" aria-expanded="false"><svg class="un-icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="5.5" cy="12" r="1.3"/><circle cx="12" cy="12" r="1.3"/><circle cx="18.5" cy="12" r="1.3"/></svg></button>
+    </header>
     <div class="drawer-head">
       <button class="m-back" type="button" id="mBack"><svg class="un-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M15 6l-6 6 6 6"/></svg><span id="mBackLabel">Back to the app</span></button>   <!-- phone: the chat is full screen, this goes back to the app -->
       <span class="grow aname">Lumen</span>   <!-- the assistant's name (follows "Change assistant") -->
@@ -2488,6 +2522,10 @@
     var gt = e.target.closest('[data-goto]'); if (gt) { goToSection(gt.getAttribute('data-goto')); return; }
     if (e.target.closest('[data-ap="fav"]')) { toggleFav(openAppId); return; }
     if (e.target.closest('[data-ap="edit"]')) { editApp(openAppId); return; }
+    var mf2 = e.target.closest('[data-mk-fav]');
+    if (mf2) { var fid = mf2.getAttribute('data-mk-fav'); toggleFav(fid); var on = favApps.indexOf(fid) > -1;
+      mf2.classList.toggle('on', on); mf2.setAttribute('aria-pressed', String(on)); mf2.setAttribute('aria-label', on ? 'Remove from favorites' : 'Add to favorites');
+      mf2.classList.remove('pop'); void mf2.offsetWidth; if (on) mf2.classList.add('pop'); return; }
     var mk = e.target.closest('[data-mk-open]'); if (mk) { openApp(mk.getAttribute('data-mk-open')); return; }
     var mf = e.target.closest('[data-mk-filter]'); if (mf) { mkFilter = mf.getAttribute('data-mk-filter'); renderMarketGrid(); return; }
     var t = e.target.closest('.ap-tabs [role="tab"]');
@@ -2579,12 +2617,74 @@
     [].forEach.call(mTabs.querySelectorAll('[data-tab]'), function (b) { if (b.getAttribute('data-tab') === tab) b.setAttribute('aria-current', 'page'); else b.removeAttribute('aria-current'); });
   }
   new MutationObserver(syncTabs).observe(appEl2, { attributes: true, attributeFilter: ['class'] }); syncTabs();
+  if (matchMedia('(max-width: 600px)').matches) setTimeout(function () { if (!appEl2.classList.contains('app-mode')) prompt.focus({ preventScroll: true }); }, 400);   /* phone: the chat box starts focused */
   mTabs.addEventListener('click', function (e) {
     var b = e.target.closest('[data-tab]'); if (!b) return; var t = b.getAttribute('data-tab');
     if (t === 'apps') openMarket();
-    else if (t === 'chat') document.getElementById('chatToggle').click();
+    else if (t === 'chat') { document.getElementById('chatToggle').click(); if (thread.children.length && !main.classList.contains('chatting')) { main.classList.add('chatting'); jumpToEnd(); } }   /* back to the conversation, if there is one */
     else toast('Tasks are coming soon.');
   });
+  /* phone search: its own white page over everything (back arrow + field on top, results below); a result opens its app */
+  var mSp = document.getElementById('mSp'), mSpInput = document.getElementById('mSpInput'), mSpBody = document.getElementById('mSpBody');
+  function mSpRender() {
+    var q = mSpInput.value.trim().toLowerCase();
+    var list = APPS.filter(function (a) { return !q || (a.name + ' ' + a.desc).toLowerCase().indexOf(q) > -1; });
+    mSpBody.innerHTML = '<p class="m-sp__label">' + (q ? list.length + ' result' + (list.length === 1 ? '' : 's') : 'All apps') + '</p>'
+      + (list.length ? '<ul class="m-sp__list">' + list.map(function (a, i) {
+        return '<li style="--i:' + i + '"><button type="button" data-sp-open="' + a.id + '"><b>' + esc(a.name) + '</b><small>' + esc(a.desc) + '</small><svg class="un-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg></button></li>';
+      }).join('') + '</ul>' : '<p class="m-sp__empty">No apps match “' + esc(mSpInput.value.trim()) + '”. Try another word, or ask ' + esc(agentName) + ' to build it.</p>');
+  }
+  function mSpOpen() { mSp.hidden = false; mSpInput.value = ''; mSpRender(); requestAnimationFrame(function () { mSp.classList.add('in'); mSpInput.focus(); }); }
+  function mSpClose() { mSp.classList.remove('in'); setTimeout(function () { mSp.hidden = true; }, 150); document.getElementById('mSearchBtn').focus({ preventScroll: true }); }
+  document.getElementById('mSearchBtn').addEventListener('click', mSpOpen);
+  document.getElementById('mSpBack').addEventListener('click', mSpClose);
+  mSpInput.addEventListener('input', mSpRender);
+  mSpInput.addEventListener('keydown', function (e) { if (e.key === 'Escape') mSpClose(); });
+  mSpBody.addEventListener('click', function (e) { var b = e.target.closest('[data-sp-open]'); if (!b) return; mSpClose(); openApp(b.getAttribute('data-sp-open')); });
+  /* phone chat header: back goes home (the conversation stays; the Chat tab brings it back), search, and ··· with Connectors and Settings */
+  document.getElementById('mChatBack').addEventListener('click', function () { main.classList.remove('chatting'); });
+  document.getElementById('mChatSearch').addEventListener('click', mSpOpen);
+  var chMenu = document.createElement('div'); chMenu.className = 'un-menu m-menu'; chMenu.setAttribute('role', 'menu'); document.body.appendChild(chMenu);
+  chMenu.innerHTML = '<button type="button" role="menuitem" data-act="connectors"><svg class="un-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 7V3M15 7V3M7 7h10v4a5 5 0 0 1-10 0zM12 16v5"/></svg><span class="grow">Connectors</span></button>'
+    + '<button type="button" role="menuitem" data-act="settings"><svg class="un-icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M12 3v2.5M12 18.5V21M3 12h2.5M18.5 12H21M5.6 5.6l1.8 1.8M16.6 16.6l1.8 1.8M5.6 18.4l1.8-1.8M16.6 7.4l1.8-1.8"/></svg><span class="grow">Settings</span></button>';
+  var chMore = document.getElementById('mChatMore');
+  function closeChMenu() { chMenu.classList.remove('show'); chMore.setAttribute('aria-expanded', 'false'); }
+  chMore.addEventListener('click', function (e) {
+    e.stopPropagation(); if (chMenu.classList.contains('show')) { closeChMenu(); return; }
+    var r = chMore.getBoundingClientRect(); chMenu.style.top = (r.bottom + 6) + 'px'; chMenu.style.left = 'auto'; chMenu.style.bottom = 'auto'; chMenu.style.right = Math.max(8, innerWidth - r.right) + 'px'; chMenu.style.transformOrigin = 'top right';
+    chMore.setAttribute('aria-expanded', 'true'); requestAnimationFrame(function () { chMenu.classList.add('show'); });
+  });
+  chMenu.addEventListener('click', function (e) { var b = e.target.closest('button'); if (!b) return; closeChMenu(); toast(b.getAttribute('data-act') === 'connectors' ? 'Connectors are coming soon.' : 'Settings are coming soon.'); });
+  document.addEventListener('click', function (e) { if (!e.target.closest('#mChatMore')) closeChMenu(); });
+  /* phone: a card's actions sit outside it, right below (they work the same: the handlers don't need the card) */
+  var mq = matchMedia('(max-width: 600px)');
+  function actsOut() {
+    if (!mq.matches) return;
+    [].forEach.call(thread.querySelectorAll('.un-res > .un-res__acts'), function (a) { a.classList.add('un-res__acts--out'); a.parentNode.after(a); });
+  }
+  /* phone: takeaway first, details on tap. The card keeps what it concludes (its recommendation, its key numbers, a draft);
+     the supporting data (calendar, lists, carousels) folds behind "Show details". A card with nothing to sum up stays as is. */
+  function compactCards() {
+    if (!mq.matches) return;
+    [].forEach.call(thread.querySelectorAll('.un-res:not([data-compact])'), function (card) {
+      var body = card.querySelector('.un-res__body'); if (!body) return; card.setAttribute('data-compact', '');
+      var lead = [].filter.call(body.children, function (el) { return el.classList.contains('un-res__inset') && !el.classList.contains('un-res__kv'); });
+      lead.forEach(function (el) { el.classList.add('un-res__lead'); body.prepend(el); });   /* the recommendation goes first */
+      var keep = function (el) { return el.matches('.un-stats, .un-res__inset'); };
+      var kids = [].slice.call(body.children); if (!kids.some(keep)) return;
+      var details = kids.filter(function (el) { return !keep(el); }); if (!details.length) return;
+      details.forEach(function (el) { el.classList.add('un-detail'); });
+      var more = document.createElement('button'); more.type = 'button'; more.className = 'un-res__more'; more.setAttribute('aria-expanded', 'false');
+      more.innerHTML = '<span>Show details</span><svg class="un-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg>';
+      body.after(more);
+    });
+  }
+  thread.addEventListener('click', function (e) {
+    var m = e.target.closest('.un-res__more'); if (!m) return; var card = m.closest('.un-res'), open = !card.classList.contains('open');
+    card.classList.toggle('open', open); m.setAttribute('aria-expanded', String(open)); m.querySelector('span').textContent = open ? 'Hide details' : 'Show details';
+    if (open) [].forEach.call(card.querySelectorAll('.un-strip'), function (st) { var sel = st.querySelector('.sel'); if (sel) st.scrollLeft = sel.offsetLeft - st.clientWidth / 2 + sel.offsetWidth / 2; });   /* the strip was hidden: center the picked day now */
+  });
+  new MutationObserver(function () { actsOut(); compactCards(); }).observe(thread, { childList: true, subtree: true }); actsOut(); compactCards();
   document.getElementById('mBack').addEventListener('click', function () { document.getElementById('drawerClose').click(); });
   var mMenu = document.createElement('div'); mMenu.className = 'un-menu m-menu'; mMenu.setAttribute('role', 'menu'); document.body.appendChild(mMenu);
   var MI = {
@@ -2667,6 +2767,8 @@
     var okF = mkFilter === 'all' || (mkFilter === 'fav' ? favApps.indexOf(a.id) > -1 : kindOf(a) === mkFilter);
     return okQ && okF;
   }
+  var BOOKMARK = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6.5 3.5h11a1 1 0 0 1 1 1v16l-6.5-4-6.5 4v-16a1 1 0 0 1 1-1z"/></svg>';
+  function mkMark(id, on) { return '<button type="button" class="mk-mark' + (on ? ' on' : '') + '" data-mk-fav="' + id + '" aria-pressed="' + on + '" aria-label="' + (on ? 'Remove from favorites' : 'Add to favorites') + '">' + BOOKMARK + '</button>'; }
   function renderMarketGrid() {
     var grid = document.getElementById('mkGrid'); if (!grid) return;
     [].forEach.call(appView.querySelectorAll('[data-mk-filter]'), function (b) { b.setAttribute('aria-pressed', String(b.getAttribute('data-mk-filter') === mkFilter)); });
@@ -2674,9 +2776,10 @@
     document.getElementById('mkCount').textContent = list.length + (list.length === 1 ? ' app' : ' apps');
     grid.innerHTML = list.length ? list.map(function (a, i) {
       var fav = favApps.indexOf(a.id) > -1;
-      return '<button type="button" class="mk-app" data-mk-open="' + a.id + '" style="--i:' + i + '"><span class="mk-thumb">' + thumb(a) + '</span>'
-        + '<span class="mk-meta"><b>' + esc(a.name) + (fav ? '<i class="ap-fav" aria-label="Favorite">' + STAR + '</i>' : '') + '</b><small>' + esc(a.desc) + '</small>'
-        + '<span class="mk-kind">' + kindLabel(a) + '</span></span></button>';
+      return '<div class="mk-item" style="--i:' + i + '"><button type="button" class="mk-app" data-mk-open="' + a.id + '"><span class="mk-thumb">' + thumb(a) + '</span>'
+        + '<span class="mk-meta"><b>' + esc(a.name) + '</b><small>' + esc(a.desc) + '</small>'
+        + '<span class="mk-kind">' + kindLabel(a) + '</span></span></button>'
+        + mkMark(a.id, fav) + '</div>';   /* the bookmark sits on the card as its own button: saved = filled brand */
     }).join('') : '<p class="mk-empty">No apps match “' + esc(mkQuery) + '”. Try another word, or ask ' + esc(agentName) + ' to build it.</p>';
   }
   /* a key number that leads somewhere: scroll its section into view and give it a short highlight */
@@ -2690,7 +2793,7 @@
     openAppId = 'market';
     document.getElementById('chatToggle').classList.remove('active'); appsToggle.classList.add('active');
     renderApps(); appEl2.classList.add('app-mode', 'drawer-closed', 'market-mode');
-    var chips = [['all', 'All'], ['dashboard', 'Dashboards'], ['list', 'Lists'], ['export', 'Export tools'], ['builder', 'Builders'], ['fav', 'Favorites']];
+    var chips = [['all', 'All'], ['fav', 'Favs'], ['dashboard', 'Dashboards'], ['list', 'Lists'], ['export', 'Export tools'], ['builder', 'Builders']];   /* Favs right after All, so it's in view on a phone */
     appView.innerHTML = '<div class="ap-bar"><div class="ap-crumb"><b>Apps</b></div>'
       + '<button class="un-btn un-btn--sm un-btn--primary ap-create" type="button" data-ap="create">Create</button></div>'
       + '<div class="ap-card mk"><header class="mk-head"><div><h2>Apps</h2><p>Everything your team built with ' + esc(agentName) + '. Open one, or ask for a new one.</p></div><span class="mk-count" id="mkCount"></span></header>'
