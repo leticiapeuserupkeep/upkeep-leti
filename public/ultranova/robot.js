@@ -108,7 +108,9 @@
         halo: [gray(0.8), gray(0.6), gray(0.5)],
         eye: { a: gray(0.36), b: gray(0.44), c: gray(0.58), glow: gray(0.85), glow2: gray(0.68), dot: gray(0.55), dot2: gray(0.8) }, plate: '#b3b8c4' };
     }
-    for (var gi = 0; gi < 5; gi++) VARIANTS[10 + gi] = grayOf(VARIANTS[gi]);
+    /* each assistant is an UpKeep superhero: a shield on the shorts with its own emblem (gear, wrench or hex nut) */
+    ['gear', 'wrench', 'wrench', 'nut', 'gear'].forEach(function (e, i) { VARIANTS[i].emblem = e; });
+    for (var gi = 0; gi < 5; gi++) { VARIANTS[10 + gi] = grayOf(VARIANTS[gi]); VARIANTS[10 + gi].emblem = VARIANTS[gi].emblem; }
     function rgba(c, a) { return 'rgba(' + Math.round(c.r * 255) + ',' + Math.round(c.g * 255) + ',' + Math.round(c.b * 255) + ',' + a + ')'; }
     var MV = {};
     function matsFor(v) {   /* shared materials, with the colour-bearing ones swapped per assistant */
@@ -284,6 +286,34 @@
       });
     }
 
+    /* ----- the superhero shield on the shorts ----- */
+    function shieldGeo() {
+      var w = 0.15, t = 0.13, sp = new THREE.Shape();
+      sp.moveTo(0, t + 0.012); sp.quadraticCurveTo(w * 0.55, t + 0.03, w, t);   /* a soft dip on top */
+      sp.lineTo(w, 0.02); sp.quadraticCurveTo(w * 0.95, -0.12, 0, -0.18);         /* the sides curve into the point */
+      sp.quadraticCurveTo(-w * 0.95, -0.12, -w, 0.02); sp.lineTo(-w, t); sp.quadraticCurveTo(-w * 0.55, t + 0.03, 0, t + 0.012);
+      var g = new THREE.ExtrudeGeometry(sp, { depth: 0.02, bevelEnabled: true, bevelThickness: 0.012, bevelSize: 0.012, bevelSegments: 4, curveSegments: 16 });
+      g.translate(0, 0, 0.008); return g;
+    }
+    var EMB = {};
+    function emblemTex(kind, color) {
+      var k = kind + color; if (EMB[k]) return EMB[k];
+      var c = document.createElement('canvas'); c.width = c.height = 256; var x = c.getContext('2d');
+      x.translate(128, 128); x.fillStyle = color; x.strokeStyle = color; x.lineJoin = 'round'; x.lineCap = 'round';
+      if (kind === 'gear') {
+        var n = 8, ro = 96, ri = 74; x.beginPath();
+        for (var i = 0; i < n * 4; i++) { var a = (i / (n * 4)) * Math.PI * 2 - Math.PI / 2, r = (i % 4 < 2) ? ro : ri; x.lineTo(Math.cos(a) * r, Math.sin(a) * r); }
+        x.closePath(); x.moveTo(34, 0); x.arc(0, 0, 34, 0, Math.PI * 2, true); x.fill('evenodd');
+      } else if (kind === 'nut') {
+        x.beginPath(); for (var j = 0; j < 6; j++) { var b = j * Math.PI / 3; x.lineTo(Math.cos(b) * 96, Math.sin(b) * 96); } x.closePath();
+        x.moveTo(42, 0); x.arc(0, 0, 42, 0, Math.PI * 2, true); x.fill('evenodd');
+      } else {   /* wrench: a handle with an open jaw at the top right */
+        x.rotate(-Math.PI / 4); x.lineWidth = 34; x.beginPath(); x.moveTo(0, 92); x.lineTo(0, -30); x.stroke();
+        x.beginPath(); x.arc(0, -52, 52, 0, Math.PI * 2); x.fill();
+        x.globalCompositeOperation = 'destination-out'; x.fillRect(-18, -120, 36, 64); x.beginPath(); x.arc(0, -56, 18, 0, Math.PI * 2); x.fill();
+      }
+      var t = new THREE.CanvasTexture(c); t.anisotropy = 4; return (EMB[k] = t);
+    }
     /* ----- maintenance plates behind the body: cog, wrench, hex nut (extruded outlines, same plastic look) ----- */
     function decoShape(kind) {
       var sh = new THREE.Shape(), i;
@@ -535,12 +565,18 @@
         gr.rotation.x = Math.PI / 2; gr.scale.set(1, 1.09, 1); gr.position.y = -0.1 + 0.28 * -0.25; g.add(gr);
       });
 
-      var btn = cast(new THREE.Mesh(geo('btn', function () { return new THREE.CylinderGeometry(0.075, 0.075, 0.03, 32); }), M.visor));
-      if (pv.flat) {   /* the carved button: a small domed button inside a darker ring groove, set into the trousers */
-        var bz = pv.flatZ + 0.005, bg = new THREE.Mesh(geo('btnGroove', function () { return new THREE.RingGeometry(0.075, 0.105, 40); }), M.seamBlue);
-        bg.position.set(0, pv.btnY, bz); rig.add(bg);
-        btn.rotation.x = Math.PI / 2; btn.scale.set(0.8, 1, 0.8); btn.position.set(0, pv.btnY, bz + 0.004); rig.add(btn);
-      } else { btn.position.set(0, -0.55, 0.77); btn.rotation.x = Math.PI / 2 + 0.5; rig.add(btn); }
+      /* the shield badge (replaces the button): a white extruded shield with the assistant's emblem printed on it */
+      var shield = new THREE.Group();
+      var sh = cast(new THREE.Mesh(geo('shield', shieldGeo), M.visor)); shield.add(sh);
+      var em = new THREE.Mesh(geo('emblemPlane', function () { return new THREE.PlaneGeometry(0.2, 0.2); }),
+        new THREE.MeshBasicMaterial({ map: emblemTex(pv.emblem || 'gear', pv.suitDark), transparent: true, depthWrite: false, toneMapped: false, polygonOffset: true, polygonOffsetFactor: -2, polygonOffsetUnits: -2 }));
+      em.position.set(0, 0.012, 0.042); shield.add(em);
+      if (pv.flat) { shield.position.set(0, pv.btnY + 0.02, pv.flatZ + 0.004); shield.scale.setScalar(0.9); }
+      else {   /* sit on the body's surface (round or cube-ish) and lean with it */
+        var sy = -0.56, sz = bodyZ(0, sy), slope = (bodyZ(0, sy + 0.02) - bodyZ(0, sy - 0.02)) / 0.04;
+        shield.position.set(0, sy, sz - 0.012); shield.rotation.x = Math.atan(slope);
+      }
+      rig.add(shield);
 
       var antenna = new THREE.Group(); antenna.position.set(0.14, 0.9, -0.05); antenna.rotation.z = -0.28; if (!pv.flat || pv.deco === 'nutbody') rig.add(antenna);   /* the cog and the wrench have their own; the nut keeps Elio's */
       var stem = new THREE.Mesh(geo('stem', function () { return new THREE.CylinderGeometry(0.016, 0.02, 0.5, 16); }), M.stem); stem.position.y = 0.25; antenna.add(stem);

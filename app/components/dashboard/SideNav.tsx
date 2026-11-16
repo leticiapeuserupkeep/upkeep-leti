@@ -133,7 +133,7 @@ function UltranovaMark({ size = 20 }: { size?: number }) {
         {/* same gradient as the "Ultranova" text: black → blue-purple */}
         <linearGradient id={gradId} x1="0" y1="0" x2="1" y2="0">
           <stop offset="0%" stopColor="#1a1a1a" />
-          <stop offset="100%" stopColor="#0b0fff" />
+          <stop offset="100%" stopColor="#710bff" />
         </linearGradient>
       </defs>
       <path fillRule="evenodd" d={RANGER_GEAR} fill={`url(#${gradId})`} />
@@ -166,7 +166,7 @@ function UltranovaCard() {
         aria-controls="ultranova-card-body"
         className="group flex items-center justify-between w-full h-12 px-4 rounded-[var(--radius-lg)] cursor-pointer hover:bg-[var(--color-neutral-2)] transition-colors duration-500 ease-[cubic-bezier(0.22,1,0.36,1)]"
       >
-        <span className="text-[length:16px] font-semibold leading-4 bg-[linear-gradient(90deg,#1a1a1a_0%,#0b0fff_100%)] bg-clip-text text-transparent">Ranger</span>
+        <span className="text-[length:16px] font-semibold leading-4 bg-[linear-gradient(90deg,#1a1a1a_0%,#710bff_100%)] bg-clip-text text-transparent">Ranger</span>
         {/* the star gives way to a down arrow on hover (and while open) */}
         <span className="relative flex items-center justify-center w-5 h-5 shrink-0">
           <span className={`absolute transition-[opacity,transform] duration-500 ease-[cubic-bezier(0.22,1,0.36,1)] ${open ? 'opacity-0 scale-50 rotate-90' : 'group-hover:opacity-0 group-hover:scale-50 group-hover:rotate-90'}`}>

@@ -1250,7 +1250,7 @@
   position: absolute;
   inset: 0;
   border-radius: inherit;
-  background-image: linear-gradient(110deg, transparent 18%, #0b0fff 36%, #ffffff 50%, #9fa2ff 64%, transparent 82%);   /* Ultranova's blue-purple light */
+  background-image: linear-gradient(110deg, transparent 18%, #710bff 36%, #ffffff 50%, #b896ff 64%, transparent 82%);   /* Ultranova's blue-purple light */
   background-size: 300% 100%;
   background-repeat: no-repeat;
   background-position: 88% 0;
