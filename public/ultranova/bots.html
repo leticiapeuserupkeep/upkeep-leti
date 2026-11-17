@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Ranger · Assistants studio</title>
+<link rel="icon" href="assets/logo-mark.svg">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  /* Assistants studio: one assistant, big, to work on its look. Pick 1–5, wave, hop, light or dark stage. */
+  :root { --bg: #f7f7f5; --ink: #1a1a1a; --soft: #7b7b79; --line: #e2e2dd; --chip: #fff; --font: "Outfit", system-ui, sans-serif; color-scheme: light; }
+  :root[data-theme="dark"] { --bg: #121211; --ink: #f2f2ee; --soft: #a5a59f; --line: #30302d; --chip: #1c1c1b; color-scheme: dark; }
+  * { box-sizing: border-box; }
+  html, body { height: 100%; margin: 0; }
+  body { background: var(--bg); color: var(--ink); font: 400 14px/20px var(--font); overflow: hidden; transition: background 0.2s; }
+  #fg { position: fixed; inset: 0; width: 100%; height: 100%; pointer-events: none; z-index: 1; }
+  .stage { position: fixed; inset: 0; display: grid; grid-template-rows: auto 1fr auto; }
+  header { display: flex; align-items: center; gap: 12px; padding: 20px 24px; }
+  header b { font-weight: 600; font-size: 16px; }
+  header span { color: var(--soft); }
+  .bot { justify-self: center; align-self: center; width: min(78vh, 90vw); height: min(78vh, 90vw); }
+  .bar { display: flex; flex-wrap: wrap; justify-content: center; gap: 8px; padding: 16px 16px 28px; position: relative; z-index: 2; }
+  .bar button { height: 40px; padding: 0 16px; border: 1px solid var(--line); border-radius: 99px; background: var(--chip); color: var(--ink); font: 500 14px/20px var(--font); cursor: pointer; }
+  .bar button[aria-pressed="true"] { background: var(--ink); border-color: var(--ink); color: var(--bg); }
+  .bar .sep { width: 1px; height: 24px; align-self: center; margin: 0 6px; background: var(--line); }
+</style>
+</head>
+<body>
+<canvas id="fg"></canvas>
+<div class="stage">
+  <header><b>Assistants studio</b><span id="name"></span></header>
+  <div class="bot" data-robot="studio" data-variant="0"></div>
+  <nav class="bar" aria-label="Assistant">
+    <button type="button" data-v="0">1 · Core</button>
+    <button type="button" data-v="1">2 · Amber</button>
+    <button type="button" data-v="2">3 · Cog</button>
+    <button type="button" data-v="3">4 · Wrench</button>
+    <button type="button" data-v="4">5 · Nut</button>
+    <span class="sep"></span>
+    <button type="button" id="wave">Wave</button>
+    <button type="button" id="hop">Hop</button>
+    <button type="button" id="theme">Dark stage</button>
+    <span class="sep"></span>
+    <button type="button" id="gif">GIF</button>
+    <button type="button" id="gifAll">All 5 · GIF</button>
+    <button type="button" id="vid">Video</button>
+    <button type="button" id="vidAll">All 5 · Video</button>
+  </nav>
+</div>
+<script src="https://cdn.jsdelivr.net/npm/three@0.152.2/build/three.min.js"></script>
+<script src="robot.js"></script>
+<script>
+  var NAMES = ['Core · blue, round', 'Amber · cube', 'Cog · green, the body is a gear', 'Wrench · purple, the body is a wrench', 'Nut · coral, the body is a hex nut'];
+  var bot = document.querySelector('[data-robot="studio"]');
+  var start = +(new URLSearchParams(location.search).get('v') || 0);
+  var bots = UltranovaRobots.init({ canvas: document.getElementById('fg'), hi: ['studio'], greet: ['studio'] });
+  function pick(v) {
+    bot.setAttribute('data-variant', v);
+    document.getElementById('name').textContent = NAMES[v];
+    [].forEach.call(document.querySelectorAll('[data-v]'), function (b) { b.setAttribute('aria-pressed', String(+b.getAttribute('data-v') === v)); });
+    history.replaceState(null, '', '?v=' + v);
+    setTimeout(function () { bots && bots.wave('studio'); }, 60);
+  }
+  document.querySelector('.bar').addEventListener('click', function (e) { var b = e.target.closest('[data-v]'); if (b) pick(+b.getAttribute('data-v')); });
+  document.getElementById('wave').onclick = function () { bots && bots.wave('studio'); };
+  document.getElementById('hop').onclick = function () { bots && bots.hop('studio'); };
+  var dark = false;
+  function paintTheme() { document.documentElement.setAttribute('data-theme', dark ? 'dark' : 'light'); document.getElementById('theme').textContent = dark ? 'Light stage' : 'Dark stage'; if (bots && bots.setLight) bots.setLight(!dark, 200); }
+  document.getElementById('theme').onclick = function () { dark = !dark; paintTheme(); };
+  pick(start); paintTheme();
+</script>
+<script type="module">
+  /* Export: records the assistant as it is drawn on the stage (big size) while it looks around, hops, waves and hops again.
+     GIF: one palette for the whole clip, built from every frame, and pixels that barely change keep last frame's colour,
+          so the soft shading doesn't shimmer (GIFs only have 256 colours).
+     Video: full colour (MP4 where the browser can, WebM otherwise), no banding at all. "All 5" does the five assistants in a row. */
+  import { GIFEncoder, quantize, applyPalette } from 'https://cdn.jsdelivr.net/npm/gifenc@1.0.3/dist/gifenc.esm.js';
+  const FILES = ['core', 'amber', 'cog', 'wrench', 'nut'];
+  const sleep = ms => new Promise(r => setTimeout(r, ms));
+  const bar = document.querySelector('.bar'), label = document.getElementById('name');
+  const VIDEO = ['video/mp4;codecs=avc1.640028', 'video/mp4', 'video/webm;codecs=vp9', 'video/webm'].find(m => window.MediaRecorder && MediaRecorder.isTypeSupported(m));
+  function save(blob, name) {
+    const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = name;
+    document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(a.href), 4000);
+  }
+  async function record(v, kind, { size = 640, fps = kind === 'gif' ? 20 : 30, secs = 4.4 } = {}) {
+    document.querySelector('[data-v="' + v + '"]').click();
+    const box = document.querySelector('.bot'), gl = document.getElementById('fg');
+    const r = box.getBoundingClientRect(), cx = r.left + r.width / 2, cy = r.top + r.height / 2;
+    const look = (x, y) => window.dispatchEvent(new PointerEvent('pointermove', { clientX: x, clientY: y }));
+    look(cx, cy - r.height * 0.15);
+    label.textContent = 'Getting ready…';
+    await sleep(3000);   // the hello wave from picking it is over
+    const bg = getComputedStyle(document.body).backgroundColor;
+    const out = document.createElement('canvas'); out.width = out.height = size;
+    const ctx = out.getContext('2d', { willReadFrequently: kind === 'gif' });
+    const k = gl.width / gl.clientWidth, frames = [], step = 1000 / fps, total = secs * 1000, did = {};
+    let rec = null, chunks = [];
+    if (kind === 'video') {
+      rec = new MediaRecorder(out.captureStream(fps), { mimeType: VIDEO, videoBitsPerSecond: 12e6 });
+      rec.ondataavailable = e => e.data.size && chunks.push(e.data);
+    }
+    const paint = () => { ctx.fillStyle = bg; ctx.fillRect(0, 0, size, size); ctx.drawImage(gl, r.left * k, r.top * k, r.width * k, r.height * k, 0, 0, size, size); };
+    label.textContent = 'Recording…';
+    await new Promise(done => {
+      let t0 = null, next = 0;
+      function tick(now) {   // runs right after the assistant is drawn in the same frame, so the WebGL picture is still there
+        if (t0 === null) { t0 = now; if (rec) { paint(); rec.start(); } }
+        const t = now - t0, a = (t / total) * Math.PI * 2;
+        look(cx + Math.sin(a) * r.width * 0.32, cy - r.height * 0.12 + Math.sin(a * 2) * r.height * 0.1);   // a slow look around that ends where it began
+        if (!did.h1 && t > 250) { did.h1 = 1; bots.hop('studio'); }
+        if (!did.w && t > 1250) { did.w = 1; bots.wave('studio'); }
+        if (!did.h2 && t > 3500) { did.h2 = 1; bots.hop('studio'); }
+        if (rec) paint();
+        else if (t >= next) { paint(); frames.push(ctx.getImageData(0, 0, size, size).data); next += step; }
+        if (t < total) requestAnimationFrame(tick); else done();
+      }
+      requestAnimationFrame(tick);
+    });
+    if (rec) {
+      await new Promise(res => { rec.onstop = res; rec.stop(); });
+      const blob = new Blob(chunks, { type: VIDEO.split(';')[0] });
+      save(blob, 'ranger-assistant-' + FILES[v] + (VIDEO.includes('mp4') ? '.mp4' : '.webm'));
+      window.__last = { v, kind, bytes: blob.size, type: VIDEO };
+      return;
+    }
+    label.textContent = 'Making the GIF…';
+    await sleep(30);
+    // one palette from every frame (a pixel from each, in turn) so every colour of the clip is covered
+    const n = frames.length, sample = new Uint8ClampedArray(size * size * 4);
+    for (let i = 0, j = 0; i < sample.length; i += 4, j++) { const f = frames[(j * 7) % n]; sample[i] = f[i]; sample[i + 1] = f[i + 1]; sample[i + 2] = f[i + 2]; sample[i + 3] = 255; }
+    const palette = quantize(sample, 256, { format: 'rgb565' }), gif = GIFEncoder();
+    // steady pixels keep their colour: a pixel only takes a new palette colour once it has really moved away from the
+    // colour it was given (not on every tiny change of shading), so soft gradients don't shimmer
+    let prevIdx = null; const ref = new Uint8ClampedArray(size * size * 4);
+    frames.forEach((f, i) => {
+      const idx = applyPalette(f, palette, 'rgb565');
+      for (let p = 0, q = 0; p < idx.length; p++, q += 4) {
+        if (prevIdx && idx[p] !== prevIdx[p] && Math.abs(f[q] - ref[q]) + Math.abs(f[q + 1] - ref[q + 1]) + Math.abs(f[q + 2] - ref[q + 2]) < 24) idx[p] = prevIdx[p];
+        else if (!prevIdx || idx[p] !== prevIdx[p]) { ref[q] = f[q]; ref[q + 1] = f[q + 1]; ref[q + 2] = f[q + 2]; }
+      }
+      gif.writeFrame(idx, size, size, { palette: i ? undefined : palette, delay: Math.round(step) });
+      prevIdx = idx;
+    });
+    gif.finish();
+    save(new Blob([gif.bytes()], { type: 'image/gif' }), 'ranger-assistant-' + FILES[v] + '.gif');
+    window.__last = { v, kind, frames: n, bytes: gif.bytes().length };
+  }
+  async function run(list, kind) {
+    const btns = bar.querySelectorAll('button'); btns.forEach(b => b.disabled = true);
+    try { for (const v of list) await record(v, kind); }
+    finally { btns.forEach(b => b.disabled = false); document.querySelector('[aria-pressed="true"]').click(); }
+  }
+  const current = () => [+(new URLSearchParams(location.search).get('v') || 0)];
+  document.getElementById('gif').onclick = () => run(current(), 'gif');
+  document.getElementById('gifAll').onclick = () => run([0, 1, 2, 3, 4], 'gif');
+  document.getElementById('vid').onclick = () => run(current(), 'video');
+  document.getElementById('vidAll').onclick = () => run([0, 1, 2, 3, 4], 'video');
+  if (!VIDEO) { document.getElementById('vid').hidden = true; document.getElementById('vidAll').hidden = true; }
+</script>
+</body>
+</html>

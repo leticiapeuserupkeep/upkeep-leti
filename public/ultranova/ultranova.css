@@ -964,3 +964,88 @@ html:root[data-theme] .un-res .un-cf__item, html:root[data-theme] .un-res .un-cf
 html:root[data-theme] .un-res .un-fl__item, html:root[data-theme] .un-res .un-fl__item[aria-current="true"] { border-color: var(--un-paper-line); }
 
 .un-cf__dots2 { display: none; }   /* shown on phones only (mobile.css) */
+
+/* a confirmed action: shown as done and disabled — no fill, grey border, grey text */
+html:root[data-theme] .un-btn.done, html:root[data-theme] .un-btn.done:hover { background: transparent; border: 1px solid var(--un-paper-line); color: var(--un-text-soft); box-shadow: none; transform: none; cursor: default; }
+html:root[data-theme] .un-btn.done .un-icon { color: var(--un-text-soft); }
+.ap-more { display: none; }   /* the app bar's ··· shows on phones only (mobile.css) */
+
+/* ---------- Ranger logo (Figma Nova › Brand 19734:1169): the gear + "Ranger" vector, then "by UpKeep" in text ---------- */
+.brand:has(.logo), .un-brand:has(.logo), .m-logo:has(.logo) { gap: 5px; }
+.logo { display: block; flex: none; height: 24.5px; overflow: hidden; }   /* overflow lets a collapsed sidebar show only the gear */
+.logo img { display: block; width: 97.26px; height: 24.5px; max-width: none; }
+.logo-d, :root[data-theme="dark"] .logo-l { display: none; }
+:root[data-theme="dark"] .logo-d { display: block; }
+.brand .brand-by, .un-brand .brand-by, .m-logo .brand-by { align-self: flex-end; margin: 0 0 1px; font: 400 12px/15px var(--font-display, "Outfit", sans-serif); color: rgba(26, 26, 26, 0.78); white-space: nowrap; }
+:root[data-theme="dark"] .brand-by { color: rgba(242, 242, 238, 0.78); }
+.nav-closed .brand .logo { width: 24.5px; }
+.nav-closed .brand .brand-by { display: none; }
+
+/* ---------- Apps: sort button + menu (Recently used / Alphabetical / Recently created, ascending or descending) ---------- */
+.mk-sort { display: grid; place-items: center; flex: none; width: 40px; height: 40px; padding: 0; border: 0; border-radius: 50%; background: #fff; box-shadow: inset 0 0 0 1px #deded5; color: #1a1a1a; cursor: pointer; transition: box-shadow 0.15s, background 0.15s; }
+.mk-sort .un-icon { width: 18px; height: 18px; }
+.mk-sort:hover { box-shadow: inset 0 0 0 1px #cfcfca; }
+.mk-sort[aria-expanded="true"] { box-shadow: inset 0 0 0 1px var(--un-brand), 0 0 0 4px color-mix(in srgb, var(--un-brand) 9%, transparent); }
+.mk-sort:active { transform: scale(0.94); }
+:root[data-theme="dark"] .mk-sort { background: #1c1c1b; box-shadow: inset 0 0 0 1px #2c2c29; color: #f2f2ee; }
+.mk-sortmenu { min-width: 216px; }
+.mk-sortmenu__label { margin: 0; padding: 6px 10px 4px; font: 500 12px/16px var(--font-display); color: var(--un-ink-soft); }
+.mk-sortmenu button[aria-checked="true"] { font-weight: 500; }
+.mk-sortmenu button > .un-icon:last-child:not(:first-child) { color: var(--un-brand); }
+.mk-sortmenu .grow { flex: 1; }
+.mk-sort.on { color: var(--un-brand); box-shadow: inset 0 0 0 1px var(--un-brand); }   /* a sort is on (not Auto): the button shows its arrow in brand */
+.mk-sortmenu button[aria-checked="true"] .un-icon { color: var(--un-brand); width: 18px; height: 18px; }
+
+/* sidebar lists that end in a "More ⌄" row (Chat): left-aligned like the items above it */
+.history li.more-row.more-row--text { justify-content: flex-start; }
+.history .list-more.list-more--text { display: flex; align-items: center; gap: 4px; width: 100%; height: 36px; padding: 8px 16px; border: 0; border-radius: 24px; background: none; font: 400 14px/20px var(--font-display); text-align: left; cursor: pointer; }
+.history .list-more.list-more--text .un-icon { width: 14px; height: 14px; fill: none; stroke: currentColor; }
+
+/* sidebar chats: a small light-grey dot on the left; while a prompt is being worked on it turns brand purple and pulses (a growing glow that fades) */
+:root[data-theme] #chatList .chat-item { gap: 10px; }
+:root[data-theme] #chatList .chat-item::before { content: ""; display: block; width: 5px; height: 5px; flex: none; border-radius: 50%; background: #d9d9d3; transition: background 0.2s; }
+:root[data-theme="dark"] #chatList .chat-item::before { background: #4a4a46; }
+:root[data-theme] #chatList .chat-item.running::before { background: var(--un-brand); animation: chat-working 1.4s var(--ease-out, ease-out) infinite; }
+:root[data-theme] #chatList .chat-item.running::after { display: none; }   /* the left dot shows the work now, not a dot on the right */
+@keyframes chat-working { 0% { box-shadow: 0 0 0 0 rgba(113, 11, 255, 0.5); } 70%, 100% { box-shadow: 0 0 0 6px rgba(113, 11, 255, 0); } }
+@media (prefers-reduced-motion: reduce) { :root[data-theme] #chatList .chat-item.running::before { animation: none; } }
+/* the section title (Chat) keeps the grey pill; the open conversation inside it reads by ink, weight and a dark dot, not a second pill */
+:root[data-theme] #chatList .chat-item.live { background: transparent; color: #1a1a1a; font-weight: 500; }
+:root[data-theme] #chatList .chat-item.live::before { background: #1a1a1a; }
+:root[data-theme] #chatList .chat-item.live:hover { background: #f7f7f5; }
+:root[data-theme="dark"] #chatList .chat-item.live { background: transparent; color: #f2f2ee; }
+:root[data-theme="dark"] #chatList .chat-item.live::before { background: #f2f2ee; }
+:root[data-theme="dark"] #chatList .chat-item.live:hover { background: #252523; }
+:root[data-theme] #chatList .chat-item.live.running::before { background: var(--un-brand); }
+/* Apps in the sidebar: Favorites and Recent sit close under their section */
+:root[data-theme] #appsHistory #favBox { margin-top: 0; padding-top: 0; }
+:root[data-theme] #appsHistory #favLabel { margin-top: 6px; }
+:root[data-theme] #appsHistory #recentLabel { margin-top: 8px; }
+/* the ··· of a chat shows on hover (or while its menu is open), the open conversation too */
+:root[data-theme] #chatList .chat-item:not(:hover):not(:focus-visible):not(.menu-open) .more { display: none; }
+/* sidebar hierarchy: section titles (Chat, Apps, Tasks) stronger; group labels (Favorites, Recent) lighter than the items inside them */
+:root[data-theme] .sidebar .nav-item .grow { font-weight: 600; }
+:root[data-theme] .sidebar .list-head { color: #a5a59f; }
+:root[data-theme="dark"] .sidebar .list-head { color: #6f6f6a; }
+:root[data-theme] .sidebar .list-head .ptag { opacity: 0.8; }
+/* app items under Apps (Favorites / Recent): same look as the chats — light dot, open one by ink + dark dot, ··· on hover */
+:root[data-theme] :is(#favApps, #recentApps) .chat-item { gap: 10px; }
+:root[data-theme] :is(#favApps, #recentApps) .chat-item::before { content: ""; display: block; width: 5px; height: 5px; flex: none; border-radius: 50%; background: #d9d9d3; transition: background 0.2s; }
+:root[data-theme="dark"] :is(#favApps, #recentApps) .chat-item::before { background: #4a4a46; }
+:root[data-theme] :is(#favApps, #recentApps) .chat-item.live { background: transparent; color: #1a1a1a; font-weight: 500; }
+:root[data-theme] :is(#favApps, #recentApps) .chat-item.live::before { background: #1a1a1a; }
+:root[data-theme] :is(#favApps, #recentApps) .chat-item.live:hover { background: #f7f7f5; }
+:root[data-theme="dark"] :is(#favApps, #recentApps) .chat-item.live { background: transparent; color: #f2f2ee; }
+:root[data-theme="dark"] :is(#favApps, #recentApps) .chat-item.live::before { background: #f2f2ee; }
+:root[data-theme="dark"] :is(#favApps, #recentApps) .chat-item.live:hover { background: #252523; }
+:root[data-theme] :is(#favApps, #recentApps) .chat-item:not(:hover):not(:focus-visible):not(.menu-open) .more { display: none; }
+:root[data-theme] .sidebar .new-wrap::after { display: none; }   /* no divider between Search and the sections */
+/* with an app open, the conversation isn't the active thing: it looks like the other chats */
+:root[data-theme] .app.app-mode #chatList .chat-item.live { color: var(--ink-soft, #7b7b79); font-weight: 400; }
+:root[data-theme] .app.app-mode #chatList .chat-item.live:not(.running)::before { background: #d9d9d3; }
+:root[data-theme="dark"] .app.app-mode #chatList .chat-item.live { color: #a5a59f; }
+:root[data-theme="dark"] .app.app-mode #chatList .chat-item.live:not(.running)::before { background: #4a4a46; }
+/* a folded section's arrow (→) is lighter; open (↓) it stays ink */
+:root[data-theme] .sidebar .nav-item[aria-expanded="false"] .chev { color: #b5b5af; transition: color 0.2s; }
+:root[data-theme="dark"] .sidebar .nav-item[aria-expanded="false"] .chev { color: #5c5c58; }
+:root[data-theme] .sidebar .nav-item[aria-expanded="false"]:hover .chev { color: #7b7b79; }

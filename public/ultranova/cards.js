@@ -310,7 +310,7 @@
           ['WO-1044 · Press 4 sensor check', 'Press 4 · due Nov 16 · Unassigned', prio('med') + pill('hold'), 'unassigned'],
           ['WO-1040 · Boiler #2 inspection', 'Boiler #2 · done Nov 10 · Ana P.', prio('low') + pill('done'), '']
         ]) + '</div>' + acts('Assign the 2 unassigned', 'Assigned to James C. and Dave R.', 'Open in Work Orders') + '</div>',
-      next: ['Show only the overdue ones', 'Who has the most work this week?', 'Create a work order']
+      next: ['Only overdue', 'Who’s busiest?', 'Create a work order']
     },
     pm: {
       ask: 'Show me the preventive maintenance due',
@@ -324,7 +324,7 @@
           { icon: 'gear', status: 'sched', title: 'Quarterly calibration', sub: 'Scale B · Shipping', date: 'Nov 18', every: 'Every 3 months', who: 'Ana P.' },
           { icon: 'gear', status: 'sched', title: 'Pressure test', sub: 'Boiler #2 · Building A', date: 'Nov 21', every: 'Every 6 months', who: 'James C.' }
         ], '', '', 1) + '</div>' + acts('Reschedule the overdue one', 'Monthly lubrication moved to tomorrow, 8:00 AM', 'Open in Preventive Maintenance') + '</div>',
-      next: ['Which assets have no PM?', 'Show last month’s compliance', 'Create a PM']
+      next: ['Which assets have no PM?', 'Last month’s compliance', 'Create a PM']
     },
     assets: {
       ask: 'How are my critical assets doing?',
@@ -350,7 +350,7 @@
           ['2026-11-11', 'mid', '09:40', '10:10', 'WO-1051 opened', 'Assigned to James C. · waiting on the contactor']
         ], 3) + '<div class="un-res__inset" style="--i:4"><b>Same failure twice in 15 days.</b> I’d replace the contactor with the Grainger one (arrives tomorrow) and keep PO-3381 as a spare.</div>'
         + '</div>' + acts('Order from Grainger', 'Order placed with Grainger, arrives Nov 13', 'Open the asset') + '</div>',
-      next: ['Compare with Chiller #1', 'Show the full asset history', 'Create a work order']
+      next: ['Compare with Chiller #1', 'Full asset history', 'Create a work order']
     }
   };
 

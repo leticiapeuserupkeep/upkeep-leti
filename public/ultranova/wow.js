@@ -41,6 +41,7 @@
       key: 'brief', icon: 'brief',
       option: 'Brief me every morning on work orders, approvals, and meetings',
       title: 'Brief me every morning on work orders, approvals, and meetings',
+      short: 'Morning briefing',   /* quick-read label for suggestion chips */
       intro: 'I’ll help you start each day with your work orders, pending approvals, and relevant meetings in one place.',
       setup: [
         { id: 'time', q: 'What time would you like your briefing?', replies: ['7:00 AM', '8:00 AM', '9:00 AM'], ph: 'Choose a time or type your own…' },
@@ -58,12 +59,13 @@
             ['ok', '<b>Everything else is on track</b> · I’ll keep it short and skip what you don’t care about.']
           ]) + '</div>' + acts('Keep it', 'Briefing scheduled', 'Change the time') + '</div>';
       },
-      next: ['Add overdue PMs to it', 'Send it to my supervisors too', 'Send it to Slack too']
+      next: ['Add overdue PMs to it', 'Send to supervisors', 'Send it to Slack too']
     },
     {
       key: 'cause', icon: 'cause',
       option: 'Watch for equipment failures and prepare the next steps',
       title: 'Watch for equipment failures and prepare the next steps',
+      short: 'Watch for failures',   /* quick-read label for suggestion chips */
       intro: 'I’ll keep an eye on your assets, spot failures that keep coming back, and have the next step ready: the history, the parts and a draft work order.',
       setup: [
         { id: 'scope', q: 'Which assets should I start with?', replies: ['All critical assets', 'Production lines', 'Building A'], ph: 'Pick a group or name an asset…' }
@@ -85,12 +87,13 @@
           + '<dl class="un-res__inset un-res__kv" style="--i:3"><dt>Draft</dt><dd><b>Replace seal kit on Line 3 gearbox</b></dd><dt>Assign to</dt><dd>Dave R. (fixed it the last 2 times)</dd><dt>Due</dt><dd>Nov 12, before the next likely failure</dd><dt>Attached</dt><dd>Gearbox seal replacement procedure</dd></dl>'
           + '</div>' + acts('Approve and assign Dave', 'Work order created and assigned to Dave', 'Edit the draft') + '</div>';
       },
-      next: ['Check the other gearboxes too', 'Order 2 more seal kits', 'Add a monthly PM for this']
+      next: ['Check other gearboxes', 'Order 2 more seal kits', 'Add a monthly PM for this']
     },
     {
       key: 'parts', icon: 'parts',
       option: 'Alert me when parts delays put planned work at risk',
       title: 'Alert me when parts delays put planned work at risk',
+      short: 'Parts delay alerts',   /* quick-read label for suggestion chips */
       intro: 'I’ll match every open purchase order to the work it’s for, and tell you as soon as a delay puts that work at risk, with a way around it.',
       setup: [
         { id: 'where', q: 'Where should I alert you?', replies: ['Here in Ultranova', 'Slack', 'Microsoft Teams'], ph: 'Choose where, or type your own…', connect: function (v) { return v === 'Here in Ultranova' ? '' : v + ' connected'; } }
@@ -115,6 +118,7 @@
       key: 'watch', icon: 'watch',
       option: 'Track overdue inspections and draft follow-ups',
       title: 'Track overdue inspections and draft follow-ups',
+      short: 'Overdue inspections',   /* quick-read label for suggestion chips */
       intro: 'I’ll watch your inspections, tell you when one slips, and have the follow-up drafted for you to approve.',
       setup: [
         { id: 'sites', q: 'Which sites should I watch?', replies: ['All 4 sites', 'Northland Plant', 'Only critical inspections'], ph: 'Choose a site or type your own…' }
@@ -128,7 +132,7 @@
           + '<dl class="un-res__inset un-res__kv" style="--i:1"><dt>To</dt><dd>Northland maintenance team (5)</dd><dt>Subject</dt><dd><b>Fire inspection: 4 steps left. Can we close it by Friday?</b></dd><dt>Message</dt><dd>Hi team, the fire safety inspection is 11 days overdue. Extinguisher tags, exit lights, the sprinkler valve and the log sign-off are still open. Can we wrap these up by Friday? Thanks!</dd></dl>'
           + '</div><p class="un-res__note">I never send anything without your OK.</p>' + acts('Send the update', 'Update sent to the Northland team', 'Edit the draft') + '</div>';
       },
-      next: ['Watch PMs too', 'Only ping me for high priority', 'Show everything that’s overdue']
+      next: ['Watch PMs too', 'High priority only', 'Everything overdue']
     }
   ];
 
@@ -144,7 +148,7 @@
   global.UltranovaWow = {
     list: WOW,
     get: function (key) { return byKey[key] || null; },
-    byPrompt: function (text) { for (var i = 0; i < WOW.length; i++) if (WOW[i].title === text || WOW[i].option === text) return WOW[i]; return null; },
+    byPrompt: function (text) { for (var i = 0; i < WOW.length; i++) if (WOW[i].title === text || WOW[i].option === text || WOW[i].short === text) return WOW[i]; return null; },
     cardHTML: cardHTML,
     icon: icon
   };

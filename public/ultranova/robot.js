@@ -65,18 +65,18 @@
     }
     var VARIANTS = [
       null,                                   /* 0 · Core: the original blue, round (filled in below) */
-      palette(40, null, 3.4, 0.38, 0.9),      /* 1 · deep amber yellow, cube like a notebook */
-      Object.assign(palette(128, 'cogbody', 2, 0.35, 0.6), { pantsY: -0.31, flat: true, flatZ: 0.235, btnY: -0.74 }),   /* drier, yellower green */
-      Object.assign(palette(46, 'wrenchbody', 2, 0.54), { pantsY: -0.66, flat: true, flatZ: 0.235, btnY: -0.95, faceDY: -0.38 }),   /* 3 · butter yellow, the body is a wrench */
-      Object.assign(palette(355, 'nutbody', 2, 0.5), { pantsY: -0.31, flat: true, flatZ: 0.235, btnY: -0.7 })   /* 4 · soft coral, the body is a hex nut */
+      Object.assign(palette(40, null, 3.4, 0.38, 0.9), { pantsY: -0.07 }),      /* 1 · deep amber yellow, cube like a notebook; taller shorts for a bigger shield */
+      Object.assign(palette(128, 'cogbody', 2, 0.35, 0.6), { pantsY: -0.07, flat: true, flatZ: 0.235, btnY: -0.573 }),   /* drier, yellower green */
+      Object.assign(palette(268, 'wrenchbody', 2, 0.7, 0.66), { pantsY: -0.38, flat: true, flatZ: 0.235, btnY: -0.883, faceDY: -0.38 }),   /* 3 · brand purple, the body is a wrench */
+      Object.assign(palette(355, 'nutbody', 2, 0.5), { pantsY: -0.07, flat: true, flatZ: 0.235, btnY: -0.573 })   /* 4 · soft coral, the body is a hex nut */
     ];
     var CUR = 0, V = null, NN = 2;
     function useVariant(i) {
       CUR = i; V = VARIANTS[i]; NN = V.N;
       var k = V.eyeScale || 1; EYE.rx = EYE0.rx * k; EYE.ry = EYE0.ry * k; EYE.x = EYE0.x + (V.eyeX || 0); EYE.y = EYE0.y + (V.eyeY || 0);
-      PLATE.cy = 0.18 + (V.faceDY || 0); EYE.y += (V.faceDY || 0);   /* the whole face (plate, eyes, mouth) can sit lower */
-      if (V.flat) { var zt = V.flatZ + 0.001; DEP = 0.04 / zt; DEPE = 1 - (1 - 0.06 / zt) / (1 - DEP); }   /* flat bodies: plate recessed 0.04, eye sockets 0.02 more (absolute), like the round ones */
-      else { DEP = V.noPlate ? 0 : 0.04; DEPE = 0.022; } SC1 = 1 - DEP; SC2 = SC1 * (1 - DEPE);   /* no carved face plate for some assistants */   /* some assistants have smaller eyes */
+      PLATE.cy = 0.18 + PLATE_TRIM + FACE_UP + (V.faceDY || 0); EYE.y += FACE_UP + (V.faceDY || 0);   /* the whole face (plate, eyes, mouth) can sit lower */
+      if (V.flat) { var zt = V.flatZ + 0.001; DEP = PD / zt; DEPE = 1 - (1 - 0.06 / zt) / (1 - DEP); }   /* flat bodies: plate recessed 0.04, eye sockets 0.02 more (absolute), like the round ones */
+      else { DEP = (V.noPlate || NO_PLATE) ? 0 : 0.04; DEPE = 0.022; } SC1 = 1 - DEP; SC2 = SC1 * (1 - DEPE);   /* no carved face plate for some assistants */   /* some assistants have smaller eyes */
     }
 
     /* ----- shared look ----- */
@@ -100,7 +100,7 @@
       N: 2, deco: null, suit: BLUE, suitDark: '#1f6fc4', accent: LIGHT_BLUE, accentSoft: '#5cbcff', light: 0x1fa8ff,
       halo: null,
       eye: { a: new THREE.Color('#145ae1'), b: new THREE.Color('#166eee'), c: new THREE.Color('#2aa6f5'), glow: new THREE.Color('#78e1ff'), glow2: new THREE.Color('#3cafff'), dot: new THREE.Color('#3a9cf0'), dot2: new THREE.Color('#78c8ff') },
-      plate: BLUE
+      plate: BLUE, pantsY: -0.07   /* taller shorts, so the shield on them can be bigger */
     };
     function gray(l) { return new THREE.Color(l, l, l); }
     function grayOf(v) {   /* the same assistant with every colour drained: used while it is asleep */
@@ -109,7 +109,7 @@
         eye: { a: gray(0.36), b: gray(0.44), c: gray(0.58), glow: gray(0.85), glow2: gray(0.68), dot: gray(0.55), dot2: gray(0.8) }, plate: '#b3b8c4' };
     }
     /* each assistant is an UpKeep superhero: a shield on the shorts with its own emblem (gear, wrench or hex nut) */
-    ['gear', 'wrench', 'wrench', 'nut', 'gear'].forEach(function (e, i) { VARIANTS[i].emblem = e; });
+    ['pin', 'cube', 'gear', 'wrench', 'nut'].forEach(function (e, i) { VARIANTS[i].emblem = e; });
     for (var gi = 0; gi < 5; gi++) { VARIANTS[10 + gi] = grayOf(VARIANTS[gi]); VARIANTS[10 + gi].emblem = VARIANTS[gi].emblem; }
     function rgba(c, a) { return 'rgba(' + Math.round(c.r * 255) + ',' + Math.round(c.g * 255) + ',' + Math.round(c.b * 255) + ',' + a + ')'; }
     var MV = {};
@@ -140,16 +140,19 @@
     var blob = makeBlob();
 
     /* ----- face carved into the shell ----- */
-    var PLATE = { cy: 0.18, a: 0.68, b: 0.44, n: 3.4 }, DEP = 0.04;
+    var NO_PLATE = true, PD = NO_PLATE ? 0 : 0.04;   /* no face plate border: just the eyes (in their sockets) and the mouth on the white */
+    var FACE_UP = 0.1;   /* the whole face sits a little higher, clear of the (taller) shorts */
+    var PLATE_TRIM = 0.04;   /* a slimmer face: the top stays, the bottom comes up (less space under the mouth) */
+    var PLATE = { cy: 0.18, a: 0.68, b: 0.44 - PLATE_TRIM, n: 3.4 }, DEP = 0.04;
     var EYE = { x: 0.3, y: 0.27, rx: 0.21, ry: 0.235 }, EYE0 = { x: 0.3, y: 0.27, rx: 0.21, ry: 0.235 }, DEPE = 0.022;
     var SC1 = 1 - DEP, SC2 = SC1 * (1 - DEPE);
     function eyeT(wx, wy, s) { return Math.sqrt(Math.pow((wx - EYE.x * s) / EYE.rx, 2) + Math.pow((wy - EYE.y) / EYE.ry, 2)); }
-    var FACE_DOME = 0.05;
+    var FACE_DOME = NO_PLATE ? 0 : 0.05;
     function plateT(px, py) { return Math.pow(Math.pow(Math.abs(px) / PLATE.a, PLATE.n) + Math.pow(Math.abs(py - PLATE.cy) / PLATE.b, PLATE.n), 1 / PLATE.n); }
     function bodyZ(px, py) { if (V.flat) { if (px * px + py * py >= 0.8) return 0; var tt = plateT(px, py) / 1.07; return V.flatZ + 0.001 + FACE_DOME * Math.max(0, 1 - tt * tt); }   /* a flat face with a gentle bulge inside the plate */
       var yU = py / 0.95, k = 1 + 0.05 * yU, v = 1 - Math.pow(Math.abs(px / k), NN) - Math.pow(Math.abs(yU), NN); return v > 0 ? 0.92 * Math.pow(v, 1 / NN) : 0; }
-    function facePt(px, py) { return V.flat ? bodyZ(px, py) - 0.04 : SC1 * bodyZ(px / SC1, py / SC1); }   /* flat bodies: the plate floor is 0.04 below the face, like the round ones */
-    function eyeFloor(px, py) { return V.flat ? bodyZ(px, py) - 0.06 : SC2 * bodyZ(px / SC2, py / SC2); }   /* …and the eye sockets 0.02 deeper */
+    function facePt(px, py) { return V.flat ? bodyZ(px, py) - PD : SC1 * bodyZ(px / SC1, py / SC1); }   /* flat bodies: the plate floor is 0.04 below the face, like the round ones */
+    function eyeFloor(px, py) { return V.flat ? bodyZ(px, py) - PD - 0.02 : SC2 * bodyZ(px / SC2, py / SC2); }   /* …and the eye sockets 0.02 deeper */
     function sgnPow(v, p) { return Math.sign(v) * Math.pow(Math.abs(v), p); }
     function plateEdge(th) { return [PLATE.a * sgnPow(Math.cos(th), 2 / PLATE.n), PLATE.cy + PLATE.b * sgnPow(Math.sin(th), 2 / PLATE.n)]; }
 
@@ -212,7 +215,7 @@
         var te = te0 + (te1 - te0) * (r / R);
         for (var sI = 0; sI < S; sI++) {
           var th = (sI / S) * Math.PI * 2, px = ex + EYE.rx * te * Math.cos(th), py = EYE.y + EYE.ry * te * Math.sin(th);
-          var scv = SC1 * (1 - DEPE * (1 - SM(te, 0.9, 1.07))), zr = V.flat ? bodyZ(px, py) - 0.04 - 0.02 * (1 - SM(te, 0.9, 1.07)) + 0.006 : scv * bodyZ(px / scv, py / scv) + 0.0014;
+          var scv = SC1 * (1 - DEPE * (1 - SM(te, 0.9, 1.07))), zr = V.flat ? bodyZ(px, py) - PD - 0.02 * (1 - SM(te, 0.9, 1.07)) + 0.006 : scv * bodyZ(px / scv, py / scv) + 0.0014;
           v.push(px - ex, py - EYE.y, zr);
           var toLight = 0.5 + 0.5 * Math.cos(th - 0.8), away = 0.5 - 0.5 * Math.cos(th - 0.8);
           var aS = 0.6 * Math.pow(toLight, 1.6) * bump(te, 0.9, 1.12), aH = 0.8 * Math.pow(away, 2.4) * bump(te, 1.0, 1.2);
@@ -230,8 +233,7 @@
       var g = new THREE.SphereGeometry(1, 48, 36), lp = g.attributes.position, lc = [], tc = new THREE.Color();
       for (var q = 0; q < lp.count; q++) {
         var ly = lp.getY(q), lit2 = SM(-0.35 * lp.getX(q) + 0.55 * ly + 0.45 * lp.getZ(q), -0.5, 0.75);
-        var w = new THREE.Color(WHITE).lerp(new THREE.Color('#c9dcf0'), 1 - lit2), b = new THREE.Color(V.suit).lerp(new THREE.Color(V.suitDark), 1 - lit2);
-        tc.copy(b).lerp(w, SM(ly, -0.28, -0.22)); lc.push(tc.r, tc.g, tc.b);
+        tc.copy(new THREE.Color(V.suit)).lerp(new THREE.Color(V.suitDark), (1 - lit2) * 0.7); lc.push(tc.r, tc.g, tc.b);   /* no shoes: the leg is the trousers' colour all the way down */
       }
       g.setAttribute('color', new THREE.Float32BufferAttribute(lc, 3)); return g;
     }
@@ -280,7 +282,7 @@
     function geo(name, make) { var k = CUR + ':' + name; return G[k] || (G[k] = make()); }
     function mouthPts() {
       return geo('mouthPts', function () {
-        var pts = [], MR = 0.1, MCY = 0.04 + (V.faceDY || 0);
+        var pts = [], MR = 0.1, MCY = 0.04 + FACE_UP + (V.faceDY || 0);
         for (var j = 0; j <= 32; j++) { var phi = -0.85 * Math.PI + 0.7 * Math.PI * (j / 32), x = MR * 1.1 * Math.cos(phi), y = MCY + MR * Math.sin(phi); pts.push(new THREE.Vector3(x, y, facePt(x, y) - 0.005)); }
         return pts;
       });
@@ -307,6 +309,14 @@
       } else if (kind === 'nut') {
         x.beginPath(); for (var j = 0; j < 6; j++) { var b = j * Math.PI / 3; x.lineTo(Math.cos(b) * 96, Math.sin(b) * 96); } x.closePath();
         x.moveTo(42, 0); x.arc(0, 0, 42, 0, Math.PI * 2, true); x.fill('evenodd');
+      } else if (kind === 'pin') {   /* locations: a map pin with a hole */
+        x.translate(-102, -96); x.scale(8.5, 8.5);
+        var pin = new Path2D('M12 22.2S4.6 15.6 4.6 9.6a7.4 7.4 0 0 1 14.8 0c0 6-7.4 12.6-7.4 12.6z'); pin.moveTo(15, 9.6); pin.arc(12, 9.6, 3, 0, Math.PI * 2, true);
+        x.fill(pin, 'evenodd');
+      } else if (kind === 'cube') {   /* the assets cube (same drawing as the app's assets / parts icon) */
+        x.translate(-102, -102); x.scale(8.5, 8.5); x.lineWidth = 1.2;
+        var cube = new Path2D('M12 3l8 4.5v9L12 21l-8-4.5v-9z'); x.fill(cube); x.stroke(cube);   /* solid, with soft corners */
+        x.globalCompositeOperation = 'destination-out'; x.lineWidth = 1.5; x.stroke(new Path2D('M4 7.5l8 4.5 8-4.5M12 12v9'));   /* the three faces split by thin cuts */
       } else {   /* wrench: a handle with an open jaw at the top right */
         x.rotate(-Math.PI / 4); x.lineWidth = 34; x.beginPath(); x.moveTo(0, 92); x.lineTo(0, -30); x.stroke();
         x.beginPath(); x.arc(0, -52, 52, 0, Math.PI * 2); x.fill();
@@ -445,12 +455,12 @@
     /* the face: a fine mesh carved with exactly the same recess as the round assistants (soft plate slope + eye sockets);
        it sits just proud of the flat front and covers the plate-shaped hole in the body */
     function buildFaceDisc() {
-      var zTop = V.flatZ + 0.001, S = 160, R = 48, tMax = 1.04, pos = [0, PLATE.cy, (zTop + FACE_DOME) - 0.04], idx = [], i, j;
+      var zTop = V.flatZ + 0.001, S = 160, R = 48, tMax = 1.04, pos = [0, PLATE.cy, (zTop + FACE_DOME) - PD], idx = [], i, j;
       for (i = 1; i <= R; i++) {
         var t = tMax * i / R, zb = zTop + FACE_DOME * Math.max(0, 1 - (t / tMax) * (t / tMax));
         for (j = 0; j < S; j++) {
           var e = plateEdge((j / S) * Math.PI * 2), px = e[0] * t, py = PLATE.cy + (e[1] - PLATE.cy) * t;
-          var drop = 0.04 * (1 - SM(t, 0.93, 1.0)) + 0.02 * (1 - SM(Math.min(eyeT(px, py, -1), eyeT(px, py, 1)), 0.9, 1.07));
+          var drop = PD * (1 - SM(t, 0.93, 1.0)) + 0.02 * (1 - SM(Math.min(eyeT(px, py, -1), eyeT(px, py, 1)), 0.9, 1.07));
           pos.push(px, py, zb - drop);
         }
       }
@@ -477,8 +487,11 @@
           if (uMode > 1.5) { leg = 0.0; shoe = 0.0; }   // the nut: just trousers (its legs are Elio's pods)   // the wrench: trousers and legs are all yellow, the feet a stronger yellow
           float hand = max(step(0.956, dot(dir, vec2(0.996, -0.087))), step(0.956, dot(dir, vec2(-0.996, -0.087)))) * step(0.89, rr);
           if (uMode > 0.5) hand = 0.0;
-          float pants = below * (1.0 - leg) * (1.0 - hand);
-          diffuseColor.rgb = mix(mix(diffuseColor.rgb, uSuit, pants), uShoe, shoe);`);
+          float pants = max(below, leg) * (1.0 - hand);   // the legs wear the trousers too: no white band before the shoes
+          float groove = leg * (1.0 - smoothstep(0.01, 0.022, abs(dist - ${SHOE_CUT.toFixed(3)})));
+          if (uMode > 0.5 && uMode < 1.5) groove = step(abs(g.x), 0.46) * (1.0 - smoothstep(0.01, 0.022, abs(g.y + 1.22)));
+          if (uMode > 0.5 && uMode < 1.5) pants = max(pants, shoe);   // the wrench's feet wear the trousers too
+          diffuseColor.rgb = mix(diffuseColor.rgb, uSuit, pants);   // no shoes: legs and feet are the trousers' colour`);
       };
       mat.customProgramCacheKey = function () { return 'ultranova-gear'; };
       return mat;
@@ -510,7 +523,7 @@
       if (!pv.flat) rig.add(new THREE.Mesh(geo('seamB', function () { return seamGeo(0.8, -1.25, 1.25, false, 0.007); }), M.seam));
 
       var face = new THREE.Group(); rig.add(face);
-      if (!pv.noPlate) {
+      if (!pv.noPlate && !NO_PLATE) {
         face.add(new THREE.Mesh(geo('hair1', function () { return hairGeo(1.0, 0.0032, false); }), M.hair1));
         face.add(new THREE.Mesh(geo('hair2', function () { return hairGeo(0.93, 0.0022, true); }), M.hair2));
       }
@@ -552,7 +565,7 @@
       var arms = [-1, 1].map(function (s) {
         if (pv.deco === 'cogbody') return new THREE.Group();   /* Arco: the hands are teeth of the wheel (the right one still waves, see below) */
         var piv = new THREE.Group(); piv.position.set(0.93 * s, -0.28, 0.05); rig.add(piv);
-        piv.add(cast(new THREE.Mesh(geo('joint', function () { return new THREE.SphereGeometry(0.125, 32, 24); }), M.blue)));
+        piv.add(cast(new THREE.Mesh(geo('joint', function () { return new THREE.SphereGeometry(0.125, 32, 24); }), M.white)));   /* no coloured sleeve: the whole arm is white */
         var arm = cast(new THREE.Mesh(geo('arm', function () { return new THREE.CapsuleGeometry(0.105, 0.3, 10, 24); }), M.white)); arm.position.y = -0.22; piv.add(arm);
         piv.rotation.z = 0.7 * s; piv.userData.rest = 0.7 * s; return piv;
       });
@@ -561,20 +574,21 @@
         if (pv.flat && pv.deco !== 'nutbody') return;   /* the cog and the wrench have feet in their outline; the nut uses Elio's pods */
         var g = new THREE.Group(); g.position.set(0.36 * s, -0.8, 0.1); g.rotation.set(-0.15, 0, 0.12 * s); rig.add(g);
         var pod = cast(new THREE.Mesh(geo('leg', buildLegGeo), M.body)); pod.scale.set(0.22, 0.28, 0.24); pod.position.y = -0.1; g.add(pod);
-        var gr = new THREE.Mesh(geo('legRing', function () { return new THREE.TorusGeometry(0.213, 0.014, 8, 48); }), M.ring);
-        gr.rotation.x = Math.PI / 2; gr.scale.set(1, 1.09, 1); gr.position.y = -0.1 + 0.28 * -0.25; g.add(gr);
+        var gr = new THREE.Mesh(geo('legRing', function () { return new THREE.TorusGeometry(0.214, 0.008, 8, 48); }), M.seamBlue);   /* a groove where the shoe starts */
+        gr.rotation.x = Math.PI / 2; gr.scale.set(1, 1.09, 1); gr.position.y = -0.1 + 0.28 * -0.25; gr.visible = false; g.add(gr);   /* no shoe line for now */
       });
 
       /* the shield badge (replaces the button): a white extruded shield with the assistant's emblem printed on it */
       var shield = new THREE.Group();
-      var sh = cast(new THREE.Mesh(geo('shield', shieldGeo), M.visor)); shield.add(sh);
+      var sh = cast(new THREE.Mesh(geo('shield', shieldGeo), plastic(new THREE.Color(pv.suitDark).offsetHSL(0, 0.06, -0.13), { roughness: 0.3, clearcoat: 0.7, clearcoatRoughness: 0.18 }))); shield.add(sh);   /* a strong shield: the assistant's deep colour */
       var em = new THREE.Mesh(geo('emblemPlane', function () { return new THREE.PlaneGeometry(0.2, 0.2); }),
-        new THREE.MeshBasicMaterial({ map: emblemTex(pv.emblem || 'gear', pv.suitDark), transparent: true, depthWrite: false, toneMapped: false, polygonOffset: true, polygonOffsetFactor: -2, polygonOffsetUnits: -2 }));
+        new THREE.MeshBasicMaterial({ map: emblemTex(pv.emblem || 'gear', '#fbfcff'), transparent: true, depthWrite: false, toneMapped: false, polygonOffset: true, polygonOffsetFactor: -2, polygonOffsetUnits: -2 }));
       em.position.set(0, 0.012, 0.042); shield.add(em);
-      if (pv.flat) { shield.position.set(0, pv.btnY + 0.02, pv.flatZ + 0.004); shield.scale.setScalar(0.9); }
+      if (pv.flat) { shield.position.set(0, pv.btnY + 0.02, pv.flatZ + 0.004);   /* btnY puts the shield's top 0.12 under the waist (the waist dips 0.1 at the centre), the same gap as the round assistants */
+        shield.scale.setScalar(1.85); }   /* the superhero shield reads at a glance */
       else {   /* sit on the body's surface (round or cube-ish) and lean with it */
-        var sy = -0.56, sz = bodyZ(0, sy), slope = (bodyZ(0, sy + 0.02) - bodyZ(0, sy - 0.02)) / 0.04;
-        shield.position.set(0, sy, sz - 0.012); shield.rotation.x = Math.atan(slope);
+        var sy = -0.47, sz = bodyZ(0, sy), slope = (bodyZ(0, sy + 0.02) - bodyZ(0, sy - 0.02)) / 0.04;
+        shield.position.set(0, sy, sz - 0.012); shield.rotation.x = Math.atan(slope); shield.scale.setScalar(1.95);
       }
       rig.add(shield);
 
