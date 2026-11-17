@@ -1057,11 +1057,17 @@ html:root[data-theme] .un-btn.done .un-icon { color: var(--un-text-soft); }
 :root[data-theme] .un-res__head .un-wow__icon { background: transparent; box-shadow: inset 0 0 0 1px var(--un-paper-line, #ececea); }
 :root[data-theme="light"] .un-res__head .un-wow__icon { box-shadow: inset 0 0 0 1px #ececea; }
 :root[data-theme="dark"] .un-res__head .un-wow__icon { box-shadow: inset 0 0 0 1px #30302d; }
-/* the suggested action (the card's primary button): a grey fill with ink text, not black */
-:root[data-theme="light"] .un-res__acts .un-btn--primary:not(.done) { --c: #e6e6e1; --bg: #e6e6e1; --on: #1a1a1a; }
-:root[data-theme="light"] .un-res__acts .un-btn--primary:not(.done):hover { --bg: #dcdcd6; --c: #dcdcd6; box-shadow: none; }
-:root[data-theme="dark"] .un-res__acts .un-btn--primary:not(.done) { --c: #3a3a36; --bg: #3a3a36; --on: #f2f2ee; }
-:root[data-theme="dark"] .un-res__acts .un-btn--primary:not(.done):hover { --bg: #45453f; --c: #45453f; box-shadow: none; }
+/* buttons: the main CTA is solid black (default .un-btn--primary); a card's suggested action is a light fill with an ink border;
+   secondary actions are an ink border only (no fill) */
+:root[data-theme="light"] .un-res__acts .un-btn--primary:not(.done) { --c: #1a1a1a; --bg: #f7f7f5; --on: #1a1a1a; border-color: #1a1a1a; }
+:root[data-theme="light"] .un-res__acts .un-btn--primary:not(.done):hover { --bg: #f2f2ee; box-shadow: none; }
+:root[data-theme="dark"] .un-res__acts .un-btn--primary:not(.done) { --c: #f2f2ee; --bg: #252523; --on: #f2f2ee; border-color: #f2f2ee; }
+:root[data-theme="dark"] .un-res__acts .un-btn--primary:not(.done):hover { --bg: #2a2a28; box-shadow: none; }
+:root[data-theme="light"] .un-btn--soft.un-btn--gray { --c: #1a1a1a; border-color: #1a1a1a; }
+:root[data-theme="light"] .un-btn--soft.un-btn--gray:hover { background: #f7f7f5; border-color: #1a1a1a; }   /* = the suggested action at rest */
+:root[data-theme="light"] .un-btn--soft.un-btn--gray:active { background: #f2f2ee; }
+:root[data-theme="dark"] .un-btn--soft.un-btn--gray { --c: #f2f2ee; border-color: #f2f2ee; }
+:root[data-theme="dark"] .un-btn--soft.un-btn--gray:hover { background: #252523; border-color: #f2f2ee; }
 
 /* focus: an ink border with a soft warm grey-yellow halo (chat box, search fields, sort) */
 :root { --focus-ring: #1a1a1a; --focus-halo: rgba(184, 180, 158, 0.2); }   /* the halo: warm grey, a hint of yellow, at 0.2, a 3px soft edge */
@@ -1078,3 +1084,5 @@ html:root[data-theme] .un-btn.done .un-icon { color: var(--un-text-soft); }
 :root[data-theme] .chatbar:focus-within { border-color: var(--focus-ring); box-shadow: 0 0 3px 6px var(--focus-halo); }
 :root[data-theme] .chatbar .un-icon-btn:not(.un-icon-btn--send) .un-icon { width: 16px; height: 16px; }   /* no fill, so the + and mic icons are 2px bigger than the send arrow (14px) */
 :root[data-theme] .chatbar .right { gap: 6px; }   /* mic and send: 6px apart */
+:root[data-theme] .un-btn--soft.un-btn--gray { font-weight: 400; }   /* secondary: regular weight, so the suggested action leads */
+:root[data-theme] .un-bar i { background: #f08c00; }   /* progress that is behind (overdue, late): orange */

@@ -109,7 +109,7 @@
         eye: { a: gray(0.36), b: gray(0.44), c: gray(0.58), glow: gray(0.85), glow2: gray(0.68), dot: gray(0.55), dot2: gray(0.8) }, plate: '#b3b8c4' };
     }
     /* each assistant is an UpKeep superhero: a shield on the shorts with its own emblem (gear, wrench or hex nut) */
-    ['pin', 'cube', 'gear', 'wrench', 'nut'].forEach(function (e, i) { VARIANTS[i].emblem = e; });
+    ['hammer', 'toolbox', 'gear', 'wrench', 'nut'].forEach(function (e, i) { VARIANTS[i].emblem = e; });
     for (var gi = 0; gi < 5; gi++) { VARIANTS[10 + gi] = grayOf(VARIANTS[gi]); VARIANTS[10 + gi].emblem = VARIANTS[gi].emblem; }
     function rgba(c, a) { return 'rgba(' + Math.round(c.r * 255) + ',' + Math.round(c.g * 255) + ',' + Math.round(c.b * 255) + ',' + a + ')'; }
     var MV = {};
@@ -309,6 +309,28 @@
       } else if (kind === 'nut') {
         x.beginPath(); for (var j = 0; j < 6; j++) { var b = j * Math.PI / 3; x.lineTo(Math.cos(b) * 96, Math.sin(b) * 96); } x.closePath();
         x.moveTo(42, 0); x.arc(0, 0, 42, 0, Math.PI * 2, true); x.fill('evenodd');
+      } else if (kind === 'hammer') {   /* a claw hammer (the maintenance kind), leaning: long handle, a striking face, a curved claw */
+        x.rotate(-Math.PI / 4); x.translate(0, 8);
+        x.beginPath(); x.roundRect(-13, -40, 26, 132, 12); x.fill();                 // handle
+        x.beginPath(); x.roundRect(-74, -92, 50, 44, 8); x.fill();                   // striking face
+        x.beginPath(); x.rect(-30, -88, 50, 36); x.fill();                           // head body
+        x.beginPath(); x.moveTo(16, -90); x.quadraticCurveTo(66, -96, 90, -54);       // the claw curves back and down
+        x.lineTo(70, -48); x.quadraticCurveTo(54, -70, 16, -52); x.closePath(); x.fill();
+        x.globalCompositeOperation = 'destination-out';
+        x.beginPath(); x.moveTo(90, -54); x.lineTo(62, -66); x.lineTo(70, -48); x.closePath(); x.fill();   // the split between the two prongs
+      } else if (kind === 'toolbox') {   /* a toolbox: body, lid seam with a latch, and a carry handle */
+        x.beginPath(); x.roundRect(-92, -34, 184, 118, 18); x.fill();
+        x.lineWidth = 20; x.lineJoin = 'round'; x.beginPath(); x.moveTo(-40, -30); x.lineTo(-40, -70); x.lineTo(40, -70); x.lineTo(40, -30); x.stroke();
+        x.globalCompositeOperation = 'destination-out';
+        x.fillRect(-92, 4, 184, 12);   /* the lid seam */
+        x.globalCompositeOperation = 'source-over'; x.beginPath(); x.roundRect(-18, -6, 36, 32, 6); x.fill();   /* the latch over the seam */
+      } else if (kind === 'screwdriver') {   /* a screwdriver, leaning: grooved handle, shaft and flat tip */
+        x.rotate(-Math.PI / 4);
+        x.beginPath(); x.roundRect(-42, -8, 84, 108, 36); x.fill();
+        x.beginPath(); x.rect(-17, -70, 34, 70); x.fill();
+        x.beginPath(); x.moveTo(-17, -70); x.lineTo(17, -70); x.lineTo(11, -106); x.lineTo(-11, -106); x.closePath(); x.fill();
+        x.globalCompositeOperation = 'destination-out'; x.lineWidth = 11; x.lineCap = 'round';
+        [-14, 14].forEach(function (gx) { x.beginPath(); x.moveTo(gx, 18); x.lineTo(gx, 78); x.stroke(); });   /* grip grooves */
       } else if (kind === 'pin') {   /* locations: a map pin with a hole */
         x.translate(-102, -96); x.scale(8.5, 8.5);
         var pin = new Path2D('M12 22.2S4.6 15.6 4.6 9.6a7.4 7.4 0 0 1 14.8 0c0 6-7.4 12.6-7.4 12.6z'); pin.moveTo(15, 9.6); pin.arc(12, 9.6, 3, 0, Math.PI * 2, true);
@@ -323,6 +345,47 @@
         x.globalCompositeOperation = 'destination-out'; x.fillRect(-18, -120, 36, 64); x.beginPath(); x.arc(0, -56, 18, 0, Math.PI * 2); x.fill();
       }
       var t = new THREE.CanvasTexture(c); t.anisotropy = 4; return (EMB[k] = t);
+    }
+    /* the painted shield: a white-on-black outline used as an alpha mask, in shield units x ±0.18, y −0.20…0.16 */
+    var SHIELD_BOX = { hw: 0.18, hh: 0.18, cy: -0.02 }, shieldMaskTex = null;
+    function shieldMask() {
+      if (shieldMaskTex) return shieldMaskTex;
+      var c = document.createElement('canvas'); c.width = c.height = 512; var x = c.getContext('2d');
+      x.fillStyle = '#000'; x.fillRect(0, 0, 512, 512);
+      var k = 512 / (2 * SHIELD_BOX.hw), X = function (u) { return (u + SHIELD_BOX.hw) * k; }, Y = function (v) { return (SHIELD_BOX.cy + SHIELD_BOX.hh - v) * k; };
+      shieldPath(x, X, Y); x.fillStyle = '#fff'; x.fill(); x.lineJoin = 'round'; x.lineWidth = 0.024 * k; x.strokeStyle = '#fff'; x.stroke();
+      shieldMaskTex = new THREE.CanvasTexture(c); shieldMaskTex.anisotropy = 4; return shieldMaskTex;
+    }
+    function shieldPath(x, X, Y, keep) {
+      var w = 0.15, t = 0.13; if (!keep) x.beginPath();
+      x.moveTo(X(0), Y(t + 0.012)); x.quadraticCurveTo(X(w * 0.55), Y(t + 0.03), X(w), Y(t));
+      x.lineTo(X(w), Y(0.02)); x.quadraticCurveTo(X(w * 0.95), Y(-0.12), X(0), Y(-0.18));
+      x.quadraticCurveTo(X(-w * 0.95), Y(-0.12), X(-w), Y(0.02)); x.lineTo(X(-w), Y(t)); x.quadraticCurveTo(X(-w * 0.55), Y(t + 0.03), X(0), Y(t + 0.012));
+      x.closePath();
+    }
+    /* the engraved look: inside the shield, a shadow under its top edge and a faint light along its bottom edge, as if cut into the shorts */
+    var shieldInsetTex = null;
+    function shieldInset() {
+      if (shieldInsetTex) return shieldInsetTex;
+      var c = document.createElement('canvas'); c.width = c.height = 512; var x = c.getContext('2d');
+      var k = 512 / (2 * SHIELD_BOX.hw), X = function (u) { return (u + SHIELD_BOX.hw) * k; }, Y = function (v) { return (SHIELD_BOX.cy + SHIELD_BOX.hh - v) * k; };
+      function inner(color, blur, dy) {   // fill everything outside the shield; only its shadow falls inside
+        x.save(); shieldPath(x, X, Y); x.clip();
+        x.beginPath(); x.rect(-2000, -2000, 4512, 4512); shieldPath(x, X, Y, true);
+        x.fillStyle = '#000'; x.shadowColor = color; x.shadowBlur = blur; x.shadowOffsetY = dy; x.fill('evenodd');
+        x.restore();
+      }
+      inner('rgba(0, 0, 0, 0.5)', 16, 10);         // shadow under the top edge
+      inner('rgba(255, 255, 255, 0.28)', 10, -7);  // light along the bottom edge
+      shieldInsetTex = new THREE.CanvasTexture(c); shieldInsetTex.anisotropy = 4; return shieldInsetTex;
+    }
+    /* the shield's colour: the shorts' own hue, a good deal darker (a share of its lightness, so light and dark suits both keep their hue) */
+    function shieldColor(v) { var c = new THREE.Color(v.suit), h = {}; c.getHSL(h); return c.setHSL(h.h, Math.min(1, h.s + 0.1), h.l * 0.4); }
+    /* a small patch of the body's own surface (so a decal hugs the curve), centred at (cx, cy) */
+    function surfacePatch(cx, cy, hw, hh, zOf) {
+      var g = new THREE.PlaneGeometry(2 * hw, 2 * hh, 24, 24), p = g.attributes.position;
+      for (var i = 0; i < p.count; i++) { var px = p.getX(i) + cx, py = p.getY(i) + cy; p.setXYZ(i, px, py, zOf(px, py)); }
+      g.computeVertexNormals(); return g;
     }
     /* ----- maintenance plates behind the body: cog, wrench, hex nut (extruded outlines, same plastic look) ----- */
     function decoShape(kind) {
@@ -578,19 +641,19 @@
         gr.rotation.x = Math.PI / 2; gr.scale.set(1, 1.09, 1); gr.position.y = -0.1 + 0.28 * -0.25; gr.visible = false; g.add(gr);   /* no shoe line for now */
       });
 
-      /* the shield badge (replaces the button): a white extruded shield with the assistant's emblem printed on it */
-      var shield = new THREE.Group();
-      var sh = cast(new THREE.Mesh(geo('shield', shieldGeo), plastic(new THREE.Color(pv.suitDark).offsetHSL(0, 0.06, -0.13), { roughness: 0.3, clearcoat: 0.7, clearcoatRoughness: 0.18 }))); shield.add(sh);   /* a strong shield: the assistant's deep colour */
-      var em = new THREE.Mesh(geo('emblemPlane', function () { return new THREE.PlaneGeometry(0.2, 0.2); }),
-        new THREE.MeshBasicMaterial({ map: emblemTex(pv.emblem || 'gear', '#fbfcff'), transparent: true, depthWrite: false, toneMapped: false, polygonOffset: true, polygonOffsetFactor: -2, polygonOffsetUnits: -2 }));
-      em.position.set(0, 0.012, 0.042); shield.add(em);
-      if (pv.flat) { shield.position.set(0, pv.btnY + 0.02, pv.flatZ + 0.004);   /* btnY puts the shield's top 0.12 under the waist (the waist dips 0.1 at the centre), the same gap as the round assistants */
-        shield.scale.setScalar(1.85); }   /* the superhero shield reads at a glance */
-      else {   /* sit on the body's surface (round or cube-ish) and lean with it */
-        var sy = -0.47, sz = bodyZ(0, sy), slope = (bodyZ(0, sy + 0.02) - bodyZ(0, sy - 0.02)) / 0.04;
-        shield.position.set(0, sy, sz - 0.012); shield.rotation.x = Math.atan(slope); shield.scale.setScalar(1.95);
-      }
-      rig.add(shield);
+      /* the shield is painted on the shorts (not a 3D piece): the same plastic in the assistant's deep colour, cut to a shield,
+         with its emblem printed on top; both layers follow the body's surface */
+      var shS = pv.flat ? 1.6 : 1.65, scx = 0, scy = pv.flat ? pv.btnY + 0.056 : -0.427;   /* smaller than the old badge, its top edge in the same place (so it stays clear of the legs) */
+      var zOf = pv.flat ? function () { return pv.flatZ + 0.003; } : function (px, py) { return bodyZ(px, py) + 0.003; };
+      var paint = new THREE.Mesh(surfacePatch(scx, scy + SHIELD_BOX.cy * shS, SHIELD_BOX.hw * shS, SHIELD_BOX.hh * shS, zOf),
+        plastic(shieldColor(pv), { alphaMap: shieldMask(), transparent: true, depthWrite: false, clearcoat: 0.3, polygonOffset: true, polygonOffsetFactor: -2, polygonOffsetUnits: -2 }));
+      paint.receiveShadow = hi; paint.renderOrder = 1; rig.add(paint);   /* drawn after the body, before the emblem */
+      var inset = new THREE.Mesh(surfacePatch(scx, scy + SHIELD_BOX.cy * shS, SHIELD_BOX.hw * shS, SHIELD_BOX.hh * shS, function (px, py) { return zOf(px, py) + 0.0005; }),
+        new THREE.MeshBasicMaterial({ map: shieldInset(), transparent: true, depthWrite: false, toneMapped: false, polygonOffset: true, polygonOffsetFactor: -3, polygonOffsetUnits: -3 }));
+      inset.renderOrder = 2; rig.add(inset);
+      var em = new THREE.Mesh(surfacePatch(scx, scy + 0.0 * shS, 0.128 * shS, 0.128 * shS, function (px, py) { return zOf(px, py) + 0.001; }),   /* a bigger emblem: less empty shield around it */
+        new THREE.MeshBasicMaterial({ map: emblemTex(pv.emblem || 'gear', '#fbfcff'), transparent: true, depthWrite: false, toneMapped: false, polygonOffset: true, polygonOffsetFactor: -4, polygonOffsetUnits: -4 }));
+      em.renderOrder = 3; rig.add(em);
 
       var antenna = new THREE.Group(); antenna.position.set(0.14, 0.9, -0.05); antenna.rotation.z = -0.28; if (!pv.flat || pv.deco === 'nutbody') rig.add(antenna);   /* the cog and the wrench have their own; the nut keeps Elio's */
       var stem = new THREE.Mesh(geo('stem', function () { return new THREE.CylinderGeometry(0.016, 0.02, 0.5, 16); }), M.stem); stem.position.y = 0.25; antenna.add(stem);
