@@ -500,8 +500,8 @@
   /*dk*/ :root[data-theme="dark"] .side-search { background: transparent; box-shadow: inset 0 0 0 1px #2c2c29; color: #f2f2ee; } /*/dk*/   /* warm grey outline */   /* Figma: light brand outline, ink icon */   /* outlined, no fill */
   :root[data-theme="light"] .side-search input::placeholder { color: #9f9f99; }
   /*dk*/ :root[data-theme="dark"] .side-search input::placeholder { color: #7d7d77; } /*/dk*/
-  :root[data-theme="light"] .side-search:focus-within { box-shadow: inset 0 0 0 1px var(--un-brand), 0 0 0 4px color-mix(in srgb, var(--un-brand) 5%, transparent); background: transparent; }
-  /*dk*/ :root[data-theme="dark"] .side-search:focus-within { box-shadow: inset 0 0 0 1px var(--un-brand), 0 0 0 4px color-mix(in srgb, var(--un-brand) 5%, transparent); background: transparent; } /*/dk*/
+  :root[data-theme="light"] .side-search:focus-within { box-shadow: 0 0 0 1px var(--focus-ring), 0 0 3px 5px var(--focus-halo); background: transparent; }
+  /*dk*/ :root[data-theme="dark"] .side-search:focus-within { box-shadow: 0 0 0 1px var(--focus-ring), 0 0 3px 5px var(--focus-halo); background: transparent; } /*/dk*/
   .history li[hidden] { display: none; }
   .history li { flex: none; }   /* rows keep their height so the list scrolls instead of squeezing */
   /* collapsed: Search is a 44px circle with the magnifier; clicking it opens the sidebar with the field focused */
@@ -665,8 +665,8 @@
   /* chat bar: soft grey, no border or shadow; 24px round buttons */
   :root[data-theme="light"] .chatbar { width: min(990px, 100%); align-self: center; background: #f7f7f5; border: 0; border-radius: 16px; box-shadow: none; }
   /*dk*/ :root[data-theme="dark"] .chatbar { width: min(990px, 100%); align-self: center; background: #252523; border: 0; border-radius: 16px; box-shadow: none; } /*/dk*/
-  :root[data-theme="light"] .chatbar:focus-within { box-shadow: inset 0 0 0 1px var(--un-brand), 0 0 0 6px color-mix(in srgb, var(--un-brand) 5%, transparent); }
-  /*dk*/ :root[data-theme="dark"] .chatbar:focus-within { box-shadow: inset 0 0 0 1px var(--un-brand), 0 0 0 6px color-mix(in srgb, var(--un-brand) 5%, transparent); } /*/dk*/   /* Figma: brand border + soft halo */
+  :root[data-theme="light"] .chatbar:focus-within { box-shadow: 0 0 0 1px var(--focus-ring), 0 0 3px 7px var(--focus-halo); }
+  /*dk*/ :root[data-theme="dark"] .chatbar:focus-within { box-shadow: 0 0 0 1px var(--focus-ring), 0 0 3px 7px var(--focus-halo); } /*/dk*/   /* Figma: brand border + soft halo */
   :root[data-theme="light"] .chatbar textarea::placeholder { color: #9f9f99; opacity: 1; }
   /*dk*/ :root[data-theme="dark"] .chatbar textarea::placeholder { color: #7d7d77; opacity: 1; } /*/dk*/
   .tabhint { display: none; }   /* the "Tab" hint is hidden: Tab still accepts the suggestion in the placeholder */
@@ -1014,8 +1014,8 @@
   /*dk*/ :root[data-theme="dark"] .mk-head p, :root[data-theme="dark"] .mk-count, :root[data-theme="dark"] .mk-meta small, :root[data-theme="dark"] .mk-empty { color: #a5a59f; } /*/dk*/
   :root[data-theme="light"] .mk-search { box-shadow: inset 0 0 0 1px #deded5; color: #1a1a1a; background: #fff; }
   /*dk*/ :root[data-theme="dark"] .mk-search { box-shadow: inset 0 0 0 1px #2c2c29; color: #f2f2ee; background: #1c1c1b; } /*/dk*/
-  :root[data-theme="light"] .mk-search:focus-within { box-shadow: inset 0 0 0 1px var(--un-brand), 0 0 0 4px color-mix(in srgb, var(--un-brand) 5%, transparent); }
-  /*dk*/ :root[data-theme="dark"] .mk-search:focus-within { box-shadow: inset 0 0 0 1px var(--un-brand), 0 0 0 4px color-mix(in srgb, var(--un-brand) 5%, transparent); } /*/dk*/
+  :root[data-theme="light"] .mk-search:focus-within { box-shadow: 0 0 0 1px var(--focus-ring), 0 0 3px 5px var(--focus-halo); }
+  /*dk*/ :root[data-theme="dark"] .mk-search:focus-within { box-shadow: 0 0 0 1px var(--focus-ring), 0 0 3px 5px var(--focus-halo); } /*/dk*/
   :root[data-theme="light"] .mk-chip { border: 1px solid #deded5; background: #fff; color: #1a1a1a; }
   /*dk*/ :root[data-theme="dark"] .mk-chip { border: 1px solid #2c2c29; background: #1c1c1b; color: #f2f2ee; } /*/dk*/
   :root[data-theme="light"] .mk-chip:hover { background: #f6f6f3; }
@@ -1902,6 +1902,8 @@
     if (words.length > 7) t = words.slice(0, 7).join(' ') + '…';
     t = t.charAt(0).toUpperCase() + t.slice(1);
     item.classList.remove('untitled'); item.querySelector('span').textContent = t;
+    [].forEach.call(chatList.querySelectorAll('.chat-item'), function (c) { if (c !== item && c.querySelector('span').textContent === t) c.closest('li').remove(); });   /* the same title again: one row, the live one */
+    limitList(chatList);
     pastChats = [t].concat(pastChats.filter(function (x) { return x !== t; })); try { sessionStorage.setItem('ultranova.chats', JSON.stringify(pastChats.slice(0, 50))); } catch (e) {}
     item.classList.add('titled'); setTimeout(function () { item.classList.remove('titled'); }, 700);
     if (window.paintMChats) paintMChats();
@@ -2734,8 +2736,7 @@
   document.addEventListener('click', function (e) { if (!e.target.closest('#mChatMore')) closeChMenu(); });
   /* phone: a card's actions sit outside it, right below (they work the same: the handlers don't need the card) */
   var mq = matchMedia('(max-width: 600px)');
-  function actsOut() {
-    if (!mq.matches) return;
+  function actsOut() {   /* every width: a card's actions sit under it, outside the card */
     [].forEach.call(thread.querySelectorAll('.un-res > .un-res__acts'), function (a) { a.classList.add('un-res__acts--out'); a.parentNode.after(a); });
   }
   /* phone: takeaway first, details on tap. The card keeps what it concludes (its recommendation, its key numbers, a draft);

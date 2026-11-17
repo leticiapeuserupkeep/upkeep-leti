@@ -985,7 +985,7 @@ html:root[data-theme] .un-btn.done .un-icon { color: var(--un-text-soft); }
 .mk-sort { display: grid; place-items: center; flex: none; width: 40px; height: 40px; padding: 0; border: 0; border-radius: 50%; background: #fff; box-shadow: inset 0 0 0 1px #deded5; color: #1a1a1a; cursor: pointer; transition: box-shadow 0.15s, background 0.15s; }
 .mk-sort .un-icon { width: 18px; height: 18px; }
 .mk-sort:hover { box-shadow: inset 0 0 0 1px #cfcfca; }
-.mk-sort[aria-expanded="true"] { box-shadow: inset 0 0 0 1px var(--un-brand), 0 0 0 4px color-mix(in srgb, var(--un-brand) 5%, transparent); }
+.mk-sort[aria-expanded="true"] { box-shadow: 0 0 0 1px var(--focus-ring), 0 0 3px 5px var(--focus-halo); }
 .mk-sort:active { transform: scale(0.94); }
 :root[data-theme="dark"] .mk-sort { background: #1c1c1b; box-shadow: inset 0 0 0 1px #2c2c29; color: #f2f2ee; }
 .mk-sortmenu { min-width: 216px; }
@@ -1049,3 +1049,32 @@ html:root[data-theme] .un-btn.done .un-icon { color: var(--un-text-soft); }
 :root[data-theme] .sidebar .nav-item[aria-expanded="false"] .chev { color: #b5b5af; transition: color 0.2s; }
 :root[data-theme="dark"] .sidebar .nav-item[aria-expanded="false"] .chev { color: #5c5c58; }
 :root[data-theme] .sidebar .nav-item[aria-expanded="false"]:hover .chev { color: #7b7b79; }
+
+/* ---------- chat cards: actions outside the card, a plain header (no fill, just its line), grey suggested action ---------- */
+.un-res__acts.un-res__acts--out { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; padding: 0; border: 0; background: none; }
+.un-res__acts.un-res__acts--out[hidden] { display: none; }
+:root[data-theme] .un-res__head { background: transparent; }
+:root[data-theme] .un-res__head .un-wow__icon { background: transparent; box-shadow: inset 0 0 0 1px var(--un-paper-line, #ececea); }
+:root[data-theme="light"] .un-res__head .un-wow__icon { box-shadow: inset 0 0 0 1px #ececea; }
+:root[data-theme="dark"] .un-res__head .un-wow__icon { box-shadow: inset 0 0 0 1px #30302d; }
+/* the suggested action (the card's primary button): a grey fill with ink text, not black */
+:root[data-theme="light"] .un-res__acts .un-btn--primary:not(.done) { --c: #e6e6e1; --bg: #e6e6e1; --on: #1a1a1a; }
+:root[data-theme="light"] .un-res__acts .un-btn--primary:not(.done):hover { --bg: #dcdcd6; --c: #dcdcd6; box-shadow: none; }
+:root[data-theme="dark"] .un-res__acts .un-btn--primary:not(.done) { --c: #3a3a36; --bg: #3a3a36; --on: #f2f2ee; }
+:root[data-theme="dark"] .un-res__acts .un-btn--primary:not(.done):hover { --bg: #45453f; --c: #45453f; box-shadow: none; }
+
+/* focus: an ink border with a soft warm grey-yellow halo (chat box, search fields, sort) */
+:root { --focus-ring: #1a1a1a; --focus-halo: rgba(184, 180, 158, 0.2); }   /* the halo: warm grey, a hint of yellow, at 0.2, a 3px soft edge */
+:root[data-theme="dark"] { --focus-ring: #f2f2ee; --focus-halo: rgba(184, 180, 158, 0.2); }
+
+/* chat box buttons: + and voice are plain icons (no fill); send keeps its pill and reads disabled (light icon) until there's text */
+:root[data-theme] .chatbar .un-icon-btn:not(.un-icon-btn--send) { background: transparent; box-shadow: none; }
+:root[data-theme="light"] .chatbar .un-icon-btn:not(.un-icon-btn--send):hover { background: rgba(26, 26, 26, 0.06); }
+:root[data-theme="dark"] .chatbar .un-icon-btn:not(.un-icon-btn--send):hover { background: rgba(242, 242, 238, 0.08); }
+:root[data-theme="light"] .chatbar .un-icon-btn--send:not(.ready) { color: #b5b5af; cursor: default; }
+:root[data-theme="dark"] .chatbar .un-icon-btn--send:not(.ready) { color: #5c5c58; cursor: default; }
+/* the chat box draws its focus edge as a real 1px border (crisp on every screen), not a shadow ring; the halo stays a soft shadow */
+:root[data-theme] .chatbar { box-sizing: border-box; border: 1px solid transparent; }
+:root[data-theme] .chatbar:focus-within { border-color: var(--focus-ring); box-shadow: 0 0 3px 6px var(--focus-halo); }
+:root[data-theme] .chatbar .un-icon-btn:not(.un-icon-btn--send) .un-icon { width: 16px; height: 16px; }   /* no fill, so the + and mic icons are 2px bigger than the send arrow (14px) */
+:root[data-theme] .chatbar .right { gap: 6px; }   /* mic and send: 6px apart */

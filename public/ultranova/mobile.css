@@ -218,10 +218,11 @@
 /* search field: same states as the chat box — a brand border and soft halo on focus, a lighter border on hover */
 .m-sp__field { transition: box-shadow var(--motion-150) ease; }
 .m-sp__field:hover { box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--un-brand) 45%, transparent); }
-.m-sp__field:focus-within { box-shadow: inset 0 0 0 1px var(--un-brand), 0 0 0 6px color-mix(in srgb, var(--un-brand) 5%, transparent); }
+.m-sp__field:focus-within { box-shadow: 0 0 0 1px var(--focus-ring), 0 0 3px 7px var(--focus-halo); }
 @media (max-width: 600px) {
-  /* the chat box reads as ready to type: always in its focused look (brand border + soft halo) */
-  html:root[data-theme] .chatbar, html:root[data-theme] .chatbar:focus-within { box-shadow: inset 0 0 0 1px var(--un-brand), 0 0 0 6px color-mix(in srgb, var(--un-brand) 5%, transparent); }
+  /* the chat box shows its focus look (ink border + soft halo) only while you're typing in it */
+  html:root[data-theme] .chatbar { box-shadow: none; }
+  html:root[data-theme] .chatbar:focus-within { box-shadow: 0 0 0 1px var(--focus-ring), 0 0 3px 7px var(--focus-halo); }
   html:root[data-theme] .app:not(.app-mode) .main:not(.chatting) .chatbar { margin: 6px 0 2px; }   /* room for the halo */
 }
 
@@ -444,4 +445,52 @@
   .m-chats__list button:active { background: #f1f1ee; }
   .m-chats__list button.on { background: #f1f1ee; font-weight: 600; }
   html:root[data-theme="dark"] .m-chats__list button:active, html:root[data-theme="dark"] .m-chats__list button.on { background: #2a2a28; }
+}
+@media (max-width: 600px) {
+  /* card actions: one per row, full width */
+  html:root[data-theme] .un-res__acts--out { flex-direction: column; }
+  html:root[data-theme] .un-res__acts--out .un-btn { width: 100%; min-height: 44px; justify-content: center; }
+  /* the message box is one line: + · field · mic · send */
+  html:root[data-theme] .chatbar { flex-direction: row; align-items: center; gap: 6px; padding: 6px 6px 6px 8px; }
+  html:root[data-theme] .chatbar .bar-row { display: contents; }
+  html:root[data-theme] .chatbar .bar-row > .un-icon-btn { order: 1; flex: none; }
+  html:root[data-theme] .chatbar .field { order: 2; flex: 1; min-width: 0; }
+  html:root[data-theme] .chatbar .right { order: 3; display: flex; align-items: center; gap: 6px; flex: none; }
+  html:root[data-theme] .chatbar textarea { min-height: 36px; max-height: 110px; padding: 7px 4px; box-sizing: border-box; }
+  html:root[data-theme] .chatbar .tabhint { display: none; }
+  /* the floating tab bar: light grey, the current section a dark grey pill */
+  html:root[data-theme] .m-tabs { background: #fff; box-shadow: 0 12px 32px -14px rgba(26, 26, 26, 0.3); }   /* white bar, no border: its shadow lifts it */
+  html:root[data-theme="dark"] .m-tabs { background: #2a2a28; box-shadow: 0 12px 32px -12px rgba(0, 0, 0, 0.8); }
+  html:root[data-theme] .m-tabs button { color: #3d3d3a; }
+  html:root[data-theme="dark"] .m-tabs button { color: #d6d6d0; }
+  html:root[data-theme] .m-tabs button[aria-current="page"] { background: #efefeb; color: #1a1a1a; }   /* a touch darker than desktop's #f7f7f5, so it reads on the white bar */
+  html:root[data-theme="dark"] .m-tabs button[aria-current="page"] { background: #252523; color: #f2f2ee; }
+}
+@media (max-width: 600px) {
+  /* the desktop page ground on the phone too: warm grey (with the same soft image), white cards and bars on top */
+  html:root[data-theme] { --m-page: #f3f3ee; }   /* a touch lighter than the desktop page (#ecece5) */
+  html:root[data-theme="dark"] { --m-page: #121211; }
+  html:root[data-theme], html:root[data-theme] body, html:root[data-theme] .backdrop, html:root[data-theme] .app { background: var(--m-page); }
+  html:root[data-theme] .main, html:root[data-theme] .main.chatting, html:root[data-theme] .app.app-mode .appview,
+  html:root[data-theme] .ap-card, html:root[data-theme] .ap-bar { background: transparent; }
+  html:root[data-theme] .m-top { background: var(--m-page); border-bottom-color: rgba(26, 26, 26, 0.06); }
+  html:root[data-theme] .ap-card.mk .mk-tools { background: var(--m-page); }
+  /* the fades behind the chat header and the assistant's halo take the page colour */
+  html:root[data-theme] .app:not(.app-mode) .main.chatting .stage::before { background: linear-gradient(180deg, var(--m-page) 0%, var(--m-page) 45%, color-mix(in srgb, var(--m-page) 0%, transparent) 100%); }
+  html:root[data-theme] .app:not(.app-mode) .main.chatting .assistant::before { background: radial-gradient(closest-side, var(--m-page) 55%, color-mix(in srgb, var(--m-page) 85%, transparent) 75%, color-mix(in srgb, var(--m-page) 0%, transparent) 100%); }
+}
+@media (max-width: 600px) {
+  html:root[data-theme] .chatbar { border: 1px solid transparent; box-shadow: none; }
+  html:root[data-theme] .chatbar:focus-within { border-color: var(--focus-ring); box-shadow: 0 0 3px 6px var(--focus-halo); }
+}
+@media (max-width: 600px) {
+  /* Back to CMS: a touch darker than the page so the pill reads on the warm ground */
+  html:root[data-theme] .m-cms { background: #e6e6e0; }
+  html:root[data-theme] .m-cms:active { background: #dcdcd5; }
+  html:root[data-theme="dark"] .m-cms { background: #2a2a28; }
+}
+@media (max-width: 600px) {
+  /* inside a conversation the screen is white, like an app's detail; the warm ground stays for home, Apps and the chats list */
+  html:root[data-theme="light"]:has(.app:not(.app-mode) .main.chatting) { --m-page: #fff; }
+  html:root[data-theme="dark"]:has(.app:not(.app-mode) .main.chatting) { --m-page: #1c1c1b; }
 }
