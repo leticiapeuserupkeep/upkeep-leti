@@ -218,10 +218,10 @@
 /* search field: same states as the chat box — a brand border and soft halo on focus, a lighter border on hover */
 .m-sp__field { transition: box-shadow var(--motion-150) ease; }
 .m-sp__field:hover { box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--un-brand) 45%, transparent); }
-.m-sp__field:focus-within { box-shadow: inset 0 0 0 1px var(--un-brand), 0 0 0 6px color-mix(in srgb, var(--un-brand) 9%, transparent); }
+.m-sp__field:focus-within { box-shadow: inset 0 0 0 1px var(--un-brand), 0 0 0 6px color-mix(in srgb, var(--un-brand) 5%, transparent); }
 @media (max-width: 600px) {
   /* the chat box reads as ready to type: always in its focused look (brand border + soft halo) */
-  html:root[data-theme] .chatbar, html:root[data-theme] .chatbar:focus-within { box-shadow: inset 0 0 0 1px var(--un-brand), 0 0 0 6px color-mix(in srgb, var(--un-brand) 9%, transparent); }
+  html:root[data-theme] .chatbar, html:root[data-theme] .chatbar:focus-within { box-shadow: inset 0 0 0 1px var(--un-brand), 0 0 0 6px color-mix(in srgb, var(--un-brand) 5%, transparent); }
   html:root[data-theme] .app:not(.app-mode) .main:not(.chatting) .chatbar { margin: 6px 0 2px; }   /* room for the halo */
 }
 

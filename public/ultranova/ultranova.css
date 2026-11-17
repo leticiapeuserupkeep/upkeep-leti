@@ -985,7 +985,7 @@ html:root[data-theme] .un-btn.done .un-icon { color: var(--un-text-soft); }
 .mk-sort { display: grid; place-items: center; flex: none; width: 40px; height: 40px; padding: 0; border: 0; border-radius: 50%; background: #fff; box-shadow: inset 0 0 0 1px #deded5; color: #1a1a1a; cursor: pointer; transition: box-shadow 0.15s, background 0.15s; }
 .mk-sort .un-icon { width: 18px; height: 18px; }
 .mk-sort:hover { box-shadow: inset 0 0 0 1px #cfcfca; }
-.mk-sort[aria-expanded="true"] { box-shadow: inset 0 0 0 1px var(--un-brand), 0 0 0 4px color-mix(in srgb, var(--un-brand) 9%, transparent); }
+.mk-sort[aria-expanded="true"] { box-shadow: inset 0 0 0 1px var(--un-brand), 0 0 0 4px color-mix(in srgb, var(--un-brand) 5%, transparent); }
 .mk-sort:active { transform: scale(0.94); }
 :root[data-theme="dark"] .mk-sort { background: #1c1c1b; box-shadow: inset 0 0 0 1px #2c2c29; color: #f2f2ee; }
 .mk-sortmenu { min-width: 216px; }

@@ -500,8 +500,8 @@
   /*dk*/ :root[data-theme="dark"] .side-search { background: transparent; box-shadow: inset 0 0 0 1px #2c2c29; color: #f2f2ee; } /*/dk*/   /* warm grey outline */   /* Figma: light brand outline, ink icon */   /* outlined, no fill */
   :root[data-theme="light"] .side-search input::placeholder { color: #9f9f99; }
   /*dk*/ :root[data-theme="dark"] .side-search input::placeholder { color: #7d7d77; } /*/dk*/
-  :root[data-theme="light"] .side-search:focus-within { box-shadow: inset 0 0 0 1px var(--un-brand), 0 0 0 4px color-mix(in srgb, var(--un-brand) 9%, transparent); background: transparent; }
-  /*dk*/ :root[data-theme="dark"] .side-search:focus-within { box-shadow: inset 0 0 0 1px var(--un-brand), 0 0 0 4px color-mix(in srgb, var(--un-brand) 9%, transparent); background: transparent; } /*/dk*/
+  :root[data-theme="light"] .side-search:focus-within { box-shadow: inset 0 0 0 1px var(--un-brand), 0 0 0 4px color-mix(in srgb, var(--un-brand) 5%, transparent); background: transparent; }
+  /*dk*/ :root[data-theme="dark"] .side-search:focus-within { box-shadow: inset 0 0 0 1px var(--un-brand), 0 0 0 4px color-mix(in srgb, var(--un-brand) 5%, transparent); background: transparent; } /*/dk*/
   .history li[hidden] { display: none; }
   .history li { flex: none; }   /* rows keep their height so the list scrolls instead of squeezing */
   /* collapsed: Search is a 44px circle with the magnifier; clicking it opens the sidebar with the field focused */
@@ -665,8 +665,8 @@
   /* chat bar: soft grey, no border or shadow; 24px round buttons */
   :root[data-theme="light"] .chatbar { width: min(990px, 100%); align-self: center; background: #f7f7f5; border: 0; border-radius: 16px; box-shadow: none; }
   /*dk*/ :root[data-theme="dark"] .chatbar { width: min(990px, 100%); align-self: center; background: #252523; border: 0; border-radius: 16px; box-shadow: none; } /*/dk*/
-  :root[data-theme="light"] .chatbar:focus-within { box-shadow: inset 0 0 0 1px var(--un-brand), 0 0 0 6px color-mix(in srgb, var(--un-brand) 9%, transparent); }
-  /*dk*/ :root[data-theme="dark"] .chatbar:focus-within { box-shadow: inset 0 0 0 1px var(--un-brand), 0 0 0 6px color-mix(in srgb, var(--un-brand) 9%, transparent); } /*/dk*/   /* Figma: brand border + soft halo */
+  :root[data-theme="light"] .chatbar:focus-within { box-shadow: inset 0 0 0 1px var(--un-brand), 0 0 0 6px color-mix(in srgb, var(--un-brand) 5%, transparent); }
+  /*dk*/ :root[data-theme="dark"] .chatbar:focus-within { box-shadow: inset 0 0 0 1px var(--un-brand), 0 0 0 6px color-mix(in srgb, var(--un-brand) 5%, transparent); } /*/dk*/   /* Figma: brand border + soft halo */
   :root[data-theme="light"] .chatbar textarea::placeholder { color: #9f9f99; opacity: 1; }
   /*dk*/ :root[data-theme="dark"] .chatbar textarea::placeholder { color: #7d7d77; opacity: 1; } /*/dk*/
   .tabhint { display: none; }   /* the "Tab" hint is hidden: Tab still accepts the suggestion in the placeholder */
@@ -1014,8 +1014,8 @@
   /*dk*/ :root[data-theme="dark"] .mk-head p, :root[data-theme="dark"] .mk-count, :root[data-theme="dark"] .mk-meta small, :root[data-theme="dark"] .mk-empty { color: #a5a59f; } /*/dk*/
   :root[data-theme="light"] .mk-search { box-shadow: inset 0 0 0 1px #deded5; color: #1a1a1a; background: #fff; }
   /*dk*/ :root[data-theme="dark"] .mk-search { box-shadow: inset 0 0 0 1px #2c2c29; color: #f2f2ee; background: #1c1c1b; } /*/dk*/
-  :root[data-theme="light"] .mk-search:focus-within { box-shadow: inset 0 0 0 1px var(--un-brand), 0 0 0 4px color-mix(in srgb, var(--un-brand) 9%, transparent); }
-  /*dk*/ :root[data-theme="dark"] .mk-search:focus-within { box-shadow: inset 0 0 0 1px var(--un-brand), 0 0 0 4px color-mix(in srgb, var(--un-brand) 9%, transparent); } /*/dk*/
+  :root[data-theme="light"] .mk-search:focus-within { box-shadow: inset 0 0 0 1px var(--un-brand), 0 0 0 4px color-mix(in srgb, var(--un-brand) 5%, transparent); }
+  /*dk*/ :root[data-theme="dark"] .mk-search:focus-within { box-shadow: inset 0 0 0 1px var(--un-brand), 0 0 0 4px color-mix(in srgb, var(--un-brand) 5%, transparent); } /*/dk*/
   :root[data-theme="light"] .mk-chip { border: 1px solid #deded5; background: #fff; color: #1a1a1a; }
   /*dk*/ :root[data-theme="dark"] .mk-chip { border: 1px solid #2c2c29; background: #1c1c1b; color: #f2f2ee; } /*/dk*/
   :root[data-theme="light"] .mk-chip:hover { background: #f6f6f3; }
